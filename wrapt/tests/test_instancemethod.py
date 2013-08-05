@@ -7,18 +7,20 @@ import wrapt
 
 from .decorators import passthru_instancemethod_decorator
 
-class OldClass1d():
+class OldClass1():
     def function(self, arg):
         '''documentation'''
         return arg
 
-OldClass1o = OldClass1d
+OldClass1o = OldClass1
 
-class OldClass1d():
+class OldClass1():
     @passthru_instancemethod_decorator
     def function(self, arg):
         '''documentation'''
         return arg
+
+OldClass1d = OldClass1
 
 class TestNamingInstanceMethodOldStyle(unittest.TestCase):
 
@@ -104,18 +106,20 @@ class TestNamingInstanceMethodOldStyle(unittest.TestCase):
         self.assertTrue(isinstance(OldClass1d().function,
                 type(OldClass1o().function)))
 
-class NewClass1d(object):
+class NewClass1(object):
     def function(self, arg):
         '''documentation'''
         return arg
 
-NewClass1o = NewClass1d
+NewClass1o = NewClass1
 
-class NewClass1d(object):
+class NewClass1(object):
     @passthru_instancemethod_decorator
     def function(self, arg):
         '''documentation'''
         return arg
+
+NewClass1d = NewClass1
 
 class TestNamingInstanceMethodNewStyle(unittest.TestCase):
 
@@ -205,14 +209,13 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
 
     def test_class_call_function(self):
         # Test calling instancemethod via class and passing in the class
-        # instance directly. This is bypassing the descriptor protocol.
+        # instance directly.
 
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
         @wrapt.instancemethod_decorator
         def _decorator(wrapped, obj, cls, args, kwargs):
-            print('_DECORATOR', wrapped, obj, cls, args, kwargs)
             self.assertNotEqual(obj, None)
             return wrapped(*args, **kwargs)
 
@@ -253,6 +256,58 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
+    def test_class_call_function_generic_decorator(self):
+        # Test calling instancemethod via class and passing in the class
+        # instance directly. The generic decorator does not perform the
+        # fiddle that the instance method decorator does when called via
+        # the class type with the instance as first argument. Thus the
+        # instance passed to the wrapper will be None.
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.generic_decorator
+        def _decorator(wrapped, obj, cls, args, kwargs):
+            self.assertEqual(obj, None)
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        class Class():
+            @_decorator
+            def _function(self, *args, **kwargs):
+                return (args, kwargs)
+
+        result = Class._function(*((Class(),)+_args), **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instance_call_function_generic_decorator(self):
+        # Test calling instancemethod via class instance.
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.generic_decorator
+        def _decorator(wrapped, obj, cls, args, kwargs):
+            self.assertNotEqual(obj, None)
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        class Class():
+            @_decorator
+            def _function(self, *args, **kwargs):
+                return (args, kwargs)
+
+        result = Class()._function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
 class TestCallingInstanceMethodNewStyle(unittest.TestCase):
 
     def test_class_call_function(self):
@@ -264,7 +319,6 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
 
         @wrapt.instancemethod_decorator
         def _decorator(wrapped, obj, cls, args, kwargs):
-            print('_DECORATOR', wrapped, obj, cls, args, kwargs)
             self.assertNotEqual(obj, None)
             return wrapped(*args, **kwargs)
 
@@ -288,6 +342,55 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         _kwargs = { 'one': 1, 'two': 2 }
 
         @wrapt.instancemethod_decorator
+        def _decorator(wrapped, obj, cls, args, kwargs):
+            self.assertNotEqual(obj, None)
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        class Class(object):
+            @_decorator
+            def _function(self, *args, **kwargs):
+                return (args, kwargs)
+
+        result = Class()._function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_class_call_function_generic_decorator(self):
+        # Test calling instancemethod via class and passing in the class
+        # instance directly. This is bypassing the descriptor protocol.
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.generic_decorator
+        def _decorator(wrapped, obj, cls, args, kwargs):
+            self.assertEqual(obj, None)
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        class Class(object):
+            @_decorator
+            def _function(self, *args, **kwargs):
+                return (args, kwargs)
+
+        result = Class._function(Class(), *_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instance_call_function_generic_decorator(self):
+        # Test calling instancemethod via class instance.
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.generic_decorator
         def _decorator(wrapped, obj, cls, args, kwargs):
             self.assertNotEqual(obj, None)
             return wrapped(*args, **kwargs)

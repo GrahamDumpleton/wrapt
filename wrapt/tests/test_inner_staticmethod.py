@@ -20,7 +20,7 @@ class Class(object):
         '''documentation'''
         return arg
 
-class TestCase(unittest.TestCase):
+class TestNamingInnerStaticMethod(unittest.TestCase):
 
     def test_class_object_name(self):
         # Test preservation of instance method __name__ attribute.
