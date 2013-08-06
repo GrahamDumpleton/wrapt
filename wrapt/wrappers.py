@@ -147,6 +147,9 @@ class BoundGenericWrapper(WrapperBase):
                 wrapper=wrapper, adapter=adapter, params=params)
 
     def __call__(self, *args, **kwargs):
+        wrapped = self._self_wrapped
+        instance = self._self_instance
+
         if self._self_instance is None:
             # We need to try and identify the specific circumstances
             # this occurs under. There are two possibilities. The first
@@ -166,7 +169,7 @@ class BoundGenericWrapper(WrapperBase):
             # does not rely on __self__.
 
             try:
-                if self._self_wrapped.__self__ is None:
+                if wrapped.__self__ is None:
                     # Where __self__ is None, this indicates that an
                     # instance method is being called via the class type
                     # and the instance is passed in as the first
@@ -177,15 +180,13 @@ class BoundGenericWrapper(WrapperBase):
                     # different when invoking the wrapped function.
 
                     instance, args = args[0], args[1:]
-                    wrapped = functools.partial(self._self_wrapped, instance)
-                    return self._self_wrapper(wrapped, instance, args, kwargs,
-                            **self._self_params)
+                    wrapped = functools.partial(wrapped, instance)
 
             except (AttributeError, IndexError):
                 pass
 
-        return self._self_wrapper(self._self_wrapped,
-                self._self_instance, args, kwargs, **self._self_params)
+        return self._self_wrapper(wrapped, instance, args, kwargs,
+                **self._self_params)
 
 class GenericWrapper(WrapperBase):
 
