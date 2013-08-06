@@ -181,7 +181,7 @@ class BoundGenericWrapper(WrapperBase):
                     return self._self_wrapper(wrapped, instance, args, kwargs,
                             **self._self_params)
 
-            except AttributeError, IndexError:
+            except (AttributeError, IndexError):
                 pass
 
         return self._self_wrapper(self._self_wrapped,
