@@ -140,15 +140,14 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
 
 class BoundGenericWrapper(WrapperBase):
 
-    def __init__(self, wrapped, obj, cls, wrapper, adapter=None,
+    def __init__(self, wrapped, instance, wrapper, adapter=None,
             params={}):
-        self._self_object = obj
-        self._self_class = cls
+        self._self_instance = instance
         super(BoundGenericWrapper, self).__init__(wrapped=wrapped,
                 wrapper=wrapper, adapter=adapter, params=params)
 
     def __call__(self, *args, **kwargs):
-        if self._self_object is None:
+        if self._self_instance is None:
             # We need to try and identify the specific circumstances
             # this occurs under. There are two possibilities. The first
             # is that someone is calling an instance method via the
@@ -160,7 +159,11 @@ class BoundGenericWrapper(WrapperBase):
             # is occuring, because if our decorator wraps another
             # decorator that uses a descriptor and it isn't implemented
             # properly so as to provide __self__, then information by
-            # which it can be determined can be lost.
+            # which it can be determined can be lost. If this is a
+            # concern and you are writing a decorator specifically for
+            # application to instance methods, and only instance
+            # methods, then MethodWrapper should instead be used as it
+            # does not rely on __self__.
 
             try:
                 if self._self_wrapped.__self__ is None:
@@ -173,25 +176,24 @@ class BoundGenericWrapper(WrapperBase):
                     # so the wrapper doesn't see anything as being
                     # different when invoking the wrapped function.
 
-                    obj, args = args[0], args[1:]
-                    wrapped = functools.partial(self._self_wrapped, obj)
-                    return self._self_wrapper(wrapped, obj, self._self_class,
-                            args, kwargs, **self._self_params)
+                    instance, args = args[0], args[1:]
+                    wrapped = functools.partial(self._self_wrapped, instance)
+                    return self._self_wrapper(wrapped, instance, args, kwargs,
+                            **self._self_params)
 
             except AttributeError, IndexError:
                 pass
 
         return self._self_wrapper(self._self_wrapped,
-                self._self_object, self._self_class, args, kwargs,
-                **self._self_params)
+                self._self_instance, args, kwargs, **self._self_params)
 
 class GenericWrapper(WrapperBase):
 
-    WRAPPER_ARGLIST = ('wrapped', 'obj', 'cls', 'args', 'kwargs')
+    WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
-    def __get__(self, obj, cls):
-        descriptor = self._self_wrapped.__get__(obj, cls)
-        return BoundGenericWrapper(wrapped=descriptor, obj=obj, cls=cls,
+    def __get__(self, instance, owner):
+        descriptor = self._self_wrapped.__get__(instance, owner)
+        return BoundGenericWrapper(wrapped=descriptor, instance=instance,
                 wrapper=self._self_wrapper, adapter=self._self_target,
                 params=self._self_params)
         return result
@@ -203,8 +205,8 @@ class GenericWrapper(WrapperBase):
         # function was a method, but this wrapper was in turn wrapped
         # using the staticmethod decorator.
 
-        return self._self_wrapper(self._self_wrapped, None, None,
-                args, kwargs, **self._self_params)
+        return self._self_wrapper(self._self_wrapped, None, args,
+                kwargs, **self._self_params)
 
 class FunctionWrapper(WrapperBase):
 
@@ -214,17 +216,16 @@ class FunctionWrapper(WrapperBase):
         return self._self_wrapper(self._self_wrapped, args, kwargs,
                 **self._self_params)
 
-class BoundInstanceMethodWrapper(WrapperBase):
+class BoundMethodWrapper(WrapperBase):
 
-    def __init__(self, wrapped, obj, cls, wrapper, adapter=None,
+    def __init__(self, wrapped, instance, wrapper, adapter=None,
             params={}):
-        self._self_object = obj
-        self._self_class = cls
-        super(BoundInstanceMethodWrapper, self).__init__(wrapped=wrapped,
+        self._self_instance = instance
+        super(BoundMethodWrapper, self).__init__(wrapped=wrapped,
                 wrapper=wrapper, adapter=adapter, params=params)
 
     def __call__(self, *args, **kwargs):
-        if self._self_object is None:
+        if self._self_instance is None:
             # This situation can occur where someone is calling the
             # instancemethod via the class type and passing the instance
             # as the first argument. We need to shift the args before
@@ -232,22 +233,22 @@ class BoundInstanceMethodWrapper(WrapperBase):
             # instance to the wrapped function using a partial so the
             # wrapper doesn't see anything as being different.
 
-            obj, args = args[0], args[1:]
-            wrapped = functools.partial(self._self_wrapped, obj)
-            return self._self_wrapper(wrapped, obj, self._self_class,
-                    args, kwargs, **self._self_params)
+            instance, args = args[0], args[1:]
+            wrapped = functools.partial(self._self_wrapped, instance)
+            return self._self_wrapper(wrapped, instance, args, kwargs,
+                    **self._self_params)
 
         else:
-            return self._self_wrapper(self._self_wrapped, self._self_object,
-                    self._self_class, args, kwargs, **self._self_params)
+            return self._self_wrapper(self._self_wrapped, self._self_instance,
+                    args, kwargs, **self._self_params)
 
-class InstanceMethodWrapper(WrapperBase):
+class MethodWrapper(WrapperBase):
 
-    WRAPPER_ARGLIST = ('wrapped', 'obj', 'cls', 'args', 'kwargs')
+    WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
-    def __get__(self, obj, cls):
-        descriptor = self._self_wrapped.__get__(obj, cls)
-        return BoundInstanceMethodWrapper(wrapped=descriptor, obj=obj,
-                cls=cls, wrapper=self._self_wrapper,
+    def __get__(self, instance, owner):
+        descriptor = self._self_wrapped.__get__(instance, owner)
+        return BoundMethodWrapper(wrapped=descriptor, instance=instance,
+                wrapper=self._self_wrapper,
                 adapter=self._self_target, params=self._self_params)
         return result

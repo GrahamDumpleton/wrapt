@@ -5,7 +5,7 @@ import inspect
 
 import wrapt
 
-from .decorators import passthru_instancemethod_decorator
+from .decorators import passthru_method_decorator
 
 class OldClass1():
     def function(self, arg):
@@ -15,7 +15,7 @@ class OldClass1():
 OldClass1o = OldClass1
 
 class OldClass1():
-    @passthru_instancemethod_decorator
+    @passthru_method_decorator
     def function(self, arg):
         '''documentation'''
         return arg
@@ -114,7 +114,7 @@ class NewClass1(object):
 NewClass1o = NewClass1
 
 class NewClass1(object):
-    @passthru_instancemethod_decorator
+    @passthru_method_decorator
     def function(self, arg):
         '''documentation'''
         return arg
@@ -214,10 +214,9 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.instancemethod_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.method_decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -241,10 +240,9 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.instancemethod_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.method_decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -269,10 +267,9 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.generic_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -296,10 +293,9 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.generic_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -326,10 +322,9 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.instancemethod_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.method_decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -353,10 +348,9 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.instancemethod_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.method_decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -381,10 +375,9 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.generic_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -408,10 +401,9 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.generic_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)

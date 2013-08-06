@@ -5,7 +5,7 @@ import inspect
 
 import wrapt
 
-from .decorators import passthru_generic_decorator
+from .decorators import passthru_decorator
 
 class Class(object):
     @classmethod
@@ -17,7 +17,7 @@ Original = Class
 
 class Class(object):
     @classmethod
-    @passthru_generic_decorator
+    @passthru_decorator
     def function(self, arg):
         '''documentation'''
         return arg
@@ -119,10 +119,9 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.generic_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertEqual(obj, None)
-            self.assertEqual(cls, None)
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertEqual(instance, None)
             self.assertEqual(args, (Class,)+_args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -152,10 +151,9 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.generic_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertEqual(obj, None)
-            self.assertEqual(cls, None)
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertEqual(instance, None)
             self.assertEqual(args, (Class,)+_args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)

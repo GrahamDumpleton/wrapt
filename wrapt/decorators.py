@@ -1,15 +1,11 @@
-"""This module implements a set of decorators for implementing other
-decorators. These can be generic decorators where there is never a specific
-requirement to reliably process the inbound arguments being passed to the
-wrapped function, or more specific decorators designed just for functions,
-instance methods etc.
+"""This module implements decorators for implementing other decorators.
 
 """
 
 from functools import wraps, partial
 from inspect import getargspec
 
-from .wrappers import GenericWrapper, FunctionWrapper, InstanceMethodWrapper
+from .wrappers import GenericWrapper, FunctionWrapper, MethodWrapper
 from .exceptions import (UnexpectedDefaultParameters, MissingDefaultParameter,
         UnexpectedParameters)
 
@@ -154,6 +150,6 @@ def _decorator_factory(wrapper_type):
 
     return _decorator_binder
 
-generic_decorator = _decorator_factory(GenericWrapper)
+decorator = _decorator_factory(GenericWrapper)
 function_decorator = _decorator_factory(FunctionWrapper)
-instancemethod_decorator = _decorator_factory(InstanceMethodWrapper)
+method_decorator = _decorator_factory(MethodWrapper)

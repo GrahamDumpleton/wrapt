@@ -5,7 +5,7 @@ import wrapt
 import unittest
 import inspect
 
-from .decorators import passthru_generic_decorator
+from .decorators import passthru_decorator
 
 class Class(object):
     @staticmethod
@@ -16,7 +16,7 @@ class Class(object):
 Original = Class
 
 class Class(object):
-    @passthru_generic_decorator
+    @passthru_decorator
     @staticmethod
     def function(self, arg):
         '''documentation'''
@@ -114,10 +114,9 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.generic_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -144,10 +143,9 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.generic_decorator
-        def _decorator(wrapped, obj, cls, args, kwargs):
-            self.assertNotEqual(obj, None)
-            self.assertNotEqual(cls, None)
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
