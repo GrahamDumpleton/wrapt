@@ -3,6 +3,8 @@ from __future__ import print_function
 import unittest
 import inspect
 
+import wrapt
+
 from .decorators import passthru_generic_decorator
 
 class Class(object):
@@ -103,3 +105,68 @@ class TestNamingOuterStaticMethod(unittest.TestCase):
 
         self.assertTrue(isinstance(Class().function,
                 type(Original().function)))
+
+class TestCallingOuterStaticMethod(unittest.TestCase):
+
+    def test_class_call_function(self):
+        # Test calling staticmethod. The instance and class passed to the
+        # wrapper will both be None because our decorator is surrounded
+        # by the staticmethod decorator. The staticmethod decorator
+        # doesn't bind the method and treats it like a normal function.
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.generic_decorator
+        def _decorator(wrapped, obj, cls, args, kwargs):
+            self.assertEqual(obj, None)
+            self.assertEqual(cls, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        class Class(object):
+            @staticmethod
+            @_decorator
+            def _function(*args, **kwargs):
+                return (args, kwargs)
+
+        result = Class._function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instance_call_function(self):
+        # Test calling staticmethod via class instance. The instance
+        # and class passed to the wrapper will both be None because our
+        # decorator is surrounded by the staticmethod decorator. The
+        # staticmethod decorator doesn't bind the method and treats it
+        # like a normal function.
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.generic_decorator
+        def _decorator(wrapped, obj, cls, args, kwargs):
+            self.assertEqual(obj, None)
+            self.assertEqual(cls, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        class Class(object):
+            @staticmethod
+            @_decorator
+            def _function(*args, **kwargs):
+                return (args, kwargs)
+
+        result = Class()._function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))

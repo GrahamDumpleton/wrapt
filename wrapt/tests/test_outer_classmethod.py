@@ -123,6 +123,8 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         def _decorator(wrapped, obj, cls, args, kwargs):
             self.assertEqual(obj, None)
             self.assertEqual(cls, None)
+            self.assertEqual(args, (Class,)+_args)
+            self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -154,6 +156,8 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         def _decorator(wrapped, obj, cls, args, kwargs):
             self.assertEqual(obj, None)
             self.assertEqual(cls, None)
+            self.assertEqual(args, (Class,)+_args)
+            self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
         @_decorator

@@ -118,6 +118,8 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         def _decorator(wrapped, obj, cls, args, kwargs):
             self.assertEqual(obj, None)
             self.assertNotEqual(cls, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -146,6 +148,8 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         def _decorator(wrapped, obj, cls, args, kwargs):
             self.assertNotEqual(obj, None)
             self.assertNotEqual(cls, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
         @_decorator
