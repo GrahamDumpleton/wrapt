@@ -108,6 +108,9 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
     def __wrapped__(self, value):
         self._self_wrapped.__wrapped__ = value
 
+    def __self__(self):
+        return self._self_wrapped.__self__
+
     def __dir__(self):
         return dir(self._self_wrapped)
 
@@ -145,8 +148,42 @@ class BoundGenericWrapper(WrapperBase):
                 wrapper=wrapper, adapter=adapter, params=params)
 
     def __call__(self, *args, **kwargs):
-        return self._self_wrapper(self._self_wrapped, self._self_object,
-                self._self_class, args, kwargs, **self._self_params)
+        if self._self_object is None:
+            # We need to try and identify the specific circumstances
+            # this occurs under. There are two possibilities. The first
+            # is that someone is calling an instance method via the
+            # class type and passing the instance as the first argument.
+            # The second is that a class method is being called via the
+            # class type, in which case there is no instance.
+            #
+            # There isn't strictly a fool proof method of knowing which
+            # is occuring, because if our decorator wraps another
+            # decorator that uses a descriptor and it isn't implemented
+            # properly so as to provide __self__, then information by
+            # which it can be determined can be lost.
+
+            try:
+                if self._self_wrapped.__self__ is None:
+                    # Where __self__ is None, this indicates that an
+                    # instance method is being called via the class type
+                    # and the instance is passed in as the first
+                    # argument. We need to shift the args before making
+                    # the call to the wrapper and effectively bind the
+                    # instance to the wrapped function using a partial
+                    # so the wrapper doesn't see anything as being
+                    # different when invoking the wrapped function.
+
+                    obj, args = args[0], args[1:]
+                    wrapped = functools.partial(self._self_wrapped, obj)
+                    return self._self_wrapper(wrapped, obj, self._self_class,
+                            args, kwargs, **self._self_params)
+
+            except AttributeError, IndexError:
+                pass
+
+        return self._self_wrapper(self._self_wrapped,
+                self._self_object, self._self_class, args, kwargs,
+                **self._self_params)
 
 class GenericWrapper(WrapperBase):
 
@@ -160,6 +197,12 @@ class GenericWrapper(WrapperBase):
         return result
 
     def __call__(self, *args, **kwargs):
+        # This is invoked when the wrapped function is being called as a
+        # normal function and is not bound to a class as a instance
+        # method. This is also invoked in the case where the wrapped
+        # function was a method, but this wrapper was in turn wrapped
+        # using the staticmethod decorator.
+
         return self._self_wrapper(self._self_wrapped, None, None,
                 args, kwargs, **self._self_params)
 
