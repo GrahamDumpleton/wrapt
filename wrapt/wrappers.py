@@ -108,9 +108,6 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
     def __wrapped__(self, value):
         self._self_wrapped.__wrapped__ = value
 
-    def __self__(self):
-        return self._self_wrapped.__self__
-
     def __dir__(self):
         return dir(self._self_wrapped)
 
@@ -138,81 +135,62 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
     def __iter__(self):
         return iter(self._self_wrapped)
 
-class BoundGenericWrapper(WrapperBase):
+class BoundDynamicWrapper(WrapperBase):
 
-    def __init__(self, parent, wrapped, instance, wrapper, adapter=None,
-            params={}):
-        self._self_parent = parent
+    def __init__(self, wrapped, instance, wrapper, adapter=None, params={}):
         self._self_instance = instance
-        super(BoundGenericWrapper, self).__init__(wrapped=wrapped,
-                wrapper=wrapper, adapter=adapter, params=params)
+        super(BoundDynamicWrapper, self).__init__(wrapped, wrapper, adapter,
+                params)
 
     def __call__(self, *args, **kwargs):
-        wrapped = self._self_wrapped
-        instance = self._self_instance
+        return self._self_wrapper(self._self_wrapped, self._self_instance,
+                args, kwargs, **self._self_params)
 
-        if self._self_instance is None:
-            # We need to try and identify the specific circumstances
-            # this occurs under. There are three possibilities. The
-            # first is that someone is calling an instance method via
-            # the class type and passing the instance as the first
-            # argument. The second is that a class method is being
-            # called via the class type, in which case there is no
-            # instance. The third is that a static method is being
-            # called via the class type, in which case there is no
-            # instance.
-            #
-            # There isn't strictly a fool proof method of knowing which
-            # is occuring because if a decorator using this code wraps
-            # other decorators and they are poorly implemented they can
-            # throw away important information needed to determine it.
-            # Some ways that it could be determined in Python 2 are also
-            # not possible in Python 3 due to the concept of unbound
-            # methods being done away with.
-            #
-            # Anyway, the best we can do is look at the original type of
-            # the object which was wrapped prior to any binding being
-            # done and see if it is an instance of classmethod or
-            # staticmethod. In the case where other decorators are
-            # between us and them, if they do not propagate the
-            # __class__  attribute so that isinstance() checks works,
-            # then likely this will do the wrong thing where classmethod
-            # and staticmethod are used.
-            #
-            # Since it is likely to be very rare that anyone even puts
-            # decorators around classmethod and staticmethod, likelihood
-            # of that being an issue is very small, so we accept it. It
-            # is also only an issue if a decorator wants to actually do
-            # things with the arguments. For the case of classmethod the
-            # class wouldn't be known anyway, as it is only added in by
-            # the classmethod decorator later.
-
-            if not isinstance(self._self_parent._self_wrapped,
-                    (classmethod, staticmethod)):
-                # If not a classmethod or staticmethod, then should be
-                # the case of an instance method being called via the
-                # class type and the instance is passed in as the first
-                # argument. We need to shift the args before making the
-                # call to the wrapper and effectively bind the instance
-                # to the wrapped function using a partial so the wrapper
-                # doesn't see anything as being different when invoking
-                # the wrapped function.
-
-                instance, args = args[0], args[1:]
-                wrapped = functools.partial(wrapped, instance)
-
-        return self._self_wrapper(wrapped, instance, args, kwargs,
-                **self._self_params)
-
-class GenericWrapper(WrapperBase):
+class DynamicWrapper(WrapperBase):
 
     WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
     def __get__(self, instance, owner):
         descriptor = self._self_wrapped.__get__(instance, owner)
-        return BoundGenericWrapper(parent=self, wrapped=descriptor,
-                instance=instance, wrapper=self._self_wrapper,
-                adapter=self._self_target, params=self._self_params)
+
+        # We need to do special fixups on the args in the case of an
+        # instancemethod where called via the class and the instance is
+        # passed explicitly as the first argument. Defer to the
+        # BoundMethodWrapper for these specific fixups when we believe
+        # it is likely an instancemethod. That is, anytime it isn't
+        # classmethod or staticmethod.
+        #
+        # Note that there isn't strictly a fool proof method of knowing
+        # which is occuring because if a decorator using this code wraps
+        # other decorators and they are poorly implemented they can
+        # throw away important information needed to determine it. Some
+        # ways that it could be determined in Python 2 are also not
+        # possible in Python 3 due to the concept of unbound methods
+        # being done away with.
+        #
+        # Anyway, the best we can do is look at the original type of the
+        # object which was wrapped prior to any binding being done and
+        # see if it is an instance of classmethod or staticmethod. In
+        # the case where other decorators are between us and them, if
+        # they do not propagate the __class__  attribute so that the
+        # isinstance() checks works, then likely this will do the wrong
+        # thing where classmethod and staticmethod are used.
+        #
+        # Since it is likely to be very rare that anyone even puts
+        # decorators around classmethod and staticmethod, likelihood of
+        # that being an issue is very small, so we accept it and suggest
+        # that those other decorators be fixed. It is also only an issue
+        # if a decorator wants to actually do things with the arguments.
+        # For the case of a classmethod the class wouldn't be known
+        # anyway, as it is only added in by the classmethod decorator
+        # later.
+
+        if isinstance(self._self_wrapped, (classmethod, staticmethod)):
+            return BoundDynamicWrapper(descriptor, instance,
+                    self._self_wrapper, self._self_target, self._self_params)
+        else:
+            return BoundMethodWrapper(descriptor, instance,
+                    self._self_wrapper, self._self_target, self._self_params)
 
     def __call__(self, *args, **kwargs):
         # This is invoked when the wrapped function is being called as a
@@ -234,11 +212,10 @@ class FunctionWrapper(WrapperBase):
 
 class BoundMethodWrapper(WrapperBase):
 
-    def __init__(self, wrapped, instance, wrapper, adapter=None,
-            params={}):
+    def __init__(self, wrapped, instance, wrapper, adapter=None, params={}):
         self._self_instance = instance
-        super(BoundMethodWrapper, self).__init__(wrapped=wrapped,
-                wrapper=wrapper, adapter=adapter, params=params)
+        super(BoundMethodWrapper, self).__init__(wrapped, wrapper, adapter,
+                params)
 
     def __call__(self, *args, **kwargs):
         if self._self_instance is None:
@@ -254,9 +231,8 @@ class BoundMethodWrapper(WrapperBase):
             return self._self_wrapper(wrapped, instance, args, kwargs,
                     **self._self_params)
 
-        else:
-            return self._self_wrapper(self._self_wrapped, self._self_instance,
-                    args, kwargs, **self._self_params)
+        return self._self_wrapper(self._self_wrapped, self._self_instance,
+                args, kwargs, **self._self_params)
 
 class MethodWrapper(WrapperBase):
 
@@ -264,6 +240,5 @@ class MethodWrapper(WrapperBase):
 
     def __get__(self, instance, owner):
         descriptor = self._self_wrapped.__get__(instance, owner)
-        return BoundMethodWrapper(wrapped=descriptor, instance=instance,
-                wrapper=self._self_wrapper,
-                adapter=self._self_target, params=self._self_params)
+        return BoundMethodWrapper(descriptor, instance, self._self_wrapper,
+                self._self_target, self._self_params)

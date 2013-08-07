@@ -5,7 +5,7 @@
 from functools import wraps, partial
 from inspect import getargspec
 
-from .wrappers import GenericWrapper, FunctionWrapper, MethodWrapper
+from .wrappers import DynamicWrapper, FunctionWrapper, MethodWrapper
 from .exceptions import (UnexpectedDefaultParameters, MissingDefaultParameter,
         UnexpectedParameters)
 
@@ -148,8 +148,12 @@ def _decorator_factory(wrapper_type):
             return partial(_decorator_binder, adapter=adapter,
                     **default_params)
 
+    # Override the binder function name to assist debugging.
+
+    _decorator_binder.__name__ = 'decorator(%s)' % wrapper_type.__name__
+
     return _decorator_binder
 
-decorator = _decorator_factory(GenericWrapper)
+decorator = _decorator_factory(DynamicWrapper)
 function_decorator = _decorator_factory(FunctionWrapper)
 method_decorator = _decorator_factory(MethodWrapper)
