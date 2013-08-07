@@ -204,10 +204,10 @@ class DynamicWrapper(WrapperBase):
 
 class FunctionWrapper(WrapperBase):
 
-    WRAPPER_ARGLIST = ('wrapped', 'args', 'kwargs')
+    WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
     def __call__(self, *args, **kwargs):
-        return self._self_wrapper(self._self_wrapped, args, kwargs,
+        return self._self_wrapper(self._self_wrapped, None, args, kwargs,
                 **self._self_params)
 
 class BoundMethodWrapper(WrapperBase):

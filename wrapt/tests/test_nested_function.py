@@ -70,7 +70,8 @@ class TestCallingNestedFunction(unittest.TestCase):
         _kwargs = { 'one': 1, 'two': 2 }
 
         @wrapt.function_decorator
-        def _decorator(wrapped, args, kwargs):
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)

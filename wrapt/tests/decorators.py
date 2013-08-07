@@ -5,7 +5,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 @wrapt.function_decorator
-def passthru_function_decorator(wrapped, args, kwargs):
+def passthru_function_decorator(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 @wrapt.method_decorator
