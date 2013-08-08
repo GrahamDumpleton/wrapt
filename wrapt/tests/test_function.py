@@ -77,25 +77,6 @@ class TestCallingFunction(unittest.TestCase):
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
-        @wrapt.function_decorator
-        def _decorator(wrapped, instance, args, kwargs):
-            self.assertEqual(instance, None)
-            self.assertEqual(args, _args)
-            self.assertEqual(kwargs, _kwargs)
-            return wrapped(*args, **kwargs)
-
-        @_decorator
-        def _function(*args, **kwargs):
-            return args, kwargs
-
-        result = _function(*_args, **_kwargs)
-
-        self.assertEqual(result, (_args, _kwargs))
-
-    def test_call_function_generic_decorator(self):
-        _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
-
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
             self.assertEqual(instance, None)

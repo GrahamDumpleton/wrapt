@@ -5,9 +5,9 @@
 from functools import wraps, partial
 from inspect import getargspec
 
-from .wrappers import DynamicWrapper, FunctionWrapper, MethodWrapper
-from .exceptions import (UnexpectedDefaultParameters, MissingDefaultParameter,
-        UnexpectedParameters)
+from .wrappers import FunctionWrapper
+from .exceptions import (UnexpectedDefaultParameters,
+        MissingDefaultParameter, UnexpectedParameters)
 
 def _decorator_factory(wrapper_type):
     # This decorator factory serves as a way of parameterising our
@@ -154,9 +154,8 @@ def _decorator_factory(wrapper_type):
 
     return _decorator_binder
 
-decorator = _decorator_factory(DynamicWrapper)
-function_decorator = _decorator_factory(FunctionWrapper)
-method_decorator = _decorator_factory(MethodWrapper)
+def decorator(*args, **kwargs):
+    return _decorator_factory(FunctionWrapper)(*args, **kwargs)
 
 def adapter(target):
     @decorator(target=target)

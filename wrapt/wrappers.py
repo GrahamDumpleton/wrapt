@@ -141,23 +141,48 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
     def __iter__(self):
         return iter(self._self_wrapped)
 
-class BoundDynamicWrapper(WrapperBase):
+class BoundFunctionWrapper(WrapperBase):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
         self._self_instance = instance
-        super(BoundDynamicWrapper, self).__init__(wrapped, wrapper, target,
+        super(BoundFunctionWrapper, self).__init__(wrapped, wrapper, target,
                 params)
 
     def __call__(self, *args, **kwargs):
         return self._self_wrapper(self._self_wrapped, self._self_instance,
                 args, kwargs, **self._self_params)
 
-class DynamicWrapper(WrapperBase):
+class BoundMethodWrapper(WrapperBase):
+
+    def __init__(self, wrapped, instance, wrapper, target=None, params={}):
+        self._self_instance = instance
+        super(BoundMethodWrapper, self).__init__(wrapped, wrapper, target,
+                params)
+
+    def __call__(self, *args, **kwargs):
+        if self._self_instance is None:
+            # This situation can occur where someone is calling the
+            # instancemethod via the class type and passing the instance
+            # as the first argument. We need to shift the args before
+            # making the call to the wrapper and effectively bind the
+            # instance to the wrapped function using a partial so the
+            # wrapper doesn't see anything as being different.
+
+            instance, args = args[0], args[1:]
+            wrapped = functools.partial(self._self_wrapped, instance)
+            return self._self_wrapper(wrapped, instance, args, kwargs,
+                    **self._self_params)
+
+        return self._self_wrapper(self._self_wrapped, self._self_instance,
+                args, kwargs, **self._self_params)
+
+class FunctionWrapper(WrapperBase):
 
     WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
-    def __get__(self, instance, owner):
-        descriptor = self._self_wrapped.__get__(instance, owner)
+    def __init__(self, wrapped, wrapper, target=None, params={}):
+        super(FunctionWrapper, self).__init__(wrapped, wrapper, target,
+                params)
 
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
@@ -192,11 +217,15 @@ class DynamicWrapper(WrapperBase):
         # later.
 
         if isinstance(self._self_wrapped, (classmethod, staticmethod)):
-            return BoundDynamicWrapper(descriptor, instance,
-                    self._self_wrapper, self._self_target, self._self_params)
+            self._self_wrapper_type = BoundFunctionWrapper
         else:
-            return BoundMethodWrapper(descriptor, instance,
-                    self._self_wrapper, self._self_target, self._self_params)
+            self._self_wrapper_type = BoundMethodWrapper
+
+    def __get__(self, instance, owner):
+        descriptor = self._self_wrapped.__get__(instance, owner)
+
+        return self._self_wrapper_type(descriptor, instance,
+                self._self_wrapper, self._self_target, self._self_params)
 
     def __call__(self, *args, **kwargs):
         # This is invoked when the wrapped function is being called as a
@@ -207,44 +236,3 @@ class DynamicWrapper(WrapperBase):
 
         return self._self_wrapper(self._self_wrapped, None, args,
                 kwargs, **self._self_params)
-
-class FunctionWrapper(WrapperBase):
-
-    WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
-
-    def __call__(self, *args, **kwargs):
-        return self._self_wrapper(self._self_wrapped, None, args, kwargs,
-                **self._self_params)
-
-class BoundMethodWrapper(WrapperBase):
-
-    def __init__(self, wrapped, instance, wrapper, target=None, params={}):
-        self._self_instance = instance
-        super(BoundMethodWrapper, self).__init__(wrapped, wrapper, target,
-                params)
-
-    def __call__(self, *args, **kwargs):
-        if self._self_instance is None:
-            # This situation can occur where someone is calling the
-            # instancemethod via the class type and passing the instance
-            # as the first argument. We need to shift the args before
-            # making the call to the wrapper and effectively bind the
-            # instance to the wrapped function using a partial so the
-            # wrapper doesn't see anything as being different.
-
-            instance, args = args[0], args[1:]
-            wrapped = functools.partial(self._self_wrapped, instance)
-            return self._self_wrapper(wrapped, instance, args, kwargs,
-                    **self._self_params)
-
-        return self._self_wrapper(self._self_wrapped, self._self_instance,
-                args, kwargs, **self._self_params)
-
-class MethodWrapper(WrapperBase):
-
-    WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
-
-    def __get__(self, instance, owner):
-        descriptor = self._self_wrapped.__get__(instance, owner)
-        return BoundMethodWrapper(descriptor, instance, self._self_wrapper,
-                self._self_target, self._self_params)
