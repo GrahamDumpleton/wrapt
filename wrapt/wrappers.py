@@ -36,10 +36,9 @@ class WrapperBaseMetaType(type):
 
 class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
 
-    def __init__(self, wrapped, wrapper, target=None, params={}):
+    def __init__(self, wrapped, wrapper, target=None):
         self._self_wrapped = wrapped
         self._self_wrapper = wrapper
-        self._self_params = params
 
         # Python 3.2+ has the __wrapped__ attribute which is meant to
         # hold a reference to the inner most wrapped object when there
@@ -144,9 +143,9 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
 class BoundFunctionWrapper(WrapperBase):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
+        super(BoundFunctionWrapper, self).__init__(wrapped, wrapper, target)
         self._self_instance = instance
-        super(BoundFunctionWrapper, self).__init__(wrapped, wrapper, target,
-                params)
+        self._self_params = params
 
     def __call__(self, *args, **kwargs):
         return self._self_wrapper(self._self_wrapped, self._self_instance,
@@ -155,9 +154,9 @@ class BoundFunctionWrapper(WrapperBase):
 class BoundMethodWrapper(WrapperBase):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
+        super(BoundMethodWrapper, self).__init__(wrapped, wrapper, target)
         self._self_instance = instance
-        super(BoundMethodWrapper, self).__init__(wrapped, wrapper, target,
-                params)
+        self._self_params = params
 
     def __call__(self, *args, **kwargs):
         if self._self_instance is None:
@@ -181,8 +180,8 @@ class FunctionWrapper(WrapperBase):
     WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
     def __init__(self, wrapped, wrapper, target=None, params={}):
-        super(FunctionWrapper, self).__init__(wrapped, wrapper, target,
-                params)
+        super(FunctionWrapper, self).__init__(wrapped, wrapper, target)
+        self._self_params = params
 
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
@@ -229,7 +228,7 @@ class FunctionWrapper(WrapperBase):
 
     def __call__(self, *args, **kwargs):
         # This is invoked when the wrapped function is being called as a
-        # normal function and is not bound to a class as a instance
+        # normal function and is not bound to a class as an instance
         # method. This is also invoked in the case where the wrapped
         # function was a method, but this wrapper was in turn wrapped
         # using the staticmethod decorator.
