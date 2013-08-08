@@ -271,8 +271,13 @@ static int WraptWrapperBase_setattro(
       return -1;
     }
 
-    if (!self_prefix)
+    if (!self_prefix) {
+#if PY_MAJOR_VERSION >= 3
         self_prefix = PyUnicode_FromString("_self_");
+#else
+        self_prefix = PyString_FromString("_self_");
+#endif
+    }
 
     match = PyEval_CallMethod(name, "startswith", "(O)", self_prefix);
 
