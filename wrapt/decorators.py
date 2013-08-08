@@ -19,7 +19,7 @@ def _decorator_factory(wrapper_type):
     # different decorator types we provide for constructing the users
     # decorators.
 
-    def _decorator_binder(wrapper=None, adapter=None, **default_params):
+    def _decorator_binder(wrapper=None, target=None, **default_params):
         # The binder works out whether the user decorator will have its
         # own parameters. Parameters for the user decorator must always
         # be specified using keyword arguments and must always have
@@ -120,7 +120,7 @@ def _decorator_factory(wrapper_type):
 
                     def _wrapper(func):
                         return wrapper_type(wrapped=func, wrapper=wrapper,
-                                adapter=adapter, params=complete_params)
+                                target=target, params=complete_params)
                     return _wrapper
 
                 # Here is where the partial wrapper is returned. This is
@@ -135,7 +135,7 @@ def _decorator_factory(wrapper_type):
                 @wraps(wrapper)
                 def _wrapper(func):
                     return wrapper_type(wrapped=func, wrapper=wrapper,
-                            adapter=adapter)
+                            target=target)
                 return _wrapper
 
         else:
@@ -145,7 +145,7 @@ def _decorator_factory(wrapper_type):
             # a partial using the collected default parameters and the
             # adapter function if one is being used.
 
-            return partial(_decorator_binder, adapter=adapter,
+            return partial(_decorator_binder, target=target,
                     **default_params)
 
     # Override the binder function name to assist debugging.
@@ -157,3 +157,9 @@ def _decorator_factory(wrapper_type):
 decorator = _decorator_factory(DynamicWrapper)
 function_decorator = _decorator_factory(FunctionWrapper)
 method_decorator = _decorator_factory(MethodWrapper)
+
+def adapter(target):
+    @decorator(target=target)
+    def wrapper(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+    return wrapper

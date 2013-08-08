@@ -36,7 +36,7 @@ class WrapperBaseMetaType(type):
 
 class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
 
-    def __init__(self, wrapped, wrapper, adapter=None, params={}):
+    def __init__(self, wrapped, wrapper, target=None, params={}):
         self._self_wrapped = wrapped
         self._self_wrapper = wrapper
         self._self_params = params
@@ -48,20 +48,23 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
         # only go as far as what is below our own wrappers when there is
         # more than one for Python 2.
 
-        if adapter is None:
+        if target is None:
             try:
                 self._self_target = wrapped.__wrapped__
             except AttributeError:
                 self._self_target = wrapped
         else:
-            self._self_target = adapter
+            self._self_target = target
 
         # Python 3.2+ has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
         # be an actual string object instead.
 
         try:
-            object.__setattr__(self, '__qualname__', wrapped.__qualname__)
+            if target is None:
+                object.__setattr__(self, '__qualname__', wrapped.__qualname__)
+            else:
+                object.__setattr__(self, '__qualname__', target.__qualname__)
         except AttributeError:
             pass
 
@@ -71,7 +74,10 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
         # if overriding it as a property is sufficient in all cases.
 
         try:
-            object.__setattr__(self, '__name__', wrapped.__name__)
+            if target is None:
+                object.__setattr__(self, '__name__', wrapped.__name__)
+            else:
+                object.__setattr__(self, '__name__', target.__name__)
         except AttributeError:
             pass
 
@@ -137,9 +143,9 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
 
 class BoundDynamicWrapper(WrapperBase):
 
-    def __init__(self, wrapped, instance, wrapper, adapter=None, params={}):
+    def __init__(self, wrapped, instance, wrapper, target=None, params={}):
         self._self_instance = instance
-        super(BoundDynamicWrapper, self).__init__(wrapped, wrapper, adapter,
+        super(BoundDynamicWrapper, self).__init__(wrapped, wrapper, target,
                 params)
 
     def __call__(self, *args, **kwargs):
@@ -212,9 +218,9 @@ class FunctionWrapper(WrapperBase):
 
 class BoundMethodWrapper(WrapperBase):
 
-    def __init__(self, wrapped, instance, wrapper, adapter=None, params={}):
+    def __init__(self, wrapped, instance, wrapper, target=None, params={}):
         self._self_instance = instance
-        super(BoundMethodWrapper, self).__init__(wrapped, wrapper, adapter,
+        super(BoundMethodWrapper, self).__init__(wrapped, wrapper, target,
                 params)
 
     def __call__(self, *args, **kwargs):
