@@ -2,10 +2,22 @@ from __future__ import print_function
 
 import unittest
 import inspect
+import imp
 
 import wrapt
 
-from .decorators import passthru_method_decorator
+from wrapt import six
+
+DECORATORS_CODE = """
+import wrapt
+
+@wrapt.decorator
+def passthru_decorator(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
+"""
+
+decorators = imp.new_module('decorators')
+six.exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class OldClass1():
     def function(self, arg):
@@ -15,7 +27,7 @@ class OldClass1():
 OldClass1o = OldClass1
 
 class OldClass1():
-    @passthru_method_decorator
+    @decorators.passthru_decorator
     def function(self, arg):
         '''documentation'''
         return arg
@@ -114,7 +126,7 @@ class NewClass1(object):
 NewClass1o = NewClass1
 
 class NewClass1(object):
-    @passthru_method_decorator
+    @decorators.passthru_decorator
     def function(self, arg):
         '''documentation'''
         return arg

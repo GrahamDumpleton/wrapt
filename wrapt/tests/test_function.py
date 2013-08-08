@@ -2,10 +2,22 @@ from __future__ import print_function
 
 import unittest
 import inspect
+import imp
 
 import wrapt
 
-from .decorators import passthru_function_decorator
+from wrapt import six
+
+DECORATORS_CODE = """
+import wrapt
+
+@wrapt.decorator
+def passthru_decorator(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
+"""
+
+decorators = imp.new_module('decorators')
+six.exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 def function1(arg):
     '''documentation'''
@@ -13,7 +25,7 @@ def function1(arg):
 
 function1o = function1
 
-@passthru_function_decorator
+@decorators.passthru_decorator
 def function(arg):
     '''documentation'''
     return arg

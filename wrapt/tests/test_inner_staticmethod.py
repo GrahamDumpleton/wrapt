@@ -1,11 +1,23 @@
 from __future__ import print_function
 
-import wrapt
-
 import unittest
 import inspect
+import imp
 
-from .decorators import passthru_decorator
+import wrapt
+
+from wrapt import six
+
+DECORATORS_CODE = """
+import wrapt
+
+@wrapt.decorator
+def passthru_decorator(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
+"""
+
+decorators = imp.new_module('decorators')
+six.exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class Class(object):
     @staticmethod
@@ -16,7 +28,7 @@ class Class(object):
 Original = Class
 
 class Class(object):
-    @passthru_decorator
+    @decorators.passthru_decorator
     @staticmethod
     def function(self, arg):
         '''documentation'''
