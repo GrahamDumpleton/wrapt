@@ -2,6 +2,11 @@ import functools
 
 from . import six
 
+try:
+    from ._wrappers import WrapperBase as C_WrapperBase
+except ImportError:
+    C_WrapperBase = None
+
 class WrapperOverrideMethods(object):
 
     @property
@@ -34,7 +39,7 @@ class WrapperBaseMetaType(type):
          dictionary.update(vars(WrapperOverrideMethods))
          return type.__new__(cls, name, bases, dictionary)
 
-class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
+class PY_WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
 
     def __init__(self, wrapped, wrapper, target=None):
         self._self_wrapped = wrapped
@@ -139,6 +144,8 @@ class WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
 
     def __iter__(self):
         return iter(self._self_wrapped)
+
+WrapperBase = C_WrapperBase or PY_WrapperBase
 
 class BoundFunctionWrapper(WrapperBase):
 
