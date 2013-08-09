@@ -180,3 +180,6 @@ class TestCallingOuterStaticMethod(unittest.TestCase):
         result = Class()._function(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
+
+if __name__ == '__main__':
+    unittest.main()

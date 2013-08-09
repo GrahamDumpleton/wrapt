@@ -120,3 +120,6 @@ class TestAdapter(unittest.TestCase):
 
         self.assertEqual(result, (1,))
         self.assertEqual(events, ['in', 'call', 'out'])
+
+if __name__ == '__main__':
+    unittest.main()

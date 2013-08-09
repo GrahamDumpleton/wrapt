@@ -205,3 +205,6 @@ class TestDecorator(unittest.TestCase):
                 return args, kwargs
 
         self.assertRaises(wrapt.exceptions.UnexpectedParameters, run, ())
+
+if __name__ == '__main__':
+    unittest.main()
