@@ -4,8 +4,10 @@ from . import six
 
 try:
     from ._wrappers import WrapperBase as C_WrapperBase
+    from ._wrappers import FunctionWrapper as C_FunctionWrapper
 except ImportError:
     C_WrapperBase = None
+    C_FunctionWrapper = None
 
 class WrapperOverrideMethods(object):
 
@@ -182,9 +184,7 @@ class BoundMethodWrapper(WrapperBase):
         return self._self_wrapper(self._self_wrapped, self._self_instance,
                 args, kwargs, **self._self_params)
 
-class FunctionWrapper(WrapperBase):
-
-    WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
+class Py_FunctionWrapper(WrapperBase):
 
     def __init__(self, wrapped, wrapper, target=None, params={}):
         super(FunctionWrapper, self).__init__(wrapped, wrapper, target)
@@ -242,3 +242,5 @@ class FunctionWrapper(WrapperBase):
 
         return self._self_wrapper(self._self_wrapped, None, args,
                 kwargs, **self._self_params)
+
+FunctionWrapper = C_FunctionWrapper or PY_FunctionWrapper
