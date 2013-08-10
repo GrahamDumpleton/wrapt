@@ -2,14 +2,7 @@ import functools
 
 from . import six
 
-try:
-    from ._wrappers import WrapperBase as C_WrapperBase
-    from ._wrappers import FunctionWrapper as C_FunctionWrapper
-except ImportError:
-    C_WrapperBase = None
-    C_FunctionWrapper = None
-
-class WrapperOverrideMethods(object):
+class _WrapperOverrideMethods(object):
 
     @property
     def __module__(self):
@@ -27,10 +20,10 @@ class WrapperOverrideMethods(object):
     def __doc__(self, value):
         self._self_wrapped.__doc__ = value
 
-class WrapperBaseMetaType(type):
+class _WrapperBaseMetaType(type):
      def __new__(cls, name, bases, dictionary):
          # We use properties to override the values of __module__ and
-         # __doc__. If we add these in WrapperBase, the derived class
+         # __doc__. If we add these in _WrapperBase, the derived class
          # __dict__ will still be setup to have string variants of these
          # attributes and the rules of descriptors means that they
          # appear to take precedence over the properties in the base
@@ -38,10 +31,10 @@ class WrapperBaseMetaType(type):
          # class type itself via a meta class. In that way the
          # properties will always take precedence.
 
-         dictionary.update(vars(WrapperOverrideMethods))
+         dictionary.update(vars(_WrapperOverrideMethods))
          return type.__new__(cls, name, bases, dictionary)
 
-class PY_WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
+class _WrapperBase(six.with_metaclass(_WrapperBaseMetaType)):
 
     def __init__(self, wrapped, wrapper, target=None):
         self._self_wrapped = wrapped
@@ -147,12 +140,10 @@ class PY_WrapperBase(six.with_metaclass(WrapperBaseMetaType)):
     def __iter__(self):
         return iter(self._self_wrapped)
 
-WrapperBase = C_WrapperBase or PY_WrapperBase
-
-class BoundFunctionWrapper(WrapperBase):
+class _BoundFunctionWrapper(_WrapperBase):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
-        super(BoundFunctionWrapper, self).__init__(wrapped, wrapper, target)
+        super(_BoundFunctionWrapper, self).__init__(wrapped, wrapper, target)
         self._self_instance = instance
         self._self_params = params
 
@@ -160,10 +151,10 @@ class BoundFunctionWrapper(WrapperBase):
         return self._self_wrapper(self._self_wrapped, self._self_instance,
                 args, kwargs, **self._self_params)
 
-class BoundMethodWrapper(WrapperBase):
+class _BoundMethodWrapper(_WrapperBase):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
-        super(BoundMethodWrapper, self).__init__(wrapped, wrapper, target)
+        super(_BoundMethodWrapper, self).__init__(wrapped, wrapper, target)
         self._self_instance = instance
         self._self_params = params
 
@@ -184,7 +175,7 @@ class BoundMethodWrapper(WrapperBase):
         return self._self_wrapper(self._self_wrapped, self._self_instance,
                 args, kwargs, **self._self_params)
 
-class Py_FunctionWrapper(WrapperBase):
+class FunctionWrapper(_WrapperBase):
 
     def __init__(self, wrapped, wrapper, target=None, params={}):
         super(FunctionWrapper, self).__init__(wrapped, wrapper, target)
@@ -193,7 +184,7 @@ class Py_FunctionWrapper(WrapperBase):
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
         # passed explicitly as the first argument. Defer to the
-        # BoundMethodWrapper for these specific fixups when we believe
+        # _BoundMethodWrapper for these specific fixups when we believe
         # it is likely an instancemethod. That is, anytime it isn't
         # classmethod or staticmethod.
         #
@@ -223,9 +214,9 @@ class Py_FunctionWrapper(WrapperBase):
         # later.
 
         if isinstance(self._self_wrapped, (classmethod, staticmethod)):
-            self._self_wrapper_type = BoundFunctionWrapper
+            self._self_wrapper_type = _BoundFunctionWrapper
         else:
-            self._self_wrapper_type = BoundMethodWrapper
+            self._self_wrapper_type = _BoundMethodWrapper
 
     def __get__(self, instance, owner):
         descriptor = self._self_wrapped.__get__(instance, owner)
@@ -243,4 +234,9 @@ class Py_FunctionWrapper(WrapperBase):
         return self._self_wrapper(self._self_wrapped, None, args,
                 kwargs, **self._self_params)
 
-FunctionWrapper = C_FunctionWrapper or PY_FunctionWrapper
+try:
+    from ._wrappers import FunctionWrapper as C_FunctionWrapper
+    PY_FunctionWrapper = FunctionWrapper
+    FunctionWrapper = C_FunctionWrapper
+except ImportError:
+    pass
