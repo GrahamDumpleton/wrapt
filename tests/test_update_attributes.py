@@ -129,5 +129,48 @@ class TestUpdateAttributes(unittest.TestCase):
         self.assertEqual(function.__doc__, 'override_doc')
         self.assertEqual(instance.__doc__, 'override_doc')
 
+    def test_update_annotations(self):
+        @passthru_decorator
+        def function():
+            pass
+
+        if six.PY3:
+            self.assertEqual(function.__annotations__, {})
+
+        else:
+            def run(*args):
+                function.__annotations__
+
+            self.assertRaises(AttributeError, run, ())
+
+        override_annotations = { 'override_annotations': '' }
+        function.__annotations__ = override_annotations
+
+        self.assertEqual(function.__annotations__, override_annotations)
+
+    def test_update_annotations_modified_on_original(self):
+        def function():
+            pass
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        instance = wrapt.FunctionWrapper(function, wrapper)
+
+        if six.PY3:
+            self.assertEqual(instance.__annotations__, {})
+
+        else:
+            def run(*args):
+                instance.__annotations__
+
+            self.assertRaises(AttributeError, run, ())
+
+        override_annotations = { 'override_annotations': '' }
+        instance.__annotations__ = override_annotations
+
+        self.assertEqual(function.__annotations__, override_annotations)
+        self.assertEqual(instance.__annotations__, override_annotations)
+
 if __name__ == '__main__':
     unittest.main()

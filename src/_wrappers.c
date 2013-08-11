@@ -301,6 +301,32 @@ static int WraptWrapperBase_set_doc(WraptWrapperBaseObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptWrapperBase_get_annotations(
+        WraptWrapperBaseObject *self)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->wrapped, "__annotations__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptWrapperBase_set_annotations(WraptWrapperBaseObject *self,
+        PyObject *value)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return -1;
+    }
+
+    return PyObject_SetAttrString(self->wrapped, "__annotations__", value);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptWrapperBase_getattro(
         WraptWrapperBaseObject *self, PyObject *name)
 {
@@ -398,6 +424,8 @@ static PyGetSetDef WraptWrapperBase_getset[] = {
                             (setter)WraptWrapperBase_set_module, 0 },
     { "__doc__",            (getter)WraptWrapperBase_get_doc,
                             (setter)WraptWrapperBase_set_doc, 0 },
+    { "__annotations__",    (getter)WraptWrapperBase_get_annotations,
+                            (setter)WraptWrapperBase_set_annotations, 0 },
     { NULL },
 };
 
@@ -640,6 +668,8 @@ static PyGetSetDef WraptFunctionWrapper_getset[] = {
                             (setter)WraptWrapperBase_set_module, 0 },
     { "__doc__",            (getter)WraptWrapperBase_get_doc,
                             (setter)WraptWrapperBase_set_doc, 0 },
+    { "__annotations__",    (getter)WraptWrapperBase_get_annotations,
+                            (setter)WraptWrapperBase_set_annotations, 0 },
     { NULL },
 };
 
@@ -850,6 +880,8 @@ static PyGetSetDef WraptBoundFunctionWrapper_getset[] = {
                             (setter)WraptWrapperBase_set_module, 0 },
     { "__doc__",            (getter)WraptWrapperBase_get_doc,
                             (setter)WraptWrapperBase_set_doc, 0 },
+    { "__annotations__",    (getter)WraptWrapperBase_get_annotations,
+                            (setter)WraptWrapperBase_set_annotations, 0 },
     { NULL },
 };
 
@@ -1112,6 +1144,8 @@ static PyGetSetDef WraptBoundMethodWrapper_getset[] = {
                             (setter)WraptWrapperBase_set_module, 0 },
     { "__doc__",            (getter)WraptWrapperBase_get_doc,
                             (setter)WraptWrapperBase_set_doc, 0 },
+    { "__annotations__",    (getter)WraptWrapperBase_get_annotations,
+                            (setter)WraptWrapperBase_set_annotations, 0 },
     { NULL },
 };
 
