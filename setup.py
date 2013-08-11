@@ -1,7 +1,13 @@
+import os
+
 from distutils.core import setup
 from distutils.core import Extension
 
-setup(name = 'wrapt',
+with_extensions = os.environ.get('WRAPT_EXTENSIONS', 'true')
+with_extensions = (with_extensions.lower() != 'false')
+
+setup_kwargs = dict(
+      name = 'wrapt',
       version = '0.9.0',
       description = 'Module for decorators, wrappers and monkey patching.',
       author = 'Graham Dumpleton',
@@ -10,5 +16,13 @@ setup(name = 'wrapt',
       url = 'https://github.com/GrahamDumpleton/wrapt',
       packages = ['wrapt'],
       package_dir={'wrapt': 'src'},
-      ext_modules = [Extension("wrapt._wrappers", ["src/_wrappers.c"])],
      )
+
+setup_extension_kwargs = dict(
+    ext_modules = [Extension("wrapt._wrappers", ["src/_wrappers.c"])],
+)
+
+if with_extensions:
+    setup_kwargs.update(setup_extension_kwargs)
+
+setup(**setup_kwargs)
