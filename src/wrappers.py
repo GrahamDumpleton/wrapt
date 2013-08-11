@@ -61,9 +61,9 @@ class _WrapperBase(six.with_metaclass(_WrapperBaseMetaType)):
 
         try:
             if target is None:
-                object.__setattr__(self, '__qualname__', wrapped.__qualname__)
+                self.__qualname__ =  wrapped.__qualname__
             else:
-                object.__setattr__(self, '__qualname__', target.__qualname__)
+                self.__qualname__ = target.__qualname__
         except AttributeError:
             pass
 
@@ -74,15 +74,18 @@ class _WrapperBase(six.with_metaclass(_WrapperBaseMetaType)):
 
         try:
             if target is None:
-                object.__setattr__(self, '__name__', wrapped.__name__)
+                self. __name__ = wrapped.__name__
             else:
-                object.__setattr__(self, '__name__', target.__name__)
+                self.__name__ = target.__name__
         except AttributeError:
             pass
 
     def __setattr__(self, name, value):
         if name.startswith('_self_'):
             object.__setattr__(self, name, value)
+        elif name in ('__name__', '__qualname__'):
+            object.__setattr__(self, name, value)
+            setattr(self._self_wrapped, name, value)
         else:
             setattr(self._self_wrapped, name, value)
 
