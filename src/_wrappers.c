@@ -304,7 +304,7 @@ static PyObject *WraptWrapperBase_getattro(
 static int WraptWrapperBase_setattro(
         WraptWrapperBaseObject *self, PyObject *name, PyObject *value)
 {
-    static PyObject *self_prefix = NULL;
+    PyObject *self_prefix = NULL;
 
     PyObject *match = NULL;
 
@@ -313,15 +313,15 @@ static int WraptWrapperBase_setattro(
       return -1;
     }
 
-    if (!self_prefix) {
 #if PY_MAJOR_VERSION >= 3
-        self_prefix = PyUnicode_FromString("_self_");
+    self_prefix = PyUnicode_FromString("_self_");
 #else
-        self_prefix = PyString_FromString("_self_");
+    self_prefix = PyString_FromString("_self_");
 #endif
-    }
 
     match = PyEval_CallMethod(name, "startswith", "(O)", self_prefix);
+
+    Py_DECREF(self_prefix);
 
     if (match == Py_True) {
         Py_DECREF(match);
