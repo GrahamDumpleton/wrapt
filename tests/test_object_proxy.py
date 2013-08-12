@@ -140,5 +140,55 @@ class TestTypeObjectProxy(unittest.TestCase):
         self.assertEqual(wrapper.__class__, target.__class__)
         self.assertTrue(isinstance(wrapper, type(target)))
 
+class TestDirObjectProxy(unittest.TestCase):
+
+    def test_dir_of_class(self):
+        # Test preservation of class __dir__ attribute.
+
+        target = objects.Target
+        wrapper = wrapt.ObjectProxy(target)
+
+        self.assertEqual(dir(wrapper), dir(target))
+
+    def test_vars_of_class(self):
+        # Test preservation of class __dir__ attribute.
+
+        target = objects.Target
+        wrapper = wrapt.ObjectProxy(target)
+
+        self.assertEqual(vars(wrapper), vars(target))
+
+    def test_dir_of_instance(self):
+        # Test preservation of instance __dir__ attribute.
+
+        target = objects.Target()
+        wrapper = wrapt.ObjectProxy(target)
+
+        self.assertEqual(dir(wrapper), dir(target))
+
+    def test_vars_of_instance(self):
+        # Test preservation of instance __dir__ attribute.
+
+        target = objects.Target()
+        wrapper = wrapt.ObjectProxy(target)
+
+        self.assertEqual(vars(wrapper), vars(target))
+
+    def test_dir_of_function(self):
+        # Test preservation of function __dir__ attribute.
+
+        target = objects.target
+        wrapper = wrapt.ObjectProxy(target)
+
+        self.assertEqual(dir(wrapper), dir(target))
+
+    def test_vars_of_function(self):
+        # Test preservation of function __dir__ attribute.
+
+        target = objects.target
+        wrapper = wrapt.ObjectProxy(target)
+
+        self.assertEqual(vars(wrapper), vars(target))
+
 if __name__ == '__main__':
     unittest.main()

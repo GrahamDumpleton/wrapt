@@ -190,6 +190,19 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_dir(
+        WraptObjectProxyObject *self, PyObject *args)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_Dir(self->wrapped);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_wrapped(
         WraptObjectProxyObject *self, void *closure)
 {
@@ -393,6 +406,10 @@ static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static PyMethodDef WraptObjectProxy_methods[] = {
+    { "__dir__",    (PyCFunction)WraptObjectProxy_dir,  METH_NOARGS, 0 },
+};
+
 static PyGetSetDef WraptObjectProxy_getset[] = {
     { "_self_wrapped",      (getter)WraptObjectProxy_get_wrapped,
                             NULL, 0 },
@@ -439,7 +456,7 @@ PyTypeObject WraptObjectProxy_Type = {
     0,                      /*tp_weaklistoffset*/
     (getiterfunc)WraptObjectProxy_iter, /*tp_iter*/
     0,                      /*tp_iternext*/
-    0,                      /*tp_methods*/
+    WraptObjectProxy_methods, /*tp_methods*/
     0,                      /*tp_members*/
     WraptObjectProxy_getset, /*tp_getset*/
     0,                      /*tp_base*/
