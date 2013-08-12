@@ -2,7 +2,7 @@ import functools
 
 from . import six
 
-class _WrapperOverrideMethods(object):
+class _ObjectProxyMethods(object):
 
     @property
     def __module__(self):
@@ -20,10 +20,10 @@ class _WrapperOverrideMethods(object):
     def __doc__(self, value):
         self._self_wrapped.__doc__ = value
 
-class _WrapperBaseMetaType(type):
+class _ObjectProxyMetaType(type):
      def __new__(cls, name, bases, dictionary):
          # We use properties to override the values of __module__ and
-         # __doc__. If we add these in _WrapperBase, the derived class
+         # __doc__. If we add these in _ObjectProxy, the derived class
          # __dict__ will still be setup to have string variants of these
          # attributes and the rules of descriptors means that they
          # appear to take precedence over the properties in the base
@@ -31,10 +31,10 @@ class _WrapperBaseMetaType(type):
          # class type itself via a meta class. In that way the
          # properties will always take precedence.
 
-         dictionary.update(vars(_WrapperOverrideMethods))
+         dictionary.update(vars(_ObjectProxyMethods))
          return type.__new__(cls, name, bases, dictionary)
 
-class _WrapperBase(six.with_metaclass(_WrapperBaseMetaType)):
+class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
     def __init__(self, wrapped, target=None):
         self._self_wrapped = wrapped
@@ -142,7 +142,7 @@ class _WrapperBase(six.with_metaclass(_WrapperBaseMetaType)):
     def __iter__(self):
         return iter(self._self_wrapped)
 
-class _BoundFunctionWrapper(_WrapperBase):
+class _BoundFunctionWrapper(ObjectProxy):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
         super(_BoundFunctionWrapper, self).__init__(wrapped, target)
@@ -154,7 +154,7 @@ class _BoundFunctionWrapper(_WrapperBase):
         return self._self_wrapper(self._self_wrapped, self._self_instance,
                 args, kwargs, **self._self_params)
 
-class _BoundMethodWrapper(_WrapperBase):
+class _BoundMethodWrapper(ObjectProxy):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
         super(_BoundMethodWrapper, self).__init__(wrapped, target)
@@ -179,7 +179,7 @@ class _BoundMethodWrapper(_WrapperBase):
         return self._self_wrapper(self._self_wrapped, self._self_instance,
                 args, kwargs, **self._self_params)
 
-class FunctionWrapper(_WrapperBase):
+class FunctionWrapper(ObjectProxy):
 
     def __init__(self, wrapped, wrapper, target=None, params={}):
         super(FunctionWrapper, self).__init__(wrapped, target)
@@ -240,7 +240,10 @@ class FunctionWrapper(_WrapperBase):
                 kwargs, **self._self_params)
 
 try:
+    from ._wrappers import ObjectProxy as C_ObjectProxy
     from ._wrappers import FunctionWrapper as C_FunctionWrapper
+    PY_ObjectProxy = ObjectProxy
+    ObjectProxy = C_ObjectProxy
     PY_FunctionWrapper = FunctionWrapper
     FunctionWrapper = C_FunctionWrapper
 except ImportError:
