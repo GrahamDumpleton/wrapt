@@ -36,9 +36,8 @@ class _WrapperBaseMetaType(type):
 
 class _WrapperBase(six.with_metaclass(_WrapperBaseMetaType)):
 
-    def __init__(self, wrapped, wrapper, target=None):
+    def __init__(self, wrapped, target=None):
         self._self_wrapped = wrapped
-        self._self_wrapper = wrapper
 
         # Python 3.2+ has the __wrapped__ attribute which is meant to
         # hold a reference to the inner most wrapped object when there
@@ -146,8 +145,9 @@ class _WrapperBase(six.with_metaclass(_WrapperBaseMetaType)):
 class _BoundFunctionWrapper(_WrapperBase):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
-        super(_BoundFunctionWrapper, self).__init__(wrapped, wrapper, target)
+        super(_BoundFunctionWrapper, self).__init__(wrapped, target)
         self._self_instance = instance
+        self._self_wrapper = wrapper
         self._self_params = params
 
     def __call__(self, *args, **kwargs):
@@ -157,8 +157,9 @@ class _BoundFunctionWrapper(_WrapperBase):
 class _BoundMethodWrapper(_WrapperBase):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):
-        super(_BoundMethodWrapper, self).__init__(wrapped, wrapper, target)
+        super(_BoundMethodWrapper, self).__init__(wrapped, target)
         self._self_instance = instance
+        self._self_wrapper = wrapper
         self._self_params = params
 
     def __call__(self, *args, **kwargs):
@@ -181,7 +182,8 @@ class _BoundMethodWrapper(_WrapperBase):
 class FunctionWrapper(_WrapperBase):
 
     def __init__(self, wrapped, wrapper, target=None, params={}):
-        super(FunctionWrapper, self).__init__(wrapped, wrapper, target)
+        super(FunctionWrapper, self).__init__(wrapped, target)
+        self._self_wrapper = wrapper
         self._self_params = params
 
         # We need to do special fixups on the args in the case of an
