@@ -60,9 +60,9 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
         try:
             if target is None:
-                self.__qualname__ =  wrapped.__qualname__
+                object.__setattr__(self, '__qualname__', wrapped.__qualname__)
             else:
-                self.__qualname__ = target.__qualname__
+                object.__setattr__(self, '__qualname__', target.__qualname__)
         except AttributeError:
             pass
 
@@ -73,9 +73,9 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
         try:
             if target is None:
-                self. __name__ = wrapped.__name__
+                object.__setattr__(self, '__name__', wrapped.__name__)
             else:
-                self.__name__ = target.__name__
+                object.__setattr__(self, '__name__', target.__name__)
         except AttributeError:
             pass
 
