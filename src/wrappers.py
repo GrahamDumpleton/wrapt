@@ -4,6 +4,15 @@ from . import six
 
 class _ObjectProxyMethods(object):
 
+     # We use properties to override the values of __module__ and
+     # __doc__. If we add these in ObjectProxy, the derived class
+     # __dict__ will still be setup to have string variants of these
+     # attributes and the rules of descriptors means that they appear to
+     # take precedence over the properties in the base class. To avoid
+     # that, we copy the properties into the derived class type itself
+     # via a meta class. In that way the properties will always take
+     # precedence.
+
     @property
     def __module__(self):
         return self._self_wrapped.__module__
@@ -20,18 +29,22 @@ class _ObjectProxyMethods(object):
     def __doc__(self, value):
         self._self_wrapped.__doc__ = value
 
+    # We similar use a property for __dict__. We need __dict__ to be
+    # explicit to ensure that vars() works as expected.
+
+    @property
+    def __dict__(self):
+        return self._self_wrapped.__dict__
+
 class _ObjectProxyMetaType(type):
      def __new__(cls, name, bases, dictionary):
-         # We use properties to override the values of __module__ and
-         # __doc__. If we add these in _ObjectProxy, the derived class
-         # __dict__ will still be setup to have string variants of these
-         # attributes and the rules of descriptors means that they
-         # appear to take precedence over the properties in the base
-         # class. To avoid that, we copy the properties into the derived
-         # class type itself via a meta class. In that way the
-         # properties will always take precedence.
+         # Copy our special properties into the class so that they
+         # always take precedence over attributes of the same name added
+         # during construction of a derived class. This is so save
+         # duplicating them in all derived classes.
 
          dictionary.update(vars(_ObjectProxyMethods))
+
          return type.__new__(cls, name, bases, dictionary)
 
 class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
