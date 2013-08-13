@@ -155,6 +155,9 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __iter__(self):
         return iter(self._self_wrapped)
 
+    def __call__(self, *args, **kwargs):
+        return self._self_wrapped(*args, **kwargs)
+
 class _BoundFunctionWrapper(ObjectProxy):
 
     def __init__(self, wrapped, instance, wrapper, target=None, params={}):

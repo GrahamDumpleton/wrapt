@@ -190,5 +190,411 @@ class TestDirObjectProxy(unittest.TestCase):
 
         self.assertEqual(vars(wrapper), vars(target))
 
+class TestCallingObject(unittest.TestCase):
+
+    def test_function_no_args(self):
+        _args = ()
+        _kwargs = {}
+
+        def function(*args, **kwargs):
+            return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(function)
+
+        result = wrapper()
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_function_args(self):
+        _args = (1, 2)
+        _kwargs = {}
+
+        def function(*args, **kwargs):
+            return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(function)
+
+        result = wrapper(*_args)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_function_kwargs(self):
+        _args = ()
+        _kwargs = { "one": 1, "two": 2 }
+
+        def function(*args, **kwargs):
+            return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(function)
+
+        result = wrapper(**_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_function_args_plus_kwargs(self):
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def function(*args, **kwargs):
+            return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(function)
+
+        result = wrapper(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_no_args(self):
+        _args = ()
+        _kwargs = {}
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper()
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_args(self):
+        _args = (1, 2)
+        _kwargs = {}
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(*_args)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_kwargs(self):
+        _args = ()
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(**_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_args_plus_kwargs(self):
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_via_class_no_args(self):
+        _args = ()
+        _kwargs = {}
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(Class())
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_via_class_args(self):
+        _args = (1, 2)
+        _kwargs = {}
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(Class(), *_args)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_via_class_kwargs(self):
+        _args = ()
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(Class(), **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_via_class_args_plus_kwargs(self):
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(Class(), *_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_no_args(self):
+        _args = ()
+        _kwargs = {}
+
+        class Class(object):
+            @classmethod
+            def function(cls, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper()
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_args(self):
+        _args = (1, 2)
+        _kwargs = {}
+
+        class Class(object):
+            @classmethod
+            def function(cls, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(*_args)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_kwargs(self):
+        _args = ()
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            @classmethod
+            def function(cls, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(**_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_args_plus_kwargs(self):
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            @classmethod
+            def function(cls, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_via_class_no_args(self):
+        _args = ()
+        _kwargs = {}
+
+        class Class(object):
+            @classmethod
+            def function(cls, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper()
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_via_class_args(self):
+        _args = (1, 2)
+        _kwargs = {}
+
+        class Class(object):
+            @classmethod
+            def function(cls, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(*_args)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_via_class_kwargs(self):
+        _args = ()
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            @classmethod
+            def function(cls, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(**_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_via_class_args_plus_kwargs(self):
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            @classmethod
+            def function(cls, *args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_no_args(self):
+        _args = ()
+        _kwargs = {}
+
+        class Class(object):
+            @staticmethod
+            def function(*args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper()
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_args(self):
+        _args = (1, 2)
+        _kwargs = {}
+
+        class Class(object):
+            @staticmethod
+            def function(*args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(*_args)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_kwargs(self):
+        _args = ()
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            @staticmethod
+            def function(*args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(**_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_args_plus_kwargs(self):
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            @staticmethod
+            def function(*args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class().function)
+
+        result = wrapper(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_via_class_no_args(self):
+        _args = ()
+        _kwargs = {}
+
+        class Class(object):
+            @staticmethod
+            def function(*args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper()
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_via_class_args(self):
+        _args = (1, 2)
+        _kwargs = {}
+
+        class Class(object):
+            @staticmethod
+            def function(*args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(*_args)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_via_class_kwargs(self):
+        _args = ()
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            @staticmethod
+            def function(*args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(**_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_via_class_args_plus_kwargs(self):
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        class Class(object):
+            @staticmethod
+            def function(*args, **kwargs):
+                return args, kwargs
+
+        wrapper = wrapt.ObjectProxy(Class.function)
+
+        result = wrapper(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
 if __name__ == '__main__':
     unittest.main()
