@@ -41,3 +41,6 @@ nosetests.xml
 
 # Editor save files.
 .*.swp
+
+# Sphinx documentation.
+docs/_build
