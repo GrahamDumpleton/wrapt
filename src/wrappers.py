@@ -40,8 +40,8 @@ class _ObjectProxyMetaType(type):
      def __new__(cls, name, bases, dictionary):
          # Copy our special properties into the class so that they
          # always take precedence over attributes of the same name added
-         # during construction of a derived class. This is so save
-         # duplicating them in all derived classes.
+         # during construction of a derived class. This is to save
+         # duplicating the implementation for them in all derived classes.
 
          dictionary.update(vars(_ObjectProxyMethods))
 
