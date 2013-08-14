@@ -19,6 +19,16 @@ def target():
 objects = imp.new_module('objects')
 six.exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
+class TestAttributeAccess(unittest.TestCase):
+
+    def test_attributes(self):
+        def function1(*args, **kwargs):
+            return args, kwargs
+        function2 = wrapt.ObjectProxy(function1)
+
+        self.assertEqual(function2._self_wrapped, function1)
+        self.assertEqual(function2._self_target, function1)
+
 class TestNamingObjectProxy(unittest.TestCase):
 
     def test_class_object_name(self):
