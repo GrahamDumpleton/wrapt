@@ -421,6 +421,7 @@ static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self)
 
 static PyMethodDef WraptObjectProxy_methods[] = {
     { "__dir__",    (PyCFunction)WraptObjectProxy_dir,  METH_NOARGS, 0 },
+    { NULL, NULL },
 };
 
 static PyGetSetDef WraptObjectProxy_getset[] = {
