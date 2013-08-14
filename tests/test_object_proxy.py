@@ -606,5 +606,16 @@ class TestCallingObject(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
+class TesIterObjectProxy(unittest.TestCase):
+
+    def test_iteration(self):
+        items = [1, 2]
+
+        wrapper = wrapt.ObjectProxy(items)
+
+        result = [x for x in wrapper]
+
+        self.assertEqual(result, items)
+
 if __name__ == '__main__':
     unittest.main()
