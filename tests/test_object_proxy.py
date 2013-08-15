@@ -606,7 +606,7 @@ class TestCallingObject(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
-class TesIterObjectProxy(unittest.TestCase):
+class TestIterObjectProxy(unittest.TestCase):
 
     def test_iteration(self):
         items = [1, 2]
