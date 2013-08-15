@@ -216,6 +216,56 @@ static PyObject *WraptObjectProxy_dir(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_enter(
+        WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *method = NULL;
+    PyObject *result = NULL;
+
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    method = PyObject_GetAttrString(self->wrapped, "__enter__");
+
+    if (!method)
+        return NULL;
+
+    result = PyEval_CallObjectWithKeywords(method, args, kwds);
+
+    Py_XDECREF(method);
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_exit(
+        WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *method = NULL;
+    PyObject *result = NULL;
+
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    method = PyObject_GetAttrString(self->wrapped, "__exit__");
+
+    if (!method)
+        return NULL;
+
+    result = PyEval_CallObjectWithKeywords(method, args, kwds);
+
+    Py_XDECREF(method);
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_module(
         WraptObjectProxyObject *self)
 {
@@ -421,6 +471,10 @@ static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self)
 
 static PyMethodDef WraptObjectProxy_methods[] = {
     { "__dir__",    (PyCFunction)WraptObjectProxy_dir,  METH_NOARGS, 0 },
+    { "__enter__",  (PyCFunctionWithKeywords)WraptObjectProxy_enter,
+                    METH_VARARGS | METH_KEYWORDS, 0 },
+    { "__exit__",   (PyCFunctionWithKeywords)WraptObjectProxy_exit,
+                    METH_VARARGS | METH_KEYWORDS, 0 },
     { NULL, NULL },
 };
 

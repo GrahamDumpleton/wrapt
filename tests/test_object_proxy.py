@@ -617,5 +617,22 @@ class TestIterObjectProxy(unittest.TestCase):
 
         self.assertEqual(result, items)
 
+class TestContextManagerObjectProxy(unittest.TestCase):
+
+    def test_context_manager(self):
+
+        class Class(object):
+            def __enter__(self):
+                return self
+            def __exit__(*args, **kwargs):
+                return
+
+        instance = Class()
+
+        wrapper = wrapt.ObjectProxy(instance)
+
+        with wrapper:
+            pass
+
 if __name__ == '__main__':
     unittest.main()
