@@ -190,6 +190,18 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static long WraptObjectProxy_hash(WraptObjectProxyObject *self)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return -1;
+    }
+
+    return PyObject_Hash(self->wrapped);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_call(
         WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -509,7 +521,7 @@ PyTypeObject WraptObjectProxy_Type = {
     0,                      /*tp_as_number*/
     0,                      /*tp_as_sequence*/
     0,                      /*tp_as_mapping*/
-    0,                      /*tp_hash*/
+    (hashfunc)WraptObjectProxy_hash, /*tp_hash*/
     (ternaryfunc)WraptObjectProxy_call, /*tp_call*/
     0,                      /*tp_str*/
     (getattrofunc)WraptObjectProxy_getattro, /*tp_getattro*/

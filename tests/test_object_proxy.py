@@ -620,7 +620,6 @@ class TestIterObjectProxy(unittest.TestCase):
 class TestContextManagerObjectProxy(unittest.TestCase):
 
     def test_context_manager(self):
-
         class Class(object):
             def __enter__(self):
                 return self
@@ -633,6 +632,15 @@ class TestContextManagerObjectProxy(unittest.TestCase):
 
         with wrapper:
             pass
+
+class TestEqualityObjectProxy(unittest.TestCase):
+
+    def test_object_hash(self):
+        def function1(*args, **kwargs):
+            return args, kwargs
+        function2 = wrapt.ObjectProxy(function1)
+
+        self.assertEqual(hash(function2), hash(function1))
 
 if __name__ == '__main__':
     unittest.main()
