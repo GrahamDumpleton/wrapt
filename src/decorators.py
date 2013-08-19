@@ -9,16 +9,38 @@ from .wrappers import FunctionWrapper
 from .exceptions import (UnexpectedDefaultParameters,
         MissingDefaultParameter, UnexpectedParameters)
 
+# Copy name attributes from a wrapped function onto an wrapper. This is
+# only used in mapping the name from the final wrapped function to which
+# an adapter is applied onto the adapter itself. All other details come
+# from the adapter function via the function wrapper so we don't update
+# __dict__ or __wrapped__.
+
+def _update_adapter(wrapper, target):
+    for attr in ('__module__', '__name__', '__qualname__'):
+        try:
+            value = getattr(target, attr)
+        except AttributeError:
+            pass
+        else:
+            setattr(wrapper, attr, value)
+
+# Decorators for creating other decorators. These decorators and the
+# wrappers which they use are designed to properly preserve any name
+# attributes, function signatures etc, in addition to the wrappers
+# themselves acting like a transparent proxy for the original wrapped
+# function so they the wrapper is effectively indistinguishable from
+# the original wrapped function.
+
 WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
 def decorator(wrapper=None, target=None, **default_params):
     # The decorator works out whether the user decorator will have its
     # own parameters. Parameters for the user decorator must always
     # be specified using keyword arguments and must always have
-    # defaults. The user cannot use 'wrapper' or 'adapter' for their
+    # defaults. The user cannot use 'wrapper' or 'target' for their
     # own parameters as we use them ourselves and so they are
     # effectively reserved. The 'wrapper' argument being how the
-    # user's wrapper function is passed in. The 'adapter' argument
+    # user's wrapper function is passed in. The 'target' argument
     # is used to optionally denote a function which is an adapter,
     # which changes the effective prototype of the wrapped function.
     # The latter is used to ensure that any function argument
@@ -111,8 +133,11 @@ def decorator(wrapper=None, target=None, **default_params):
                 # combines the parameters with the wrapped function.
 
                 def _wrapper(func):
-                    return FunctionWrapper(wrapped=func, wrapper=wrapper,
-                            target=target, params=complete_params)
+                    result = FunctionWrapper(wrapped=func, wrapper=wrapper,
+                            params=complete_params)
+                    if target:
+                        _update_adapter(result, target)
+                    return result
                 return _wrapper
 
             # Here is where the partial wrapper is returned. This is
@@ -126,8 +151,10 @@ def decorator(wrapper=None, target=None, **default_params):
 
             @wraps(wrapper)
             def _wrapper(func):
-                return FunctionWrapper(wrapped=func, wrapper=wrapper,
-                        target=target)
+                result = FunctionWrapper(wrapped=func, wrapper=wrapper)
+                if target:
+                    _update_adapter(result, target)
+                return result
             return _wrapper
 
     else:

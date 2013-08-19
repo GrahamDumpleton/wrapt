@@ -27,7 +27,28 @@ class TestAttributeAccess(unittest.TestCase):
         function2 = wrapt.ObjectProxy(function1)
 
         self.assertEqual(function2._self_wrapped, function1)
-        self.assertEqual(function2._self_target, function1)
+
+    def test_get_wrapped(self):
+        def function1(*args, **kwargs):
+            return args, kwargs
+        function2 = wrapt.ObjectProxy(function1)
+
+        self.assertEqual(function2.__wrapped__, function1)
+
+        function3 = wrapt.ObjectProxy(function2)
+
+        self.assertEqual(function3.__wrapped__, function1)
+
+    def test_set_wrapped(self):
+        def function1(*args, **kwargs):
+            return args, kwargs
+        function2 = wrapt.ObjectProxy(function1)
+
+        self.assertEqual(function2.__wrapped__, function1)
+
+        function2.__wrapped__ = None
+
+        self.assertEqual(function2.__wrapped__, None)
 
 class TestNamingObjectProxy(unittest.TestCase):
 

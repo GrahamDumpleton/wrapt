@@ -49,33 +49,15 @@ class _ObjectProxyMetaType(type):
 
 class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
-    def __init__(self, wrapped, target=None):
+    def __init__(self, wrapped):
         self._self_wrapped = wrapped
-
-        # Python 3.2+ has the __wrapped__ attribute which is meant to
-        # hold a reference to the inner most wrapped object when there
-        # are multiple decorators. We handle __wrapped__ and also
-        # duplicate that functionality for Python 2, although it will
-        # only go as far as what is below our own wrappers when there is
-        # more than one for Python 2.
-
-        if target is None:
-            try:
-                self._self_target = wrapped.__wrapped__
-            except AttributeError:
-                self._self_target = wrapped
-        else:
-            self._self_target = target
 
         # Python 3.2+ has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
         # be an actual string object instead.
 
         try:
-            if target is None:
-                object.__setattr__(self, '__qualname__', wrapped.__qualname__)
-            else:
-                object.__setattr__(self, '__qualname__', target.__qualname__)
+            object.__setattr__(self, '__qualname__', wrapped.__qualname__)
         except AttributeError:
             pass
 
@@ -85,10 +67,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         # if overriding it as a property is sufficient in all cases.
 
         try:
-            if target is None:
-                object.__setattr__(self, '__name__', wrapped.__name__)
-            else:
-                object.__setattr__(self, '__name__', target.__name__)
+            object.__setattr__(self, '__name__', wrapped.__name__)
         except AttributeError:
             pass
 
@@ -122,7 +101,10 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
     @property
     def __wrapped__(self):
-        return self._self_target
+        try:
+            return self._self_wrapped.__wrapped__
+        except AttributeError:
+            return self._self_wrapped
 
     @__wrapped__.setter
     def __wrapped__(self, value):
@@ -169,8 +151,8 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
 class _BoundFunctionWrapper(ObjectProxy):
 
-    def __init__(self, wrapped, instance, wrapper, target=None, params={}):
-        super(_BoundFunctionWrapper, self).__init__(wrapped, target)
+    def __init__(self, wrapped, instance, wrapper, params={}):
+        super(_BoundFunctionWrapper, self).__init__(wrapped)
         self._self_instance = instance
         self._self_wrapper = wrapper
         self._self_params = params
@@ -181,8 +163,8 @@ class _BoundFunctionWrapper(ObjectProxy):
 
 class _BoundMethodWrapper(ObjectProxy):
 
-    def __init__(self, wrapped, instance, wrapper, target=None, params={}):
-        super(_BoundMethodWrapper, self).__init__(wrapped, target)
+    def __init__(self, wrapped, instance, wrapper, params={}):
+        super(_BoundMethodWrapper, self).__init__(wrapped)
         self._self_instance = instance
         self._self_wrapper = wrapper
         self._self_params = params
@@ -206,8 +188,8 @@ class _BoundMethodWrapper(ObjectProxy):
 
 class FunctionWrapper(ObjectProxy):
 
-    def __init__(self, wrapped, wrapper, target=None, params={}):
-        super(FunctionWrapper, self).__init__(wrapped, target)
+    def __init__(self, wrapped, wrapper, params={}):
+        super(FunctionWrapper, self).__init__(wrapped)
         self._self_wrapper = wrapper
         self._self_params = params
 
@@ -244,15 +226,15 @@ class FunctionWrapper(ObjectProxy):
         # later.
 
         if isinstance(self._self_wrapped, (classmethod, staticmethod)):
-            self._self_wrapper_type = _BoundFunctionWrapper
+            self._self_bound_type = _BoundFunctionWrapper
         else:
-            self._self_wrapper_type = _BoundMethodWrapper
+            self._self_bound_type = _BoundMethodWrapper
 
     def __get__(self, instance, owner):
         descriptor = self._self_wrapped.__get__(instance, owner)
 
-        return self._self_wrapper_type(descriptor, instance,
-                self._self_wrapper, self._self_target, self._self_params)
+        return self._self_bound_type(descriptor, instance, self._self_wrapper,
+                self._self_params)
 
     def __call__(self, *args, **kwargs):
         # This is invoked when the wrapped function is being called as a

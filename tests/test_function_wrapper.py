@@ -89,9 +89,8 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2._self_wrapped, function1)
         self.assertEqual(function2._self_wrapper, decorator1)
-        self.assertEqual(function2._self_target, function1)
         self.assertEqual(function2._self_params, {})
-        self.assertNotEqual(function2._self_wrapper_type, None)
+        self.assertNotEqual(function2._self_bound_type, None)
 
     def test_instancemethod_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
@@ -105,9 +104,8 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2._self_wrapped, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertEqual(function2._self_target, function1)
             self.assertEqual(function2._self_params, {})
-            self.assertNotEqual(function2._self_wrapper_type, None)
+            self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
 
@@ -129,9 +127,8 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2._self_wrapped, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertEqual(function2._self_target, function1)
             self.assertEqual(function2._self_params, {})
-            self.assertNotEqual(function2._self_wrapper_type, None)
+            self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
 
@@ -153,9 +150,8 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2._self_wrapped, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertEqual(function2._self_target, function1)
             self.assertEqual(function2._self_params, {})
-            self.assertNotEqual(function2._self_wrapper_type, None)
+            self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
 

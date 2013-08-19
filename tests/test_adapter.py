@@ -2,26 +2,36 @@ from __future__ import print_function
 
 import unittest
 import inspect
+import imp
 
 import wrapt
 
-def function1(arg):
-    '''documentation'''
-    return arg
+from wrapt import six
 
-function1o = function1
+DECORATORS_CODE = """
+import wrapt
 
 def adapter1(func):
     @wrapt.adapter(target=func)
     def _adapter(arg):
-        """adapter documentation"""
-        return func()
+        '''adapter documentation'''
+        return func(arg, arg)
     return _adapter
+"""
 
-@adapter1
-def function1(arg):
+decorators = imp.new_module('decorators')
+six.exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+
+def function1(arg1, arg2):
     '''documentation'''
-    return arg
+    return arg1, arg2
+
+function1o = function1
+
+@decorators.adapter1
+def function1(arg1, arg2):
+    '''documentation'''
+    return arg1, arg2
 
 function1d = function1
 
@@ -54,11 +64,14 @@ class TestNamingAdapter(unittest.TestCase):
         self.assertEqual(function1d.__doc__, 'adapter documentation')
 
     def test_argspec(self):
-        # Test preservation of function argument specification.
+        # Test preservation of function argument specification. It
+        # actually needs to match that of the adapter function.
 
-        function1o_argspec = inspect.getargspec(function1o)
+        def _adapter(arg): pass
+
+        function1a_argspec = inspect.getargspec(_adapter)
         function1d_argspec = inspect.getargspec(function1d)
-        self.assertEqual(function1o_argspec, function1d_argspec)
+        self.assertEqual(function1a_argspec, function1d_argspec)
 
     def test_isinstance(self):
         # Test preservation of isinstance() checks.
