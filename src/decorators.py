@@ -33,22 +33,18 @@ def _update_adapter(wrapper, target):
 
 WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
-def decorator(wrapper=None, target=None, **default_params):
+def decorator(_wrapt_wrapper=None, _wrapt_target=None,
+        **_wrapt_default_params):
     # The decorator works out whether the user decorator will have its
-    # own parameters. Parameters for the user decorator must always
-    # be specified using keyword arguments and must always have
-    # defaults. The user cannot use 'wrapper' or 'target' for their
-    # own parameters as we use them ourselves and so they are
-    # effectively reserved. The 'wrapper' argument being how the
-    # user's wrapper function is passed in. The 'target' argument
-    # is used to optionally denote a function which is an adapter,
-    # which changes the effective prototype of the wrapped function.
-    # The latter is used to ensure that any function argument
-    # specification returned by the final result of any decorator is
-    # correct and reflects that of the adapter and not the wrapped
-    # function.
+    # own parameters. Parameters for the user decorator must avoid any
+    # keyword arguments starting with '_wrapt_' as that is reserved for
+    # our own use. Our 'wrapper' argument being how the user's wrapper
+    # function is passed in. The 'target' argument is used to optionally
+    # denote a function which is wrapped by an adapter decorator. In
+    # that case the name attrributes are copied from the target function
+    # rather than those of the adapter function.
 
-    if wrapper is not None:
+    if _wrapt_wrapper is not None:
         # The wrapper has been provided, so we must also have any
         # optional default keyword parameters for the user decorator
         # at this point if they were supplied. Before constructing
@@ -57,9 +53,9 @@ def decorator(wrapper=None, target=None, **default_params):
         # function expects.
 
         expected_arglist = WRAPPER_ARGLIST
-        complete_arglist = getargspec(wrapper).args
+        complete_arglist = getargspec(_wrapt_wrapper).args
 
-        received_names = set(default_params.keys())
+        received_names = set(_wrapt_default_params.keys())
         expected_names = complete_arglist[len(expected_arglist):]
 
         for name in expected_names:
@@ -68,11 +64,11 @@ def decorator(wrapper=None, target=None, **default_params):
             except KeyError:
                 raise MissingDefaultParameter('Expected value for '
                         'default parameter %r was not supplied for '
-                        'decorator %r.' % (name, wrapper.__name__))
+                        'decorator %r.' % (name, _wrapt_wrapper.__name__))
         if received_names:
             raise UnexpectedDefaultParameters('Unexpected default '
                     'parameters %r supplied for decorator %r.' % (
-                    list(received_names), wrapper.__name__))
+                    list(received_names), _wrapt_wrapper.__name__))
 
         # If we do have default parameters, the final decorator we
         # create needs to be constructed a bit differently as when
@@ -87,7 +83,7 @@ def decorator(wrapper=None, target=None, **default_params):
             # parameters, return a partial wrapper to collect the
             # parameters.
 
-            @wraps(wrapper)
+            @wraps(_wrapt_wrapper)
             def _partial(*decorator_args, **decorator_kwargs):
                 # Since the supply of parameters is optional due to
                 # having defaults, we need to construct a final set
@@ -105,26 +101,26 @@ def decorator(wrapper=None, target=None, **default_params):
                     raise UnexpectedParameters('Expected at most %r '
                             'positional parameters for decorator %r, '
                             'but received %r.' % (len(expected_names),
-                             wrapper.__name__, len(decorator_args)))
+                             _wrapt_wrapper.__name__, len(decorator_args)))
 
                 unexpected_params = []
                 for name in decorator_kwargs:
-                    if name not in default_params:
+                    if name not in _wrapt_default_params:
                         unexpected_params.append(name)
 
                 if unexpected_params:
                     raise UnexpectedParameters('Unexpected parameters '
                             '%r supplied for decorator %r.' % (
-                            unexpected_params, wrapper.__name__))
+                            unexpected_params, _wrapt_wrapper.__name__))
 
-                complete_params = dict(default_params)
+                complete_params = dict(_wrapt_default_params)
 
                 for i, arg in enumerate(decorator_args):
                     if expected_names[i] in decorator_kwargs:
                         raise UnexpectedParameters('Positional parameter '
                                 '%r also supplied as keyword parameter '
                                 'to decorator %r.' % (expected_names[i],
-                                wrapper.__name__))
+                                _wrapt_wrapper.__name__))
                     decorator_kwargs[expected_names[i]] = arg
 
                 complete_params.update(decorator_kwargs)
@@ -133,10 +129,10 @@ def decorator(wrapper=None, target=None, **default_params):
                 # combines the parameters with the wrapped function.
 
                 def _wrapper(func):
-                    result = FunctionWrapper(wrapped=func, wrapper=wrapper,
-                            params=complete_params)
-                    if target:
-                        _update_adapter(result, target)
+                    result = FunctionWrapper(wrapped=func,
+                            wrapper=_wrapt_wrapper, params=complete_params)
+                    if _wrapt_target:
+                        _update_adapter(result, _wrapt_target)
                     return result
                 return _wrapper
 
@@ -149,11 +145,11 @@ def decorator(wrapper=None, target=None, **default_params):
             # No parameters so create and return the final wrapper.
             # This is effectively the users decorator.
 
-            @wraps(wrapper)
+            @wraps(_wrapt_wrapper)
             def _wrapper(func):
-                result = FunctionWrapper(wrapped=func, wrapper=wrapper)
-                if target:
-                    _update_adapter(result, target)
+                result = FunctionWrapper(wrapped=func, wrapper=_wrapt_wrapper)
+                if _wrapt_target:
+                    _update_adapter(result, _wrapt_target)
                 return result
             return _wrapper
 
@@ -164,10 +160,11 @@ def decorator(wrapper=None, target=None, **default_params):
         # a partial using the collected default parameters and the
         # adapter function if one is being used.
 
-        return partial(decorator, target=target, **default_params)
+        return partial(decorator, _wrapt_target=_wrapt_target,
+                **_wrapt_default_params)
 
 def adapter(target):
-    @decorator(target=target)
+    @decorator(_wrapt_target=target)
     def wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
     return wrapper
