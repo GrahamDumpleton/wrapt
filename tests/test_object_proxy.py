@@ -684,22 +684,28 @@ class TestEqualityObjectProxy(unittest.TestCase):
         three = wrapt.ObjectProxy(3)
 
         self.assertTrue(two > 1)
-        self.assertTrue(two > one)
         self.assertTrue(two >= 1)
-        self.assertTrue(two >= one)
-
         self.assertTrue(two < 3)
-        self.assertTrue(two < three)
         self.assertTrue(two <= 3)
-        self.assertTrue(two <= three)
-
         self.assertTrue(two != 1)
-        self.assertTrue(two != one)
-        self.assertTrue(two != 3)
-        self.assertTrue(two != three)
-
         self.assertTrue(two == 2)
-        self.assertTrue(two <= two)
+        self.assertTrue(two != 3)
+
+        self.assertTrue(2 > one)
+        self.assertTrue(2 >= one)
+        self.assertTrue(2 < three)
+        self.assertTrue(2 <= three)
+        self.assertTrue(2 != one)
+        self.assertTrue(2 == two)
+        self.assertTrue(2 != three)
+
+        self.assertTrue(two > one)
+        self.assertTrue(two >= one)
+        self.assertTrue(two < three)
+        self.assertTrue(two <= three)
+        self.assertTrue(two != one)
+        self.assertTrue(two == two)
+        self.assertTrue(two != three)
 
 if __name__ == '__main__':
     unittest.main()
