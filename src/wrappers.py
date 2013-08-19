@@ -131,20 +131,29 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __dir__(self):
         return dir(self._self_wrapped)
 
+    def __lt__(self, other):
+        return self._self_wrapped < other
+
+    def __gt__(self, other):
+        return self._self_wrapped > other
+
+    def __le__(self, other):
+        return self._self_wrapped <= other
+
+    def __ge__(self, other):
+        return self._self_wrapped >= other
+
     def __eq__(self, other):
-        return self._self_target == other
+        return self._self_wrapped == other
 
     def __ne__(self, other):
-        result = self.__eq__(other)
-        if result is NotImplemented:
-            return result
-        return not result
+        return self._self_wrapped != other
 
     def __hash__(self):
-        return hash(self._self_target)
+        return hash(self._self_wrapped)
 
     def __repr__(self):
-        return '<%s for %s>' % (type(self).__name__, str(self._self_target))
+        return '<%s for %s>' % (type(self).__name__, str(self._self_wrapped))
 
     def __enter__(self):
         return self._self_wrapped.__enter__()

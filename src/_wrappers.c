@@ -469,6 +469,19 @@ static int WraptObjectProxy_setattro(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_richcompare(WraptObjectProxyObject *self,
+        PyObject *other, int opcode)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_RichCompare(self->wrapped, other, opcode);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self)
 {
     if (!self->wrapped) {
@@ -532,7 +545,7 @@ PyTypeObject WraptObjectProxy_Type = {
     0,                      /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
-    0,                      /*tp_richcompare*/
+    (richcmpfunc)WraptObjectProxy_richcompare, /*tp_richcompare*/
     0,                      /*tp_weaklistoffset*/
     (getiterfunc)WraptObjectProxy_iter, /*tp_iter*/
     0,                      /*tp_iternext*/

@@ -642,5 +642,43 @@ class TestEqualityObjectProxy(unittest.TestCase):
 
         self.assertEqual(hash(function2), hash(function1))
 
+    def test_mapping_key(self):
+        def function1(*args, **kwargs):
+            return args, kwargs
+        function2 = wrapt.ObjectProxy(function1)
+
+        table = dict()
+        table[function1] = True
+
+        self.assertTrue(table.get(function2))
+
+        table = dict()
+        table[function2] = True
+
+        self.assertTrue(table.get(function1))
+
+    def test_comparison(self):
+        one = wrapt.ObjectProxy(1)
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertTrue(two > 1)
+        self.assertTrue(two > one)
+        self.assertTrue(two >= 1)
+        self.assertTrue(two >= one)
+
+        self.assertTrue(two < 3)
+        self.assertTrue(two < three)
+        self.assertTrue(two <= 3)
+        self.assertTrue(two <= three)
+
+        self.assertTrue(two != 1)
+        self.assertTrue(two != one)
+        self.assertTrue(two != 3)
+        self.assertTrue(two != three)
+
+        self.assertTrue(two == 2)
+        self.assertTrue(two <= two)
+
 if __name__ == '__main__':
     unittest.main()
