@@ -461,9 +461,9 @@ static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self)
 
 static PyMethodDef WraptObjectProxy_methods[] = {
     { "__dir__",    (PyCFunction)WraptObjectProxy_dir,  METH_NOARGS, 0 },
-    { "__enter__",  (PyCFunctionWithKeywords)WraptObjectProxy_enter,
+    { "__enter__",  (PyCFunction)WraptObjectProxy_enter,
                     METH_VARARGS | METH_KEYWORDS, 0 },
-    { "__exit__",   (PyCFunctionWithKeywords)WraptObjectProxy_exit,
+    { "__exit__",   (PyCFunction)WraptObjectProxy_exit,
                     METH_VARARGS | METH_KEYWORDS, 0 },
     { NULL, NULL },
 };
