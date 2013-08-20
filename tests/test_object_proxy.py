@@ -714,5 +714,20 @@ class TestEqualityObjectProxy(unittest.TestCase):
         self.assertTrue(two == two)
         self.assertTrue(two != three)
 
+class TestAsNumberObjectProxy(unittest.TestCase):
+
+    def test_nonzero(self):
+        true = wrapt.ObjectProxy(True)
+        false = wrapt.ObjectProxy(False)
+
+        self.assertTrue(true)
+        self.assertFalse(false)
+
+        self.assertTrue(bool(true))
+        self.assertFalse(bool(false))
+
+        self.assertTrue(not false)
+        self.assertFalse(not true)
+
 if __name__ == '__main__':
     unittest.main()

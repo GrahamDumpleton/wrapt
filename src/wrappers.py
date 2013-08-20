@@ -131,6 +131,12 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __ne__(self, other):
         return self._self_wrapped != other
 
+    def __nonzero__(self):
+        return bool(self._self_wrapped)
+
+    def __bool__(self):
+        return bool(self._self_wrapped)
+
     def __hash__(self):
         return hash(self._self_wrapped)
 

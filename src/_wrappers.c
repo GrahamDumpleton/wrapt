@@ -159,6 +159,18 @@ static PyObject *WraptObjectProxy_call(
 
 /* ------------------------------------------------------------------------- */
 
+static int WraptObjectProxy_bool(WraptObjectProxyObject *self)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return -1;
+    }
+
+    return PyObject_IsTrue(self->wrapped);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_dir(
         WraptObjectProxyObject *self, PyObject *args)
 {
@@ -459,6 +471,56 @@ static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static PyNumberMethods WraptObjectProxy_as_number = {
+    0,                      /*nb_add*/
+    0,                      /*nb_subtract*/
+    0,                      /*nb_multiply*/
+#if PY_MAJOR_VERSION < 3
+    0,                      /*nb_divide*/
+#endif
+    0,                      /*nb_remainder*/
+    0,                      /*nb_divmod*/
+    0,                      /*nb_power*/
+    0,                      /*nb_negative*/
+    0,                      /*nb_positive*/
+    0,                      /*nb_absolute*/
+    (inquiry)WraptObjectProxy_bool, /*nb_nonzero/nb_bool*/
+    0,                      /*nb_invert*/
+    0,                      /*nb_lshift*/
+    0,                      /*nb_rshift*/
+    0,                      /*nb_and*/
+    0,                      /*nb_xor*/
+    0,                      /*nb_or*/
+#if PY_MAJOR_VERSION < 3
+    0,                      /*nb_coerce*/
+#endif
+    0,                      /*nb_int*/
+    0,                      /*nb_long*/
+    0,                      /*nb_float*/
+#if PY_MAJOR_VERSION < 3
+    0,                      /*nb_oct*/
+    0,                      /*nb_hex*/
+#endif
+    0,                      /*nb_inplace_add*/
+    0,                      /*nb_inplace_subtract*/
+    0,                      /*nb_inplace_multiply*/
+#if PY_MAJOR_VERSION < 3
+    0,                      /*nb_inplace_divide*/
+#endif
+    0,                      /*nb_inplace_remainder*/
+    0,                      /*nb_inplace_power*/
+    0,                      /*nb_inplace_lshift*/
+    0,                      /*nb_inplace_rshift*/
+    0,                      /*nb_inplace_and*/
+    0,                      /*nb_inplace_xor*/
+    0,                      /*nb_inplace_or*/
+    0,                      /*nb_floor_divide*/
+    0,                      /*nb_true_divide*/
+    0,                      /*nb_inplace_floor_divide*/
+    0,                      /*nb_inplace_true_divide*/
+    0,                      /*nb_index*/
+};
+
 static PyMethodDef WraptObjectProxy_methods[] = {
     { "__dir__",    (PyCFunction)WraptObjectProxy_dir,  METH_NOARGS, 0 },
     { "__enter__",  (PyCFunction)WraptObjectProxy_enter,
@@ -496,7 +558,7 @@ PyTypeObject WraptObjectProxy_Type = {
     0,                      /*tp_setattr*/
     0,                      /*tp_compare*/
     0,                      /*tp_repr*/
-    0,                      /*tp_as_number*/
+    &WraptObjectProxy_as_number, /*tp_as_number*/
     0,                      /*tp_as_sequence*/
     0,                      /*tp_as_mapping*/
     (hashfunc)WraptObjectProxy_hash, /*tp_hash*/
