@@ -8,7 +8,10 @@ import wrapt
 from wrapt import six
 
 OBJECTS_CODE = """
-class Target(object):
+class TargetBaseClass(object):
+    "documentation"
+
+class Target(TargetBaseClass):
     "documentation"
 
 def target():
@@ -151,6 +154,7 @@ class TestTypeObjectProxy(unittest.TestCase):
         wrapper = wrapt.ObjectProxy(target)
 
         self.assertEqual(wrapper.__class__, target.__class__)
+
         self.assertTrue(isinstance(wrapper, type(target)))
 
     def test_class_of_instance(self):
@@ -160,7 +164,9 @@ class TestTypeObjectProxy(unittest.TestCase):
         wrapper = wrapt.ObjectProxy(target)
 
         self.assertEqual(wrapper.__class__, target.__class__)
-        self.assertTrue(isinstance(wrapper, type(target)))
+
+        self.assertTrue(isinstance(wrapper, objects.Target))
+        self.assertTrue(isinstance(wrapper, objects.TargetBaseClass))
 
     def test_class_of_function(self):
         # Test preservation of function __class__ attribute.
@@ -169,6 +175,7 @@ class TestTypeObjectProxy(unittest.TestCase):
         wrapper = wrapt.ObjectProxy(target)
 
         self.assertEqual(wrapper.__class__, target.__class__)
+
         self.assertTrue(isinstance(wrapper, type(target)))
 
 class TestDirObjectProxy(unittest.TestCase):
