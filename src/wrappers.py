@@ -1,4 +1,5 @@
 import functools
+import operator
 
 from . import six
 
@@ -71,18 +72,6 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         except AttributeError:
             pass
 
-    def __setattr__(self, name, value):
-        if name.startswith('_self_'):
-            object.__setattr__(self, name, value)
-        elif name in ('__name__', '__qualname__'):
-            object.__setattr__(self, name, value)
-            setattr(self._self_wrapped, name, value)
-        else:
-            setattr(self._self_wrapped, name, value)
-
-    def __getattr__(self, name):
-        return getattr(self._self_wrapped, name)
-
     @property
     def __class__(self):
         return self._self_wrapped.__class__
@@ -113,17 +102,14 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __dir__(self):
         return dir(self._self_wrapped)
 
+    def __repr__(self):
+        return '<%s for %s>' % (type(self).__name__, str(self._self_wrapped))
+
     def __lt__(self, other):
         return self._self_wrapped < other
 
-    def __gt__(self, other):
-        return self._self_wrapped > other
-
     def __le__(self, other):
         return self._self_wrapped <= other
-
-    def __ge__(self, other):
-        return self._self_wrapped >= other
 
     def __eq__(self, other):
         return self._self_wrapped == other
@@ -131,17 +117,185 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __ne__(self, other):
         return self._self_wrapped != other
 
+    def __gt__(self, other):
+        return self._self_wrapped > other
+
+    def __ge__(self, other):
+        return self._self_wrapped >= other
+
+    def __hash__(self):
+        return hash(self._self_wrapped)
+
     def __nonzero__(self):
         return bool(self._self_wrapped)
 
     def __bool__(self):
         return bool(self._self_wrapped)
 
-    def __hash__(self):
-        return hash(self._self_wrapped)
+    def __setattr__(self, name, value):
+        if name.startswith('_self_'):
+            object.__setattr__(self, name, value)
+        elif name in ('__name__', '__qualname__'):
+            object.__setattr__(self, name, value)
+            setattr(self._self_wrapped, name, value)
+        else:
+            setattr(self._self_wrapped, name, value)
 
-    def __repr__(self):
-        return '<%s for %s>' % (type(self).__name__, str(self._self_wrapped))
+    def __getattr__(self, name):
+        return getattr(self._self_wrapped, name)
+
+    def __add__(self, other):
+        return self._self_wrapped + other
+
+    def __sub__(self, other):
+        return self._self_wrapped - other
+
+    def __mul__(self, other):
+        return self._self_wrapped * other
+
+    def __div__(self, other):
+        return operator.__div__(self._self_wrapped, other)
+
+    def __truediv__(self, other):
+        return operator.__truediv__(self._self_wrapped, other)
+
+    def __floordiv__(self, other):
+        return self._self_wrapped // other
+
+    def __mod__(self, other):
+        return self._self_wrapped ^ other
+
+    def __divmod__(self, other):
+        return operator.__divmod__(self._self_wrapped, other)
+
+    def __pow__(self, other, *args):
+        return pow(self._self_wrapped, other, *args)
+
+    def __lshift__(self, other):
+        return self._self_wrapped << other
+
+    def __rshift__(self, other):
+        return self._self_wrapped >> other
+
+    def __and__(self, other):
+        return self._self_wrapped & other
+
+    def __xor__(self, other):
+        return self._self_wrapped ^ other
+
+    def __or__(self, other):
+        return self._self_wrapped | other
+
+    def __radd__(self, other):
+        return operator.__radd__(self._self_wrapped, other)
+
+    def __rsub__(self, other):
+        return operator.__rsub__(self._self_wrapped, other)
+
+    def __rmul__(self, other):
+        return operator.__rmul__(self._self_wrapped, other)
+
+    def __rdiv__(self, other):
+        return operator.__rdiv__(self._self_wrapped, other)
+
+    def __rtruediv__(self, other):
+        return operator.__rtruediv__(self._self_wrapped, other)
+
+    def __rfloordiv__(self, other):
+        return operator.__rfloordiv__(self._self_wrapped, other)
+
+    def __rmod__(self, other):
+        return operator.__rmod__(self._self_wrapped, other)
+
+    def __rdivmod__(self, other):
+        return operator.__rdivmod__(self._self_wrapped, other)
+
+    def __rpow__(self, other):
+        return operator.__rpow__(self._self_wrapped, other)
+
+    def __rlshift__(self, other):
+        return operator.__rlshift__(self._self_wrapped, other)
+
+    def __rrshift__(self, other):
+        return operator.__rrshift__(self._self_wrapped, other)
+
+    def __rand__(self, other):
+        return operator.__rand__(self._self_wrapped, other)
+
+    def __rxor__(self, other):
+        return operator.__rxor__(self._self_wrapped, other)
+
+    def __ror__(self, other):
+        return operator.__ror__(self._self_wrapped, other)
+
+    def __iadd__(self, other):
+        self._self_wrapped += other
+
+    def __isub__(self, other):
+        self._self_wrapped -= other
+
+    def __imul__(self, other):
+        self._self_wrapped *= other
+
+    def __idiv__(self, other):
+        operator.__idiv__(self._self_wrapped, other)
+
+    def __itruediv__(self, other):
+        operator.__itruediv__(self._self_wrapped, other)
+
+    def __ifloordiv__(self, other):
+        self._self_wrapped //= other
+
+    def __imod__(self, other):
+        self._self_wrapped %= other
+
+    def __ipow__(self, other, *args):
+        self._self_wrapped.__ipow__(other, *args)
+
+    def __ilshift__(self, other):
+        self._self_wrapped <<= other
+
+    def __irshift__(self, other):
+        self._self_wrapped >>= other
+
+    def __iand__(self, other):
+        self._self_wrapped &= other
+
+    def __ixor__(self, other):
+        self._self_wrapped ^= other
+
+    def __ior__(self, other):
+        self._self_wrapped |= other
+
+    def __neg__(self):
+        return -self._self_wrapped
+
+    def __pos__(self):
+        return +self._self_wrapped
+
+    def __abs__(self):
+        return abs(self._self_wrapped)
+
+    def __invert__(self):
+        return ~self._self_wrapped
+
+    def __int__(self):
+        return int(self._self_wrapped)
+
+    def __long__(self):
+        return long(self._self_wrapped)
+
+    def __float__(self):
+        return float(self._self_wrapped)
+
+    def __oct__(self):
+        return oct(self._self_wrapped)
+
+    def __hex__(self):
+        return hex(self._self_wrapped)
+
+    def __index__(self):
+        return operator.__index__(self._self_wrapped)
 
     def __enter__(self):
         return self._self_wrapped.__enter__()
