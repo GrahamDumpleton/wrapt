@@ -2,6 +2,10 @@ from __future__ import print_function
 
 import unittest
 import imp
+import operator
+import sys
+
+is_pypy = '__pypy__' in sys.builtin_module_names
 
 import wrapt
 
@@ -728,6 +732,299 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         self.assertTrue(not false)
         self.assertFalse(not true)
+
+    def test_int(self):
+        one = wrapt.ObjectProxy(1)
+
+        self.assertEqual(int(one), 1)
+
+        if not six.PY3:
+            self.assertEqual(long(one), 1)
+
+    def test_float(self):
+        one = wrapt.ObjectProxy(1)
+
+        self.assertEqual(float(one), 1.0)
+
+    def test_add(self):
+        one = wrapt.ObjectProxy(1)
+        two = wrapt.ObjectProxy(2)
+
+        self.assertEqual(one+two, 1+2)
+        self.assertEqual(1+two, 1+2)
+        self.assertEqual(one+2, 1+2)
+        
+    def test_sub(self):
+        one = wrapt.ObjectProxy(1)
+        two = wrapt.ObjectProxy(2)
+
+        self.assertEqual(one-two, 1-2)
+        self.assertEqual(1-two, 1-2)
+        self.assertEqual(one-2, 1-2)
+
+    def test_mul(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(two*three, 2*3)
+        self.assertEqual(2*three, 2*3)
+        self.assertEqual(two*3, 2*3)
+
+    def test_div(self):
+        # On Python 2 this will pick up div and on Python
+        # 3 it will pick up truediv.
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(two/three, 2/3)
+        self.assertEqual(2/three, 2/3)
+        self.assertEqual(two/3, 2/3)
+
+    def test_mod(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(three//two, 3//2)
+        self.assertEqual(3//two, 3//2)
+        self.assertEqual(three//2, 3//2)
+
+    def test_mod(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(three%two, 3%2)
+        self.assertEqual(3%two, 3%2)
+        self.assertEqual(three%2, 3%2)
+
+    def test_divmod(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(divmod(three, two), divmod(3, 2))
+        self.assertEqual(divmod(3, two), divmod(3, 2))
+        self.assertEqual(divmod(three, 2), divmod(3, 2))
+
+    def test_pow(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(three**two, pow(3, 2))
+        self.assertEqual(3**two, pow(3, 2))
+        self.assertEqual(three**2, pow(3, 2))
+
+        self.assertEqual(pow(three, two), pow(3, 2))
+        self.assertEqual(pow(3, two), pow(3, 2))
+        self.assertEqual(pow(three, 2), pow(3, 2))
+
+        # Only PyPy implements __rpow__ for ternary pow().
+
+        if is_pypy:
+            self.assertEqual(pow(three, two, 2), pow(3, 2, 2))
+            self.assertEqual(pow(3, two, 2), pow(3, 2, 2))
+
+        self.assertEqual(pow(three, 2, 2), pow(3, 2, 2))
+
+    def test_lshift(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(three<<two, 3<<2)
+        self.assertEqual(3<<two, 3<<2)
+        self.assertEqual(three<<2, 3<<2)
+
+    def test_rshift(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(three>>two, 3>>2)
+        self.assertEqual(3>>two, 3>>2)
+        self.assertEqual(three>>2, 3>>2)
+
+    def test_and(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(three&two, 3&2)
+        self.assertEqual(3&two, 3&2)
+        self.assertEqual(three&2, 3&2)
+
+    def test_xor(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(three^two, 3^2)
+        self.assertEqual(3^two, 3^2)
+        self.assertEqual(three^2, 3^2)
+
+    def test_or(self):
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+
+        self.assertEqual(three|two, 3|2)
+        self.assertEqual(3|two, 3|2)
+        self.assertEqual(three|2, 3|2)
+
+    def test_iadd(self):
+        value = wrapt.ObjectProxy(1)
+        one = wrapt.ObjectProxy(1)
+
+        value += 1
+        self.assertEqual(value, 2)
+
+        value += one
+        self.assertEqual(value, 3)
+
+    def test_isub(self):
+        value = wrapt.ObjectProxy(1)
+        one = wrapt.ObjectProxy(1)
+
+        value -= 1
+        self.assertEqual(value, 0)
+
+        value -= one
+        self.assertEqual(value, -1)
+
+    def test_imul(self):
+        value = wrapt.ObjectProxy(2)
+        two = wrapt.ObjectProxy(2)
+
+        value *= 2
+        self.assertEqual(value, 4)
+
+        value *= two
+        self.assertEqual(value, 8)
+
+    def test_idiv(self):
+        # On Python 2 this will pick up div and on Python
+        # 3 it will pick up truediv.
+
+        value = wrapt.ObjectProxy(2)
+        two = wrapt.ObjectProxy(2)
+
+        value /= 2
+        self.assertEqual(value, 2/2)
+
+        value /= two
+        self.assertEqual(value, 2/2/2)
+
+    def test_ifloordiv(self):
+        value = wrapt.ObjectProxy(2)
+        two = wrapt.ObjectProxy(2)
+
+        value //= 2
+        self.assertEqual(value, 2//2)
+
+        value //= two
+        self.assertEqual(value, 2//2//2)
+
+    def test_imod(self):
+        value = wrapt.ObjectProxy(10)
+        two = wrapt.ObjectProxy(2)
+
+        value %= 2
+        self.assertEqual(value, 10%2)
+
+        value %= two
+        self.assertEqual(value, 10%2%2)
+
+    def test_ipow(self):
+        value = wrapt.ObjectProxy(10)
+        two = wrapt.ObjectProxy(2)
+
+        value **= 2
+        self.assertEqual(value, 10**2)
+
+        value **= two
+        self.assertEqual(value, 10**2**2)
+
+    def test_ilshift(self):
+        value = wrapt.ObjectProxy(256)
+        two = wrapt.ObjectProxy(2)
+
+        value <<= 2
+        self.assertEqual(value, 256<<2)
+
+        value <<= two
+        self.assertEqual(value, 256<<2<<2)
+
+    def test_irshift(self):
+        value = wrapt.ObjectProxy(2)
+        two = wrapt.ObjectProxy(2)
+
+        value >>= 2
+        self.assertEqual(value, 2>>2)
+
+        value >>= two
+        self.assertEqual(value, 2>>2>>2)
+
+    def test_iand(self):
+        value = wrapt.ObjectProxy(1)
+        two = wrapt.ObjectProxy(2)
+
+        value &= 2
+        self.assertEqual(value, 1&2)
+
+        value &= two
+        self.assertEqual(value, 1&2&2)
+
+    def test_ixor(self):
+        value = wrapt.ObjectProxy(1)
+        two = wrapt.ObjectProxy(2)
+
+        value ^= 2
+        self.assertEqual(value, 1^2)
+
+        value ^= two
+        self.assertEqual(value, 1^2^2)
+
+    def test_ior(self):
+        value = wrapt.ObjectProxy(1)
+        two = wrapt.ObjectProxy(2)
+
+        value |= 2
+        self.assertEqual(value, 1|2)
+
+        value |= two
+        self.assertEqual(value, 1|2|2)
+
+    def test_neg(self):
+        value = wrapt.ObjectProxy(1)
+
+        self.assertEqual(-value, -1)
+
+    def test_pos(self):
+        value = wrapt.ObjectProxy(1)
+
+        self.assertEqual(+value, 1)
+
+    def test_abs(self):
+        value = wrapt.ObjectProxy(-1)
+
+        self.assertEqual(abs(value), 1)
+
+    def test_invert(self):
+        value = wrapt.ObjectProxy(1)
+
+        self.assertEqual(~value, ~1)
+
+    def test_oct(self):
+        value = wrapt.ObjectProxy(20)
+
+        self.assertEqual(oct(value), oct(20))
+
+    def test_hex(self):
+        value = wrapt.ObjectProxy(20)
+
+        self.assertEqual(hex(value), hex(20))
+
+    def test_index(self):
+        value = wrapt.ObjectProxy(20)
+
+        # PyPy doesn't implement operator.__index__().
+
+        if not is_pypy:
+            self.assertEqual(value.__index__(), operator.__index__(20))
 
 if __name__ == '__main__':
     unittest.main()

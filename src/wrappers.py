@@ -166,7 +166,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return self._self_wrapped ^ other
 
     def __divmod__(self, other):
-        return operator.__divmod__(self._self_wrapped, other)
+        return divmod(self._self_wrapped, other)
 
     def __pow__(self, other, *args):
         return pow(self._self_wrapped, other, *args)
@@ -187,85 +187,96 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return self._self_wrapped | other
 
     def __radd__(self, other):
-        return operator.__radd__(self._self_wrapped, other)
+        return other + self._self_wrapped
 
     def __rsub__(self, other):
-        return operator.__rsub__(self._self_wrapped, other)
+        return other - self._self_wrapped
 
     def __rmul__(self, other):
-        return operator.__rmul__(self._self_wrapped, other)
+        return other * self._self_wrapped
 
     def __rdiv__(self, other):
-        return operator.__rdiv__(self._self_wrapped, other)
+        return operator.__div__(other, self._self_wrapped)
 
     def __rtruediv__(self, other):
-        return operator.__rtruediv__(self._self_wrapped, other)
+        return operator.__truediv__(other, self._self_wrapped)
 
     def __rfloordiv__(self, other):
-        return operator.__rfloordiv__(self._self_wrapped, other)
+        return other // self._self_wrapped
 
     def __rmod__(self, other):
-        return operator.__rmod__(self._self_wrapped, other)
+        return other % self._self_wrapped
 
     def __rdivmod__(self, other):
-        return operator.__rdivmod__(self._self_wrapped, other)
+        return divmod(other, self._self_wrapped)
 
-    def __rpow__(self, other):
-        return operator.__rpow__(self._self_wrapped, other)
+    def __rpow__(self, other, *args):
+        return pow(other, self._self_wrapped, *args)
 
     def __rlshift__(self, other):
-        return operator.__rlshift__(self._self_wrapped, other)
+        return other << self._self_wrapped
 
     def __rrshift__(self, other):
-        return operator.__rrshift__(self._self_wrapped, other)
+        return other >> self._self_wrapped
 
     def __rand__(self, other):
-        return operator.__rand__(self._self_wrapped, other)
+        return other & self._self_wrapped
 
     def __rxor__(self, other):
-        return operator.__rxor__(self._self_wrapped, other)
+        return other ^ self._self_wrapped
 
     def __ror__(self, other):
-        return operator.__ror__(self._self_wrapped, other)
+        return other | self._self_wrapped
 
     def __iadd__(self, other):
         self._self_wrapped += other
+        return self
 
     def __isub__(self, other):
         self._self_wrapped -= other
+        return self
 
     def __imul__(self, other):
         self._self_wrapped *= other
+        return self
 
     def __idiv__(self, other):
-        operator.__idiv__(self._self_wrapped, other)
+        return operator.__idiv__(self._self_wrapped, other)
 
     def __itruediv__(self, other):
-        operator.__itruediv__(self._self_wrapped, other)
+        return operator.__itruediv__(self._self_wrapped, other)
 
     def __ifloordiv__(self, other):
         self._self_wrapped //= other
+        return self
 
     def __imod__(self, other):
         self._self_wrapped %= other
+        return self
 
-    def __ipow__(self, other, *args):
-        self._self_wrapped.__ipow__(other, *args)
+    def __ipow__(self, other):
+        self._self_wrapped **= other
+        return self
 
     def __ilshift__(self, other):
         self._self_wrapped <<= other
+        return self
 
     def __irshift__(self, other):
         self._self_wrapped >>= other
+        return self
 
     def __iand__(self, other):
         self._self_wrapped &= other
+        return self
 
     def __ixor__(self, other):
         self._self_wrapped ^= other
+        return self
 
     def __ior__(self, other):
         self._self_wrapped |= other
+        return self
 
     def __neg__(self):
         return -self._self_wrapped
