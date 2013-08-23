@@ -322,23 +322,26 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
 class _BoundFunctionWrapper(ObjectProxy):
 
-    def __init__(self, wrapped, instance, wrapper, params={}):
+    def __init__(self, wrapped, instance, wrapper, args=(), kwargs={}):
         super(_BoundFunctionWrapper, self).__init__(wrapped)
         self._self_instance = instance
         self._self_wrapper = wrapper
-        self._self_params = params
+        self._self_wrapper_args = args
+        self._self_wrapper_kwargs = kwargs
 
     def __call__(self, *args, **kwargs):
         return self._self_wrapper(self._self_wrapped, self._self_instance,
-                args, kwargs, **self._self_params)
+                args, kwargs, *self._self_wrapper_args,
+                **self._self_wrapper_kwargs)
 
 class _BoundMethodWrapper(ObjectProxy):
 
-    def __init__(self, wrapped, instance, wrapper, params={}):
+    def __init__(self, wrapped, instance, wrapper, args=(), kwargs={}):
         super(_BoundMethodWrapper, self).__init__(wrapped)
         self._self_instance = instance
         self._self_wrapper = wrapper
-        self._self_params = params
+        self._self_wrapper_args = args
+        self._self_wrapper_kwargs = kwargs
 
     def __call__(self, *args, **kwargs):
         if self._self_instance is None:
@@ -352,17 +355,19 @@ class _BoundMethodWrapper(ObjectProxy):
             instance, args = args[0], args[1:]
             wrapped = functools.partial(self._self_wrapped, instance)
             return self._self_wrapper(wrapped, instance, args, kwargs,
-                    **self._self_params)
+                    *self._self_wrapper_args, **self._self_wrapper_kwargs)
 
         return self._self_wrapper(self._self_wrapped, self._self_instance,
-                args, kwargs, **self._self_params)
+                args, kwargs, *self._self_wrapper_args,
+                **self._self_wrapper_kwargs)
 
 class FunctionWrapper(ObjectProxy):
 
-    def __init__(self, wrapped, wrapper, params={}):
+    def __init__(self, wrapped, wrapper, args=(), kwargs={}):
         super(FunctionWrapper, self).__init__(wrapped)
         self._self_wrapper = wrapper
-        self._self_params = params
+        self._self_wrapper_args = args
+        self._self_wrapper_kwargs = kwargs
 
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
@@ -405,7 +410,7 @@ class FunctionWrapper(ObjectProxy):
         descriptor = self._self_wrapped.__get__(instance, owner)
 
         return self._self_bound_type(descriptor, instance, self._self_wrapper,
-                self._self_params)
+                self._self_wrapper_args, self._self_wrapper_kwargs)
 
     def __call__(self, *args, **kwargs):
         # This is invoked when the wrapped function is being called as a
@@ -415,7 +420,7 @@ class FunctionWrapper(ObjectProxy):
         # using the staticmethod decorator.
 
         return self._self_wrapper(self._self_wrapped, None, args,
-                kwargs, **self._self_params)
+                kwargs, *self._self_wrapper_args, **self._self_wrapper_kwargs)
 
 try:
     from ._wrappers import ObjectProxy as C_ObjectProxy

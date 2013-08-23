@@ -21,7 +21,8 @@ PyTypeObject WraptObjectProxy_Type;
 typedef struct {
     WraptObjectProxyObject object_proxy;
     PyObject *wrapper;
-    PyObject *params;
+    PyObject *wrapper_args;
+    PyObject *wrapper_kwargs;
     PyObject *bound_type;
 } WraptFunctionWrapperObject;
 
@@ -31,7 +32,8 @@ typedef struct {
     WraptObjectProxyObject object_proxy;
     PyObject *instance;
     PyObject *wrapper;
-    PyObject *params;
+    PyObject *wrapper_args;
+    PyObject *wrapper_kwargs;
 } WraptBoundFunctionWrapperObject;
 
 PyTypeObject WraptBoundFunctionWrapper_Type;
@@ -40,7 +42,8 @@ typedef struct {
     WraptObjectProxyObject object_proxy;
     PyObject *instance;
     PyObject *wrapper;
-    PyObject *params;
+    PyObject *wrapper_args;
+    PyObject *wrapper_kwargs;
 } WraptBoundMethodWrapperObject;
 
 PyTypeObject WraptBoundMethodWrapper_Type;
@@ -1160,8 +1163,7 @@ PyTypeObject WraptObjectProxy_Type = {
     (setattrofunc)WraptObjectProxy_setattro, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
 #if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-            Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
 #else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
 #endif
@@ -1201,7 +1203,8 @@ static PyObject *WraptFunctionWrapper_new(PyTypeObject *type,
         return NULL;
 
     self->wrapper = NULL;
-    self->params = NULL;
+    self->wrapper_args = NULL;
+    self->wrapper_kwargs = NULL;
     self->bound_type = NULL;
 
     return (PyObject *)self;
@@ -1214,26 +1217,29 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 {
     PyObject *wrapped = NULL;
     PyObject *wrapper = NULL;
-    PyObject *params = NULL;
+    PyObject *wrapper_args = NULL;
+    PyObject *wrapper_kwargs = NULL;
 
     PyObject *base_args = NULL;
     PyObject *base_kwds = NULL;
 
     int result = 0;
 
-    static char *kwlist[] = { "wrapped", "wrapper", "params", NULL };
+    static char *kwlist[] = { "wrapped", "wrapper", "args", "kwargs", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O:FunctionWrapper",
-            kwlist, &wrapped, &wrapper, &params)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|OO:FunctionWrapper",
+            kwlist, &wrapped, &wrapper, &wrapper_args, &wrapper_kwargs)) {
         return -1;
     }
 
     Py_XDECREF(self->wrapper);
-    Py_XDECREF(self->params);
+    Py_XDECREF(self->wrapper_args);
+    Py_XDECREF(self->wrapper_kwargs);
     Py_XDECREF(self->bound_type);
 
     self->wrapper = NULL;
-    self->params = NULL;
+    self->wrapper_args = NULL;
+    self->wrapper_kwargs = NULL;
     self->bound_type = NULL;
 
     base_args = PyTuple_Pack(1, wrapped);
@@ -1246,12 +1252,19 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
         Py_INCREF(wrapper);
         self->wrapper = wrapper;
 
-        if (params) {
-            Py_INCREF(params);
-            self->params = params;
+        if (wrapper_args) {
+            Py_INCREF(wrapper_args);
+            self->wrapper_args = wrapper_args;
         }
         else
-            self->params = PyDict_New();
+            self->wrapper_args = PyTuple_New(0);
+
+        if (wrapper_kwargs) {
+            Py_INCREF(wrapper_kwargs);
+            self->wrapper_kwargs = wrapper_kwargs;
+        }
+        else
+            self->wrapper_kwargs = PyDict_New();
 
         if (PyObject_IsInstance(wrapped,
                 (PyObject *)&PyClassMethod_Type) || PyObject_IsInstance(
@@ -1276,7 +1289,8 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 static void WraptFunctionWrapper_dealloc(WraptFunctionWrapperObject *self)
 {
     Py_XDECREF(self->wrapper);
-    Py_XDECREF(self->params);
+    Py_XDECREF(self->wrapper_args);
+    Py_XDECREF(self->wrapper_kwargs);
     Py_XDECREF(self->bound_type);
 
     WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
@@ -1292,16 +1306,35 @@ static PyObject *WraptFunctionWrapper_call(
 
     PyObject *result = NULL;
 
+    int len = 0;
+    int i = 0;
+
     if (!kwds) {
         param_kwds = PyDict_New();
         kwds = param_kwds;
     }
 
-    call_args = PyTuple_Pack(4, self->object_proxy.wrapped, Py_None,
-            args, kwds);
+    len = PySequence_Size(self->wrapper_args);
+    call_args = PyTuple_New(len+4);
+
+    Py_INCREF(self->object_proxy.wrapped);
+    Py_INCREF(Py_None);
+    Py_INCREF(args);
+    Py_INCREF(kwds);
+
+    PyTuple_SET_ITEM(call_args, 0, self->object_proxy.wrapped);
+    PyTuple_SET_ITEM(call_args, 1, Py_None);
+    PyTuple_SET_ITEM(call_args, 2, args);
+    PyTuple_SET_ITEM(call_args, 3, kwds);
+
+    for (i=0; i<len; i++) {
+        PyObject *item = PyTuple_GetItem(self->wrapper_args, i);
+        Py_INCREF(item);
+        PyTuple_SET_ITEM(call_args, i+4, item);
+    }
 
     result = PyEval_CallObjectWithKeywords(self->wrapper, call_args,
-            self->params);
+            self->wrapper_kwargs);
 
     Py_DECREF(call_args);
     Py_XDECREF(param_kwds);
@@ -1326,8 +1359,9 @@ static PyObject *WraptFunctionWrapper_descr_get(
         type = Py_None;
 
     if (descriptor) {
-        result = PyObject_CallFunction(self->bound_type, "(OOOO)",
-                descriptor, obj, self->wrapper, self->params);
+        result = PyObject_CallFunction(self->bound_type, "(OOOOO)",
+                descriptor, obj, self->wrapper, self->wrapper_args,
+                self->wrapper_kwargs);
     }
 
     Py_XDECREF(descriptor);
@@ -1351,16 +1385,30 @@ static PyObject *WraptFunctionWrapper_get_self_wrapper(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptFunctionWrapper_get_self_params(
+static PyObject *WraptFunctionWrapper_get_self_wrapper_args(
         WraptFunctionWrapperObject *self, void *closure)
 {
-    if (!self->params) {
+    if (!self->wrapper_args) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    Py_INCREF(self->params);
-    return self->params;
+    Py_INCREF(self->wrapper_args);
+    return self->wrapper_args;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptFunctionWrapper_get_self_wrapper_kwargs(
+        WraptFunctionWrapperObject *self, void *closure)
+{
+    if (!self->wrapper_kwargs) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    Py_INCREF(self->wrapper_kwargs);
+    return self->wrapper_kwargs;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1386,7 +1434,9 @@ static PyGetSetDef WraptFunctionWrapper_getset[] = {
                             (setter)WraptObjectProxy_set_doc, 0 },
     { "_self_wrapper",      (getter)WraptFunctionWrapper_get_self_wrapper,
                             NULL, 0 },
-    { "_self_params",       (getter)WraptFunctionWrapper_get_self_params,
+    { "_self_wrapper_args", (getter)WraptFunctionWrapper_get_self_wrapper_args,
+                            NULL, 0 },
+    { "_self_wrapper_kwargs", (getter)WraptFunctionWrapper_get_self_wrapper_kwargs,
                             NULL, 0 },
     { "_self_bound_type",   (getter)WraptFunctionWrapper_get_self_bound_type,
                             NULL, 0 },
@@ -1415,8 +1465,7 @@ PyTypeObject WraptFunctionWrapper_Type = {
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
 #if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-            Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
 #else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
 #endif
@@ -1457,7 +1506,8 @@ static PyObject *WraptBoundFunctionWrapper_new(PyTypeObject *type,
 
     self->instance = NULL;
     self->wrapper = NULL;
-    self->params = NULL;
+    self->wrapper_args = NULL;
+    self->wrapper_kwargs = NULL;
 
     return (PyObject *)self;
 }
@@ -1470,7 +1520,8 @@ static int WraptBoundFunctionWrapper_init(
     PyObject *wrapped = NULL;
     PyObject *instance = NULL;
     PyObject *wrapper = NULL;
-    PyObject *params = NULL;
+    PyObject *wrapper_args = NULL;
+    PyObject *wrapper_kwargs = NULL;
 
     PyObject *base_args = NULL;
     PyObject *base_kwds = NULL;
@@ -1478,21 +1529,23 @@ static int WraptBoundFunctionWrapper_init(
     int result = 0;
 
     static char *kwlist[] = { "wrapped", "instance", "wrapper",
-        "params", NULL };
+        "args", "kwargs", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-            "OOO|O:BoundFunctionWrapper", kwlist, &wrapped, &instance,
-            &wrapper, &params)) {
+            "OOO|OO:BoundFunctionWrapper", kwlist, &wrapped, &instance,
+            &wrapper, &wrapper_args, &wrapper_kwargs)) {
         return -1;
     }
 
     Py_XDECREF(self->instance);
     Py_XDECREF(self->wrapper);
-    Py_XDECREF(self->params);
+    Py_XDECREF(self->wrapper_args);
+    Py_XDECREF(self->wrapper_kwargs);
 
     self->instance = NULL;
     self->wrapper = NULL;
-    self->params = NULL;
+    self->wrapper_args = NULL;
+    self->wrapper_kwargs = NULL;
 
     base_args = PyTuple_Pack(1, wrapped);
     base_kwds = PyDict_New();
@@ -1507,12 +1560,19 @@ static int WraptBoundFunctionWrapper_init(
         Py_INCREF(wrapper);
         self->wrapper = wrapper;
 
-        if (params) {
-            Py_INCREF(params);
-            self->params = params;
+        if (wrapper_args) {
+            Py_INCREF(wrapper_args);
+            self->wrapper_args = wrapper_args;
         }
         else
-            self->params = PyDict_New();
+            self->wrapper_args = PyTuple_New(0);
+
+        if (wrapper_kwargs) {
+            Py_INCREF(wrapper_kwargs);
+            self->wrapper_kwargs = wrapper_kwargs;
+        }
+        else
+            self->wrapper_kwargs = PyDict_New();
     }
 
     Py_DECREF(base_args);
@@ -1528,7 +1588,8 @@ static void WraptBoundFunctionWrapper_dealloc(
 {
     Py_XDECREF(self->instance);
     Py_XDECREF(self->wrapper);
-    Py_XDECREF(self->params);
+    Py_XDECREF(self->wrapper_args);
+    Py_XDECREF(self->wrapper_kwargs);
 
     WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
 }
@@ -1543,16 +1604,35 @@ static PyObject *WraptBoundFunctionWrapper_call(
 
     PyObject *result = NULL;
 
+    int len = 0;
+    int i = 0;
+
     if (!kwds) {
         param_kwds = PyDict_New();
         kwds = param_kwds;
     }
 
-    call_args = PyTuple_Pack(4, self->object_proxy.wrapped, self->instance,
-            args, kwds);
+    len = PySequence_Size(self->wrapper_args);
+    call_args = PyTuple_New(len+4);
+
+    Py_INCREF(self->object_proxy.wrapped);
+    Py_INCREF(self->instance);
+    Py_INCREF(args);
+    Py_INCREF(kwds);
+
+    PyTuple_SET_ITEM(call_args, 0, self->object_proxy.wrapped);
+    PyTuple_SET_ITEM(call_args, 1, self->instance);
+    PyTuple_SET_ITEM(call_args, 2, args);
+    PyTuple_SET_ITEM(call_args, 3, kwds);
+
+    for (i=0; i<len; i++) {
+        PyObject *item = PyTuple_GetItem(self->wrapper_args, i);
+        Py_INCREF(item);
+        PyTuple_SET_ITEM(call_args, i+4, item);
+    }
 
     result = PyEval_CallObjectWithKeywords(self->wrapper, call_args,
-            self->params);
+            self->wrapper_kwargs);
 
     Py_DECREF(call_args);
     Py_XDECREF(param_kwds);
@@ -1590,16 +1670,30 @@ static PyObject *WraptBoundFunctionWrapper_get_self_wrapper(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptBoundFunctionWrapper_get_self_params(
+static PyObject *WraptBoundFunctionWrapper_get_self_wrapper_args(
         WraptBoundFunctionWrapperObject *self, void *closure)
 {
-    if (!self->params) {
+    if (!self->wrapper_args) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    Py_INCREF(self->params);
-    return self->params;
+    Py_INCREF(self->wrapper_args);
+    return self->wrapper_args;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptBoundFunctionWrapper_get_self_wrapper_kwargs(
+        WraptBoundFunctionWrapperObject *self, void *closure)
+{
+    if (!self->wrapper_kwargs) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    Py_INCREF(self->wrapper_kwargs);
+    return self->wrapper_kwargs;
 }
 
 /* ------------------------------------------------------------------------- */;
@@ -1613,7 +1707,9 @@ static PyGetSetDef WraptBoundFunctionWrapper_getset[] = {
                             NULL, 0 },
     { "_self_wrapper",      (getter)WraptBoundFunctionWrapper_get_self_wrapper,
                             NULL, 0 },
-    { "_self_params",       (getter)WraptBoundFunctionWrapper_get_self_params,
+    { "_self_wrapper_args", (getter)WraptBoundFunctionWrapper_get_self_wrapper_args,
+                            NULL, 0 },
+    { "_self_wrapper_kwargs", (getter)WraptBoundFunctionWrapper_get_self_wrapper_kwargs,
                             NULL, 0 },
     { NULL },
 };
@@ -1640,8 +1736,7 @@ PyTypeObject WraptBoundFunctionWrapper_Type = {
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
 #if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-            Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
 #else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
 #endif
@@ -1682,7 +1777,8 @@ static PyObject *WraptBoundMethodWrapper_new(PyTypeObject *type,
 
     self->instance = NULL;
     self->wrapper = NULL;
-    self->params = NULL;
+    self->wrapper_args = NULL;
+    self->wrapper_kwargs = NULL;
 
     return (PyObject *)self;
 }
@@ -1695,7 +1791,8 @@ static int WraptBoundMethodWrapper_init(
     PyObject *wrapped = NULL;
     PyObject *instance = NULL;
     PyObject *wrapper = NULL;
-    PyObject *params = NULL;
+    PyObject *wrapper_args = NULL;
+    PyObject *wrapper_kwargs = NULL;
 
     PyObject *base_args = NULL;
     PyObject *base_kwds = NULL;
@@ -1703,21 +1800,23 @@ static int WraptBoundMethodWrapper_init(
     int result = 0;
 
     static char *kwlist[] = { "wrapped", "instance", "wrapper",
-        "params", NULL };
+        "args", "kwargs", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-            "OOO|O:BoundMethodWrapper", kwlist, &wrapped, &instance,
-            &wrapper, &params)) {
+            "OOO|OO:BoundMethodWrapper", kwlist, &wrapped, &instance,
+            &wrapper, &wrapper_args, &wrapper_kwargs)) {
         return -1;
     }
 
     Py_XDECREF(self->instance);
     Py_XDECREF(self->wrapper);
-    Py_XDECREF(self->params);
+    Py_XDECREF(self->wrapper_args);
+    Py_XDECREF(self->wrapper_kwargs);
 
     self->instance = NULL;
     self->wrapper = NULL;
-    self->params = NULL;
+    self->wrapper_args = NULL;
+    self->wrapper_kwargs = NULL;
 
     base_args = PyTuple_Pack(1, wrapped);
     base_kwds = PyDict_New();
@@ -1732,12 +1831,19 @@ static int WraptBoundMethodWrapper_init(
         Py_INCREF(wrapper);
         self->wrapper = wrapper;
 
-        if (params) {
-            Py_INCREF(params);
-            self->params = params;
+        if (wrapper_args) {
+            Py_INCREF(wrapper_args);
+            self->wrapper_args = wrapper_args;
         }
         else
-            self->params = PyDict_New();
+            self->wrapper_args = PyTuple_New(0);
+
+        if (wrapper_kwargs) {
+            Py_INCREF(wrapper_kwargs);
+            self->wrapper_kwargs = wrapper_kwargs;
+        }
+        else
+            self->wrapper_kwargs = PyDict_New();
     }
 
     Py_DECREF(base_args);
@@ -1753,7 +1859,8 @@ static void WraptBoundMethodWrapper_dealloc(
 {
     Py_XDECREF(self->instance);
     Py_XDECREF(self->wrapper);
-    Py_XDECREF(self->params);
+    Py_XDECREF(self->wrapper_args);
+    Py_XDECREF(self->wrapper_kwargs);
 
     WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
 }
@@ -1771,6 +1878,9 @@ static PyObject *WraptBoundMethodWrapper_call(
     PyObject *instance = NULL;
 
     PyObject *result = NULL;
+
+    int len = 0;
+    int i = 0;
 
     if (self->instance == Py_None) {
         PyObject *module = NULL;
@@ -1819,15 +1929,34 @@ static PyObject *WraptBoundMethodWrapper_call(
         kwds = param_kwds;
     }
 
+    len = PySequence_Size(self->wrapper_args);
+    call_args = PyTuple_New(len+4);
+
     if (!wrapped) {
-        call_args = PyTuple_Pack(4, self->object_proxy.wrapped, instance,
-                args, kwds);
+        Py_INCREF(self->object_proxy.wrapped);
+        PyTuple_SET_ITEM(call_args, 0, self->object_proxy.wrapped);
     }
-    else
-        call_args = PyTuple_Pack(4, wrapped, instance, args, kwds);
+    else {
+        Py_INCREF(wrapped);
+        PyTuple_SET_ITEM(call_args, 0, wrapped);
+    }
+
+    Py_INCREF(instance);
+    Py_INCREF(args);
+    Py_INCREF(kwds);
+
+    PyTuple_SET_ITEM(call_args, 1, instance);
+    PyTuple_SET_ITEM(call_args, 2, args);
+    PyTuple_SET_ITEM(call_args, 3, kwds);
+
+    for (i=0; i<len; i++) {
+        PyObject *item = PyTuple_GetItem(self->wrapper_args, i);
+        Py_INCREF(item);
+        PyTuple_SET_ITEM(call_args, i+4, item);
+    }
 
     result = PyEval_CallObjectWithKeywords(self->wrapper, call_args,
-            self->params);
+            self->wrapper_kwargs);
 
     Py_DECREF(call_args);
     Py_XDECREF(param_args);
@@ -1867,16 +1996,30 @@ static PyObject *WraptBoundMethodWrapper_get_self_wrapper(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptBoundMethodWrapper_get_self_params(
+static PyObject *WraptBoundMethodWrapper_get_self_wrapper_args(
         WraptBoundMethodWrapperObject *self, void *closure)
 {
-    if (!self->params) {
+    if (!self->wrapper_args) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    Py_INCREF(self->params);
-    return self->params;
+    Py_INCREF(self->wrapper_args);
+    return self->wrapper_args;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptBoundMethodWrapper_get_self_wrapper_kwargs(
+        WraptBoundMethodWrapperObject *self, void *closure)
+{
+    if (!self->wrapper_kwargs) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    Py_INCREF(self->wrapper_kwargs);
+    return self->wrapper_kwargs;
 }
 
 /* ------------------------------------------------------------------------- */;
@@ -1890,7 +2033,9 @@ static PyGetSetDef WraptBoundMethodWrapper_getset[] = {
                             NULL, 0 },
     { "_self_wrapper",      (getter)WraptBoundMethodWrapper_get_self_wrapper,
                             NULL, 0 },
-    { "_self_params",       (getter)WraptBoundMethodWrapper_get_self_params,
+    { "_self_wrapper_args", (getter)WraptBoundMethodWrapper_get_self_wrapper_args,
+                            NULL, 0 },
+    { "_self_wrapper_kwargs", (getter)WraptBoundMethodWrapper_get_self_wrapper_kwargs,
                             NULL, 0 },
     { NULL },
 };
@@ -1917,8 +2062,7 @@ PyTypeObject WraptBoundMethodWrapper_Type = {
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
 #if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-            Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
 #else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
 #endif

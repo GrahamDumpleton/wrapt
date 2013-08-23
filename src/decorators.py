@@ -116,7 +116,7 @@ def decorator(wrapper=None, target=None):
 
                 def _wrapper(func):
                     result = FunctionWrapper(wrapped=func,
-                            wrapper=wrapper, params=decorator_kwargs)
+                            wrapper=wrapper, kwargs=decorator_kwargs)
                     if target:
                         _update_adapter(result, target)
                     return result
