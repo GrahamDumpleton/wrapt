@@ -192,5 +192,94 @@ class TestDecorator(unittest.TestCase):
 
         self.assertRaises(wrapt.exceptions.UnexpectedParameters, run, ())
 
+    def test_varargs_parameters(self):
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs, *wrapper_args):
+            self.assertEqual(wrapper_args, tuple(reversed(_args)))
+            return wrapped(*args, **kwargs)
+
+        @_decorator(*reversed(_args))
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        result = _function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_args_plus_varargs_parameters(self):
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs, p1, *wrapper_args):
+            self.assertEqual(p1, 2)
+            self.assertEqual(wrapper_args, tuple(reversed(_args))[1:])
+            return wrapped(*args, **kwargs)
+
+        @_decorator(*reversed(_args))
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        result = _function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_keyword_parameters(self):
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs, **wrapper_kwargs):
+            self.assertEqual(wrapper_kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        @_decorator(**_kwargs)
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        result = _function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_args_plus_keyword_parameters(self):
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs, one, **wrapper_kwargs):
+            self.assertEqual(one, 1)
+            self.assertEqual(wrapper_kwargs, {'two': 2})
+            return wrapped(*args, **kwargs)
+
+        @_decorator(**_kwargs)
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        result = _function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_varargs_plus_keyword_parameters(self):
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs,
+                *wrapper_args, **wrapper_kwargs):
+            self.assertEqual(wrapper_args, tuple(reversed(_args)))
+            self.assertEqual(wrapper_kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        @_decorator(*reversed(_args), **_kwargs)
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        result = _function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
 if __name__ == '__main__':
     unittest.main()
