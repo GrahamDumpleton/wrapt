@@ -1306,7 +1306,7 @@ static PyObject *WraptFunctionWrapper_call(
 
     PyObject *result = NULL;
 
-    int len = 0;
+    Py_ssize_t len = 0;
     int i = 0;
 
     if (!kwds) {
@@ -1604,7 +1604,7 @@ static PyObject *WraptBoundFunctionWrapper_call(
 
     PyObject *result = NULL;
 
-    int len = 0;
+    Py_ssize_t len = 0;
     int i = 0;
 
     if (!kwds) {
@@ -1879,7 +1879,7 @@ static PyObject *WraptBoundMethodWrapper_call(
 
     PyObject *result = NULL;
 
-    int len = 0;
+    Py_ssize_t len = 0;
     int i = 0;
 
     if (self->instance == Py_None) {
