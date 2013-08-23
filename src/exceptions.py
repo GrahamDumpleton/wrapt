@@ -1,3 +1,2 @@
-class UnexpectedDefaultParameters(Exception): pass
-class MissingDefaultParameter(Exception): pass
-class UnexpectedParameters(Exception): pass
+class MissingParameter(TypeError): pass
+class UnexpectedParameters(TypeError): pass
