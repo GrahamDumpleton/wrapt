@@ -3,7 +3,6 @@ from __future__ import print_function
 import unittest
 
 import wrapt
-import wrapt.exceptions
 
 class TestDecorator(unittest.TestCase):
 
@@ -87,8 +86,7 @@ class TestDecorator(unittest.TestCase):
             def _function(*args, **kwargs):
                 return args, kwargs
 
-        self.assertRaises(wrapt.exceptions.MissingParameter,
-                run, ())
+        self.assertRaises(TypeError, run, ())
 
     def test_unexpected_parameters_one(self):
         def run(*args):
@@ -100,7 +98,7 @@ class TestDecorator(unittest.TestCase):
             def _function(*args, **kwargs):
                 return args, kwargs
 
-        self.assertRaises(wrapt.exceptions.UnexpectedParameters, run, ())
+        self.assertRaises(TypeError, run, ())
 
     def test_unexpected_parameters_many(self):
         def run(*args):
@@ -112,7 +110,7 @@ class TestDecorator(unittest.TestCase):
             def _function(*args, **kwargs):
                 return args, kwargs
 
-        self.assertRaises(wrapt.exceptions.UnexpectedParameters, run, ())
+        self.assertRaises(TypeError, run, ())
 
     def test_override_parameters_positional_all(self):
         _args = (1, 2)
@@ -178,7 +176,7 @@ class TestDecorator(unittest.TestCase):
             def _function(*args, **kwargs):
                 return args, kwargs
 
-        self.assertRaises(wrapt.exceptions.UnexpectedParameters, run, ())
+        self.assertRaises(TypeError, run, ())
 
     def test_override_parameters_positional_excess_many(self):
         def run(*args):
@@ -190,7 +188,7 @@ class TestDecorator(unittest.TestCase):
             def _function(*args, **kwargs):
                 return args, kwargs
 
-        self.assertRaises(wrapt.exceptions.UnexpectedParameters, run, ())
+        self.assertRaises(TypeError, run, ())
 
     def test_varargs_parameters(self):
         _args = (1, 2)

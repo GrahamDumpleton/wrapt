@@ -3,4 +3,3 @@ __version__ = '.'.join(__version_info__)
 
 from .wrappers import ObjectProxy, FunctionWrapper
 from .decorators import decorator, adapter
-from .exceptions import (MissingParameter, UnexpectedParameters)
