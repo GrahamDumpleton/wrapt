@@ -180,9 +180,8 @@ def decorator(wrapper=None, target=None):
         # arguments.
 
         wrapper_argspec = getfullargspec(wrapper)
-        wrapper_arglist = wrapper_argspec.args
 
-        if (len(wrapper_arglist) > len(WRAPPER_ARGLIST) or
+        if (len(wrapper_argspec.args) > len(WRAPPER_ARGLIST) or
                 wrapper_argspec.varargs or wrapper_argspec.varkw or
                 wrapper_argspec.kwonlyargs):
 
