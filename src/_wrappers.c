@@ -137,6 +137,26 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_repr(WraptObjectProxyObject *self)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    return PyUnicode_FromFormat("<%s at %p for %s at %p>",
+            Py_TYPE(self)->tp_name, self,
+            Py_TYPE(self->wrapped)->tp_name, self->wrapped);
+#else
+    return PyString_FromFormat("<%s at %p for %s at %p>",
+            Py_TYPE(self)->tp_name, self,
+            Py_TYPE(self->wrapped)->tp_name, self->wrapped);
+#endif
+}
+
+/* ------------------------------------------------------------------------- */
+
 static long WraptObjectProxy_hash(WraptObjectProxyObject *self)
 {
     if (!self->wrapped) {
@@ -158,6 +178,18 @@ static PyObject *WraptObjectProxy_call(
     }
 
     return PyEval_CallObjectWithKeywords(self->wrapped, args, kwds);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_str(WraptObjectProxyObject *self)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_str(self->wrapped);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1223,13 +1255,13 @@ PyTypeObject WraptObjectProxy_Type = {
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
     0,                      /*tp_compare*/
-    0,                      /*tp_repr*/
+    (unaryfunc)WraptObjectProxy_repr, /*tp_repr*/
     &WraptObjectProxy_as_number, /*tp_as_number*/
     &WraptObjectProxy_as_sequence, /*tp_as_sequence*/
     &WraptObjectProxy_as_mapping, /*tp_as_mapping*/
     (hashfunc)WraptObjectProxy_hash, /*tp_hash*/
     (ternaryfunc)WraptObjectProxy_call, /*tp_call*/
-    0,                      /*tp_str*/
+    (unaryfunc)WraptObjectProxy_str, /*tp_str*/
     (getattrofunc)WraptObjectProxy_getattro, /*tp_getattro*/
     (setattrofunc)WraptObjectProxy_setattro, /*tp_setattro*/
     0,                      /*tp_as_buffer*/

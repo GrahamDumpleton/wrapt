@@ -1113,5 +1113,30 @@ class TestAsMappingObjectProxy(unittest.TestCase):
 
         self.assertEqual(len(value), 2)
 
+class TestObjectRepresentationObjectProxy(unittest.TestCase):
+
+    def test_str(self):
+        value = wrapt.ObjectProxy(10)
+
+        self.assertEqual(str(value), str(10))
+
+        value = wrapt.ObjectProxy((10,))
+
+        self.assertEqual(str(value), str((10,)))
+
+        value = wrapt.ObjectProxy([10])
+
+        self.assertEqual(str(value), str([10]))
+
+        value = wrapt.ObjectProxy({10:10})
+
+        self.assertEqual(str(value), str({10:10}))
+
+    def test_repr(self):
+        number = 10
+        value = wrapt.ObjectProxy(number)
+
+        self.assertTrue(repr(value).startswith('<ObjectProxy at'))
+
 if __name__ == '__main__':
     unittest.main()
