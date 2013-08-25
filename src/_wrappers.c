@@ -1602,6 +1602,8 @@ static PyObject *WraptBoundFunctionWrapper_call(
     PyObject *call_args = NULL;
     PyObject *param_kwds = NULL;
 
+    PyObject *instance = NULL;
+
     PyObject *result = NULL;
 
     Py_ssize_t len = 0;
@@ -1612,16 +1614,31 @@ static PyObject *WraptBoundFunctionWrapper_call(
         kwds = param_kwds;
     }
 
+    /*
+     * We actually ignore the instance supplied when the function was
+     * bound and use that saved against __self__ of the bound function.
+     * This will be the class type for a class method and None for the
+     * case of a static method.
+     */
+
+    instance = PyObject_GetAttrString(self->object_proxy.wrapped, "__self__");
+
+    if (!instance) {
+        PyErr_Clear();
+        Py_INCREF(Py_None);
+        instance = Py_None;
+    }
+
     len = PySequence_Size(self->wrapper_args);
     call_args = PyTuple_New(len+4);
 
     Py_INCREF(self->object_proxy.wrapped);
-    Py_INCREF(self->instance);
+    Py_INCREF(instance);
     Py_INCREF(args);
     Py_INCREF(kwds);
 
     PyTuple_SET_ITEM(call_args, 0, self->object_proxy.wrapped);
-    PyTuple_SET_ITEM(call_args, 1, self->instance);
+    PyTuple_SET_ITEM(call_args, 1, instance);
     PyTuple_SET_ITEM(call_args, 2, args);
     PyTuple_SET_ITEM(call_args, 3, kwds);
 
@@ -1636,6 +1653,8 @@ static PyObject *WraptBoundFunctionWrapper_call(
 
     Py_DECREF(call_args);
     Py_XDECREF(param_kwds);
+
+    Py_DECREF(instance);
 
     return result;
 }

@@ -148,16 +148,14 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
 
     def test_instance_call_function(self):
-        # Test calling staticmethod via class instance. The instance
-        # passed to the wrapper will not be None because our decorator
-        # surrounds the staticmethod decorator.
+        # Test calling staticmethod via class instance.
 
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            self.assertNotEqual(instance, None)
+            self.assertEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
@@ -205,16 +203,14 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
 
     def test_instance_call_function_nested_decorator(self):
-        # Test calling staticmethod via class instance. The instance
-        # passed to the wrapper will not be None because our decorator
-        # surrounds the staticmethod decorator.
+        # Test calling staticmethod via class instance.
 
         _args = (1, 2)
         _kwargs = { 'one': 1, 'two': 2 }
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            self.assertNotEqual(instance, None)
+            self.assertEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)

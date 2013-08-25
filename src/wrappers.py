@@ -330,7 +330,22 @@ class _BoundFunctionWrapper(ObjectProxy):
         self._self_wrapper_kwargs = kwargs
 
     def __call__(self, *args, **kwargs):
-        return self._self_wrapper(self._self_wrapped, self._self_instance,
+        # As in this case we would be dealing with a class method or
+        # static method, then _self_instance will only tell us whether
+        # when calling the class or static method they did it via an
+        # instance of the class it is bound to and not the case where
+        # done by the class type itself. We thus ignore __self_instance
+        # and use the __self__ attribute of the bound function instead.
+        # For a class method, this means instance will be the class type
+        # and for a static method it will be None. This is probably the
+        # more useful thing we can pass through even though we loose
+        # knowledge of whether they were called on the instance vs the
+        # class type, as it reflects what they have available in the
+        # decoratored function.
+
+        instance = getattr(self._self_wrapped, '__self__', None)
+
+        return self._self_wrapper(self._self_wrapped, instance,
                 args, kwargs, *self._self_wrapper_args,
                 **self._self_wrapper_kwargs)
 
