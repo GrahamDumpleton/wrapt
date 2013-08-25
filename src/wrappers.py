@@ -308,6 +308,30 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __index__(self):
         return operator.__index__(self._self_wrapped)
 
+    def __len__(self):
+        return len(self._self_wrapped)
+
+    def __contains__(self, value):
+        return value in self._self_wrapped
+
+    def __getitem__(self, key):
+        return self._self_wrapped[key]
+
+    def __setitem__(self, key, value):
+        self._self_wrapped[key] = value
+
+    def __delitem__(self, key):
+        del self._self_wrapped[key]
+
+    def __getslice__(self, i, j):
+        return self._self_wrapped[i:j]
+
+    def __setslice__(self, i, j, value):
+        self._self_wrapped[i:j] = value
+
+    def __delslice__(self, i, j):
+        del self._self_wrapped[i:j]
+
     def __enter__(self):
         return self._self_wrapped.__enter__()
 

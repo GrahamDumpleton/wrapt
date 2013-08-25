@@ -1026,5 +1026,92 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         if not is_pypy:
             self.assertEqual(value.__index__(), operator.__index__(20))
 
+class TestAsSequenceObjectProxy(unittest.TestCase):
+
+    def test_length(self):
+        value = wrapt.ObjectProxy(list(range(3)))
+
+        self.assertEqual(len(value), 3)
+
+    def test_contains(self):
+        value = wrapt.ObjectProxy(list(range(3)))
+
+        self.assertTrue(2 in value)
+        self.assertFalse(-2 in value)
+
+    def test_getitem(self):
+        value = wrapt.ObjectProxy(list(range(3)))
+
+        self.assertEqual(value[1], 1)
+
+    def test_setitem(self):
+        value = wrapt.ObjectProxy(list(range(3)))
+        value[1] = -1
+
+        self.assertEqual(value[1], -1)
+
+    def test_delitem(self):
+        value = wrapt.ObjectProxy(list(range(3)))
+
+        self.assertEqual(len(value), 3)
+
+        del value[1]
+
+        self.assertEqual(len(value), 2)
+        self.assertEqual(value[1], 2)
+
+    def test_getslice(self):
+        value = wrapt.ObjectProxy(list(range(5)))
+
+        self.assertEqual(value[1:4], [1, 2, 3])
+
+    def test_setslice(self):
+        value = wrapt.ObjectProxy(list(range(5)))
+
+        value[1:4] = reversed(value[1:4])
+
+        self.assertEqual(value[1:4], [3, 2, 1])
+
+    def test_delslice(self):
+        value = wrapt.ObjectProxy(list(range(5)))
+
+        del value[1:4]
+
+        self.assertEqual(len(value), 2)
+        self.assertEqual(value, [0, 4])
+
+class TestAsMappingObjectProxy(unittest.TestCase):
+
+    def test_length(self):
+        value = wrapt.ObjectProxy(dict.fromkeys(range(3), False))
+
+        self.assertEqual(len(value), 3)
+
+    def test_contains(self):
+        value = wrapt.ObjectProxy(dict.fromkeys(range(3), False))
+
+        self.assertTrue(2 in value)
+        self.assertFalse(-2 in value)
+
+    def test_getitem(self):
+        value = wrapt.ObjectProxy(dict.fromkeys(range(3), False))
+
+        self.assertEqual(value[1], False)
+
+    def test_setitem(self):
+        value = wrapt.ObjectProxy(dict.fromkeys(range(3), False))
+        value[1] = True
+
+        self.assertEqual(value[1], True)
+
+    def test_delitem(self):
+        value = wrapt.ObjectProxy(dict.fromkeys(range(3), False))
+
+        self.assertEqual(len(value), 3)
+
+        del value[1]
+
+        self.assertEqual(len(value), 2)
+
 if __name__ == '__main__':
     unittest.main()

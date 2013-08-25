@@ -761,6 +761,60 @@ static PyObject *WraptObjectProxy_index(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static Py_ssize_t WraptObjectProxy_length(WraptObjectProxyObject *self)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return -1;
+    }
+
+    return PyObject_Length(self->wrapped);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptObjectProxy_contains(WraptObjectProxyObject *self,
+        PyObject *value)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return -1;
+    }
+
+    return PySequence_Contains(self->wrapped, value);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_getitem(WraptObjectProxyObject *self,
+        PyObject *key)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetItem(self->wrapped, key);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptObjectProxy_setitem(WraptObjectProxyObject *self,
+        PyObject *key, PyObject* value)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    if (value == NULL)
+        return PyObject_DelItem(self->wrapped, key);
+    else
+        return PyObject_SetItem(self->wrapped, key, value);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_dir(
         WraptObjectProxyObject *self, PyObject *args)
 {
@@ -1116,6 +1170,23 @@ static PyNumberMethods WraptObjectProxy_as_number = {
     (unaryfunc)WraptObjectProxy_index, /*nb_index*/
 };
 
+static PySequenceMethods WraptObjectProxy_as_sequence = {
+    (lenfunc)WraptObjectProxy_length, /*sq_length*/
+    0,                          /*sq_concat*/
+    0,                          /*sq_repeat*/
+    0,                          /*sq_item*/
+    0,                          /*sq_slice*/
+    0,                          /*sq_ass_item*/
+    0,                           /*sq_ass_slice*/
+    (objobjproc)WraptObjectProxy_contains, /* sq_contains */
+};
+
+static PyMappingMethods WraptObjectProxy_as_mapping = {
+    (lenfunc)WraptObjectProxy_length, /*mp_length*/
+    (binaryfunc)WraptObjectProxy_getitem, /*mp_subscript*/
+    (objobjargproc)WraptObjectProxy_setitem, /*mp_ass_subscript*/
+};
+
 static PyMethodDef WraptObjectProxy_methods[] = {
     { "__dir__",    (PyCFunction)WraptObjectProxy_dir,  METH_NOARGS, 0 },
     { "__enter__",  (PyCFunction)WraptObjectProxy_enter,
@@ -1154,8 +1225,8 @@ PyTypeObject WraptObjectProxy_Type = {
     0,                      /*tp_compare*/
     0,                      /*tp_repr*/
     &WraptObjectProxy_as_number, /*tp_as_number*/
-    0,                      /*tp_as_sequence*/
-    0,                      /*tp_as_mapping*/
+    &WraptObjectProxy_as_sequence, /*tp_as_sequence*/
+    &WraptObjectProxy_as_mapping, /*tp_as_mapping*/
     (hashfunc)WraptObjectProxy_hash, /*tp_hash*/
     (ternaryfunc)WraptObjectProxy_call, /*tp_call*/
     0,                      /*tp_str*/
