@@ -330,14 +330,14 @@ class _BoundFunctionWrapper(ObjectProxy):
         self._self_wrapper_kwargs = kwargs
 
     def __call__(self, *args, **kwargs):
-        # As in this case we would be dealing with a class method or
-        # static method, then _self_instance will only tell us whether
-        # when calling the class or static method they did it via an
+        # As in this case we would be dealing with a classmethod or
+        # staticmethod, then _self_instance will only tell us whether
+        # when calling the classmethod or staticmethod they did it via an
         # instance of the class it is bound to and not the case where
         # done by the class type itself. We thus ignore __self_instance
         # and use the __self__ attribute of the bound function instead.
-        # For a class method, this means instance will be the class type
-        # and for a static method it will be None. This is probably the
+        # For a classmethod, this means instance will be the class type
+        # and for a staticmethod it will be None. This is probably the
         # more useful thing we can pass through even though we loose
         # knowledge of whether they were called on the instance vs the
         # class type, as it reflects what they have available in the
@@ -412,9 +412,6 @@ class FunctionWrapper(ObjectProxy):
         # that being an issue is very small, so we accept it and suggest
         # that those other decorators be fixed. It is also only an issue
         # if a decorator wants to actually do things with the arguments.
-        # For the case of a classmethod the class wouldn't be known
-        # anyway, as it is only added in by the classmethod decorator
-        # later.
 
         if isinstance(self._self_wrapped, (classmethod, staticmethod)):
             self._self_bound_type = _BoundFunctionWrapper
