@@ -157,7 +157,7 @@ def _update_adapter(wrapper, target):
 
 WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
-def decorator(wrapper=None, target=None):
+def decorator(wrapper=None, target=None, validate=True):
     # The decorator takes some optional keyword parameters to change its
     # behaviour. The decorator works out whether parameters have been
     # passed based on whether the first positional argument, which is
@@ -165,7 +165,12 @@ def decorator(wrapper=None, target=None):
     # supplied. The 'target' argument is used to optionally denote a
     # function which is wrapped by an adapter decorator. In that case
     # the name attributes are copied from the target function rather
-    # than those of the adapter function.
+    # than those of the adapter function. The 'validate' argument, which
+    # defaults to True, indicates whether validation of decorator
+    # parameters should be validated at the time the decorator is
+    # applied, or whether a failure is allow to occur only when the
+    # wrapped function is later called and the user wrapper function
+    # thus called.
 
     if wrapper is not None:
         # We now need to work out whether the users decorator is
@@ -196,8 +201,9 @@ def decorator(wrapper=None, target=None):
                 # decorator is used and not only when the
                 # function is later called.
 
-                _validate_parameters(wrapper, wrapper_argspec,
-                        *decorator_args, **decorator_kwargs)
+                if validate:
+                    _validate_parameters(wrapper, wrapper_argspec,
+                            *decorator_args, **decorator_kwargs)
 
                 # Now create and return the final wrapper which
                 # combines the parameters with the wrapped function.
@@ -235,7 +241,7 @@ def decorator(wrapper=None, target=None):
         # a partial using the collected default parameters and the
         # adapter function if one is being used.
 
-        return partial(decorator, target=target)
+        return partial(decorator, target=target, validate=validate)
 
 def adapter(target):
     @decorator(target=target)
