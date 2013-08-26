@@ -997,7 +997,12 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
       return -1;
     }
 
-    return PyObject_SetAttrString(self->wrapped, "__wrapped__", value);
+    Py_INCREF(value);
+    Py_DECREF(self->wrapped);
+
+    self->wrapped = value;
+
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
