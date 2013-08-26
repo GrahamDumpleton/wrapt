@@ -836,7 +836,7 @@ static int WraptObjectProxy_setitem(WraptObjectProxyObject *self,
 {
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
-      return NULL;
+      return -1;
     }
 
     if (value == NULL)
