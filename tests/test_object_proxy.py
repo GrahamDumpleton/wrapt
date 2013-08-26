@@ -1176,7 +1176,7 @@ class TestObjectRepresentationObjectProxy(unittest.TestCase):
         number = 10
         value = wrapt.ObjectProxy(number)
 
-        self.assertTrue(repr(value).startswith('<ObjectProxy at'))
+        self.assertNotEqual(repr(value).find('ObjectProxy at'), -1)
 
 if __name__ == '__main__':
     unittest.main()
