@@ -189,7 +189,7 @@ static PyObject *WraptObjectProxy_str(WraptObjectProxyObject *self)
       return NULL;
     }
 
-    return PyObject_str(self->wrapped);
+    return PyObject_Str(self->wrapped);
 }
 
 /* ------------------------------------------------------------------------- */
