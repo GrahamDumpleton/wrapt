@@ -57,6 +57,44 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2.__wrapped__, None)
 
+    def test_proxy_attribute(self):
+        def function1(*args, **kwargs):
+            return args, kwargs
+        function2 = wrapt.ObjectProxy(function1)
+
+        function2._self_variable = True
+
+        self.assertFalse(hasattr(function1, '_self_variable'))
+        self.assertTrue(hasattr(function2, '_self_variable'))
+
+        self.assertEqual(function2._self_variable, True)
+
+        del function2._self_variable
+
+        self.assertFalse(hasattr(function1, '_self_variable'))
+        self.assertFalse(hasattr(function2, '_self_variable'))
+
+        self.assertEqual(getattr(function2, '_self_variable', None), None)
+
+    def test_wrapped_attribute(self):
+        def function1(*args, **kwargs):
+            return args, kwargs
+        function2 = wrapt.ObjectProxy(function1)
+
+        function2.variable = True
+
+        self.assertTrue(hasattr(function1, 'variable'))
+        self.assertTrue(hasattr(function2, 'variable'))
+
+        self.assertEqual(function2.variable, True)
+
+        del function2.variable
+
+        self.assertFalse(hasattr(function1, 'variable'))
+        self.assertFalse(hasattr(function2, 'variable'))
+
+        self.assertEqual(getattr(function2, 'variable', None), None)
+
 class TestNamingObjectProxy(unittest.TestCase):
 
     def test_class_object_name(self):
@@ -753,7 +791,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(one+two, 1+2)
         self.assertEqual(1+two, 1+2)
         self.assertEqual(one+2, 1+2)
-        
+
     def test_sub(self):
         one = wrapt.ObjectProxy(1)
         two = wrapt.ObjectProxy(2)

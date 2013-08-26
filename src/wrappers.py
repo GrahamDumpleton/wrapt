@@ -142,13 +142,22 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         if name.startswith('_self_'):
             object.__setattr__(self, name, value)
         elif name in ('__name__', '__qualname__'):
-            object.__setattr__(self, name, value)
             setattr(self._self_wrapped, name, value)
+            object.__setattr__(self, name, value)
         else:
             setattr(self._self_wrapped, name, value)
 
     def __getattr__(self, name):
         return getattr(self._self_wrapped, name)
+
+    def __delattr__(self, name):
+        if name.startswith('_self_'):
+            object.__delattr__(self, name)
+        elif name in ('__name__', '__qualname__'):
+            object.__delattr__(self, name)
+            delattr(self._self_wrapped, name)
+        else:
+            delattr(self._self_wrapped, name)
 
     def __add__(self, other):
         return self._self_wrapped + other
