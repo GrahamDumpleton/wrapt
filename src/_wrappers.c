@@ -1114,6 +1114,8 @@ static int WraptObjectProxy_setattro(
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
     }
 
+    Py_DECREF(attr_wrapped);
+
 #if PY_MAJOR_VERSION >= 3
     attr_name = PyUnicode_FromString("__name__");
     attr_qualname = PyUnicode_FromString("__qualname__");
