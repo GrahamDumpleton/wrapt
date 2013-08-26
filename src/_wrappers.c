@@ -1075,6 +1075,7 @@ static int WraptObjectProxy_setattro(
     PyObject *self_prefix = NULL;
     PyObject *attr_name = NULL;
     PyObject *attr_qualname = NULL;
+    PyObject *attr_wrapped = NULL;
 
     PyObject *match = NULL;
 
@@ -1085,12 +1086,8 @@ static int WraptObjectProxy_setattro(
 
 #if PY_MAJOR_VERSION >= 3
     self_prefix = PyUnicode_FromString("_self_");
-    attr_name = PyUnicode_FromString("__name__");
-    attr_qualname = PyUnicode_FromString("__qualname__");
 #else
     self_prefix = PyString_FromString("_self_");
-    attr_name = PyString_FromString("__name__");
-    attr_qualname = PyString_FromString("__qualname__");
 #endif
 
     match = PyEval_CallMethod(name, "startswith", "(O)", self_prefix);
@@ -1105,14 +1102,45 @@ static int WraptObjectProxy_setattro(
 
     Py_XDECREF(match);
 
+#if PY_MAJOR_VERSION >= 3
+    attr_wrapped = PyUnicode_FromString("__wrapped__");
+#else
+    attr_wrapped = PyString_FromString("__wrapped__");
+#endif
+
+    if (PyObject_RichCompareBool(name, attr_wrapped, Py_EQ) == 1) {
+        Py_DECREF(attr_wrapped);
+
+        return PyObject_GenericSetAttr((PyObject *)self, name, value);
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    attr_name = PyUnicode_FromString("__name__");
+    attr_qualname = PyUnicode_FromString("__qualname__");
+#else
+    attr_name = PyString_FromString("__name__");
+    attr_qualname = PyString_FromString("__qualname__");
+#endif
+
     if (PyObject_RichCompareBool(name, attr_name, Py_EQ) == 1 ||
             PyObject_RichCompareBool(name, attr_qualname, Py_EQ) == 1) {
 
         if (PyObject_GenericSetAttr((PyObject *)self, name, value) == -1)
+        {
+            Py_DECREF(attr_name);
+            Py_DECREF(attr_qualname);
+
             return -1;
+        }
+
+        Py_DECREF(attr_name);
+        Py_DECREF(attr_qualname);
 
         return PyObject_SetAttr(self->wrapped, name, value);
     }
+
+    Py_DECREF(attr_name);
+    Py_DECREF(attr_qualname);
 
     return PyObject_SetAttr(self->wrapped, name, value);
 }
