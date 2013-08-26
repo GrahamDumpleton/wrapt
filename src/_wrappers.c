@@ -985,14 +985,8 @@ static PyObject *WraptObjectProxy_get_wrapped(
       return NULL;
     }
 
-    result = PyObject_GetAttrString(self->wrapped, "__wrapped__");
-
-    if (!result) {
-        Py_INCREF(self->wrapped);
-        result = self->wrapped;
-    }
-
-    return result;
+    Py_INCREF(self->wrapped);
+    return self->wrapped;
 }
 
 /* ------------------------------------------------------------------------- */

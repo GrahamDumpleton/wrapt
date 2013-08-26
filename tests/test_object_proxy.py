@@ -57,6 +57,8 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2.__wrapped__, None)
 
+        self.assertFalse(hasattr(function1, '__wrapped__'))
+
     def test_proxy_attribute(self):
         def function1(*args, **kwargs):
             return args, kwargs
