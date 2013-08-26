@@ -978,8 +978,6 @@ static PyObject *WraptObjectProxy_get_class(
 static PyObject *WraptObjectProxy_get_wrapped(
         WraptObjectProxyObject *self)
 {
-    PyObject *result = NULL;
-
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
       return NULL;
