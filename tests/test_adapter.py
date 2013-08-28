@@ -11,12 +11,11 @@ from wrapt import six
 DECORATORS_CODE = """
 import wrapt
 
-def adapter1(func):
-    @wrapt.adapter(target=func)
-    def _adapter(arg):
-        '''adapter documentation'''
-        return func(arg, arg)
-    return _adapter
+def prototype(arg): pass
+@wrapt.decorator(adapter=prototype)
+def adapter1(wrapped, instance, args, kwargs):
+    '''adapter documentation'''
+    return wrapped(*args, **kwargs)
 """
 
 decorators = imp.new_module('decorators')
@@ -58,14 +57,16 @@ class TestNamingAdapter(unittest.TestCase):
         self.assertEqual(function1d.__module__, __name__)
 
     def test_doc_string(self):
-        # Test preservation of function __doc__ attribute from the
-        # adapter rather than from the original target wrapped function.
+        # Test preservation of function __doc__ attribute. It is
+        # still the documentation from the wrapped function, not
+        # of the adapter.
 
-        self.assertEqual(function1d.__doc__, 'adapter documentation')
+        self.assertEqual(function1d.__doc__, 'documentation')
 
     def test_argspec(self):
         # Test preservation of function argument specification. It
-        # actually needs to match that of the adapter function.
+        # actually needs to match that of the adapter function the
+        # prototype of which was supplied via the dummy function.
 
         def _adapter(arg): pass
 
@@ -77,62 +78,6 @@ class TestNamingAdapter(unittest.TestCase):
         # Test preservation of isinstance() checks.
 
         self.assertTrue(isinstance(function1d, type(function1o)))
-
-class TestAdapter(unittest.TestCase):
-
-    def test_no_arguments(self):
-        events = []
-
-        def _adapter(events):
-            def _trace(func):
-                @wrapt.adapter(target=func)
-                def _wrapper():
-                    if events is not None:
-                        events.append('in')
-                    try:
-                        return func()
-                    finally:
-                        if events is not None:
-                            events.append('out')
-                return _wrapper
-            return _trace
-
-        @_adapter(events=events)
-        def _function():
-            '''documentation'''
-            events.append('call')
-
-        _function()
-
-        self.assertEqual(events, ['in', 'call', 'out'])
-
-    def test_add_argument(self):
-        events = []
-
-        def _adapter(events):
-            def _trace(func):
-                @wrapt.adapter(target=func)
-                def _wrapper():
-                    if events is not None:
-                        events.append('in')
-                    try:
-                        return func(1)
-                    finally:
-                        if events is not None:
-                            events.append('out')
-                return _wrapper
-            return _trace
-
-        @_adapter(events=events)
-        def _function(*args):
-            '''documentation'''
-            events.append('call')
-            return args
-
-        result = _function()
-
-        self.assertEqual(result, (1,))
-        self.assertEqual(events, ['in', 'call', 'out'])
 
 if __name__ == '__main__':
     unittest.main()

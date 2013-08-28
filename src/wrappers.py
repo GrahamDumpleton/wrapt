@@ -51,7 +51,7 @@ class _ObjectProxyMetaType(type):
 class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
     def __init__(self, wrapped):
-        self._self_wrapped = wrapped
+        object.__setattr__(self, '_self_wrapped', wrapped)
 
         # Python 3.2+ has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
@@ -360,14 +360,67 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __call__(self, *args, **kwargs):
         return self._self_wrapped(*args, **kwargs)
 
-class _BoundFunctionWrapper(ObjectProxy):
+class _FunctionWrapperBase(ObjectProxy):
 
-    def __init__(self, wrapped, instance, wrapper, args=(), kwargs={}):
-        super(_BoundFunctionWrapper, self).__init__(wrapped)
-        self._self_instance = instance
-        self._self_wrapper = wrapper
-        self._self_wrapper_args = args
-        self._self_wrapper_kwargs = kwargs
+    def __init__(self, wrapped, instance, wrapper, wrapper_args=(),
+            wrapper_kwargs={}, adapter=None, bound_type=None):
+
+        super(_FunctionWrapperBase, self).__init__(wrapped)
+
+        object.__setattr__(self, '_self_instance', instance)
+        object.__setattr__(self, '_self_wrapper', wrapper)
+        object.__setattr__(self, '_self_wrapper_args', wrapper_args)
+        object.__setattr__(self, '_self_wrapper_kwargs', wrapper_kwargs)
+        object.__setattr__(self, '_self_adapter', adapter)
+        object.__setattr__(self, '_self_bound_type', bound_type)
+
+    def __get__(self, instance, owner):
+        # If we have already been bound to an instance of something, we
+        # do not do it again and return ourselves again. This appears to
+        # mirror what Python itself does.
+
+        if self._self_bound_type is None:
+            return self
+
+        descriptor = self._self_wrapped.__get__(instance, owner)
+
+        return self._self_bound_type(descriptor, instance, self._self_wrapper,
+                self._self_wrapper_args, self._self_wrapper_kwargs,
+                self._self_adapter)
+
+    def __call__(self, *args, **kwargs):
+        # This is generally invoked when the wrapped function is being
+        # called as a normal function and is not bound to a class as an
+        # instance method. This is also invoked in the case where the
+        # wrapped function was a method, but this wrapper was in turn
+        # wrapped using the staticmethod decorator.
+
+        return self._self_wrapper(self._self_wrapped, self._self_instance,
+                args, kwargs, *self._self_wrapper_args,
+                **self._self_wrapper_kwargs)
+
+    # If an adapter function was provided we want to return certain
+    # attributes of the function from the adapter rather than the
+    # wrapped function so things like inspect.getargspec() will reflect
+    # the prototype of the adapter and not the wrapped function.
+
+    @property
+    def __code__(self):
+        if self._self_adapter:
+            return self._self_adapter.__code__
+        return self._self_wrapped.__code__
+
+    @property
+    def __defaults__(self):
+        if self._self_adapter:
+            return self._self_adapter.__defaults__
+        return self._self_wrapped.__defaults__
+
+    if six.PY2:
+        func_code = __code__
+        func_defaults = __defaults__
+
+class _BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(self, *args, **kwargs):
         # As in this case we would be dealing with a classmethod or
@@ -389,14 +442,7 @@ class _BoundFunctionWrapper(ObjectProxy):
                 args, kwargs, *self._self_wrapper_args,
                 **self._self_wrapper_kwargs)
 
-class _BoundMethodWrapper(ObjectProxy):
-
-    def __init__(self, wrapped, instance, wrapper, args=(), kwargs={}):
-        super(_BoundMethodWrapper, self).__init__(wrapped)
-        self._self_instance = instance
-        self._self_wrapper = wrapper
-        self._self_wrapper_args = args
-        self._self_wrapper_kwargs = kwargs
+class _BoundMethodWrapper(_FunctionWrapperBase):
 
     def __call__(self, *args, **kwargs):
         if self._self_instance is None:
@@ -416,13 +462,10 @@ class _BoundMethodWrapper(ObjectProxy):
                 args, kwargs, *self._self_wrapper_args,
                 **self._self_wrapper_kwargs)
 
-class FunctionWrapper(ObjectProxy):
+class FunctionWrapper(_FunctionWrapperBase):
 
-    def __init__(self, wrapped, wrapper, args=(), kwargs={}):
-        super(FunctionWrapper, self).__init__(wrapped)
-        self._self_wrapper = wrapper
-        self._self_wrapper_args = args
-        self._self_wrapper_kwargs = kwargs
+    def __init__(self, wrapped, wrapper, wrapper_args=(), wrapper_kwargs={},
+            adapter=None):
 
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
@@ -434,10 +477,7 @@ class FunctionWrapper(ObjectProxy):
         # Note that there isn't strictly a fool proof method of knowing
         # which is occuring because if a decorator using this code wraps
         # other decorators and they are poorly implemented they can
-        # throw away important information needed to determine it. Some
-        # ways that it could be determined in Python 2 are also not
-        # possible in Python 3 due to the concept of unbound methods
-        # being done away with.
+        # throw away important information needed to determine it.
         #
         # Anyway, the best we can do is look at the original type of the
         # object which was wrapped prior to any binding being done and
@@ -453,26 +493,13 @@ class FunctionWrapper(ObjectProxy):
         # that those other decorators be fixed. It is also only an issue
         # if a decorator wants to actually do things with the arguments.
 
-        if isinstance(self._self_wrapped, (classmethod, staticmethod)):
-            self._self_bound_type = _BoundFunctionWrapper
+        if isinstance(wrapped, (classmethod, staticmethod)):
+            bound_type = _BoundFunctionWrapper
         else:
-            self._self_bound_type = _BoundMethodWrapper
+            bound_type = _BoundMethodWrapper
 
-    def __get__(self, instance, owner):
-        descriptor = self._self_wrapped.__get__(instance, owner)
-
-        return self._self_bound_type(descriptor, instance, self._self_wrapper,
-                self._self_wrapper_args, self._self_wrapper_kwargs)
-
-    def __call__(self, *args, **kwargs):
-        # This is invoked when the wrapped function is being called as a
-        # normal function and is not bound to a class as an instance
-        # method. This is also invoked in the case where the wrapped
-        # function was a method, but this wrapper was in turn wrapped
-        # using the staticmethod decorator.
-
-        return self._self_wrapper(self._self_wrapped, None, args,
-                kwargs, *self._self_wrapper_args, **self._self_wrapper_kwargs)
+        super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
+                wrapper_args, wrapper_kwargs, adapter, bound_type)
 
 try:
     from ._wrappers import ObjectProxy as C_ObjectProxy

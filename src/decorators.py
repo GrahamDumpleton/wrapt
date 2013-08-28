@@ -133,21 +133,6 @@ def _validate_parameters(func, spec, *positional, **named):
         _missing_arguments(f_name, kwonlyargs, False, arg2value)
     return arg2value
 
-# Copy name attributes from a wrapped function onto an wrapper. This is
-# only used in mapping the name from the final wrapped function to which
-# an adapter is applied onto the adapter itself. All other details come
-# from the adapter function via the function wrapper so we don't update
-# __dict__ or __wrapped__.
-
-def _update_adapter(wrapper, target):
-    for attr in ('__module__', '__name__', '__qualname__'):
-        try:
-            value = getattr(target, attr)
-        except AttributeError:
-            pass
-        else:
-            setattr(wrapper, attr, value)
-
 # Decorators for creating other decorators. These decorators and the
 # wrappers which they use are designed to properly preserve any name
 # attributes, function signatures etc, in addition to the wrappers
@@ -157,16 +142,19 @@ def _update_adapter(wrapper, target):
 
 WRAPPER_ARGLIST = ('wrapped', 'instance', 'args', 'kwargs')
 
-def decorator(wrapper=None, target=None, validate=True):
+def decorator(wrapper=None, adapter=None, validate=True):
     # The decorator takes some optional keyword parameters to change its
     # behaviour. The decorator works out whether parameters have been
     # passed based on whether the first positional argument, which is
     # the wrapper which implements the user decorator, has been
-    # supplied. The 'target' argument is used to optionally denote a
-    # function which is wrapped by an adapter decorator. In that case
-    # the name attributes are copied from the target function rather
-    # than those of the adapter function. The 'validate' argument, which
-    # defaults to True, indicates whether validation of decorator
+    # supplied. The 'adapter' argument is used to optionally denote a
+    # separate function which is notionally used by an adapter
+    # decorator. In that case the function '__code__' and '__defaults__'
+    # attributes are used from the adapter function rather than those of
+    # the wrapped function. This allows for the argument specification
+    # from inspect.getargspec() to be overridden with a prototype for a
+    # different function than what was wrapped. The 'validate' argument,
+    # which defaults to True, indicates whether validation of decorator
     # parameters should be validated at the time the decorator is
     # applied, or whether a failure is allow to occur only when the
     # wrapped function is later called and the user wrapper function
@@ -210,10 +198,9 @@ def decorator(wrapper=None, target=None, validate=True):
 
                 def _wrapper(func):
                     result = FunctionWrapper(wrapped=func,
-                            wrapper=wrapper, args=decorator_args,
-                            kwargs=decorator_kwargs)
-                    if target:
-                        _update_adapter(result, target)
+                            wrapper=wrapper, wrapper_args=decorator_args,
+                            wrapper_kwargs=decorator_kwargs,
+                            adapter=adapter)
                     return result
                 return _wrapper
 
@@ -228,9 +215,8 @@ def decorator(wrapper=None, target=None, validate=True):
 
             @wraps(wrapper)
             def _wrapper(func):
-                result = FunctionWrapper(wrapped=func, wrapper=wrapper)
-                if target:
-                    _update_adapter(result, target)
+                result = FunctionWrapper(wrapped=func, wrapper=wrapper,
+                        adapter=adapter)
                 return result
             return _wrapper
 
@@ -241,10 +227,4 @@ def decorator(wrapper=None, target=None, validate=True):
         # a partial using the collected default parameters and the
         # adapter function if one is being used.
 
-        return partial(decorator, target=target, validate=validate)
-
-def adapter(target):
-    @decorator(target=target)
-    def wrapper(wrapped, instance, args, kwargs):
-        return wrapped(*args, **kwargs)
-    return wrapper
+        return partial(decorator, adapter=adapter, validate=validate)
