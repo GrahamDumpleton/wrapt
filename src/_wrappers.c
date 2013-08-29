@@ -47,8 +47,10 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
-    self->dict = NULL;
-    self->wrapped = NULL;
+    self->dict = PyDict_New();
+
+    Py_INCREF(Py_None);
+    self->wrapped = Py_None;
 
     return (PyObject *)self;
 }
@@ -61,13 +63,8 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
     PyObject *name = NULL;
     PyObject *object = NULL;
 
-    Py_XDECREF(self->dict);
-    Py_XDECREF(self->wrapped);
-
-    self->dict = PyDict_New();
-
     Py_INCREF(wrapped);
-
+    Py_DECREF(self->wrapped);
     self->wrapped = wrapped;
 
     object = PyObject_GetAttrString(wrapped, "__name__");
@@ -122,10 +119,30 @@ static int WraptObjectProxy_init(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static int WraptObjectProxy_traverse(WraptObjectProxyObject *self,
+        visitproc visit, void *arg)
+{
+    Py_VISIT(self->dict);
+    Py_VISIT(self->wrapped);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
+{
+    Py_CLEAR(self->dict);
+    Py_CLEAR(self->wrapped);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 {
-    Py_XDECREF(self->dict);
-    Py_XDECREF(self->wrapped);
+    WraptObjectProxy_clear(self);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -1246,8 +1263,8 @@ PyTypeObject WraptObjectProxy_Type = {
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
 #endif
     0,                      /*tp_doc*/
-    0,                      /*tp_traverse*/
-    0,                      /*tp_clear*/
+    (traverseproc)WraptObjectProxy_traverse, /*tp_traverse*/
+    (inquiry)WraptObjectProxy_clear, /*tp_clear*/
     (richcmpfunc)WraptObjectProxy_richcompare, /*tp_richcompare*/
     0,                      /*tp_weaklistoffset*/
     (getiterfunc)WraptObjectProxy_iter, /*tp_iter*/
@@ -1280,12 +1297,21 @@ static PyObject *WraptFunctionWrapperBase_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
-    self->instance = NULL;
-    self->wrapper = NULL;
-    self->wrapper_args = NULL;
-    self->wrapper_kwargs = NULL;
-    self->adapter = NULL;
-    self->bound_type = NULL;
+    Py_INCREF(Py_None);
+    self->instance = Py_None;
+
+    Py_INCREF(Py_None);
+    self->wrapper = Py_None;
+
+    self->wrapper_args = PyTuple_New(0);
+
+    self->wrapper_kwargs = PyDict_New();
+
+    Py_INCREF(Py_None);
+    self->adapter = Py_None;
+
+    Py_INCREF(Py_None);
+    self->bound_type = Py_None;
 
     return (PyObject *)self;
 }
@@ -1299,48 +1325,44 @@ static int WraptFunctionWrapperBase_raw_init(WraptFunctionWrapperObject *self,
 {
     int result = 0;
 
-    Py_XDECREF(self->instance);
-    Py_XDECREF(self->wrapper);
-    Py_XDECREF(self->wrapper_args);
-    Py_XDECREF(self->wrapper_kwargs);
-    Py_XDECREF(self->adapter);
-    Py_XDECREF(self->bound_type);
-
-    self->instance = NULL;
-    self->wrapper = NULL;
-    self->wrapper_args = NULL;
-    self->wrapper_kwargs = NULL;
-    self->adapter = NULL;
-    self->bound_type = NULL;
-
     result = WraptObjectProxy_raw_init((WraptObjectProxyObject *)self,
             wrapped);
 
     if (result == 0) {
         Py_INCREF(instance);
+        Py_DECREF(self->instance);
         self->instance = instance;
 
         Py_INCREF(wrapper);
+        Py_DECREF(self->wrapper);
         self->wrapper = wrapper;
 
         if (wrapper_args) {
             Py_INCREF(wrapper_args);
+            Py_DECREF(self->wrapper_args);
             self->wrapper_args = wrapper_args;
         }
-        else
+        else {
+            Py_DECREF(self->wrapper_args);
             self->wrapper_args = PyTuple_New(0);
+        }
 
         if (wrapper_kwargs) {
             Py_INCREF(wrapper_kwargs);
+            Py_DECREF(self->wrapper_kwargs);
             self->wrapper_kwargs = wrapper_kwargs;
         }
-        else
+        else {
+            Py_DECREF(self->wrapper_kwargs);
             self->wrapper_kwargs = PyDict_New();
+        }
 
         Py_INCREF(adapter);
+        Py_DECREF(self->adapter);
         self->adapter = adapter;
 
         Py_INCREF(bound_type);
+        Py_DECREF(self->bound_type);
         self->bound_type = bound_type;
     }
 
@@ -1375,14 +1397,38 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static int WraptFunctionWrapperBase_traverse(WraptFunctionWrapperObject *self,
+        visitproc visit, void *arg)
+{
+    Py_VISIT(self->instance);
+    Py_VISIT(self->wrapper);
+    Py_VISIT(self->wrapper_args);
+    Py_VISIT(self->wrapper_kwargs);
+    Py_VISIT(self->adapter);
+    Py_VISIT(self->bound_type);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptFunctionWrapperBase_clear(WraptFunctionWrapperObject *self)
+{
+    Py_CLEAR(self->instance);
+    Py_CLEAR(self->wrapper);
+    Py_CLEAR(self->wrapper_args);
+    Py_CLEAR(self->wrapper_kwargs);
+    Py_CLEAR(self->adapter);
+    Py_CLEAR(self->bound_type);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static void WraptFunctionWrapperBase_dealloc(WraptFunctionWrapperObject *self)
 {
-    Py_XDECREF(self->instance);
-    Py_XDECREF(self->wrapper);
-    Py_XDECREF(self->wrapper_args);
-    Py_XDECREF(self->wrapper_kwargs);
-    Py_XDECREF(self->adapter);
-    Py_XDECREF(self->bound_type);
+    WraptFunctionWrapperBase_clear(self);
 
     WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
 }
@@ -1658,8 +1704,8 @@ PyTypeObject WraptFunctionWrapperBase_Type = {
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
 #endif
     0,                      /*tp_doc*/
-    0,                      /*tp_traverse*/
-    0,                      /*tp_clear*/
+    (traverseproc)WraptFunctionWrapperBase_traverse, /*tp_traverse*/
+    (inquiry)WraptFunctionWrapperBase_clear, /*tp_clear*/
     0,                      /*tp_richcompare*/
     0,                      /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
