@@ -420,6 +420,16 @@ class _FunctionWrapperBase(ObjectProxy):
         func_code = __code__
         func_defaults = __defaults__
 
+    # If an adapter function was provided, we also want to override the
+    # __signature__ attribute introduced in Python 3 so that we get the
+    # correct result when using inspect.signature().
+
+    @property
+    def __signature__(self):
+        if self._self_adapter:
+            return self._self_adapter.__signature__
+        return self._self_wrapped.__signature__
+
 class _BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(self, *args, **kwargs):

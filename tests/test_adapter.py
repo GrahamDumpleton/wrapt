@@ -74,6 +74,20 @@ class TestNamingAdapter(unittest.TestCase):
         function1d_argspec = inspect.getargspec(function1d)
         self.assertEqual(function1a_argspec, function1d_argspec)
 
+    def test_signature(self):
+        # Test preservation of function argument specification. It
+        # actually needs to match that of the adapter function the
+        # prototype of which was supplied via the dummy function.
+
+        if six.PY2:
+            return
+
+        def _adapter(arg): pass
+
+        function1a_signature = inspect.getargspec(_adapter)
+        function1d_signature = inspect.getargspec(function1d)
+        self.assertEqual(function1a_signature, function1d_signature)
+
     def test_isinstance(self):
         # Test preservation of isinstance() checks.
 
