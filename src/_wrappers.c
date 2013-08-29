@@ -1402,6 +1402,8 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
 static int WraptFunctionWrapperBase_traverse(WraptFunctionWrapperObject *self,
         visitproc visit, void *arg)
 {
+    WraptObjectProxy_traverse((WraptObjectProxyObject *)self, visit, arg);
+
     Py_VISIT(self->instance);
     Py_VISIT(self->wrapper);
     Py_VISIT(self->wrapper_args);
@@ -1416,6 +1418,8 @@ static int WraptFunctionWrapperBase_traverse(WraptFunctionWrapperObject *self,
 
 static int WraptFunctionWrapperBase_clear(WraptFunctionWrapperObject *self)
 {
+    WraptObjectProxy_clear((WraptObjectProxyObject *)self);
+
     Py_CLEAR(self->instance);
     Py_CLEAR(self->wrapper);
     Py_CLEAR(self->wrapper_args);
