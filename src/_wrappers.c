@@ -1258,9 +1258,11 @@ PyTypeObject WraptObjectProxy_Type = {
     (setattrofunc)WraptObjectProxy_setattro, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
 #if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+        Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
 #else
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+        Py_TPFLAGS_HAVE_GC, /*tp_flags*/
 #endif
     0,                      /*tp_doc*/
     (traverseproc)WraptObjectProxy_traverse, /*tp_traverse*/
@@ -1699,9 +1701,11 @@ PyTypeObject WraptFunctionWrapperBase_Type = {
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
 #if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+        Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
 #else
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+        Py_TPFLAGS_HAVE_GC, /*tp_flags*/
 #endif
     0,                      /*tp_doc*/
     (traverseproc)WraptFunctionWrapperBase_traverse, /*tp_traverse*/
