@@ -48,9 +48,7 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type,
         return NULL;
 
     self->dict = PyDict_New();
-
-    Py_INCREF(Py_None);
-    self->wrapped = Py_None;
+    self->wrapped = NULL;
 
     return (PyObject *)self;
 }
@@ -64,7 +62,7 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
     PyObject *object = NULL;
 
     Py_INCREF(wrapped);
-    Py_DECREF(self->wrapped);
+    Py_XDECREF(self->wrapped);
     self->wrapped = wrapped;
 
     object = PyObject_GetAttrString(wrapped, "__name__");
@@ -1299,21 +1297,12 @@ static PyObject *WraptFunctionWrapperBase_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
-    Py_INCREF(Py_None);
-    self->instance = Py_None;
-
-    Py_INCREF(Py_None);
-    self->wrapper = Py_None;
-
-    self->wrapper_args = PyTuple_New(0);
-
-    self->wrapper_kwargs = PyDict_New();
-
-    Py_INCREF(Py_None);
-    self->adapter = Py_None;
-
-    Py_INCREF(Py_None);
-    self->bound_type = Py_None;
+    self->instance = NULL;
+    self->wrapper = NULL;
+    self->wrapper_args = NULL;
+    self->wrapper_kwargs = NULL;
+    self->adapter = NULL;
+    self->bound_type = NULL;
 
     return (PyObject *)self;
 }
@@ -1332,39 +1321,39 @@ static int WraptFunctionWrapperBase_raw_init(WraptFunctionWrapperObject *self,
 
     if (result == 0) {
         Py_INCREF(instance);
-        Py_DECREF(self->instance);
+        Py_XDECREF(self->instance);
         self->instance = instance;
 
         Py_INCREF(wrapper);
-        Py_DECREF(self->wrapper);
+        Py_XDECREF(self->wrapper);
         self->wrapper = wrapper;
 
         if (wrapper_args) {
             Py_INCREF(wrapper_args);
-            Py_DECREF(self->wrapper_args);
+            Py_XDECREF(self->wrapper_args);
             self->wrapper_args = wrapper_args;
         }
         else {
-            Py_DECREF(self->wrapper_args);
+            Py_XDECREF(self->wrapper_args);
             self->wrapper_args = PyTuple_New(0);
         }
 
         if (wrapper_kwargs) {
             Py_INCREF(wrapper_kwargs);
-            Py_DECREF(self->wrapper_kwargs);
+            Py_XDECREF(self->wrapper_kwargs);
             self->wrapper_kwargs = wrapper_kwargs;
         }
         else {
-            Py_DECREF(self->wrapper_kwargs);
+            Py_XDECREF(self->wrapper_kwargs);
             self->wrapper_kwargs = PyDict_New();
         }
 
         Py_INCREF(adapter);
-        Py_DECREF(self->adapter);
+        Py_XDECREF(self->adapter);
         self->adapter = adapter;
 
         Py_INCREF(bound_type);
-        Py_DECREF(self->bound_type);
+        Py_XDECREF(self->bound_type);
         self->bound_type = bound_type;
     }
 
