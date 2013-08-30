@@ -11,7 +11,7 @@ from wrapt import six
 DECORATORS_CODE = """
 import wrapt
 
-def prototype(arg1, arg2, arg3=None, *args, **kwargs): pass
+def prototype(arg1, arg2, *, arg3=None, **kwargs): pass
 @wrapt.decorator(adapter=prototype)
 def adapter1(wrapped, instance, args, kwargs):
     '''adapter documentation'''
@@ -34,46 +34,17 @@ def function1(arg1, arg2):
 
 function1d = function1
 
-class TestAdapterAttributes(unittest.TestCase):
-
-    def test_object_name(self):
-        # Test preservation of function __name__ attribute.
-
-        self.assertEqual(function1d.__name__, function1o.__name__)
-
-    def test_object_qualname(self):
-        # Test preservation of function __qualname__ attribute.
-
-        try:
-            __qualname__ = function1o.__qualname__
-        except AttributeError:
-            pass
-        else:
-            self.assertEqual(function1d.__qualname__, __qualname__)
-
-    def test_module_name(self):
-       # Test preservation of function __module__ attribute.
-
-        self.assertEqual(function1d.__module__, __name__)
-
-    def test_doc_string(self):
-        # Test preservation of function __doc__ attribute. It is
-        # still the documentation from the wrapped function, not
-        # of the adapter.
-
-        self.assertEqual(function1d.__doc__, 'documentation')
-
 class TestArgumentSpecification(unittest.TestCase):
 
-    def test_argspec(self):
+    def test_getfullargspec(self):
         # Test preservation of function argument specification. It
         # actually needs to match that of the adapter function the
         # prototype of which was supplied via the dummy function.
 
-        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
+        def _adapter(arg1, arg2, *, arg3=None, **kwargs): pass
 
-        function1a_argspec = inspect.getargspec(_adapter)
-        function1d_argspec = inspect.getargspec(function1d)
+        function1a_argspec = inspect.getfullargspec(_adapter)
+        function1d_argspec = inspect.getfullargspec(function1d)
         self.assertEqual(function1a_argspec, function1d_argspec)
 
     def test_signature(self):
@@ -84,16 +55,11 @@ class TestArgumentSpecification(unittest.TestCase):
         if six.PY2:
             return
 
-        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
+        def _adapter(arg1, arg2, *, arg3=None, **kwargs): pass
 
         function1a_signature = str(inspect.signature(_adapter))
         function1d_signature = str(inspect.signature(function1d))
         self.assertEqual(function1a_signature, function1d_signature)
-
-    def test_isinstance(self):
-        # Test preservation of isinstance() checks.
-
-        self.assertTrue(isinstance(function1d, type(function1o)))
 
 if __name__ == '__main__':
     unittest.main()

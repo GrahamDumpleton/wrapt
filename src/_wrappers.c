@@ -1540,6 +1540,22 @@ static PyObject *WraptFunctionWrapperBase_get_defaults(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptFunctionWrapperBase_get_kwdefaults(
+        WraptFunctionWrapperObject *self)
+{
+    if (!self->object_proxy.wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    if (self->adapter != Py_None)
+        return PyObject_GetAttrString(self->adapter, "__kwdefaults__");
+
+    return PyObject_GetAttrString(self->object_proxy.wrapped, "__kwdefaults__");
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptFunctionWrapperBase_get_signature(
         WraptFunctionWrapperObject *self)
 {
@@ -1648,6 +1664,8 @@ static PyGetSetDef WraptFunctionWrapperBase_getset[] = {
     { "__code__",           (getter)WraptFunctionWrapperBase_get_code,
                             NULL, 0 },
     { "__defaults__",       (getter)WraptFunctionWrapperBase_get_defaults,
+                            NULL, 0 },
+    { "__kwdefaults__",     (getter)WraptFunctionWrapperBase_get_kwdefaults,
                             NULL, 0 },
     { "__signature__",      (getter)WraptFunctionWrapperBase_get_signature,
                             NULL, 0 },

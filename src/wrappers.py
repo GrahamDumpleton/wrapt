@@ -416,6 +416,12 @@ class _FunctionWrapperBase(ObjectProxy):
             return self._self_adapter.__defaults__
         return self._self_wrapped.__defaults__
 
+    @property
+    def __kwdefaults__(self):
+        if self._self_adapter:
+            return self._self_adapter.__kwdefaults__
+        return self._self_wrapped.__kwdefaults__
+
     if six.PY2:
         func_code = __code__
         func_defaults = __defaults__
