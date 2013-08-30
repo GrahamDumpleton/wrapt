@@ -518,11 +518,6 @@ class FunctionWrapper(_FunctionWrapperBase):
                 wrapper_args, wrapper_kwargs, adapter, bound_type)
 
 try:
-    from ._wrappers import ObjectProxy as C_ObjectProxy
-    from ._wrappers import FunctionWrapper as C_FunctionWrapper
-    PY_ObjectProxy = ObjectProxy
-    ObjectProxy = C_ObjectProxy
-    PY_FunctionWrapper = FunctionWrapper
-    FunctionWrapper = C_FunctionWrapper
+    from ._wrappers import ObjectProxy, FunctionWrapper
 except ImportError:
     pass
