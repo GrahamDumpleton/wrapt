@@ -72,7 +72,7 @@ Any decorator you create can be applied to normal functions, instance methods, c
 
 When applied to a normal function or static method, the wrapper function when called will be passed ``None`` as the ``instance`` argument.
 
-When applied to an instance method, the wrapper function when called will be passed the instance of the class the method is being called on as the ``instance`` argument. This will be the case even when the instance method was called explicitly via the Class and the instance passed as the first argument. That is, the instance will never be passed as part of ``args``.
+When applied to an instance method, the wrapper function when called will be passed the instance of the class the method is being called on as the ``instance`` argument. This will be the case even when the instance method was called explicitly via the class and the instance passed as the first argument. That is, the instance will never be passed as part of ``args``.
 
 When applied to a class method, the wrapper function when called will be passed the class type as the ``instance`` argument.
 
@@ -80,24 +80,26 @@ When applied to a class, the wrapper function when called will be passed ``None`
 
 The above rules can be summarised with the following example.
 
+    import inspect
+    
     @wrapt.decorator
     def universal(wrapped, instance, args, kwargs):
         if instance is None:
-            if isinstance(wrapped, type):
+            if inspect.isclass(wrapped):
                 # Decorator was applied to a class.
                 return wrapped(*args, **kwargs)
             else:
                 # Decorator was applied to a function or staticmethod.
                 return wrapped(*args, **kwargs)
         else:
-            if isinstance(instance, type):
+            if inspect.isclass(instance):
                 # Decorator was applied to a classmethod.
                 return wrapped(*args, **kwargs)
             else:
                 # Decorator was applied to an instancemethod.
                 return wrapped(*args, **kwargs)
 
-Using these checks it is therefore possible to create a universal decorator that can be applied in all situations. It is no longer necessary to create different variants of decorators for normal functions and instance methods. 
+Using these checks it is therefore possible to create a universal decorator that can be applied in all situations. It is no longer necessary to create different variants of decorators for normal functions and instance methods, or use additional wrappers to convert a function decorator into one that will work for instance methods.
 
 In all cases, the wrapped function passed to the wrapper function is called in the same way, with ``args`` and ``kwargs`` being passed. The ``instance`` argument doesn't need to be used in calling the wrapped function.
                 
