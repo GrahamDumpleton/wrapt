@@ -270,6 +270,7 @@ def decorator(wrapper=None, adapter=None, validate=True):
                             wrapper_kwargs=decorator_kwargs,
                             adapter=_adapter)
                     return result
+                _wrapper.__wrapped__ = wrapper
                 return _wrapper
 
             # Here is where the partial wrapper is returned. This is
@@ -287,6 +288,7 @@ def decorator(wrapper=None, adapter=None, validate=True):
                 result = FunctionWrapper(wrapped=func, wrapper=wrapper,
                         adapter=_adapter)
                 return result
+            _wrapper.__wrapped__ = wrapper
             return _wrapper
 
     else:
