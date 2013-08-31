@@ -41,10 +41,9 @@ def synchronized(wrapped, instance, args, kwargs):
             context = instance
             name = '_synchronized_instance_lock'
 
-    try:
-        lock = getattr(context, name)
+    lock = getattr(context, name, None)
 
-    except AttributeError:
+    if lock is None:
         # There is no existing lock defined for the context we
         # are dealing with so we need to create one. This needs
         # to be done in a way to guarantee there is only one
@@ -61,8 +60,16 @@ def synchronized(wrapped, instance, args, kwargs):
                 '_synchronized_meta_lock', threading.RLock())
 
         with meta_lock:
-            lock = threading.Lock()
-            setattr(context, name, lock)
+            # We need to check again for whether the lock we want
+            # exists in case two threads were trying to create it
+            # at the same time and were competing to create the
+            # meta lock.
+
+            lock = getattr(context, name, None)
+
+            if lock is None:
+                lock = threading.Lock()
+                setattr(context, name, lock)
 
     with lock:
         return wrapped(*args, **kwargs)
