@@ -104,6 +104,27 @@ class C2(object):
 class C3:
     pass
 
+class C4(object):
+
+    # XXX This yields undesirable results due to how class method is
+    # implemented. The classmethod doesn't bind the method to the class
+    # before calling. As a consequence, the decorator wrapper function
+    # sees the instance as None with the class being explicitly passed
+    # as the first argument. It isn't possible to detect and correct
+    # this.
+
+    @classmethod
+    @synchronized
+    def function2(cls):
+        print('function2')
+
+    @staticmethod
+    @synchronized
+    def function3():
+        print('function3')
+
+c4 = C4()
+
 class TestAdapterAttributes(unittest.TestCase):
 
     def test_synchronized_function(self):
@@ -127,7 +148,7 @@ class TestAdapterAttributes(unittest.TestCase):
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 
-    def test_synchronized_staticmethod(self):
+    def test_synchronized_inner_staticmethod(self):
         _lock0 = getattr(C1.function3, '_synchronized_function_lock', None)
         self.assertEqual(_lock0, None)
 
@@ -148,7 +169,28 @@ class TestAdapterAttributes(unittest.TestCase):
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 
-    def test_synchronized_classmethod(self):
+    def test_synchronized_outer_staticmethod(self):
+        _lock0 = getattr(C4.function3, '_synchronized_function_lock', None)
+        self.assertEqual(_lock0, None)
+
+        c4.function3()
+
+        _lock1 = getattr(C4.function3, '_synchronized_function_lock', None)
+        self.assertNotEqual(_lock1, None)
+
+        C4.function3()
+
+        _lock2 = getattr(C4.function3, '_synchronized_function_lock', None)
+        self.assertNotEqual(_lock2, None)
+        self.assertEqual(_lock2, _lock1)
+
+        C4.function3()
+
+        _lock3 = getattr(C4.function3, '_synchronized_function_lock', None)
+        self.assertNotEqual(_lock3, None)
+        self.assertEqual(_lock3, _lock2)
+
+    def test_synchronized_inner_classmethod(self):
         _lock0 = getattr(C1, '_synchronized_class_lock', None)
         self.assertEqual(_lock0, None)
 
@@ -166,6 +208,38 @@ class TestAdapterAttributes(unittest.TestCase):
         C1.function2()
 
         _lock3 = getattr(C1, '_synchronized_class_lock', None)
+        self.assertNotEqual(_lock3, None)
+        self.assertEqual(_lock3, _lock2)
+
+    def test_synchronized_outer_classmethod(self):
+        # XXX If all was good, this would be detected as a class
+        # method call, but the classmethod decorator doesn't bind
+        # the wrapped function to the class before calling and
+        # just calls it direct, explicitly passing the class as
+        # first argument. This screws things up. Would be nice if
+        # Python were fixed, but that isn't likely to happen.
+
+        #_lock0 = getattr(C4, '_synchronized_class_lock', None)
+        _lock0 = getattr(C4.function2, '_synchronized_function_lock', None)
+        self.assertEqual(_lock0, None)
+
+        c4.function2()
+
+        #_lock1 = getattr(C4, '_synchronized_class_lock', None)
+        _lock1 = getattr(C4.function2, '_synchronized_function_lock', None)
+        self.assertNotEqual(_lock1, None)
+
+        C4.function2()
+
+        #_lock2 = getattr(C4, '_synchronized_class_lock', None)
+        _lock2 = getattr(C4.function2, '_synchronized_function_lock', None)
+        self.assertNotEqual(_lock2, None)
+        self.assertEqual(_lock2, _lock1)
+
+        C4.function2()
+
+        #_lock3 = getattr(C4, '_synchronized_class_lock', None)
+        _lock3 = getattr(C4.function2, '_synchronized_function_lock', None)
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 
