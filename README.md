@@ -15,7 +15,7 @@ To ensure that the overhead is as minimal as possible, a C extension module is u
 Examples
 --------
 
-To implement your decorator you need to first define a wrapper function. This will be called each time a decorated function is called. The wrapper function needs to take four arguments:
+To implement your decorator you need to first define a wrapper function. This will be called each time a decorated function is called. The wrapper function needs to take four positional arguments:
 
 * ``wrapped`` - The wrapped function which in turns needs to be called by your wrapper function.
 * ``instance`` - The object to which the wrapped function was bound when it was called.
@@ -55,7 +55,7 @@ Any arguments given to your decorator when it is used to decorate a function, wi
 
 Note that even if all your decorator arguments have default values, or you only have a variable arguments list or keyword argument dictionary, you must still provide the parantheses to the decorator when used. Once you opt to have the decorator be able to accept arguments the use of the parentheses is not optional.
 
-if using Python 3, you can use the keyword arguments only syntax to force use of keyword arguments when the decorator is used.
+If using Python 3, you can use the keyword arguments only syntax to force use of keyword arguments when the decorator is used.
 
     import wrapt
     
