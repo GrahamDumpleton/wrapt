@@ -2,33 +2,44 @@ from __future__ import print_function
 
 import unittest
 import threading
+import inspect
 
 import wrapt
 
 @wrapt.decorator
 def synchronized(wrapped, instance, args, kwargs):
     if instance is None:
-        # Wrapped function is a normal function or static method.
-        # Synchronisation is against the individual function. We
-        # need to traverse __wrapped__ if it exists in case we are
-        # dealing with a bound static method.
+        if inspect.isclass(wrapped):
+            # Wrapped function is a class and we are creating an
+            # instance of the class. Synchronisation is against
+            # the type.
 
-        context = getattr(wrapped, '__wrapped__', wrapped)
-        name = '_synchronized_function_lock'
+            context = wrapped
+            name = '_synchronized_type_lock'
 
-    elif isinstance(instance, type):
-        # Wrapped function is a class method. Synchronisation is
-        # against the class type.
+        else:
+            # Wrapped function is a normal function or static method.
+            # Synchronisation is against the individual function. We
+            # need to traverse __wrapped__ if it exists in case we are
+            # dealing with a bound static method.
 
-        context = instance
-        name = '_synchronized_class_lock'
+            context = getattr(wrapped, '__wrapped__', wrapped)
+            name = '_synchronized_function_lock'
 
     else:
-        # Wrapped function is an instance method. Synchronisation
-        # is against the class instance.
+        if inspect.isclass(instance):
+            # Wrapped function is a class method. Synchronisation is
+            # against the class type.
 
-        context = instance
-        name = '_synchronized_instance_lock'
+            context = instance
+            name = '_synchronized_class_lock'
+
+        else:
+            # Wrapped function is an instance method. Synchronisation
+            # is against the class instance.
+
+            context = instance
+            name = '_synchronized_instance_lock'
 
     try:
         lock = getattr(context, name)
@@ -60,7 +71,7 @@ def synchronized(wrapped, instance, args, kwargs):
 def function():
     print('function')
 
-class Class(object):
+class C1(object):
 
     @synchronized
     def function1(self):
@@ -75,6 +86,16 @@ class Class(object):
     @staticmethod
     def function3():
         print('function3')
+
+c1 = C1()
+
+@synchronized
+class C2(object):
+    pass
+
+@synchronized
+class C3:
+    pass
 
 class TestAdapterAttributes(unittest.TestCase):
 
@@ -100,67 +121,107 @@ class TestAdapterAttributes(unittest.TestCase):
         self.assertEqual(_lock3, _lock2)
 
     def test_synchronized_staticmethod(self):
-        _lock0 = getattr(Class.function3, '_synchronized_function_lock', None)
+        _lock0 = getattr(C1.function3, '_synchronized_function_lock', None)
         self.assertEqual(_lock0, None)
 
-        Class.function3()
+        c1.function3()
 
-        _lock1 = getattr(Class.function3, '_synchronized_function_lock', None)
+        _lock1 = getattr(C1.function3, '_synchronized_function_lock', None)
         self.assertNotEqual(_lock1, None)
 
-        Class.function3()
+        C1.function3()
 
-        _lock2 = getattr(Class.function3, '_synchronized_function_lock', None)
+        _lock2 = getattr(C1.function3, '_synchronized_function_lock', None)
         self.assertNotEqual(_lock2, None)
         self.assertEqual(_lock2, _lock1)
 
-        Class.function3()
+        C1.function3()
 
-        _lock3 = getattr(Class.function3, '_synchronized_function_lock', None)
+        _lock3 = getattr(C1.function3, '_synchronized_function_lock', None)
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 
     def test_synchronized_classmethod(self):
-        _lock0 = getattr(Class, '_synchronized_class_lock', None)
+        _lock0 = getattr(C1, '_synchronized_class_lock', None)
         self.assertEqual(_lock0, None)
 
-        Class.function2()
+        c1.function2()
 
-        _lock1 = getattr(Class, '_synchronized_class_lock', None)
+        _lock1 = getattr(C1, '_synchronized_class_lock', None)
         self.assertNotEqual(_lock1, None)
 
-        Class.function2()
+        C1.function2()
 
-        _lock2 = getattr(Class, '_synchronized_class_lock', None)
+        _lock2 = getattr(C1, '_synchronized_class_lock', None)
         self.assertNotEqual(_lock2, None)
         self.assertEqual(_lock2, _lock1)
 
-        Class.function2()
+        C1.function2()
 
-        _lock3 = getattr(Class, '_synchronized_class_lock', None)
+        _lock3 = getattr(C1, '_synchronized_class_lock', None)
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 
     def test_syncrhonized_instancemethod(self):
-        c = Class()
-
-        _lock0 = getattr(c, '_synchronized_instance_lock', None)
+        _lock0 = getattr(c1, '_synchronized_instance_lock', None)
         self.assertEqual(_lock0, None)
 
-        c.function1()
+        C1.function1(c1)
 
-        _lock1 = getattr(c, '_synchronized_instance_lock', None)
+        _lock1 = getattr(c1, '_synchronized_instance_lock', None)
         self.assertNotEqual(_lock1, None)
 
-        c.function1()
+        c1.function1()
 
-        _lock2 = getattr(c, '_synchronized_instance_lock', None)
+        _lock2 = getattr(c1, '_synchronized_instance_lock', None)
         self.assertNotEqual(_lock2, None)
         self.assertEqual(_lock2, _lock1)
 
-        c.function1()
+        c1.function1()
 
-        _lock3 = getattr(c, '_synchronized_instance_lock', None)
+        _lock3 = getattr(c1, '_synchronized_instance_lock', None)
+        self.assertNotEqual(_lock3, None)
+        self.assertEqual(_lock3, _lock2)
+
+    def test_syncrhonized_type(self):
+        _lock0 = getattr(C2, '_synchronized_type_lock', None)
+        self.assertEqual(_lock0, None)
+
+        c2 = C2()
+
+        _lock1 = getattr(C2, '_synchronized_type_lock', None)
+        self.assertNotEqual(_lock1, None)
+
+        c2 = C2()
+
+        _lock2 = getattr(C2, '_synchronized_type_lock', None)
+        self.assertNotEqual(_lock2, None)
+        self.assertEqual(_lock2, _lock1)
+
+        c2 = C2()
+
+        _lock3 = getattr(C2, '_synchronized_type_lock', None)
+        self.assertNotEqual(_lock3, None)
+        self.assertEqual(_lock3, _lock2)
+
+    def test_syncrhonized_type_old_style(self):
+        _lock0 = getattr(C3, '_synchronized_type_lock', None)
+        self.assertEqual(_lock0, None)
+
+        c2 = C3()
+
+        _lock1 = getattr(C3, '_synchronized_type_lock', None)
+        self.assertNotEqual(_lock1, None)
+
+        c2 = C3()
+
+        _lock2 = getattr(C3, '_synchronized_type_lock', None)
+        self.assertNotEqual(_lock2, None)
+        self.assertEqual(_lock2, _lock1)
+
+        c2 = C3()
+
+        _lock3 = getattr(C3, '_synchronized_type_lock', None)
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 
