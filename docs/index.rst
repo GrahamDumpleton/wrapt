@@ -31,11 +31,3 @@ Contents
    quick-start
    known-issues
    unit-testing
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`search`
-
