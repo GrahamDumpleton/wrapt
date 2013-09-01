@@ -19,11 +19,9 @@ def synchronized(wrapped, instance, args, kwargs):
 
         else:
             # Wrapped function is a normal function or static method.
-            # Synchronisation is against the individual function. We
-            # need to traverse __wrapped__ if it exists in case we are
-            # dealing with a bound static method.
+            # Synchronisation is against the individual function.
 
-            context = getattr(wrapped, '__wrapped__', wrapped)
+            context = wrapped
             name = '_synchronized_function_lock'
 
     else:
