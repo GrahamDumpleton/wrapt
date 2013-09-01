@@ -103,28 +103,34 @@ Using these checks it is therefore possible to create a universal decorator that
 
 In all cases, the wrapped function passed to the wrapper function is called in the same way, with ``args`` and ``kwargs`` being passed. The ``instance`` argument doesn't need to be used in calling the wrapped function.
                 
+Issues
+------
+
+The following known issues exist.
+
+**Python @classmethod.\_\_get\_\_()**
+
+The Python ``@classmethod`` decorator assumes in the implementation of its ``__get__()`` method that the wrapped function is always a normal function. It doesn't entertain the idea that the wrapped function could actually be a descriptor, the result of a nested decorator. This is an issue because it means that the complete descriptor binding protocol is not performed on anything which is wrapped by the ``@classmethod`` decorator.
+
+The consequence of this is that when ``@classmethod`` is used to wrap a decorator implemented using ``@wrapt.decorator``, that ``__get__()`` isn't called on the latter. The result is that it is not possible in the latter to properly identify the decorator as being bound to a class method and by the above rules, it appears as though it was a normal function call.
+
+The behaviour of the Python ``@classmethod`` is arguably wrong and a fix to Python 3.4 for this issue is being pursued. The only solution is the recommendation that decorators implemented using ``@wrapt.decorator`` always be placed outside of ``@classmethod`` and never inside.
+
 Testing
 -------
 
-To test both the pure Python and C extension module based implementations,
-run the command:
+To test both the pure Python and C extension module based implementations, run the command:
 
     ./tests/run.sh
 
-The test script uses ``tox``. By default tests are run for Python 2.6, 2.7,
-3.3 and PyPy.
+The test script uses ``tox``. By default tests are run for Python 2.6, 2.7, 3.3 and PyPy.
 
-If wishing to run tests for a specific Python version you can run ``tox``
-directly.
+If wishing to run tests for a specific Python version you can run ``tox`` directly.
 
     tox -e py33
 
-This will attempt to compile the C extension module by default. To force
-the running of tests against the pure Python version set the
-``WRAPT_EXTENSIONS`` environment variable to ``false`` at the time of
-running the test.
+This will attempt to compile the C extension module by default. To force the running of tests against the pure Python version set the ``WRAPT_EXTENSIONS`` environment variable to ``false`` at the time of running the test.
 
     WRAPT_EXTENSIONS=false tox -e py33
 
-Individual tests in the ``tests`` directory can be run by supplying the
-path of the test file to ``tox`` when run.
+Individual tests in the ``tests`` directory can be run by supplying the path of the test file to ``tox`` when run.
