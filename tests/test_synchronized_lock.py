@@ -123,7 +123,7 @@ class C4(object):
 
 c4 = C4()
 
-class TestAdapterAttributes(unittest.TestCase):
+class TestSynchronized(unittest.TestCase):
 
     def test_synchronized_function(self):
         _lock0 = getattr(function, '_synchronized_function_lock', None)
