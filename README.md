@@ -42,8 +42,7 @@ If you wish to implement a decorator which accepts arguments, then list the argu
     
     @wrapt.decorator
     def with_arguments(wrapped, instance, args, kwargs, myarg1, myarg2):
-        with lock:
-            return wrapped(*args, **kwargs)
+        return wrapped(*args, **kwargs)
 
     @with_arguments(1, 2)
     def function():
@@ -60,11 +59,10 @@ If using Python 3, you can use the keyword arguments only syntax to force use of
     import wrapt
     
     @wrapt.decorator
-    def with_arguments(wrapped, instance, args, kwargs, *, myarg1, myarg2):
-        with lock:
-            return wrapped(*args, **kwargs)
+    def with_keyword_only_arguments(wrapped, instance, args, kwargs, *, myarg1, myarg2):
+        return wrapped(*args, **kwargs)
 
-    @with_arguments(myarg1=1, myarg2=2)
+    @with_keyword_only_arguments(myarg1=1, myarg2=2)
     def function():
         pass
  
