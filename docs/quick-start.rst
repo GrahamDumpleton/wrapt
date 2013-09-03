@@ -55,7 +55,7 @@ decorated function.
 
 Note that even if all your decorator arguments have default values, or you
 only have a variable arguments list or keyword argument dictionary, you
-must still provide the parantheses to the decorator when used. Once you opt
+must still provide the parentheses to the decorator when used. Once you opt
 to have the decorator be able to accept arguments the use of the
 parentheses is not optional.
 
