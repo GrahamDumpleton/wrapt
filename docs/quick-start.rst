@@ -30,34 +30,24 @@ other functions.
     def function():
         pass
 
-If you wish to implement a decorator which accepts arguments, then list the
-arguments after the existing four arguments of the wrapper function.
+If you wish to implement a decorator which accepts arguments, then wrap the
+definition of the decorator in a function closure. Any arguments supplied
+to the outer function when the decorator is applied, will be available to
+the inner wrapper when the wrapped function is called.
 
 ::
 
     import wrapt
-    
-    @wrapt.decorator
-    def with_arguments(wrapped, instance, args, kwargs, myarg1, myarg2):
-        return wrapped(*args, **kwargs)
+
+    def with_arguments(myarg1, myarg2):
+        @wrapt.decorator
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapper(*args, **kwargs)
+        return wrapper
 
     @with_arguments(1, 2)
     def function():
         pass
-
-It is possible to use positional arguments, with or without default values,
-a variable arguments list or a keyword argument dictionary.
-
-Any arguments given to your decorator when it is used to decorate a
-function, will be passed to the wrapper via the arguments added to the
-wrapper function, when the wrapper is invoked upon the call of the
-decorated function.
-
-Note that even if all your decorator arguments have default values, or you
-only have a variable arguments list or keyword argument dictionary, you
-must still provide the parentheses to the decorator when used. Once you opt
-to have the decorator be able to accept arguments the use of the
-parentheses is not optional.
 
 If using Python 3, you can use the keyword arguments only syntax to force
 use of keyword arguments when the decorator is used.
@@ -65,10 +55,12 @@ use of keyword arguments when the decorator is used.
 ::
 
     import wrapt
-    
-    @wrapt.decorator
-    def with_keyword_only_arguments(wrapped, instance, args, kwargs, *, myarg1, myarg2):
-        return wrapped(*args, **kwargs)
+
+    def with_keyword_only_arguments(*, myarg1, myarg2):
+        @wrapt.decorator
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        return wrapper
 
     @with_keyword_only_arguments(myarg1=1, myarg2=2)
     def function():
