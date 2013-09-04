@@ -439,7 +439,7 @@ class _BoundFunctionWrapper(_FunctionWrapperBase):
         # staticmethod, then _self_instance will only tell us whether
         # when calling the classmethod or staticmethod they did it via an
         # instance of the class it is bound to and not the case where
-        # done by the class type itself. We thus ignore __self_instance
+        # done by the class type itself. We thus ignore _self_instance
         # and use the __self__ attribute of the bound function instead.
         # For a classmethod, this means instance will be the class type
         # and for a staticmethod it will be None. This is probably the
@@ -473,7 +473,6 @@ class _BoundMethodWrapper(_FunctionWrapperBase):
 class FunctionWrapper(_FunctionWrapperBase):
 
     def __init__(self, wrapped, wrapper, adapter=None):
-
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
         # passed explicitly as the first argument. Defer to the
