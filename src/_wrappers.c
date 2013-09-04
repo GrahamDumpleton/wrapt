@@ -1406,9 +1406,6 @@ static PyObject *WraptFunctionWrapperBase_call(
 
     PyObject *result = NULL;
 
-    Py_ssize_t len = 0;
-    int i = 0;
-
     if (!kwds) {
         param_kwds = PyDict_New();
         kwds = param_kwds;
@@ -1670,9 +1667,6 @@ static PyObject *WraptBoundFunctionWrapper_call(
 
     PyObject *result = NULL;
 
-    Py_ssize_t len = 0;
-    int i = 0;
-
     if (!kwds) {
         param_kwds = PyDict_New();
         kwds = param_kwds;
@@ -1777,9 +1771,6 @@ static PyObject *WraptBoundMethodWrapper_call(
     PyObject *instance = NULL;
 
     PyObject *result = NULL;
-
-    Py_ssize_t len = 0;
-    int i = 0;
 
     if (self->instance == Py_None) {
         PyObject *module = NULL;
