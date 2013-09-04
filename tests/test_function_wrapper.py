@@ -89,8 +89,6 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2._self_wrapped, function1)
         self.assertEqual(function2._self_wrapper, decorator1)
-        self.assertEqual(function2._self_wrapper_args, ())
-        self.assertEqual(function2._self_wrapper_kwargs, {})
         self.assertNotEqual(function2._self_bound_type, None)
 
     def test_instancemethod_attributes(self):
@@ -105,8 +103,6 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2._self_wrapped, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertEqual(function2._self_wrapper_args, ())
-            self.assertEqual(function2._self_wrapper_kwargs, {})
             self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
@@ -114,8 +110,6 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(instance.function2._self_wrapped, instance.function1)
         self.assertEqual(instance.function2._self_instance, instance)
         self.assertEqual(instance.function2._self_wrapper, decorator1)
-        self.assertEqual(instance.function2._self_wrapper_args, ())
-        self.assertEqual(instance.function2._self_wrapper_kwargs, {})
 
     def test_classmethod_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
@@ -130,8 +124,6 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2._self_wrapped, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertEqual(function2._self_wrapper_args, ())
-            self.assertEqual(function2._self_wrapper_kwargs, {})
             self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
@@ -139,8 +131,6 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(instance.function2._self_wrapped, instance.function1)
         self.assertEqual(instance.function2._self_instance, instance)
         self.assertEqual(instance.function2._self_wrapper, decorator1)
-        self.assertEqual(instance.function2._self_wrapper_args, ())
-        self.assertEqual(instance.function2._self_wrapper_kwargs, {})
 
     def test_staticmethod_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
@@ -155,8 +145,6 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2._self_wrapped, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertEqual(function2._self_wrapper_args, ())
-            self.assertEqual(function2._self_wrapper_kwargs, {})
             self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
@@ -164,8 +152,6 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(instance.function2._self_wrapped, instance.function1)
         self.assertEqual(instance.function2._self_instance, instance)
         self.assertEqual(instance.function2._self_wrapper, decorator1)
-        self.assertEqual(instance.function2._self_wrapper_args, ())
-        self.assertEqual(instance.function2._self_wrapper_kwargs, {})
 
 if __name__ == '__main__':
     unittest.main()
