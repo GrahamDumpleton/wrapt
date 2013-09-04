@@ -1,7 +1,7 @@
+from . import six
+
 import functools
 import operator
-
-from . import six
 
 class _ObjectProxyMethods(object):
 
