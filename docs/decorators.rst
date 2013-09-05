@@ -80,7 +80,7 @@ use of keyword arguments when the decorator is used.
 Processing Function Arguments
 -----------------------------
 
-The original set of positionl arguments and keyword arguments supplied when
+The original set of positional arguments and keyword arguments supplied when
 the decorated function is called will be passed in the ``args`` and
 ``kwargs`` arguments.
 
@@ -217,7 +217,7 @@ Just the documentation string itself can still be obtained by accessing the
 Wrapped Function Source Code
 ----------------------------
 
-To obtain the argument specification of a decorated function the standard
+To obtain the source code of a decorated function the standard
 ``getsource()`` function from the ``inspect`` module can be used.
 
 ::
@@ -381,13 +381,13 @@ instance is already bound to ``wrapped`` and will be passed automatically
 as the first argument to the original wrapped function.
 
 Note that due to a bug in Python ``classmethod.__get__()``, whereby it does
-not apply the descriptor protocol to the function wrapped by ``classmethod``,
+not apply the descriptor protocol to the function wrapped by ``@classmethod``,
 the above only applies where the decorator wraps the ``@classmethod``
 decorator. If the decorator is placed inside of the ``@classmethod``
 decorator, then ``instance`` will be ``None`` and the decorator wrapper
 function will see the call as being the same as a normal function. As a
 result, always place any decorator outside of the ``@classmethod``
-decorator.
+decorator. Hopefully this issue in Python can be addressed in Python 3.4.
 
 Decorating Static Methods
 -------------------------
@@ -437,7 +437,7 @@ Universal Decorators
 A universal decorator is one that can be applied to different types of
 functions and can adjust automatically based on what is being decorated.
 
-For exapmple, the decorator may be able to be used on both a normal
+For example, the decorator may be able to be used on both a normal
 function and an instance method, thereby avoiding the need to create two
 separate decorators to be used in each case.
 
