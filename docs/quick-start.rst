@@ -49,26 +49,6 @@ the inner wrapper when the wrapped function is called.
     def function():
         pass
 
-If using Python 3, you can use the keyword arguments only syntax to force
-use of keyword arguments when the decorator is used.
-
-::
-
-    import wrapt
-
-    def with_keyword_only_arguments(*, myarg1, myarg2):
-        @wrapt.decorator
-        def wrapper(wrapped, instance, args, kwargs):
-            return wrapped(*args, **kwargs)
-        return wrapper
-
-    @with_keyword_only_arguments(myarg1=1, myarg2=2)
-    def function():
-        pass
- 
-Any decorator you create can be applied to normal functions, instance
-methods, class methods, static methods or classes.
-
 When applied to a normal function or static method, the wrapper function
 when called will be passed ``None`` as the ``instance`` argument.
 
