@@ -29,6 +29,11 @@ Contents
    :maxdepth: 1
 
    quick-start
+   decorators
    benchmarks
    known-issues
    unit-testing
+
+..   proxies
+..   wrappers
+..   examples
