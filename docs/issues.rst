@@ -1,5 +1,5 @@
-Known Issues
-============
+Issues
+======
 
 The following known issues exist.
 

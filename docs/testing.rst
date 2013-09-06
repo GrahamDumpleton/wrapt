@@ -1,5 +1,5 @@
-Unit Testing
-------------
+Testing
+-------
 
 Unit tests are located in the ``tests`` directory.
 

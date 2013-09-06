@@ -30,10 +30,10 @@ Contents
 
    quick-start
    decorators
+   examples
    benchmarks
-   known-issues
-   unit-testing
+   testing
+   issues
 
-..   proxies
 ..   wrappers
-..   examples
+..   proxies

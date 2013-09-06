@@ -1,2 +1,2 @@
-Object Proxies
-==============
+Proxies
+=======
