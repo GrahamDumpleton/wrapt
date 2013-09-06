@@ -22,6 +22,22 @@ is used for performance critical components. An automatic fallback to a
 pure Python implementation is also provided where a target system does not
 have a compiler to allow the C extension to be compiled.
 
+Installation
+------------
+
+The **wrapt** module is available from PyPi and can be installed using
+``pip``.
+
+    pip install wrapt
+
+Repository
+----------
+
+Full source code for the **wrapt** module, including documentation files
+and unit tests, can be obtained from github.
+
+* https://github.com/GrahamDumpleton/wrapt
+
 Contents
 --------
 
