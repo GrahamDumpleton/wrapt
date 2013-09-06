@@ -54,8 +54,8 @@ def synchronized(wrapped, instance, args, kwargs):
         # creation and assignment of the lock attribute against
         # the context.
 
-        meta_lock = synchronized.__wrapped__.__dict__.setdefault(
-                '_synchronized_meta_lock', threading.RLock())
+        meta_lock = vars(synchronized).setdefault(
+                '_synchronized_meta_lock', threading.Lock())
 
         with meta_lock:
             # We need to check again for whether the lock we want
@@ -66,7 +66,7 @@ def synchronized(wrapped, instance, args, kwargs):
             lock = getattr(context, name, None)
 
             if lock is None:
-                lock = threading.Lock()
+                lock = threading.RLock()
                 setattr(context, name, lock)
 
     with lock:
