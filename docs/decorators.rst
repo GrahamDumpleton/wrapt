@@ -77,6 +77,59 @@ use of keyword arguments when the decorator is used.
     def function():
         pass
 
+Decorators With Optional Arguments
+----------------------------------
+
+Although opinion can be mixed about whether the pattern is a good one, if
+the decorator arguments all have default values, it is also possible to
+implement decorators which have optional arguments. This allows the
+decorator to be applied with or without the arguments, with the brackets
+being able to be dropped in the latter.
+
+::
+
+    import wrapt
+
+    def with_optional_arguments(wrapped=None, myarg1=1, myarg2=2):
+        if wrapped is None:
+            return functools.partial(with_optional_arguments,
+                    myarg1=myarg1, myarg2=myarg2)
+
+        @wrapt.decorator
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        return wrapper(wrapped)
+
+    @with_optional_arguments(myarg1=1, myarg2=2)
+    def function():
+        pass
+
+    @with_optional_arguments
+    def function():
+        pass
+
+For this to be used in this way, it is a requirement that the decorator
+arguments be supplied as keyword arguments.
+
+If using Python 3, the requirement to use keyword only arguments can again
+be enforced using the keyword only argument syntax.
+
+::
+
+    import wrapt
+
+    def with_optional_arguments(wrapped=None, *, myarg1=1, myarg2=2):
+        if wrapped is None:
+            return functools.partial(with_optional_arguments,
+                    myarg1=myarg1, myarg2=myarg2)
+
+        @wrapt.decorator
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrappe(*args, **kwargs)
+
+        return wrapper(wrapped)
+
 Processing Function Arguments
 -----------------------------
 
