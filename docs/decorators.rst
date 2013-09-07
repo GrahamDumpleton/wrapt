@@ -53,7 +53,7 @@ the inner wrapper when the wrapped function is called.
     def with_arguments(myarg1, myarg2):
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
-            return wrapper(*args, **kwargs)
+            return wrapped(*args, **kwargs)
         return wrapper
 
     @with_arguments(1, 2)
