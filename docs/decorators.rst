@@ -126,7 +126,7 @@ be enforced using the keyword only argument syntax.
 
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
-            return wrappe(*args, **kwargs)
+            return wrapped(*args, **kwargs)
 
         return wrapper(wrapped)
 
