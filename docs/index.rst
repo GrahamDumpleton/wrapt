@@ -38,6 +38,13 @@ and unit tests, can be obtained from github.
 
 * https://github.com/GrahamDumpleton/wrapt
 
+Presentations
+-------------
+
+Conference presentations related to the **wrapt** module:
+
+* http://lanyrd.com/2013/kiwipycon/scpkbk
+
 Contents
 --------
 
