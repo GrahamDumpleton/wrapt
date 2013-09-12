@@ -1040,11 +1040,6 @@ static int WraptObjectProxy_setattro(
 
     PyObject *match = NULL;
 
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
-      return -1;
-    }
-
 #if PY_MAJOR_VERSION >= 3
     self_prefix = PyUnicode_FromString("_self_");
 #else
@@ -1076,6 +1071,11 @@ static int WraptObjectProxy_setattro(
     }
 
     Py_DECREF(attr_wrapped);
+
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return -1;
+    }
 
 #if PY_MAJOR_VERSION >= 3
     attr_name = PyUnicode_FromString("__name__");
