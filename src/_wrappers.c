@@ -1013,17 +1013,17 @@ static PyObject *WraptObjectProxy_getattro(
 {
     PyObject *object = NULL;
 
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
-      return NULL;
-    }
-
     object = PyObject_GenericGetAttr((PyObject *)self, name);
 
     if (object)
         return object;
 
     PyErr_Clear();
+
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
 
     return PyObject_GetAttr(self->wrapped, name);
 }
