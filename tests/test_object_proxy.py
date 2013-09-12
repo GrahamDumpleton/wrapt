@@ -1178,5 +1178,36 @@ class TestObjectRepresentationObjectProxy(unittest.TestCase):
 
         self.assertNotEqual(repr(value).find('ObjectProxy at'), -1)
 
+class TestDerivedClassCreation(unittest.TestCase):
+
+    def test_derived_new(self):
+
+        class DerivedObjectProxy(wrapt.ObjectProxy):
+
+            def __new__(cls, wrapped):
+                instance = super(DerivedObjectProxy, cls).__new__(cls, wrapped)
+                instance.__init__(wrapped)
+
+            def __init__(self, wrapped):
+                super(DerivedObjectProxy, self).__init__(wrapped)
+
+        def function():
+            pass
+
+        obj = DerivedObjectProxy(function)
+
+    def test_derived_setattr(self):
+
+        class DerivedObjectProxy(wrapt.ObjectProxy):
+
+            def __init__(self, wrapped):
+                self._self_attribute = True
+                super(DerivedObjectProxy, self).__init__(wrapped)
+
+        def function():
+            pass
+
+        obj = DerivedObjectProxy(function)
+
 if __name__ == '__main__':
     unittest.main()
