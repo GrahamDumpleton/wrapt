@@ -1,0 +1,30 @@
+CHANGES
+=======
+
+Version 1.1.0
+-------------
+
+Bugs Fixed:
+
+* When deriving from ObjectProxy, if a derived class overrode __new__() and
+  tried to access attributes of the ObjectProxy created using the base
+  class __new__() before __init__() was called, then an exception would be
+  raised indicating that the 'wrapper has not been initialised'.
+
+  Note that this only occurred when the C extension optimisations were
+  being used. It did not occur when the pure Python implementation of
+  ObjectProxy was being used.
+
+* When deriving from ObjectProxy, if a derived class __init__() attempted
+  to update attributes, even the special '_self_' attributed before calling
+  the base class __init__() methid, then an exception would be raised
+  indicating that the 'wrapper has not been initialised'.
+
+  Note that this only occurred when the C extension optimisations were
+  being used. It did not occur when the pure Python implementation of
+  ObjectProxy was being used.
+
+Version 1.0.0
+-------------
+
+Initial release.
