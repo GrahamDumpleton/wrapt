@@ -513,18 +513,18 @@ try:
 except ImportError:
     pass
 
-def _weak_function_proxy_callback(ref, self, callback):
-    if self._self_expired:
+def _weak_function_proxy_callback(ref, proxy, callback):
+    if proxy._self_expired:
         return
 
-    self._self_expired = True
+    proxy._self_expired = True
 
     # This could raise an exception. We let it propagate back and let
     # the weakref.proxy() deal with it, at which point it generally
     # prints out a short error message direct to stderr and keeps going.
 
     if callback is not None:
-        callback(self)
+        callback(proxy)
 
 class WeakFunctionProxy(ObjectProxy):
 
@@ -542,12 +542,13 @@ class WeakFunctionProxy(ObjectProxy):
         # the callback here so as not to cause any odd reference cycles.
 
         _callback = callback and functools.partial(
-                _weak_function_proxy_callback, self=self, callback=callback)
+                _weak_function_proxy_callback, proxy=self,
+                callback=callback)
 
         self._self_expired = False
 
         try:
-            self._self_instance = weakref.proxy(wrapped.__self__, _callback)
+            self._self_instance = weakref.ref(wrapped.__self__, _callback)
 
             super(WeakFunctionProxy, self).__init__(
                     weakref.proxy(wrapped.__func__, _callback))
@@ -563,7 +564,7 @@ class WeakFunctionProxy(ObjectProxy):
         # function as that will trigger the reference error prior to
         # calling if the reference had expired.
 
-        instance = self._self_instance and self._self_instance
+        instance = self._self_instance and self._self_instance()
         function = self._self_wrapped and self._self_wrapped
 
         # If the wrapped function was originally a bound function, for
