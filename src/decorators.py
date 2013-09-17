@@ -1,4 +1,5 @@
-"""This module implements decorators for implementing other decorators.
+"""This module implements decorators for implementing other decorators
+as well as some commonly used decorators.
 
 """
 
@@ -7,6 +8,7 @@ from . import six
 from functools import wraps, partial
 from inspect import getargspec, ismethod
 from collections import namedtuple
+from threading import Lock, RLock
 
 if not six.PY2:
     from inspect import signature
@@ -120,3 +122,50 @@ def decorator(wrapper=None, adapter=None):
         # arguments.
 
         return partial(decorator, adapter=adapter)
+
+# Decorator for implementing thread synchronisation on functions and
+# objects.
+
+@decorator
+def synchronized(wrapped, instance, args, kwargs):
+    # Use the instance as the context if function was bound.
+
+    if instance is not None:
+        context = instance
+    else:
+        context = wrapped
+
+    # Retrieve the lock for the specific context.
+
+    lock = getattr(context, '_synchronized_lock', None)
+
+    if lock is None:
+        # There is no existing lock defined for the context we
+        # are dealing with so we need to create one. This needs
+        # to be done in a way to guarantee there is only one
+        # created, even if multiple threads try and create it at
+        # the same time. We can't always use the setdefault()
+        # method on the __dict__ for the context. This is the
+        # case where the context is a class, as __dict__ is
+        # actually a dictproxy. What we therefore do is use a
+        # meta lock on this wrapper itself, to control the
+        # creation and assignment of the lock attribute against
+        # the context.
+
+        meta_lock = vars(synchronized).setdefault(
+                '_synchronized_meta_lock', Lock())
+
+        with meta_lock:
+            # We need to check again for whether the lock we want
+            # exists in case two threads were trying to create it
+            # at the same time and were competing to create the
+            # meta lock.
+
+            lock = getattr(context, '_synchronized_lock', None)
+
+            if lock is None:
+                lock = RLock()
+                setattr(context, '_synchronized_lock', lock)
+
+    with lock:
+        return wrapped(*args, **kwargs)
