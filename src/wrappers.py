@@ -509,7 +509,8 @@ class FunctionWrapper(_FunctionWrapperBase):
                 adapter, bound_type)
 
 try:
-    from ._wrappers import ObjectProxy, FunctionWrapper
+    from ._wrappers import (ObjectProxy, FunctionWrapper,
+            _FunctionWrapperBase, _BoundFunctionWrapper, _BoundMethodWrapper)
 except ImportError:
     pass
 

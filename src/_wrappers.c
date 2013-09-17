@@ -2044,6 +2044,16 @@ moduleinit(void)
     PyModule_AddObject(module, "FunctionWrapper",
             (PyObject *)&WraptFunctionWrapper_Type);
 
+    Py_INCREF(&WraptFunctionWrapperBase_Type);
+    PyModule_AddObject(module, "_FunctionWrapperBase",
+            (PyObject *)&WraptFunctionWrapperBase_Type);
+    Py_INCREF(&WraptBoundFunctionWrapper_Type);
+    PyModule_AddObject(module, "_BoundFunctionWrapper",
+            (PyObject *)&WraptBoundFunctionWrapper_Type);
+    Py_INCREF(&WraptBoundMethodWrapper_Type);
+    PyModule_AddObject(module, "_BoundMethodWrapper",
+            (PyObject *)&WraptBoundMethodWrapper_Type);
+
     return module;
 }
 
