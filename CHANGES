@@ -4,6 +4,19 @@ CHANGES
 Version 1.1.0
 -------------
 
+New Features:
+
+* Added a synchronized decorator for performing thread mutex locking on
+  functions, object instances or classes. This is the same decorator as
+  covered as an example in the wrapt documentation.
+
+* Added a WeakFunctionProxy class which can wrap references to instance
+  methods as well as normal functions.
+
+* Exposed from the C extension the classes _FunctionWrapperBase,
+  _BoundFunctionWrapper and _BoundMethodWrapper so that it is possible to
+  create new variants of FunctionWrapper in pure Python code.
+
 Bugs Fixed:
 
 * When deriving from ObjectProxy, if a derived class overrode __new__() and
