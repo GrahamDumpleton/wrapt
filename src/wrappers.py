@@ -576,4 +576,4 @@ class WeakFunctionProxy(ObjectProxy):
         if instance is None:
             return self._self_wrapped(*args, **kwargs)
 
-        return function.__get__(instance)(*args, **kwargs)
+        return function.__get__(instance, type(instance))(*args, **kwargs)
