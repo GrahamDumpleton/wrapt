@@ -8,6 +8,10 @@ module, for the purpose of comparison.
 Synchronization
 ---------------
 
+.. note::
+    The final variant of the ``synchronized`` decorator described here
+    is available within the **wrapt** package as ``wrapt.synchronized``.
+
 Synchronization decorators are a simplified way of adding thread locking to
 functions, methods, instances of classes or a class type. They work by
 associating a thread mutex with a specific context and when a function is

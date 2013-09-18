@@ -56,6 +56,7 @@ Contents
    examples
    benchmarks
    testing
+   changes
    issues
 
 ..   wrappers
