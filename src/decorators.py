@@ -123,10 +123,57 @@ def decorator(wrapper=None, adapter=None):
 
         return partial(decorator, adapter=adapter)
 
-# Decorator for implementing thread synchronisation on functions and
-# objects.
+# Decorator for implementing thread synchronization. It can be used as a
+# decorator, in which case the synchronization context is determined by
+# what type of function is wrapped, or it can also be used as a context
+# manager, where the user needs to supply the correct synchronization
+# context. It is also possible to supply an object which appears to be a
+# synchronization primitive of some sort, by virtue of having release()
+# and acquire() methods. In that case that will be used directly as the
+# synchronization primitive without creating a separate lock against the
+# derived or supplied context.
 
 def synchronized(wrapped):
+    # Determine if being passed an object which is a synchronization
+    # primitive. We can't check by type for Lock, RLock, Semaphore etc,
+    # as the means of creating them isn't the type. Therefore use the
+    # existence of acquire() and release() methods. This is more
+    # extensible anyway as it allows custom synchronization mechanisms.
+
+    if hasattr(wrapped, 'acquire') and hasattr(wrapped, 'release'):
+        # We remember what the original lock is and then return a new
+        # decorator which acceses and locks it. When returning the new
+        # decorator we wrap it with an object proxy so we can override
+        # the context manager methods in case it is being used to wrap
+        # synchronized statements with a 'with' statement.
+
+        lock = wrapped
+
+        @decorator
+        def _synchronized(wrapped, instance, args, kwargs):
+            # Execute the wrapped function while the original supplied
+            # lock is held.
+
+            with lock:
+                return wrapped(*args, **kwargs)
+
+        class _PartialDecorator(ObjectProxy):
+
+            def __enter__(self):
+                lock.acquire()
+                return lock
+
+            def __exit__(self, *args):
+                lock.release()
+
+        return _PartialDecorator(wrapped=_synchronized)
+
+    # Following only apply when the lock is being created automatically
+    # based on the context of what was supplied. In this case we supply
+    # a final decorator, but need to use FunctionWrapper directly as we
+    # want to derive from it to add context manager methods in in case it is
+    # being used to wrap synchronized statements with a 'with' statement.
+
     def _synchronized_lock(context):
         # Attempt to retrieve the lock for the specific context.
 
@@ -170,15 +217,14 @@ def synchronized(wrapped):
         with _synchronized_lock(instance or wrapped):
             return wrapped(*args, **kwargs)
 
-    class _SynchronizedFunctionWrapper(FunctionWrapper):
+    class _FinalDecorator(FunctionWrapper):
 
         def __enter__(self):
             self._self_lock = _synchronized_lock(self._self_wrapped)
             self._self_lock.acquire()
-            return self
+            return self._self_lock
 
         def __exit__(self, *args):
             self._self_lock.release()
 
-    return _SynchronizedFunctionWrapper(wrapped=wrapped,
-            wrapper=_synchronized_wrapper)
+    return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
