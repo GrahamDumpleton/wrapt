@@ -1,11 +1,9 @@
 Examples
 ========
 
-At this time the **wrapt** module does not provide any bundled decorators,
-only the one decorator for creating other decorators. This document
-provides various examples of decorators often described elsewhere, to
-exhibit what can be done with decorators using the **wrapt** module, for
-the purpose of comparison.
+This document provides various examples of decorators often described
+elsewhere, to exhibit what can be done with decorators using the **wrapt**
+module, for the purpose of comparison.
 
 Synchronization
 ---------------
@@ -37,15 +35,15 @@ argument to the decorator.
 
     import threading
 
-    _lock = threading.RLock()
+    lock = threading.RLock()
 
-    @synchronized(_lock)
+    @synchronized(lock)
     def function():
         pass
 
     class Class(object):
 
-        @synchronized(_lock):
+        @synchronized(lock):
         def function(self):
             pass
 
@@ -207,6 +205,11 @@ the place to store the meta lock.
         with lock:
             return wrapped(*args, **kwargs)
 
+This means lock creation is all automatic, with an appropriate lock created
+for the different contexts the decorator is used in.
+
+::
+
     @synchronized # lock bound to function1
     def function1():
         pass
@@ -231,9 +234,6 @@ the place to store the meta lock.
         @staticmethod
         def function_sm():
             pass
-
-This means lock creation is all automatic, with an appropriate lock created
-for the different contexts the decorator is used in.
 
 Specifically, when the decorator is used on a normal function or static
 method, a unique lock will be associated with each function. For the case
@@ -267,7 +267,7 @@ able to decorate a function to make it synchronized, but also return a
 context manager for the lock for a specific context so that it can be used
 with the 'with' statement.
 
-Because of this dual requirement, we actually need to side step
+Because of this dual requirement, we actually need to partly side step
 ``wrapt.decorator`` and drop down to using the underlying ``FunctionWrapper``
 class that it uses to implement decorators. Specifically, we need to create
 a derived version of ``FunctionWrapper`` which converts it into a context
@@ -319,18 +319,17 @@ manager, but at the same time can still be used as a decorator as before.
             with _synchronized_lock(instance or wrapped):
                 return wrapped(*args, **kwargs)
 
-        class _SynchronizedFunctionWrapper(FunctionWrapper):
+        class _FinalDecorator(FunctionWrapper):
 
             def __enter__(self):
                 self._self_lock = _synchronized_lock(self._self_wrapped)
                 self._self_lock.acquire()
-                return self
+                return self._self_lock
 
             def __exit__(self, *args):
                 self._self_lock.release()
 
-        return _SynchronizedFunctionWrapper(wrapped=wrapped,
-                wrapper=_synchronized_wrapper)
+        return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
 
 When used in this way, the more typical use case would be to synchronize
 against the class instance, but if needing to synchronize with the work of
@@ -342,9 +341,212 @@ class itself.
     class Class(object):
 
         @synchronized
+        @classmethod
         def function_cm(cls):
             pass
 
         def function_im(self):
             with synchronized(Class):
                 pass
+
+If wishing to have more than one normal function synchronize on the same
+object, then it is possible to have the synchronization be against a data
+structure which they all manipulate.
+
+::
+
+    class Data(object):
+        pass
+
+    data = Data()
+
+    def function_1():
+        with synchronized(data):
+            pass
+
+    def function_2():
+        with synchronized(data):
+            pass
+
+In doing this you would be restricted to using a data structure to which
+new attributes can be added, such that the hidden lock can be added. This
+means for example, you could not do this with a dictionary. It also means
+you can't just decorate the whole function.
+
+What would perhaps be better is to return back to having the ``synchronized``
+decorator allow an actual lock object to be supplied when the decorator is
+being applied to a function. Being able to do this though would be
+optional and if not done the lock would be associated with the appropriate
+context of the wrapped function.
+
+::
+
+    lock = threading.RLock()
+
+    @synchronized(lock)
+    def function_1():
+        pass
+
+    @synchronized(lock)
+    def function_2():
+        pass
+
+This requires what the decorator accepts to be overloaded and so may be
+frowned on by some, but the implementation would be as follows.
+
+::
+
+    def synchronized(wrapped):
+        # Determine if being passed an object which is a synchronization
+        # primitive. We can't check by type for Lock, RLock, Semaphore etc,
+        # as the means of creating them isn't the type. Therefore use the
+        # existence of acquire() and release() methods. This is more
+        # extensible anyway as it allows custom synchronization mechanisms.
+
+        if hasattr(wrapped, 'acquire') and hasattr(wrapped, 'release'):
+            # We remember what the original lock is and then return a new
+            # decorator which acceses and locks it. When returning the new
+            # decorator we wrap it with an object proxy so we can override
+            # the context manager methods in case it is being used to wrap
+            # synchronized statements with a 'with' statement.
+
+            lock = wrapped
+
+            @decorator
+            def _synchronized(wrapped, instance, args, kwargs):
+                # Execute the wrapped function while the original supplied
+                # lock is held.
+
+                with lock:
+                    return wrapped(*args, **kwargs)
+
+            class _PartialDecorator(ObjectProxy):
+
+                def __enter__(self):
+                    lock.acquire()
+                    return lock
+
+                def __exit__(self, *args):
+                    lock.release()
+
+            return _PartialDecorator(wrapped=_synchronized)
+
+        # Following only apply when the lock is being created
+        # automatically based on the context of what was supplied. In
+        # this case we supply a final decorator, but need to use
+        # FunctionWrapper directly as we want to derive from it to add
+        # context manager methods in in case it is being used to wrap
+        # synchronized statements with a 'with' statement.
+
+        def _synchronized_lock(context):
+            # Attempt to retrieve the lock for the specific context.
+
+            lock = getattr(context, '_synchronized_lock', None)
+
+            if lock is None:
+                # There is no existing lock defined for the context we
+                # are dealing with so we need to create one. This needs
+                # to be done in a way to guarantee there is only one
+                # created, even if multiple threads try and create it at
+                # the same time. We can't always use the setdefault()
+                # method on the __dict__ for the context. This is the
+                # case where the context is a class, as __dict__ is
+                # actually a dictproxy. What we therefore do is use a
+                # meta lock on this wrapper itself, to control the
+                # creation and assignment of the lock attribute against
+                # the context.
+
+                meta_lock = vars(synchronized).setdefault(
+                        '_synchronized_meta_lock', Lock())
+
+                with meta_lock:
+                    # We need to check again for whether the lock we want
+                    # exists in case two threads were trying to create it
+                    # at the same time and were competing to create the
+                    # meta lock.
+
+                    lock = getattr(context, '_synchronized_lock', None)
+
+                    if lock is None:
+                        lock = RLock()
+                        setattr(context, '_synchronized_lock', lock)
+
+            return lock
+
+        def _synchronized_wrapper(wrapped, instance, args, kwargs):
+            # Execute the wrapped function while the lock for the
+            # desired context is held. If instance is None then the
+            # wrapped function is used as the context.
+
+            with _synchronized_lock(instance or wrapped):
+                return wrapped(*args, **kwargs)
+
+        class _FinalDecorator(FunctionWrapper):
+
+            def __enter__(self):
+                self._self_lock = _synchronized_lock(self._self_wrapped)
+                self._self_lock.acquire()
+                return self._self_lock
+
+            def __exit__(self, *args):
+                self._self_lock.release()
+
+        return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
+
+As well as normal functions, this can be used with methods of classes as
+well. Because though the lock object has to be available at the time the
+class definition is being created, it can only be used to refer to a lock
+which is the same across the whole class, or one which is at global scope.
+
+::
+
+    class Class(object):
+        lock1 = threading.RLock()
+        lock2 = threading.RLock()
+
+        @synchronized(lock1)
+        @classmethod
+        def function_cm_1(cls):
+            pass
+
+        @synchronized(lock1)
+        def function_im_1(self):
+            pass
+
+        @synchronized(lock2)
+        @classmethod
+        def function_cm_2(cls):
+            pass
+
+The alternative is to use ``synchronized`` as a context manager and pass the
+lock in at that time.
+
+::
+
+    class Class(object):
+
+        def __init__(self):
+            self.lock1 = threading.RLock()
+
+        def function_im(self):
+            with synchronized(self.lock1):
+                pass
+
+This is actually the same as using the 'with' statement directly on the lock,
+but it you want to get carried away and have all the code look more or less
+uniform, it is possible.
+
+One benefit of being able to pass the lock in explicitly, is that you can
+override the default lock type used, which is ``threading.RLock``. Any
+synchronization primitive can be supplied so long as it provides a
+``acquire()`` and ``release()`` method. This includes being able to pass
+in your own custom class objects with such methods which do something
+appropriate.
+
+::
+
+    semaphore = threading.Semaphore(2)
+
+    @synchronized(semaphore)
+    def function():
+        pass
