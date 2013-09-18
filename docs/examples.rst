@@ -240,3 +240,111 @@ method, a unique lock will be associated with each function. For the case
 of instance methods, the lock will be against the instance. Finally, for
 class methods and a decorator against an actual class, the lock will be
 against the class type.
+
+One requirement with this approach though is that only the execution of a
+whole function can be synchronized. In Java where a similar mechanism
+exists, it is also possible to have synchronized statements. In Python one
+can emulate synchronized statements by using the 'with' statement in
+conjunction with a lock. The trick with that is that if using it within a
+method of a class, we want to be able to use the same lock as that which is
+being applied to synchronized methods of the class. In effect we want to be
+able to do the following.
+
+::
+
+    class Class(object):
+
+        @synchronized
+        def function_im_1(self):
+            pass
+
+        def function_im_2(self):
+            with synchronized(self):
+                pass
+
+In other words we want the decorator function to serve a dual role of being
+able to decorate a function to make it synchronized, but also return a
+context manager for the lock for a specific context so that it can be used
+with the 'with' statement.
+
+Because of this dual requirement, we actually need to side step
+``wrapt.decorator`` and drop down to using the underlying ``FunctionWrapper``
+class that it uses to implement decorators. Specifically, we need to create
+a derived version of ``FunctionWrapper`` which converts it into a context
+manager, but at the same time can still be used as a decorator as before.
+
+::
+
+    def synchronized(wrapped):
+        def _synchronized_lock(context):
+            # Attempt to retrieve the lock for the specific context.
+
+            lock = getattr(context, '_synchronized_lock', None)
+
+            if lock is None:
+                # There is no existing lock defined for the context we
+                # are dealing with so we need to create one. This needs
+                # to be done in a way to guarantee there is only one
+                # created, even if multiple threads try and create it at
+                # the same time. We can't always use the setdefault()
+                # method on the __dict__ for the context. This is the
+                # case where the context is a class, as __dict__ is
+                # actually a dictproxy. What we therefore do is use a
+                # meta lock on this wrapper itself, to control the
+                # creation and assignment of the lock attribute against
+                # the context.
+
+                meta_lock = vars(synchronized).setdefault(
+                        '_synchronized_meta_lock', Lock())
+
+                with meta_lock:
+                    # We need to check again for whether the lock we want
+                    # exists in case two threads were trying to create it
+                    # at the same time and were competing to create the
+                    # meta lock.
+
+                    lock = getattr(context, '_synchronized_lock', None)
+
+                    if lock is None:
+                        lock = RLock()
+                        setattr(context, '_synchronized_lock', lock)
+
+            return lock
+
+        def _synchronized_wrapper(wrapped, instance, args, kwargs):
+            # Execute the wrapped function while the lock for the
+            # desired context is held. If instance is None then the
+            # wrapped function is used as the context.
+
+            with _synchronized_lock(instance or wrapped):
+                return wrapped(*args, **kwargs)
+
+        class _SynchronizedFunctionWrapper(FunctionWrapper):
+
+            def __enter__(self):
+                self._self_lock = _synchronized_lock(self._self_wrapped)
+                self._self_lock.acquire()
+                return self
+
+            def __exit__(self, *args):
+                self._self_lock.release()
+
+        return _SynchronizedFunctionWrapper(wrapped=wrapped,
+                wrapper=_synchronized_wrapper)
+
+When used in this way, the more typical use case would be to synchronize
+against the class instance, but if needing to synchronize with the work of
+a class method from an instance method, it could also be done against the
+class itself.
+
+::
+
+    class Class(object):
+
+        @synchronized
+        def function_cm(cls):
+            pass
+
+        def function_im(self):
+            with synchronized(Class):
+                pass
