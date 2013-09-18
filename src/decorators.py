@@ -126,46 +126,59 @@ def decorator(wrapper=None, adapter=None):
 # Decorator for implementing thread synchronisation on functions and
 # objects.
 
-@decorator
-def synchronized(wrapped, instance, args, kwargs):
-    # Use the instance as the context if function was bound.
+def synchronized(wrapped):
+    def _synchronized_lock(context):
+        # Attempt to retrieve the lock for the specific context.
 
-    if instance is not None:
-        context = instance
-    else:
-        context = wrapped
+        lock = getattr(context, '_synchronized_lock', None)
 
-    # Retrieve the lock for the specific context.
+        if lock is None:
+            # There is no existing lock defined for the context we
+            # are dealing with so we need to create one. This needs
+            # to be done in a way to guarantee there is only one
+            # created, even if multiple threads try and create it at
+            # the same time. We can't always use the setdefault()
+            # method on the __dict__ for the context. This is the
+            # case where the context is a class, as __dict__ is
+            # actually a dictproxy. What we therefore do is use a
+            # meta lock on this wrapper itself, to control the
+            # creation and assignment of the lock attribute against
+            # the context.
 
-    lock = getattr(context, '_synchronized_lock', None)
+            meta_lock = vars(synchronized).setdefault(
+                    '_synchronized_meta_lock', Lock())
 
-    if lock is None:
-        # There is no existing lock defined for the context we
-        # are dealing with so we need to create one. This needs
-        # to be done in a way to guarantee there is only one
-        # created, even if multiple threads try and create it at
-        # the same time. We can't always use the setdefault()
-        # method on the __dict__ for the context. This is the
-        # case where the context is a class, as __dict__ is
-        # actually a dictproxy. What we therefore do is use a
-        # meta lock on this wrapper itself, to control the
-        # creation and assignment of the lock attribute against
-        # the context.
+            with meta_lock:
+                # We need to check again for whether the lock we want
+                # exists in case two threads were trying to create it
+                # at the same time and were competing to create the
+                # meta lock.
 
-        meta_lock = vars(synchronized).setdefault(
-                '_synchronized_meta_lock', Lock())
+                lock = getattr(context, '_synchronized_lock', None)
 
-        with meta_lock:
-            # We need to check again for whether the lock we want
-            # exists in case two threads were trying to create it
-            # at the same time and were competing to create the
-            # meta lock.
+                if lock is None:
+                    lock = RLock()
+                    setattr(context, '_synchronized_lock', lock)
 
-            lock = getattr(context, '_synchronized_lock', None)
+        return lock
 
-            if lock is None:
-                lock = RLock()
-                setattr(context, '_synchronized_lock', lock)
+    def _synchronized_wrapper(wrapped, instance, args, kwargs):
+        # Execute the wrapped function while the lock for the
+        # desired context is held. If instance is None then the
+        # wrapped function is used as the context.
 
-    with lock:
-        return wrapped(*args, **kwargs)
+        with _synchronized_lock(instance or wrapped):
+            return wrapped(*args, **kwargs)
+
+    class _SynchronizedFunctionWrapper(FunctionWrapper):
+
+        def __enter__(self):
+            self._self_lock = _synchronized_lock(self._self_wrapped)
+            self._self_lock.acquire()
+            return self
+
+        def __exit__(self, *args):
+            self._self_lock.release()
+
+    return _SynchronizedFunctionWrapper(wrapped=wrapped,
+            wrapper=_synchronized_wrapper)
