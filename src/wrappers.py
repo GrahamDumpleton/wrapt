@@ -258,10 +258,12 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return self
 
     def __idiv__(self, other):
-        return operator.__idiv__(self._self_wrapped, other)
+        self._self_wrapped = operator.__idiv__(self._self_wrapped, other)
+        return self
 
     def __itruediv__(self, other):
-        return operator.__itruediv__(self._self_wrapped, other)
+        self._self_wrapped = operator.__itruediv__(self._self_wrapped, other)
+        return self
 
     def __ifloordiv__(self, other):
         self._self_wrapped //= other

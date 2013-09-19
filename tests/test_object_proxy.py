@@ -912,8 +912,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value += 1
         self.assertEqual(value, 2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value += one
         self.assertEqual(value, 3)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_isub(self):
         value = wrapt.ObjectProxy(1)
@@ -922,8 +926,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value -= 1
         self.assertEqual(value, 0)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value -= one
         self.assertEqual(value, -1)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_imul(self):
         value = wrapt.ObjectProxy(2)
@@ -932,8 +940,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value *= 2
         self.assertEqual(value, 4)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value *= two
         self.assertEqual(value, 8)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_idiv(self):
         # On Python 2 this will pick up div and on Python
@@ -945,8 +957,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value /= 2
         self.assertEqual(value, 2/2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value /= two
         self.assertEqual(value, 2/2/2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_ifloordiv(self):
         value = wrapt.ObjectProxy(2)
@@ -955,8 +971,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value //= 2
         self.assertEqual(value, 2//2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value //= two
         self.assertEqual(value, 2//2//2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_imod(self):
         value = wrapt.ObjectProxy(10)
@@ -965,8 +985,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value %= 2
         self.assertEqual(value, 10%2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value %= two
         self.assertEqual(value, 10%2%2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_ipow(self):
         value = wrapt.ObjectProxy(10)
@@ -975,8 +999,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value **= 2
         self.assertEqual(value, 10**2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value **= two
         self.assertEqual(value, 10**2**2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_ilshift(self):
         value = wrapt.ObjectProxy(256)
@@ -985,8 +1013,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value <<= 2
         self.assertEqual(value, 256<<2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value <<= two
         self.assertEqual(value, 256<<2<<2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_irshift(self):
         value = wrapt.ObjectProxy(2)
@@ -995,8 +1027,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value >>= 2
         self.assertEqual(value, 2>>2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value >>= two
         self.assertEqual(value, 2>>2>>2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_iand(self):
         value = wrapt.ObjectProxy(1)
@@ -1005,8 +1041,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value &= 2
         self.assertEqual(value, 1&2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value &= two
         self.assertEqual(value, 1&2&2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_ixor(self):
         value = wrapt.ObjectProxy(1)
@@ -1015,8 +1055,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value ^= 2
         self.assertEqual(value, 1^2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value ^= two
         self.assertEqual(value, 1^2^2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_ior(self):
         value = wrapt.ObjectProxy(1)
@@ -1025,8 +1069,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         value |= 2
         self.assertEqual(value, 1|2)
 
+        self.assertEqual(type(value), wrapt.ObjectProxy)
+
         value |= two
         self.assertEqual(value, 1|2|2)
+
+        self.assertEqual(type(value), wrapt.ObjectProxy)
 
     def test_neg(self):
         value = wrapt.ObjectProxy(1)

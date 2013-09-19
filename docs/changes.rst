@@ -1,6 +1,19 @@
 Changes
 =======
 
+Version 1.2.0
+-------------
+
+**Bugs Fixed**
+
+* In place operators in pure Python object proxy for __idiv__ and
+  __itruediv__ were not replacing the wrapped object with the result
+  of the operation on the wrapped object.
+
+* In place operators in C implementation of Python object proxy were
+  not replacing the wrapped object with the result of the operation on the
+  wrapped object.
+
 Version 1.1.0
 -------------
 
