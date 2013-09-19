@@ -6,6 +6,11 @@ Version 1.2.0
 
 **Bugs Fixed**
 
+* Python object memory leak was occuring due to incorrect increment of
+  object reference count in C implementation of object proxy when an
+  instance method was called via the class and the instance passed in
+  explicitly.
+
 * In place operators in pure Python object proxy for __idiv__ and
   __itruediv__ were not replacing the wrapped object with the result
   of the operation on the wrapped object.

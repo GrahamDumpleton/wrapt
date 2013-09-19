@@ -1939,12 +1939,10 @@ static PyObject *WraptBoundMethodWrapper_call(
         object = PyObject_CallFunction(partial, "(OO)",
                 self->object_proxy.wrapped, instance);
 
-        if (object) {
-            Py_INCREF(object);
-            wrapped = object;
-        }
-        else
+        if (!object)
             return NULL;
+
+        wrapped = object;
 
         param_args = PyTuple_GetSlice(args, 1, PyTuple_Size(args));
         if (!param_args)
@@ -1971,7 +1969,7 @@ static PyObject *WraptBoundMethodWrapper_call(
     Py_DECREF(call_args);
     Py_XDECREF(param_args);
     Py_XDECREF(param_kwds);
-    Py_XDECREF(wrapped);
+    Py_DECREF(wrapped);
 
     return result;
 }
