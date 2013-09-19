@@ -528,7 +528,7 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -555,7 +555,7 @@ static PyObject *WraptObjectProxy_inplace_subtract(
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -582,7 +582,7 @@ static PyObject *WraptObjectProxy_inplace_multiply(
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -610,7 +610,7 @@ static PyObject *WraptObjectProxy_inplace_divide(
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 #endif
 
@@ -638,7 +638,7 @@ static PyObject *WraptObjectProxy_inplace_remainder(
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -665,7 +665,7 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -692,7 +692,7 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -719,7 +719,7 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -746,7 +746,7 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -773,7 +773,7 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -797,7 +797,7 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -850,7 +850,7 @@ static PyObject *WraptObjectProxy_inplace_floor_divide(
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -877,7 +877,7 @@ static PyObject *WraptObjectProxy_inplace_true_divide(
     self->wrapped = object;
 
     Py_INCREF(self);
-    return self;
+    return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
