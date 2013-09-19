@@ -2054,13 +2054,10 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     if (PyObject_IsInstance(wrapped,
             (PyObject *)&PyClassMethod_Type) || PyObject_IsInstance(
             wrapped, (PyObject *)&PyStaticMethod_Type)) {
-        Py_INCREF((PyObject *)&WraptBoundFunctionWrapper_Type);
         bound_type = (PyObject *)&WraptBoundFunctionWrapper_Type;
     }
-    else {
-        Py_INCREF((PyObject *)&WraptBoundMethodWrapper_Type);
+    else
         bound_type = (PyObject *)&WraptBoundMethodWrapper_Type;
-    }
 
     result = WraptFunctionWrapperBase_raw_init(self, wrapped, Py_None,
             wrapper, adapter, bound_type);
