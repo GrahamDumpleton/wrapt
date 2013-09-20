@@ -1,6 +1,14 @@
 Changes
 =======
 
+Version 1.1.2
+-------------
+
+**Improvements**
+
+* Reduced performance overhead from previous versions. Most notable in the
+  C implementation. Benchmark figures have been updated in documentation.
+
 Version 1.1.1
 -------------
 
