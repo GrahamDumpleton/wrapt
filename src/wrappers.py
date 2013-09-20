@@ -51,6 +51,8 @@ class _ObjectProxyMetaType(type):
 
 class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
+    __slots__ = '_self_wrapped'
+
     def __init__(self, wrapped):
         object.__setattr__(self, '_self_wrapped', wrapped)
 
@@ -63,15 +65,13 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         except AttributeError:
             pass
 
-        # Although __name__ can be overridden with a property in all
-        # Python versions, updating it writes it back to an internal C
-        # structure which can be accessed at C code level, so not sure
-        # if overriding it as a property is sufficient in all cases.
+    @property
+    def __name__(self):
+        return self._self_wrapped.__name__
 
-        try:
-            object.__setattr__(self, '__name__', wrapped.__name__)
-        except AttributeError:
-            pass
+    @__name__.setter
+    def __name__(self, value):
+        self._self_wrapped.__name__ = value
 
     @property
     def __class__(self):
@@ -143,7 +143,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __setattr__(self, name, value):
         if name.startswith('_self_') or name == '__wrapped__':
             object.__setattr__(self, name, value)
-        elif name in ('__name__', '__qualname__'):
+        elif name == '__qualname__':
             setattr(self._self_wrapped, name, value)
             object.__setattr__(self, name, value)
         else:
@@ -155,7 +155,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __delattr__(self, name):
         if name.startswith('_self_') or name == '__wrapped__':
             object.__delattr__(self, name)
-        elif name in ('__name__', '__qualname__'):
+        elif name == '__qualname__':
             object.__delattr__(self, name)
             delattr(self._self_wrapped, name)
         else:
@@ -365,6 +365,9 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
 class _FunctionWrapperBase(ObjectProxy):
 
+    __slots__ = ('_self_instance', '_self_wrapper', '_self_adapter',
+            '_self_bound_type') 
+
     def __init__(self, wrapped, instance, wrapper, adapter=None,
             bound_type=None):
 
@@ -530,6 +533,8 @@ def _weak_function_proxy_callback(ref, proxy, callback):
         callback(proxy)
 
 class WeakFunctionProxy(ObjectProxy):
+
+    __slots__ = ('_self_expired', '_self_instance')
 
     def __init__(self, wrapped, callback=None):
         # We need to determine if the wrapped function is actually a

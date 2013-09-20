@@ -56,42 +56,9 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type,
 static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
         PyObject *wrapped)
 {
-    PyObject *name = NULL;
-    PyObject *object = NULL;
-
     Py_INCREF(wrapped);
     Py_XDECREF(self->wrapped);
     self->wrapped = wrapped;
-
-    object = PyObject_GetAttrString(wrapped, "__name__");
-
-    if (object) {
-#if PY_MAJOR_VERSION >= 3
-        name = PyUnicode_FromString("__name__");
-#else
-        name = PyString_FromString("__name__");
-#endif
-        PyObject_GenericSetAttr((PyObject *)self, name, object);
-        Py_DECREF(name);
-        Py_DECREF(object);
-    }
-    else
-        PyErr_Clear();
-
-    object = PyObject_GetAttrString(wrapped, "__qualname__");
-
-    if (object) {
-#if PY_MAJOR_VERSION >= 3
-        name = PyUnicode_FromString("__qualname__");
-#else
-        name = PyString_FromString("__qualname__");
-#endif
-        PyObject_GenericSetAttr((PyObject *)self, name, object);
-        Py_DECREF(name);
-        Py_DECREF(object);
-    }
-    else
-        PyErr_Clear();
 
     return 0;
 }
@@ -1011,6 +978,58 @@ static PyObject *WraptObjectProxy_exit(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_get_name(
+        WraptObjectProxyObject *self)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->wrapped, "__name__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptObjectProxy_set_name(WraptObjectProxyObject *self,
+        PyObject *value)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return -1;
+    }
+
+    return PyObject_SetAttrString(self->wrapped, "__name__", value);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_get_qualname(
+        WraptObjectProxyObject *self)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->wrapped, "__qualname__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptObjectProxy_set_qualname(WraptObjectProxyObject *self,
+        PyObject *value)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return -1;
+    }
+
+    return PyObject_SetAttrString(self->wrapped, "__qualname__", value);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_module(
         WraptObjectProxyObject *self)
 {
@@ -1174,8 +1193,6 @@ static int WraptObjectProxy_setattro(
         WraptObjectProxyObject *self, PyObject *name, PyObject *value)
 {
     PyObject *self_prefix = NULL;
-    PyObject *attr_name = NULL;
-    PyObject *attr_qualname = NULL;
     PyObject *attr_wrapped = NULL;
 
     PyObject *match = NULL;
@@ -1216,34 +1233,6 @@ static int WraptObjectProxy_setattro(
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
       return -1;
     }
-
-#if PY_MAJOR_VERSION >= 3
-    attr_name = PyUnicode_FromString("__name__");
-    attr_qualname = PyUnicode_FromString("__qualname__");
-#else
-    attr_name = PyString_FromString("__name__");
-    attr_qualname = PyString_FromString("__qualname__");
-#endif
-
-    if (PyObject_RichCompareBool(name, attr_name, Py_EQ) == 1 ||
-            PyObject_RichCompareBool(name, attr_qualname, Py_EQ) == 1) {
-
-        if (PyObject_GenericSetAttr((PyObject *)self, name, value) == -1)
-        {
-            Py_DECREF(attr_name);
-            Py_DECREF(attr_qualname);
-
-            return -1;
-        }
-
-        Py_DECREF(attr_name);
-        Py_DECREF(attr_qualname);
-
-        return PyObject_SetAttr(self->wrapped, name, value);
-    }
-
-    Py_DECREF(attr_name);
-    Py_DECREF(attr_qualname);
 
     return PyObject_SetAttr(self->wrapped, name, value);
 }
@@ -1357,6 +1346,10 @@ static PyMethodDef WraptObjectProxy_methods[] = {
 };
 
 static PyGetSetDef WraptObjectProxy_getset[] = {
+    { "__name__",           (getter)WraptObjectProxy_get_name,
+                            (setter)WraptObjectProxy_set_name, 0 },
+    { "__qualname__",       (getter)WraptObjectProxy_get_qualname,
+                            (setter)WraptObjectProxy_set_qualname, 0 },
     { "__module__",         (getter)WraptObjectProxy_get_module,
                             (setter)WraptObjectProxy_set_module, 0 },
     { "__doc__",            (getter)WraptObjectProxy_get_doc,
