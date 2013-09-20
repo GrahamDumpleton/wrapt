@@ -326,7 +326,7 @@ manager, but at the same time can still be used as a decorator as before.
         class _FinalDecorator(FunctionWrapper):
 
             def __enter__(self):
-                self._self_lock = _synchronized_lock(self._self_wrapped)
+                self._self_lock = _synchronized_lock(self.__wrapped__)
                 self._self_lock.acquire()
                 return self._self_lock
 
@@ -488,7 +488,7 @@ frowned on by some, but the implementation would be as follows.
         class _FinalDecorator(FunctionWrapper):
 
             def __enter__(self):
-                self._self_lock = _synchronized_lock(self._self_wrapped)
+                self._self_lock = _synchronized_lock(self.__wrapped__)
                 self._self_lock.acquire()
                 return self._self_lock
 
