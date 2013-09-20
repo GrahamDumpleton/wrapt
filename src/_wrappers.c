@@ -1153,20 +1153,6 @@ static int WraptObjectProxy_set_annotations(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptObjectProxy_get_self_wrapped(
-        WraptObjectProxyObject *self, void *closure)
-{
-    if (!self->wrapped) {
-        Py_INCREF(Py_None);
-        return Py_None;
-    }
-
-    Py_INCREF(self->wrapped);
-    return self->wrapped;
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *WraptObjectProxy_getattro(
         WraptObjectProxyObject *self, PyObject *name)
 {
@@ -1360,8 +1346,6 @@ static PyGetSetDef WraptObjectProxy_getset[] = {
                             (setter)WraptObjectProxy_set_annotations, 0 },
     { "__wrapped__",        (getter)WraptObjectProxy_get_wrapped,
                             (setter)WraptObjectProxy_set_wrapped, 0 },
-    { "_self_wrapped",      (getter)WraptObjectProxy_get_self_wrapped,
-                            NULL, 0 },
     { NULL },
 };
 

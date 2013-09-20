@@ -55,7 +55,7 @@ class _AdapterFunction(ObjectProxy):
 
     @property
     def __code__(self):
-        return _AdapterFunctionCode(self._self_wrapped.__code__,
+        return _AdapterFunctionCode(self.__wrapped__.__code__,
                 self._self_adapter.__code__)
 
     @property
@@ -220,7 +220,7 @@ def synchronized(wrapped):
     class _FinalDecorator(FunctionWrapper):
 
         def __enter__(self):
-            self._self_lock = _synchronized_lock(self._self_wrapped)
+            self._self_lock = _synchronized_lock(self.__wrapped__)
             self._self_lock.acquire()
             return self._self_lock
 

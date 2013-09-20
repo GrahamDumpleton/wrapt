@@ -87,7 +87,7 @@ class TestAttributeAccess(unittest.TestCase):
             return args, kwargs
         function2 = decorator2(function1)
 
-        self.assertEqual(function2._self_wrapped, function1)
+        self.assertEqual(function2.__wrapped__, function1)
         self.assertEqual(function2._self_wrapper, decorator1)
         self.assertNotEqual(function2._self_bound_type, None)
 
@@ -101,13 +101,13 @@ class TestAttributeAccess(unittest.TestCase):
                 return args, kwargs
             function2 = decorator2(function1)
 
-            self.assertEqual(function2._self_wrapped, function1)
+            self.assertEqual(function2.__wrapped__, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
             self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
 
-        self.assertEqual(instance.function2._self_wrapped, instance.function1)
+        self.assertEqual(instance.function2.__wrapped__, instance.function1)
         self.assertEqual(instance.function2._self_instance, instance)
         self.assertEqual(instance.function2._self_wrapper, decorator1)
 
@@ -122,13 +122,13 @@ class TestAttributeAccess(unittest.TestCase):
                 return args, kwargs
             function2 = decorator2(function1)
 
-            self.assertEqual(function2._self_wrapped, function1)
+            self.assertEqual(function2.__wrapped__, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
             self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
 
-        self.assertEqual(instance.function2._self_wrapped, instance.function1)
+        self.assertEqual(instance.function2.__wrapped__, instance.function1)
         self.assertEqual(instance.function2._self_instance, instance)
         self.assertEqual(instance.function2._self_wrapper, decorator1)
 
@@ -143,13 +143,13 @@ class TestAttributeAccess(unittest.TestCase):
                 return args, kwargs
             function2 = decorator2(function1)
 
-            self.assertEqual(function2._self_wrapped, function1)
+            self.assertEqual(function2.__wrapped__, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
             self.assertNotEqual(function2._self_bound_type, None)
 
         instance = Class()
 
-        self.assertEqual(instance.function2._self_wrapped, instance.function1)
+        self.assertEqual(instance.function2.__wrapped__, instance.function1)
         self.assertEqual(instance.function2._self_instance, instance)
         self.assertEqual(instance.function2._self_wrapper, decorator1)
 
