@@ -1183,20 +1183,20 @@ static PyObject *WraptObjectProxy_getattro(
 static int WraptObjectProxy_setattro(
         WraptObjectProxyObject *self, PyObject *name, PyObject *value)
 {
-    PyObject *self_prefix = NULL;
-    PyObject *attr_wrapped = NULL;
+    static PyObject *self_prefix = NULL;
+    static PyObject *attr_wrapped = NULL;
 
     PyObject *match = NULL;
 
+    if (!self_prefix) {
 #if PY_MAJOR_VERSION >= 3
-    self_prefix = PyUnicode_FromString("_self_");
+        self_prefix = PyUnicode_InternFromString("_self_");
 #else
-    self_prefix = PyString_FromString("_self_");
+        self_prefix = PyString_InternFromString("_self_");
 #endif
+    }
 
     match = PyEval_CallMethod(name, "startswith", "(O)", self_prefix);
-
-    Py_DECREF(self_prefix);
 
     if (match == Py_True) {
         Py_DECREF(match);
@@ -1206,19 +1206,19 @@ static int WraptObjectProxy_setattro(
 
     Py_XDECREF(match);
 
+    if (!attr_wrapped) {
 #if PY_MAJOR_VERSION >= 3
-    attr_wrapped = PyUnicode_FromString("__wrapped__");
+        attr_wrapped = PyUnicode_InternFromString("__wrapped__");
 #else
-    attr_wrapped = PyString_FromString("__wrapped__");
+        attr_wrapped = PyString_InternFromString("__wrapped__");
 #endif
+    }
 
     if (PyObject_RichCompareBool(name, attr_wrapped, Py_EQ) == 1) {
         Py_DECREF(attr_wrapped);
 
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
     }
-
-    Py_DECREF(attr_wrapped);
 
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
