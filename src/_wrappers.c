@@ -1117,6 +1117,11 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
       return -1;
     }
 
+    if (!value) {
+        PyErr_SetString(PyExc_TypeError, "__wrapped__ must be an object");
+        return -1;
+    }
+
     Py_INCREF(value);
     Py_DECREF(self->wrapped);
 
