@@ -51,13 +51,45 @@ class TestAttributeAccess(unittest.TestCase):
             return args, kwargs
         function2 = wrapt.ObjectProxy(function1)
 
+        self.assertEqual(function2, function1)
         self.assertEqual(function2.__wrapped__, function1)
+        self.assertEqual(function2.__name__, function1.__name__)
+
+        if six.PY3:
+            self.assertEqual(function2.__qualname__, function1.__qualname__)
 
         function2.__wrapped__ = None
 
-        self.assertEqual(function2.__wrapped__, None)
-
         self.assertFalse(hasattr(function1, '__wrapped__'))
+
+        self.assertEqual(function2, None)
+        self.assertEqual(function2.__wrapped__, None)
+        self.assertFalse(hasattr(function2, '__name__'))
+
+        if six.PY3:
+            self.assertFalse(hasattr(function2, '__qualname__'))
+
+        def function3(*args, **kwargs):
+            return args, kwargs
+
+        function2.__wrapped__ = function3
+
+        self.assertEqual(function2, function3)
+        self.assertEqual(function2.__wrapped__, function3)
+        self.assertEqual(function2.__name__, function3.__name__)
+
+        if six.PY3:
+            self.assertEqual(function2.__qualname__, function3.__qualname__)
+
+    def test_delete_wrapped(self):
+        def function1(*args, **kwargs):
+            return args, kwargs
+        function2 = wrapt.ObjectProxy(function1)
+
+        def run(*args):
+            del function2.__wrapped__
+
+        self.assertRaises(TypeError, run, ())
 
     def test_proxy_attribute(self):
         def function1(*args, **kwargs):

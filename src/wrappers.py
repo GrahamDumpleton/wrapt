@@ -129,11 +129,25 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return bool(self.__wrapped__)
 
     def __setattr__(self, name, value):
-        if name.startswith('_self_') or name == '__wrapped__':
+        if name.startswith('_self_'):
             object.__setattr__(self, name, value)
+
+        elif name == '__wrapped__':
+            object.__setattr__(self, name, value)
+            try:
+                object.__delattr__(self, '__qualname__')
+            except AttributeError:
+                pass
+            object.__setattr__(self, name, value)
+            try:
+                object.__setattr__(self, '__qualname__', value.__qualname__)
+            except AttributeError:
+                pass
+
         elif name == '__qualname__':
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
+
         else:
             setattr(self.__wrapped__, name, value)
 
@@ -141,11 +155,16 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return getattr(self.__wrapped__, name)
 
     def __delattr__(self, name):
-        if name.startswith('_self_') or name == '__wrapped__':
+        if name.startswith('_self_'):
             object.__delattr__(self, name)
+
+        elif name == '__wrapped__':
+            raise TypeError('__wrapped__ must be an object')
+
         elif name == '__qualname__':
             object.__delattr__(self, name)
             delattr(self.__wrapped__, name)
+
         else:
             delattr(self.__wrapped__, name)
 
