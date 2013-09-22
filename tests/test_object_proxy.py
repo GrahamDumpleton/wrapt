@@ -1139,12 +1139,13 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(hex(value), hex(20))
 
     def test_index(self):
-        value = wrapt.ObjectProxy(20)
+        class Class(object):
+            def __index__(self):
+                return 1
+        value = wrapt.ObjectProxy(Class())
+        items = [0, 1, 2]
 
-        # PyPy doesn't implement operator.__index__().
-
-        if not is_pypy:
-            self.assertEqual(value.__index__(), operator.__index__(20))
+        self.assertEqual(items[value], items[1])
 
 class TestAsSequenceObjectProxy(unittest.TestCase):
 

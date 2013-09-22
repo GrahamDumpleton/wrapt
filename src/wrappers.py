@@ -178,10 +178,10 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return self.__wrapped__ * other
 
     def __div__(self, other):
-        return operator.__div__(self.__wrapped__, other)
+        return operator.div(self.__wrapped__, other)
 
     def __truediv__(self, other):
-        return operator.__truediv__(self.__wrapped__, other)
+        return operator.truediv(self.__wrapped__, other)
 
     def __floordiv__(self, other):
         return self.__wrapped__ // other
@@ -220,10 +220,10 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return other * self.__wrapped__
 
     def __rdiv__(self, other):
-        return operator.__div__(other, self.__wrapped__)
+        return operator.div(other, self.__wrapped__)
 
     def __rtruediv__(self, other):
-        return operator.__truediv__(other, self.__wrapped__)
+        return operator.truediv(other, self.__wrapped__)
 
     def __rfloordiv__(self, other):
         return other // self.__wrapped__
@@ -265,11 +265,11 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return self
 
     def __idiv__(self, other):
-        self.__wrapped__ = operator.__idiv__(self.__wrapped__, other)
+        self.__wrapped__ = operator.idiv(self.__wrapped__, other)
         return self
 
     def __itruediv__(self, other):
-        self.__wrapped__ = operator.__itruediv__(self.__wrapped__, other)
+        self.__wrapped__ = operator.itruediv(self.__wrapped__, other)
         return self
 
     def __ifloordiv__(self, other):
@@ -332,7 +332,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         return hex(self.__wrapped__)
 
     def __index__(self):
-        return operator.__index__(self.__wrapped__)
+        return operator.index(self.__wrapped__)
 
     def __len__(self):
         return len(self.__wrapped__)
