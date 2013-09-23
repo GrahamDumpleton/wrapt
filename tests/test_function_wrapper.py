@@ -153,5 +153,70 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(instance.function2._self_instance, instance)
         self.assertEqual(instance.function2._self_wrapper, decorator1)
 
+class TestParentReference(unittest.TestCase):
+
+    def test_function_decorator(self):
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def function():
+            pass
+
+        self.assertEqual(function._self_parent, None)
+
+    def test_class_decorator(self):
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        class Class:
+            pass
+
+        self.assertEqual(Class._self_parent, None)
+
+    def test_instancemethod(self):
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class:
+            @_decorator
+            def function_im(self):
+                pass
+
+        c = Class()
+
+        self.assertNotEqual(c.function_im._self_parent, None)
+        self.assertNotEqual(Class.function_im._self_parent, None)
+
+    def test_classmethod(self):
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class:
+            @_decorator
+            @classmethod
+            def function_cm(cls):
+                pass
+
+        self.assertNotEqual(Class.function_cm._self_parent, None)
+
+    def test_staticmethod_inner(self):
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class:
+            @_decorator
+            @staticmethod
+            def function_sm_inner():
+                pass
+
+        self.assertNotEqual(Class.function_sm_inner._self_parent, None)
+
 if __name__ == '__main__':
     unittest.main()

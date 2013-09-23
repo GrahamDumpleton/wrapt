@@ -373,10 +373,10 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 class _FunctionWrapperBase(ObjectProxy):
 
     __slots__ = ('_self_instance', '_self_wrapper', '_self_adapter',
-            '_self_bound_type') 
+            '_self_bound_type', '_self_parent') 
 
     def __init__(self, wrapped, instance, wrapper, adapter=None,
-            bound_type=None):
+            bound_type=None, parent=None):
 
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
@@ -384,6 +384,7 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, '_self_wrapper', wrapper)
         object.__setattr__(self, '_self_adapter', adapter)
         object.__setattr__(self, '_self_bound_type', bound_type)
+        object.__setattr__(self, '_self_parent', parent)
 
     def __get__(self, instance, owner):
         # If we have already been bound to an instance of something, we
@@ -396,7 +397,7 @@ class _FunctionWrapperBase(ObjectProxy):
         descriptor = self.__wrapped__.__get__(instance, owner)
 
         return self._self_bound_type(descriptor, instance, self._self_wrapper,
-                self._self_adapter)
+                self._self_adapter, None, self)
 
     def __call__(self, *args, **kwargs):
         # This is generally invoked when the wrapped function is being
