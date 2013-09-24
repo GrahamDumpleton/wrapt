@@ -1,6 +1,38 @@
 Changes
 =======
 
+Version 1.1.3
+-------------
+
+**New Features**
+
+* Added a _self_parent attribute to FunctionWrapper and bound variants.
+  For the FunctionWrapper the value will always be None. In the case of the
+  bound variants of the function wrapper, the attribute will refer back
+  to the unbound FunctionWrapper instance. This can be used to get a back
+  reference to the parent to access or cache data against the persistent
+  function wrapper, the bound wrappers often being transient and only
+  existing for the single call.
+
+**Improvements**
+
+* Use interned strings to optimise name comparisons in the setattro()
+  method of the C implementation of the object proxy.
+
+**Bugs Fixed**
+
+* The pypy interpreter is missing operator.__index__() so proxying of that
+  method in the object proxy would fail. This is a bug in pypy which is
+  being addressed. Use operator.index() instead which pypy does provide
+  and which also exists for CPython.
+
+* The pure Python implementation allowed the __wrapped__ attribute to be
+  deleted which could cause problems. Now raise a TypeError exception.
+
+* The C implementation of the object proxy would crash if an attempt was
+  made to delete the __wrapped__ attribute from the object proxy. Now raise a
+  TypeError exception.
+
 Version 1.1.2
 -------------
 
@@ -45,13 +77,13 @@ Version 1.1.0
 
 **Bugs Fixed**
 
-* When deriving from ObjectProxy, and the C extension variant of **wrapt**
+* When deriving from ObjectProxy, and the C extension variant
   was being used, if a derived class overrode __new__() and tried to access
   attributes of the ObjectProxy created using the base class __new__()
   before __init__() was called, then an exception would be raised
   indicating that the 'wrapper has not been initialised'.
 
-* When deriving from ObjectProxy, and the C extension variant of **wrapt**
+* When deriving from ObjectProxy, and the C extension variant
   was being used, if a derived class __init__() attempted to update
   attributes, even the special '_self_' attributed before calling the base
   class __init__() methid, then an exception would be raised indicating
