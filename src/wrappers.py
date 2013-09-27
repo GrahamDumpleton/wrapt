@@ -148,6 +148,9 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
 
+        elif hasattr(type(self), name):
+            object.__setattr__(self, name, value)
+
         else:
             setattr(self.__wrapped__, name, value)
 
@@ -164,6 +167,9 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
         elif name == '__qualname__':
             object.__delattr__(self, name)
             delattr(self.__wrapped__, name)
+
+        elif hasattr(type(self), name):
+            object.__delattr__(self, name)
 
         else:
             delattr(self.__wrapped__, name)

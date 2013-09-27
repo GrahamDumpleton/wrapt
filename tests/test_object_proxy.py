@@ -1290,5 +1290,101 @@ class TestDerivedClassCreation(unittest.TestCase):
 
         obj = DerivedObjectProxy(function)
 
+class DerivedClassAttributes(unittest.TestCase):
+
+    def test_setup_class_attributes(self):
+
+        def function():
+            pass
+
+        class DerivedObjectProxy(wrapt.ObjectProxy):
+            pass
+
+        obj = DerivedObjectProxy(function)
+
+        DerivedObjectProxy.ATTRIBUTE = 1
+
+        self.assertEqual(obj.ATTRIBUTE, 1)
+        self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
+        del DerivedObjectProxy.ATTRIBUTE
+
+        self.assertFalse(hasattr(DerivedObjectProxy, 'ATTRIBUTE'))
+        self.assertFalse(hasattr(obj, 'ATTRIBUTE'))
+        self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
+    def test_override_class_attributes(self):
+
+        def function():
+            pass
+
+        class DerivedObjectProxy(wrapt.ObjectProxy):
+            ATTRIBUTE = 1
+
+        obj = DerivedObjectProxy(function)
+
+        self.assertEqual(DerivedObjectProxy.ATTRIBUTE, 1)
+        self.assertEqual(obj.ATTRIBUTE, 1)
+
+        obj.ATTRIBUTE = 2
+
+        self.assertEqual(DerivedObjectProxy.ATTRIBUTE, 1)
+
+        self.assertEqual(obj.ATTRIBUTE, 2)
+        self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
+        del DerivedObjectProxy.ATTRIBUTE
+
+        self.assertFalse(hasattr(DerivedObjectProxy, 'ATTRIBUTE'))
+        self.assertEqual(obj.ATTRIBUTE, 2)
+        self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
+    def test_class_properties(self):
+
+        def function():
+            pass
+
+        class DerivedObjectProxy(wrapt.ObjectProxy):
+            def __init__(self, wrapped):
+                super(DerivedObjectProxy, self).__init__(wrapped)
+                self._self_attribute = 1
+            @property
+            def ATTRIBUTE(self):
+                return self._self_attribute
+            @ATTRIBUTE.setter
+            def ATTRIBUTE(self, value):
+                self._self_attribute = value
+            @ATTRIBUTE.deleter
+            def ATTRIBUTE(self):
+                del self._self_attribute
+
+        obj = DerivedObjectProxy(function)
+
+        self.assertEqual(obj.ATTRIBUTE, 1)
+
+        obj.ATTRIBUTE = 2
+
+        self.assertEqual(obj.ATTRIBUTE, 2)
+        self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
+        del obj.ATTRIBUTE
+
+        self.assertFalse(hasattr(obj, 'ATTRIBUTE'))
+        self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
+        obj.ATTRIBUTE = 1
+
+        self.assertEqual(obj.ATTRIBUTE, 1)
+
+        obj.ATTRIBUTE = 2
+
+        self.assertEqual(obj.ATTRIBUTE, 2)
+        self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
+        del obj.ATTRIBUTE
+
+        self.assertFalse(hasattr(obj, 'ATTRIBUTE'))
+        self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
 if __name__ == '__main__':
     unittest.main()

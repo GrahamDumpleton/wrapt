@@ -1221,6 +1221,10 @@ static int WraptObjectProxy_setattro(
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
     }
 
+    if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name)) {
+        return PyObject_GenericSetAttr((PyObject *)self, name, value);
+    }
+
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
       return -1;
