@@ -25,6 +25,7 @@ typedef struct {
     PyObject *instance;
     PyObject *wrapper;
     PyObject *adapter;
+    PyObject *enabled;
     PyObject *bound_type;
     PyObject *parent;
 } WraptFunctionWrapperObject;
@@ -1445,6 +1446,7 @@ static PyObject *WraptFunctionWrapperBase_new(PyTypeObject *type,
     self->instance = NULL;
     self->wrapper = NULL;
     self->adapter = NULL;
+    self->enabled = NULL;
     self->bound_type = NULL;
     self->parent = NULL;
 
@@ -1455,7 +1457,8 @@ static PyObject *WraptFunctionWrapperBase_new(PyTypeObject *type,
 
 static int WraptFunctionWrapperBase_raw_init(WraptFunctionWrapperObject *self,
         PyObject *wrapped, PyObject *instance, PyObject *wrapper,
-         PyObject *adapter, PyObject *bound_type, PyObject *parent)
+         PyObject *adapter, PyObject *enabled, PyObject *bound_type,
+         PyObject *parent)
 {
     int result = 0;
 
@@ -1474,6 +1477,10 @@ static int WraptFunctionWrapperBase_raw_init(WraptFunctionWrapperObject *self,
         Py_INCREF(adapter);
         Py_XDECREF(self->adapter);
         self->adapter = adapter;
+
+        Py_INCREF(enabled);
+        Py_XDECREF(self->enabled);
+        self->enabled = enabled;
 
         Py_INCREF(bound_type);
         Py_XDECREF(self->bound_type);
@@ -1496,20 +1503,21 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
     PyObject *instance = NULL;
     PyObject *wrapper = NULL;
     PyObject *adapter = Py_None;
+    PyObject *enabled = Py_None;
     PyObject *bound_type = Py_None;
     PyObject *parent = Py_None;
 
     static char *kwlist[] = { "wrapped", "instance", "wrapper",
-            "adapter", "bound_type", "parent", NULL };
+            "adapter", "enabled", "bound_type", "parent", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO|OOO:FunctionWrapperBase",
-            kwlist, &wrapped, &instance, &wrapper, &adapter, &bound_type,
-            &parent)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+            "OOO|OOOO:FunctionWrapperBase", kwlist, &wrapped, &instance,
+            &wrapper, &adapter, &enabled, &bound_type, &parent)) {
         return -1;
     }
 
     return WraptFunctionWrapperBase_raw_init(self, wrapped, instance, wrapper,
-            adapter, bound_type, parent);
+            adapter, enabled, bound_type, parent);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1522,6 +1530,7 @@ static int WraptFunctionWrapperBase_traverse(WraptFunctionWrapperObject *self,
     Py_VISIT(self->instance);
     Py_VISIT(self->wrapper);
     Py_VISIT(self->adapter);
+    Py_VISIT(self->enabled);
     Py_VISIT(self->bound_type);
     Py_VISIT(self->parent);
 
@@ -1537,6 +1546,7 @@ static int WraptFunctionWrapperBase_clear(WraptFunctionWrapperObject *self)
     Py_CLEAR(self->instance);
     Py_CLEAR(self->wrapper);
     Py_CLEAR(self->adapter);
+    Py_CLEAR(self->enabled);
     Py_CLEAR(self->bound_type);
     Py_CLEAR(self->parent);
 
@@ -1561,6 +1571,29 @@ static PyObject *WraptFunctionWrapperBase_call(
     PyObject *param_kwds = NULL;
 
     PyObject *result = NULL;
+
+    if (self->enabled != Py_None) {
+        if (PyCallable_Check(self->enabled)) {
+            PyObject *object = NULL;
+
+            object = PyObject_CallFunction(self->enabled, "()");
+
+            if (!object)
+                return NULL;
+
+            if (PyObject_Not(object)) {
+                Py_DECREF(object);
+                return PyEval_CallObjectWithKeywords(
+                        self->object_proxy.wrapped, args, kwds);
+            }
+
+            Py_DECREF(object);
+        }
+        else if (PyObject_Not(self->enabled)) {
+            return PyEval_CallObjectWithKeywords(
+                    self->object_proxy.wrapped, args, kwds);
+        }
+    }
 
     if (!kwds) {
         param_kwds = PyDict_New();
@@ -1594,14 +1627,37 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
             self->object_proxy.wrapped, obj, type);
 
+    if (self->enabled != Py_None) {
+        if (PyCallable_Check(self->enabled)) {
+            PyObject *object = NULL;
+
+            object = PyObject_CallFunction(self->enabled, "()");
+
+            if (!object) {
+                Py_DECREF(descriptor);
+                return NULL;
+            }
+
+            if (PyObject_Not(object)) {
+                Py_DECREF(object);
+                return descriptor;
+            }
+
+            Py_DECREF(object);
+        }
+        else if (PyObject_Not(self->enabled))
+            return descriptor;
+    }
+
     if (!obj)
         obj = Py_None;
     if (!type)
         type = Py_None;
 
     if (descriptor) {
-        result = PyObject_CallFunction(self->bound_type, "(OOOOOO)",
-                descriptor, obj, self->wrapper, self->adapter, Py_None, self);
+        result = PyObject_CallFunction(self->bound_type, "(OOOOOOO)",
+                descriptor, obj, self->wrapper, self->adapter, Py_None,
+                Py_None, self);
     }
 
     Py_XDECREF(descriptor);
@@ -1717,6 +1773,20 @@ static PyObject *WraptFunctionWrapperBase_get_self_adapter(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptFunctionWrapperBase_get_self_enabled(
+        WraptFunctionWrapperObject *self, void *closure)
+{
+    if (!self->enabled) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    Py_INCREF(self->enabled);
+    return self->enabled;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptFunctionWrapperBase_get_self_bound_type(
         WraptFunctionWrapperObject *self, void *closure)
 {
@@ -1769,6 +1839,8 @@ static PyGetSetDef WraptFunctionWrapperBase_getset[] = {
     { "_self_wrapper",      (getter)WraptFunctionWrapperBase_get_self_wrapper,
                             NULL, 0 },
     { "_self_adapter",      (getter)WraptFunctionWrapperBase_get_self_adapter,
+                            NULL, 0 },
+    { "_self_enabled",      (getter)WraptFunctionWrapperBase_get_self_enabled,
                             NULL, 0 },
     { "_self_bound_type",   (getter)WraptFunctionWrapperBase_get_self_bound_type,
                             NULL, 0 },
@@ -2072,14 +2144,15 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     PyObject *wrapped = NULL;
     PyObject *wrapper = NULL;
     PyObject *adapter = Py_None;
+    PyObject *enabled = Py_None;
     PyObject *bound_type = NULL;
 
     int result = 0;
 
-    static char *kwlist[] = { "wrapped", "wrapper", "adapter", NULL };
+    static char *kwlist[] = { "wrapped", "wrapper", "adapter", "enabled", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O:FunctionWrapper",
-            kwlist, &wrapped, &wrapper, &adapter)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|OO:FunctionWrapper",
+            kwlist, &wrapped, &wrapper, &adapter, &enabled)) {
         return -1;
     }
 
@@ -2092,7 +2165,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
         bound_type = (PyObject *)&WraptBoundMethodWrapper_Type;
 
     result = WraptFunctionWrapperBase_raw_init(self, wrapped, Py_None,
-            wrapper, adapter, bound_type, Py_None);
+            wrapper, adapter, enabled, bound_type, Py_None);
 
     return result;
 }
