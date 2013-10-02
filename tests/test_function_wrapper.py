@@ -3,6 +3,7 @@ from __future__ import print_function
 import unittest
 
 import wrapt
+import wrapt.wrappers
 
 from wrapt import six
 
@@ -217,6 +218,128 @@ class TestParentReference(unittest.TestCase):
                 pass
 
         self.assertNotEqual(Class.function_sm_inner._self_parent, None)
+
+class TestGuardArgument(unittest.TestCase):
+
+    def test_boolean_false_guard_on_decorator(self):
+        @wrapt.decorator(enabled=False)
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def function():
+            pass
+
+        self.assertFalse(isinstance(function, wrapt.FunctionWrapper))
+
+    def test_boolean_true_guard_on_decorator(self):
+        @wrapt.decorator(enabled=True)
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def function():
+            pass
+
+        self.assertTrue(isinstance(function, wrapt.FunctionWrapper))
+
+    def test_boolean_dynamic_guard_on_decorator(self):
+        class Guard(object):
+            value = True
+            def __nonzero__(self):
+                return self.value
+            __bool__ = __nonzero__
+
+        guard = Guard()
+
+        result = []
+
+        @wrapt.decorator(enabled=guard)
+        def _decorator(wrapped, instance, args, kwargs):
+            result.append(1)
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def function():
+            pass
+
+        self.assertTrue(isinstance(function, wrapt.FunctionWrapper))
+
+        function()
+
+        self.assertNotEqual(len(result), 0)
+
+        result = []
+        guard.value = False
+
+        function()
+
+        self.assertEqual(len(result), 0)
+
+    def test_function_guard_on_decorator(self):
+        value = True
+        def guard():
+            return value
+
+        result = []
+
+        @wrapt.decorator(enabled=guard)
+        def _decorator(wrapped, instance, args, kwargs):
+            result.append(1)
+            return wrapped(*args, **kwargs)
+
+        @_decorator
+        def function():
+            pass
+
+        self.assertTrue(isinstance(function, wrapt.FunctionWrapper))
+
+        function()
+
+        self.assertNotEqual(len(result), 0)
+
+        result = []
+        value = False
+
+        function()
+
+        self.assertEqual(len(result), 0)
+
+    def test_guard_on_instancemethod(self):
+        value = True
+        def guard():
+            return value
+
+        result = []
+
+        @wrapt.decorator(enabled=guard)
+        def _decorator(wrapped, instance, args, kwargs):
+            result.append(1)
+            return wrapped(*args, **kwargs)
+
+        class Class(object):
+            @_decorator
+            def function(self):
+                pass
+
+        c = Class()
+
+        self.assertTrue(isinstance(c.function,
+            wrapt.wrappers._BoundMethodWrapper))
+
+        c.function()
+
+        self.assertNotEqual(len(result), 0)
+
+        result = []
+        value = False
+
+        self.assertFalse(isinstance(c.function,
+            wrapt.wrappers._BoundMethodWrapper))
+
+        c.function()
+
+        self.assertEqual(len(result), 0)
 
 if __name__ == '__main__':
     unittest.main()

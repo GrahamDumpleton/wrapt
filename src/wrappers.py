@@ -379,16 +379,17 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 class _FunctionWrapperBase(ObjectProxy):
 
     __slots__ = ('_self_instance', '_self_wrapper', '_self_adapter',
-            '_self_bound_type', '_self_parent') 
+            '_self_enabled', '_self_bound_type', '_self_parent') 
 
     def __init__(self, wrapped, instance, wrapper, adapter=None,
-            bound_type=None, parent=None):
+            enabled=None, bound_type=None, parent=None):
 
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
         object.__setattr__(self, '_self_instance', instance)
         object.__setattr__(self, '_self_wrapper', wrapper)
         object.__setattr__(self, '_self_adapter', adapter)
+        object.__setattr__(self, '_self_enabled', enabled)
         object.__setattr__(self, '_self_bound_type', bound_type)
         object.__setattr__(self, '_self_parent', parent)
 
@@ -402,10 +403,36 @@ class _FunctionWrapperBase(ObjectProxy):
 
         descriptor = self.__wrapped__.__get__(instance, owner)
 
+        # If enabled has been specified, then evaluate it at this point
+        # and if the wrapper is not to be executed, then simply return
+        # the bound function rather than a bound wrapper for the bound
+        # function. When evaluating enabled, if it is callable we call
+        # it, otherwise we evaluate it as a boolean.
+
+        if self._self_enabled is not None:
+            if callable(self._self_enabled):
+                if not self._self_enabled():
+                    return descriptor
+            elif not self._self_enabled:
+                return descriptor
+
         return self._self_bound_type(descriptor, instance, self._self_wrapper,
-                self._self_adapter, None, self)
+                self._self_adapter, None, None, self)
 
     def __call__(self, *args, **kwargs):
+        # If enabled has been specified, then evaluate it at this point
+        # and if the wrapper is not to be executed, then simply return
+        # the bound function rather than a bound wrapper for the bound
+        # function. When evaluating enabled, if it is callable we call
+        # it, otherwise we evaluate it as a boolean.
+
+        if self._self_enabled is not None:
+            if callable(self._self_enabled):
+                if not self._self_enabled():
+                    return self.__wrapped__(*args, **kwargs)
+            elif not self._self_enabled:
+                return self.__wrapped__(*args, **kwargs)
+
         # This is generally invoked when the wrapped function is being
         # called as a normal function and is not bound to a class as an
         # instance method. This is also invoked in the case where the
@@ -492,7 +519,7 @@ class _BoundMethodWrapper(_FunctionWrapperBase):
 
 class FunctionWrapper(_FunctionWrapperBase):
 
-    def __init__(self, wrapped, wrapper, adapter=None):
+    def __init__(self, wrapped, wrapper, adapter=None, enabled=None):
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
         # passed explicitly as the first argument. Defer to the
@@ -525,7 +552,7 @@ class FunctionWrapper(_FunctionWrapperBase):
             bound_type = _BoundMethodWrapper
 
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
-                adapter, bound_type)
+                adapter, enabled, bound_type)
 
 try:
     from ._wrappers import (ObjectProxy, FunctionWrapper,

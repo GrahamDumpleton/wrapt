@@ -4,6 +4,16 @@ Changes
 Version 1.2.0
 -------------
 
+**New Features**
+
+* Added an 'enabled' option to @decorator and FunctionWrapper which can
+  be provided a boolean, or a function returning a boolean to allow the
+  work of the decorator to be disabled dynamically. When a boolean, is
+  used for @decorator, the wrapper will not even be applied if 'enabled'
+  is False. If a function, then will be called prior to wrapper being
+  called and if returns False, then original wrapped function called
+  directly rather than the wrapper being called.
+
 **Bugs Fixed**
 
 * When creating a custom proxy by deriving from ObjectProxy and the custom

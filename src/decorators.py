@@ -89,29 +89,45 @@ class _AdapterFunction(ObjectProxy):
 # function so the wrapper is effectively indistinguishable from the
 # original wrapped function.
 
-def decorator(wrapper=None, adapter=None):
+def decorator(wrapper=None, adapter=None, enabled=None):
     # The decorator should be supplied with a single positional argument
     # which is the wrapper function to be used to implement the
     # decorator. This may be preceded by a step whereby the keyword
     # arguments are supplied to customise the behaviour of the
-    # decorator. The 'adapter' argument is currently the only such
-    # keyword argument and is used to optionally denote a separate
-    # function which is notionally used by an adapter decorator. In that
-    # case parts of the function '__code__' and '__defaults__'
-    # attributes are used from the adapter function rather than those of
-    # the wrapped function. This allows for the argument specification
-    # from inspect.getargspec() to be overridden with a prototype for a
-    # different function than what was wrapped.
+    # decorator. The 'adapter' argument is used to optionally denote a
+    # separate function which is notionally used by an adapter
+    # decorator. In that case parts of the function '__code__' and
+    # '__defaults__' attributes are used from the adapter function
+    # rather than those of the wrapped function. This allows for the
+    # argument specification from inspect.getargspec() to be overridden
+    # with a prototype for a different function than what was wrapped.
+    # The 'enabled' argument provides a way to enable/disable the use
+    # of the decorator. If the type of 'enabled' is a boolean, then it
+    # is evaluated immediately and the wrapper not even applied if
+    # it is False. If not a boolean, it will be evaluated when the
+    # wrapper is called for an unbound wrapper, and when binding occurs
+    # for a bound wrapper. When being evaluated, if 'enabled' is callable
+    # it will be called to obtain the value to be checked. If False,
+    # the wrapper will not be called and instead the original wrapped
+    # function will be called directly instead.
 
     if wrapper is not None:
         # The wrapper has been provided so return the final decorator.
 
         @wraps(wrapper)
         def _wrapper(func):
+            _enabled = enabled
+            if type(_enabled) is bool:
+                if not _enabled:
+                    return func
+                _enabled = None
+
             _adapter = adapter and _AdapterFunction(func, adapter)
             result = FunctionWrapper(wrapped=func, wrapper=wrapper,
-                    adapter=_adapter)
+                    adapter=_adapter, enabled=_enabled)
+
             return result
+
         _wrapper.__wrapped__ = wrapper
         return _wrapper
 
@@ -121,7 +137,7 @@ def decorator(wrapper=None, adapter=None):
         # decorator again wrapped in a partial using the collected
         # arguments.
 
-        return partial(decorator, adapter=adapter)
+        return partial(decorator, adapter=adapter, enabled=enabled)
 
 # Decorator for implementing thread synchronization. It can be used as a
 # decorator, in which case the synchronization context is determined by
