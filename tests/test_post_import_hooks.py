@@ -9,14 +9,14 @@ class TestPostImportHooks(unittest.TestCase):
     def test_simple(self):
         invoked = []
 
-        @wrapt.when_imported('socket')
-        def hook_socket(module):
-            self.assertEqual(module.__name__, 'socket')
+        @wrapt.when_imported('this')
+        def hook_this(module):
+            self.assertEqual(module.__name__, 'this')
             invoked.append(1)
 
         self.assertEqual(len(invoked), 0)
 
-        import socket
+        import this
 
         self.assertEqual(len(invoked), 1)
 
