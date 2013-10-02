@@ -99,6 +99,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
 
         self.assertEqual(proxy(1, 2), (1, 2))
 
+        del c
         del Class.function
         gc.collect()
 
