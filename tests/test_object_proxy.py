@@ -1292,6 +1292,17 @@ class TestDerivedClassCreation(unittest.TestCase):
 
 class DerivedClassAttributes(unittest.TestCase):
 
+    def test_attr_functions(self):
+
+        def function():
+            pass
+
+        proxy = wrapt.ObjectProxy(function)
+
+        self.assertTrue(hasattr(proxy, '__getattr__'))
+        self.assertTrue(hasattr(proxy, '__setattr__'))
+        self.assertTrue(hasattr(proxy, '__delattr__'))
+
     def test_setup_class_attributes(self):
 
         def function():

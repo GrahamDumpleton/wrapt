@@ -1,6 +1,16 @@
 Changes
 =======
 
+Version 1.2.0
+-------------
+
+**Bugs Fixed**
+
+* When creating a custom proxy by deriving from ObjectProxy and the custom
+  proxy needed to override __getattr__(), it was not possible to called the
+  base class ObjectProxy.__getattr__() when the C implementation of
+  ObjectProxy was being used.
+
 Version 1.1.3
 -------------
 

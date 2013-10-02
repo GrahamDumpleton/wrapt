@@ -1181,6 +1181,24 @@ static PyObject *WraptObjectProxy_getattro(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_getattr(
+        WraptObjectProxyObject *self, PyObject *args)
+{
+    PyObject *name = NULL;
+
+#if PY_MAJOR_VERSION >= 3
+    if (!PyArg_ParseTuple(args, "U:__getattr__", &name))
+        return NULL;
+#else
+    if (!PyArg_ParseTuple(args, "S:__getattr__", &name))
+        return NULL;
+#endif
+
+    return WraptObjectProxy_getattro(self, name);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static int WraptObjectProxy_setattro(
         WraptObjectProxyObject *self, PyObject *name, PyObject *value)
 {
@@ -1338,6 +1356,8 @@ static PyMethodDef WraptObjectProxy_methods[] = {
                     METH_VARARGS | METH_KEYWORDS, 0 },
     { "__exit__",   (PyCFunction)WraptObjectProxy_exit,
                     METH_VARARGS | METH_KEYWORDS, 0 },
+    { "__getattr__", (PyCFunction)WraptObjectProxy_getattr,
+                    METH_VARARGS , 0 },
     { NULL, NULL },
 };
 
