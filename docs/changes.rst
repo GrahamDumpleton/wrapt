@@ -14,6 +14,9 @@ Version 1.2.0
   called and if returns False, then original wrapped function called
   directly rather than the wrapper being called.
 
+* Added in an implementation of a post import hook mechanism in line with
+  that described in PEP 369.
+
 **Bugs Fixed**
 
 * When creating a custom proxy by deriving from ObjectProxy and the custom
