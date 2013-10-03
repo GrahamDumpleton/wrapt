@@ -1164,6 +1164,9 @@ static PyObject *WraptObjectProxy_getattro(
         WraptObjectProxyObject *self, PyObject *name)
 {
     PyObject *object = NULL;
+    PyObject *result = NULL;
+
+    static PyObject *getattr_str = NULL;
 
     object = PyObject_GenericGetAttr((PyObject *)self, name);
 
@@ -1172,12 +1175,24 @@ static PyObject *WraptObjectProxy_getattro(
 
     PyErr_Clear();
 
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
-      return NULL;
+    if (!getattr_str) {
+#if PY_MAJOR_VERSION >= 3
+        getattr_str = PyUnicode_InternFromString("__getattr__");
+#else
+        getattr_str = PyString_InternFromString("__getattr__");
+#endif
     }
 
-    return PyObject_GetAttr(self->wrapped, name);
+    object = PyObject_GenericGetAttr((PyObject *)self, getattr_str);
+
+    if (!object)
+        return NULL;
+
+    result = PyObject_CallFunction(object, "(O)", name);
+
+    Py_DECREF(object);
+
+    return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1195,7 +1210,12 @@ static PyObject *WraptObjectProxy_getattr(
         return NULL;
 #endif
 
-    return WraptObjectProxy_getattro(self, name);
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttr(self->wrapped, name);
 }
 
 /* ------------------------------------------------------------------------- */
