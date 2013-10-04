@@ -1,8 +1,10 @@
 from . import six
 
+import sys
 import functools
 import operator
 import weakref
+import inspect
 
 class _ObjectProxyMethods(object):
 
@@ -559,6 +561,62 @@ try:
             _FunctionWrapperBase, _BoundFunctionWrapper, _BoundMethodWrapper)
 except ImportError:
     pass
+
+# Helper functions for applying wrappers to existing functions.
+
+def resolve_path(module, name):
+    if not inspect.ismodule(module):
+        __import__(module)
+        module = sys.modules[module]
+
+    parent = module
+
+    path = name.split('.')
+    attribute = path[0]
+
+    original = getattr(parent, attribute)
+    for attribute in path[1:]:
+        parent = original
+        original = getattr(original, attribute)
+
+    return (parent, attribute, original)
+
+def apply_patch(parent, attribute, replacement):
+    setattr(parent, attribute, replacement)
+
+def wrap_object(module, name, factory, args=(), kwargs={}):
+    (parent, attribute, original) = resolve_path(module, name)
+    wrapper = factory(original, *args, **kwargs)
+    apply_patch(parent, attribute, wrapper)
+    return wrapper
+
+# Functions for creating a simple decorator using a FunctionWrapper,
+# plus short cut functions for applying wrappers to functions. These are
+# for use when doing monkey patching. For a more featured way of
+# creating decorators see the decorator decorator instead.
+
+def function_wrapper(wrapper):
+    @functools.wraps(wrapper)
+    def _wrapper(wrapped):
+        return FunctionWrapper(wrapped, wrapper)
+    return _wrapper
+
+def wrap_function_wrapper(module, name, wrapper):
+    return wrap_object(module, name, FunctionWrapper, (wrapper,))
+
+def patch_function_wrapper(module, name):
+    def _wrapper(wrapper):
+        return wrap_object(module, name, FunctionWrapper, (wrapper,))
+    return _wrapper
+
+# A weak function proxy. This will work on instance methods, class
+# methods, static methods and regular functions. Special treatment is
+# needed for the method types because the bound method is effectively a
+# transient object and applying a weak reference to one will immediately
+# result in it being destroyed and the weakref callback called. The weak
+# reference is therefore applied to the instance the method is bound to
+# and the original function. The function is then rebound at the point
+# of a call via the weak function proxy.
 
 def _weak_function_proxy_callback(ref, proxy, callback):
     if proxy._self_expired:
