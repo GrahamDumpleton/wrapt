@@ -381,10 +381,10 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 class _FunctionWrapperBase(ObjectProxy):
 
     __slots__ = ('_self_instance', '_self_wrapper', '_self_adapter',
-            '_self_enabled', '_self_bound_type', '_self_parent') 
+            '_self_enabled', '_self_binding', '_self_parent') 
 
     def __init__(self, wrapped, instance, wrapper, adapter=None,
-            enabled=None, bound_type=None, parent=None):
+            enabled=None, binding=None, parent=None):
 
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
@@ -392,15 +392,16 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, '_self_wrapper', wrapper)
         object.__setattr__(self, '_self_adapter', adapter)
         object.__setattr__(self, '_self_enabled', enabled)
-        object.__setattr__(self, '_self_bound_type', bound_type)
+        object.__setattr__(self, '_self_binding', binding)
         object.__setattr__(self, '_self_parent', parent)
 
     def __get__(self, instance, owner):
         # If we have already been bound to an instance of something, we
         # do not do it again and return ourselves again. This appears to
-        # mirror what Python itself does.
+        # mirror what Python itself does. Determine this by looking to
+        # see if we have a parent as it is the least expensive.
 
-        if self._self_bound_type is None:
+        if self._self_parent is not None:
             return self
 
         descriptor = self.__wrapped__.__get__(instance, owner)
@@ -418,8 +419,9 @@ class _FunctionWrapperBase(ObjectProxy):
             elif not self._self_enabled:
                 return descriptor
 
-        return self._self_bound_type(descriptor, instance, self._self_wrapper,
-                self._self_adapter, None, None, self)
+        return self.__bound_function_wrapper__(descriptor, instance,
+                self._self_wrapper, self._self_adapter, None,
+                self._self_binding, self)
 
     def __call__(self, *args, **kwargs):
         # If enabled has been specified, then evaluate it at this point
@@ -481,53 +483,58 @@ class _FunctionWrapperBase(ObjectProxy):
             return self._self_adapter.__signature__
         return self.__wrapped__.__signature__
 
-class _BoundFunctionWrapper(_FunctionWrapperBase):
+class BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(self, *args, **kwargs):
-        # As in this case we would be dealing with a classmethod or
-        # staticmethod, then _self_instance will only tell us whether
-        # when calling the classmethod or staticmethod they did it via an
-        # instance of the class it is bound to and not the case where
-        # done by the class type itself. We thus ignore _self_instance
-        # and use the __self__ attribute of the bound function instead.
-        # For a classmethod, this means instance will be the class type
-        # and for a staticmethod it will be None. This is probably the
-        # more useful thing we can pass through even though we loose
-        # knowledge of whether they were called on the instance vs the
-        # class type, as it reflects what they have available in the
-        # decoratored function.
+        # We need to do things different depending on whether we are
+        # likely wrapping an instance method vs a static method or class
+        # method.
 
-        instance = getattr(self.__wrapped__, '__self__', None)
+        if self._self_binding == 'instancemethod':
+            if self._self_instance is None:
+                # This situation can occur where someone is calling the
+                # instancemethod via the class type and passing the instance
+                # as the first argument. We need to shift the args before
+                # making the call to the wrapper and effectively bind the
+                # instance to the wrapped function using a partial so the
+                # wrapper doesn't see anything as being different.
 
-        return self._self_wrapper(self.__wrapped__, instance, args, kwargs)
+                instance, args = args[0], args[1:]
+                wrapped = functools.partial(self.__wrapped__, instance)
+                return self._self_wrapper(wrapped, instance, args, kwargs)
 
-class _BoundMethodWrapper(_FunctionWrapperBase):
+            return self._self_wrapper(self.__wrapped__, self._self_instance,
+                    args, kwargs)
 
-    def __call__(self, *args, **kwargs):
-        if self._self_instance is None:
-            # This situation can occur where someone is calling the
-            # instancemethod via the class type and passing the instance
-            # as the first argument. We need to shift the args before
-            # making the call to the wrapper and effectively bind the
-            # instance to the wrapped function using a partial so the
-            # wrapper doesn't see anything as being different.
+        else:
+            # As in this case we would be dealing with a classmethod or
+            # staticmethod, then _self_instance will only tell us whether
+            # when calling the classmethod or staticmethod they did it via an
+            # instance of the class it is bound to and not the case where
+            # done by the class type itself. We thus ignore _self_instance
+            # and use the __self__ attribute of the bound function instead.
+            # For a classmethod, this means instance will be the class type
+            # and for a staticmethod it will be None. This is probably the
+            # more useful thing we can pass through even though we loose
+            # knowledge of whether they were called on the instance vs the
+            # class type, as it reflects what they have available in the
+            # decoratored function.
 
-            instance, args = args[0], args[1:]
-            wrapped = functools.partial(self.__wrapped__, instance)
-            return self._self_wrapper(wrapped, instance, args, kwargs)
+            instance = getattr(self.__wrapped__, '__self__', None)
 
-        return self._self_wrapper(self.__wrapped__, self._self_instance,
-                args, kwargs)
+            return self._self_wrapper(self.__wrapped__, instance, args,
+                    kwargs)
 
 class FunctionWrapper(_FunctionWrapperBase):
+
+    __bound_function_wrapper__ = BoundFunctionWrapper
 
     def __init__(self, wrapped, wrapper, adapter=None, enabled=None):
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
-        # passed explicitly as the first argument. Defer to the
-        # _BoundMethodWrapper for these specific fixups when we believe
-        # it is likely an instancemethod. That is, anytime it isn't
-        # classmethod or staticmethod.
+        # passed explicitly as the first argument. So work out when we
+        # believe it is likely an instancemethod. That is, anytime it
+        # isn't classmethod or staticmethod.
         #
         # Note that there isn't strictly a fool proof method of knowing
         # which is occuring because if a decorator using this code wraps
@@ -548,17 +555,19 @@ class FunctionWrapper(_FunctionWrapperBase):
         # that those other decorators be fixed. It is also only an issue
         # if a decorator wants to actually do things with the arguments.
 
-        if isinstance(wrapped, (classmethod, staticmethod)):
-            bound_type = _BoundFunctionWrapper
+        if isinstance(wrapped, classmethod):
+            binding = 'classmethod'
+        elif isinstance(wrapped, staticmethod):
+            binding = 'staticmethod'
         else:
-            bound_type = _BoundMethodWrapper
+            binding = 'instancemethod'
 
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
-                adapter, enabled, bound_type)
+                adapter, enabled, binding)
 
 try:
     from ._wrappers import (ObjectProxy, FunctionWrapper,
-            _FunctionWrapperBase, _BoundFunctionWrapper, _BoundMethodWrapper)
+            BoundFunctionWrapper, _FunctionWrapperBase)
 except ImportError:
     pass
 

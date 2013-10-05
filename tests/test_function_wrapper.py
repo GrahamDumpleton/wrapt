@@ -90,7 +90,7 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2.__wrapped__, function1)
         self.assertEqual(function2._self_wrapper, decorator1)
-        self.assertNotEqual(function2._self_bound_type, None)
+        self.assertEqual(function2._self_binding, 'instancemethod')
 
     def test_instancemethod_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
@@ -104,7 +104,7 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2.__wrapped__, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertNotEqual(function2._self_bound_type, None)
+            self.assertEqual(function2._self_binding, 'instancemethod')
 
         instance = Class()
 
@@ -125,7 +125,7 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2.__wrapped__, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertNotEqual(function2._self_bound_type, None)
+            self.assertEqual(function2._self_binding, 'classmethod')
 
         instance = Class()
 
@@ -146,7 +146,7 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2.__wrapped__, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertNotEqual(function2._self_bound_type, None)
+            self.assertEqual(function2._self_binding, 'staticmethod')
 
         instance = Class()
 
@@ -324,8 +324,7 @@ class TestGuardArgument(unittest.TestCase):
 
         c = Class()
 
-        self.assertTrue(isinstance(c.function,
-            wrapt.wrappers._BoundMethodWrapper))
+        self.assertTrue(isinstance(c.function, wrapt.BoundFunctionWrapper))
 
         c.function()
 
@@ -334,12 +333,66 @@ class TestGuardArgument(unittest.TestCase):
         result = []
         value = False
 
-        self.assertFalse(isinstance(c.function,
-            wrapt.wrappers._BoundMethodWrapper))
+        self.assertFalse(isinstance(c.function, wrapt.BoundFunctionWrapper))
 
         c.function()
 
         self.assertEqual(len(result), 0)
+
+class TestDerivedFunctionWrapper(unittest.TestCase):
+
+    def test_override_bound_type(self):
+
+        class _BoundFunctionWrapper(wrapt.BoundFunctionWrapper):
+            ATTRIBUTE = 1
+
+        class _FunctionWrapper(wrapt.FunctionWrapper):
+            __bound_function_wrapper__ = _BoundFunctionWrapper
+
+        def function():
+            pass
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        _wrapper = _FunctionWrapper(function, wrapper)
+
+        self.assertTrue(isinstance(_wrapper, _FunctionWrapper))
+
+        instance = object()
+
+        _bound_wrapper = _wrapper.__get__(instance, type(instance))
+
+        self.assertTrue(isinstance(_bound_wrapper, _BoundFunctionWrapper))
+        self.assertEqual(_bound_wrapper.ATTRIBUTE, 1)
+
+class TestFunctionBinding(unittest.TestCase):
+
+    def test_double_binding(self):
+
+        def function():
+            pass
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        _wrapper = wrapt.FunctionWrapper(function, wrapper)
+
+        self.assertTrue(isinstance(_wrapper, wrapt.FunctionWrapper))
+
+        instance = object()
+
+        _bound_wrapper_1 = _wrapper.__get__(instance, type(instance))
+
+        self.assertTrue(isinstance(_bound_wrapper_1,
+                wrapt.BoundFunctionWrapper))
+
+        _bound_wrapper_2 = _bound_wrapper_1.__get__(instance, type(instance))
+
+        self.assertTrue(isinstance(_bound_wrapper_2,
+                wrapt.BoundFunctionWrapper))
+
+        self.assertTrue(_bound_wrapper_1 is _bound_wrapper_2)
 
 if __name__ == '__main__':
     unittest.main()

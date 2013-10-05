@@ -20,6 +20,14 @@ Version 1.2.0
 * Added in helper functions specifically designed to assist in performing
   monkey patching of existing code.
 
+**Features Changes**
+
+* Collapsed functionality of _BoundMethodWrapper into _BoundFunctionWrapper
+  and renamed the latter to BoundFunctionWrapper. If deriving from the
+  FunctionWrapper class and needing to override the type of the bound
+  wrapper, the class attribute ``__bound_function_wrapper__`` should be set
+  in the derived FunctionWrapper class to the replacement type.
+
 **Bugs Fixed**
 
 * When creating a custom proxy by deriving from ObjectProxy and the custom
