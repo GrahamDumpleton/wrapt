@@ -153,7 +153,7 @@ static PyObject *WraptObjectProxy_call(
       return NULL;
     }
 
-    return PyEval_CallObjectWithKeywords(self->wrapped, args, kwds);
+    return PyObject_Call(self->wrapped, args, kwds);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -945,7 +945,7 @@ static PyObject *WraptObjectProxy_enter(
     if (!method)
         return NULL;
 
-    result = PyEval_CallObjectWithKeywords(method, args, kwds);
+    result = PyObject_Call(method, args, kwds);
 
     Py_XDECREF(method);
 
@@ -970,7 +970,7 @@ static PyObject *WraptObjectProxy_exit(
     if (!method)
         return NULL;
 
-    result = PyEval_CallObjectWithKeywords(method, args, kwds);
+    result = PyObject_Call(method, args, kwds);
 
     Py_XDECREF(method);
 
@@ -1187,7 +1187,7 @@ static PyObject *WraptObjectProxy_getattro(
     if (!object)
         return NULL;
 
-    result = PyObject_CallFunction(object, "(O)", name);
+    result = PyObject_CallFunctionObjArgs(object, name, NULL);
 
     Py_DECREF(object);
 
@@ -1222,20 +1222,29 @@ static PyObject *WraptObjectProxy_getattr(
 static int WraptObjectProxy_setattro(
         WraptObjectProxyObject *self, PyObject *name, PyObject *value)
 {
-    static PyObject *self_prefix = NULL;
-    static PyObject *attr_wrapped = NULL;
+    static PyObject *self_str = NULL;
+    static PyObject *wrapped_str = NULL;
+    static PyObject *startswith_str = NULL;
 
     PyObject *match = NULL;
 
-    if (!self_prefix) {
+    if (!startswith_str) {
 #if PY_MAJOR_VERSION >= 3
-        self_prefix = PyUnicode_InternFromString("_self_");
+        startswith_str = PyUnicode_InternFromString("startswith");
 #else
-        self_prefix = PyString_InternFromString("_self_");
+        startswith_str = PyString_InternFromString("startswith");
 #endif
     }
 
-    match = PyEval_CallMethod(name, "startswith", "(O)", self_prefix);
+    if (!self_str) {
+#if PY_MAJOR_VERSION >= 3
+        self_str = PyUnicode_InternFromString("_self_");
+#else
+        self_str = PyString_InternFromString("_self_");
+#endif
+    }
+
+    match = PyObject_CallMethodObjArgs(name, startswith_str, self_str, NULL);
 
     if (match == Py_True) {
         Py_DECREF(match);
@@ -1245,16 +1254,16 @@ static int WraptObjectProxy_setattro(
 
     Py_XDECREF(match);
 
-    if (!attr_wrapped) {
+    if (!wrapped_str) {
 #if PY_MAJOR_VERSION >= 3
-        attr_wrapped = PyUnicode_InternFromString("__wrapped__");
+        wrapped_str = PyUnicode_InternFromString("__wrapped__");
 #else
-        attr_wrapped = PyString_InternFromString("__wrapped__");
+        wrapped_str = PyString_InternFromString("__wrapped__");
 #endif
     }
 
-    if (PyObject_RichCompareBool(name, attr_wrapped, Py_EQ) == 1) {
-        Py_DECREF(attr_wrapped);
+    if (PyObject_RichCompareBool(name, wrapped_str, Py_EQ) == 1) {
+        Py_DECREF(wrapped_str);
 
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
     }
@@ -1586,7 +1595,6 @@ static void WraptFunctionWrapperBase_dealloc(WraptFunctionWrapperObject *self)
 static PyObject *WraptFunctionWrapperBase_call(
         WraptFunctionWrapperObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *call_args = NULL;
     PyObject *param_kwds = NULL;
 
     PyObject *result = NULL;
@@ -1595,22 +1603,20 @@ static PyObject *WraptFunctionWrapperBase_call(
         if (PyCallable_Check(self->enabled)) {
             PyObject *object = NULL;
 
-            object = PyObject_CallFunction(self->enabled, "()");
+            object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
 
             if (!object)
                 return NULL;
 
             if (PyObject_Not(object)) {
                 Py_DECREF(object);
-                return PyEval_CallObjectWithKeywords(
-                        self->object_proxy.wrapped, args, kwds);
+                return PyObject_Call(self->object_proxy.wrapped, args, kwds);
             }
 
             Py_DECREF(object);
         }
         else if (PyObject_Not(self->enabled)) {
-            return PyEval_CallObjectWithKeywords(
-                    self->object_proxy.wrapped, args, kwds);
+            return PyObject_Call(self->object_proxy.wrapped, args, kwds);
         }
     }
 
@@ -1619,12 +1625,9 @@ static PyObject *WraptFunctionWrapperBase_call(
         kwds = param_kwds;
     }
 
-    call_args = PyTuple_Pack(4, self->object_proxy.wrapped, Py_None,
-            args, kwds);
+    result = PyObject_CallFunctionObjArgs(self->wrapper,
+            self->object_proxy.wrapped, Py_None, args, kwds, NULL);
 
-    result = PyEval_CallObject(self->wrapper, call_args);
-
-    Py_DECREF(call_args);
     Py_XDECREF(param_kwds);
 
     return result;
@@ -1670,7 +1673,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         if (PyCallable_Check(self->enabled)) {
             PyObject *object = NULL;
 
-            object = PyObject_CallFunction(self->enabled, "()");
+            object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
 
             if (!object) {
                 Py_DECREF(descriptor);
@@ -1703,10 +1706,10 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         type = Py_None;
 
     if (descriptor) {
-        result = PyObject_CallFunction(bound_type ? bound_type :
-                (PyObject *)&WraptBoundFunctionWrapper_Type, "(OOOOOOO)",
-                descriptor, obj, self->wrapper, self->adapter, Py_None,
-                self->binding, self);
+        result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
+                (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
+                obj, self->wrapper, self->adapter, Py_None, self->binding,
+                self, NULL);
     }
 
     Py_XDECREF(bound_type);
@@ -1954,7 +1957,6 @@ PyTypeObject WraptFunctionWrapperBase_Type = {
 static PyObject *WraptBoundFunctionWrapper_call(
         WraptFunctionWrapperObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *call_args = NULL;
     PyObject *param_args = NULL;
     PyObject *param_kwds = NULL;
 
@@ -2019,8 +2021,8 @@ static PyObject *WraptBoundFunctionWrapper_call(
             if (!instance)
                 return NULL;
 
-            object = PyObject_CallFunction(partial, "(OO)",
-                    self->object_proxy.wrapped, instance);
+            object = PyObject_CallFunctionObjArgs(partial,
+                    self->object_proxy.wrapped, instance, NULL);
 
             if (!object)
                 return NULL;
@@ -2045,11 +2047,9 @@ static PyObject *WraptBoundFunctionWrapper_call(
             wrapped = self->object_proxy.wrapped;
         }
 
-        call_args = PyTuple_Pack(4, wrapped, instance, args, kwds);
+        result = PyObject_CallFunctionObjArgs(self->wrapper, wrapped,
+                instance, args, kwds, NULL);
 
-        result = PyEval_CallObject(self->wrapper, call_args);
-
-        Py_DECREF(call_args);
         Py_XDECREF(param_args);
         Py_XDECREF(param_kwds);
         Py_DECREF(wrapped);
@@ -2081,12 +2081,9 @@ static PyObject *WraptBoundFunctionWrapper_call(
             instance = Py_None;
         }
 
-        call_args = PyTuple_Pack(4, self->object_proxy.wrapped, instance,
-                args, kwds);
+        result = PyObject_CallFunctionObjArgs(self->wrapper,
+                self->object_proxy.wrapped, instance, args, kwds, NULL);
 
-        result = PyEval_CallObject(self->wrapper, call_args);
-
-        Py_DECREF(call_args);
         Py_XDECREF(param_kwds);
 
         Py_DECREF(instance);
