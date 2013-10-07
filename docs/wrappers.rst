@@ -318,3 +318,155 @@ that then being overidden if necessary, with a specific value in the
 
 Just be aware that although the attribute can be deleted from the instance
 of the custom proxy, lookup will then fallback to using the class attribute.
+
+Function Wrappers
+-----------------
+
+Although an ``ObjectProxy`` can be used to wrap a function, it doesn't do
+anything special in respect of bound methods. If attempting to use a custom
+object proxy to wrap instance methods, class methods or static methods, it
+would be necessary to override the appropriate descriptor protocol methods
+in order to be able to intercept and modify in any way the execution of the
+wrapped function.
+
+::
+
+    class BoundCallableWrapper(ObjectProxy):
+
+        def __init__(self, wrapped, wrapper):
+            super(BoundCallableWrapper, self).__init__(wrapped)
+            self._self_wrapper = wrapper
+
+        def __get__(self, instance, owner):
+            return self
+
+        def __call__(self, *args, **kwargs):
+            return self._self_wrapper(self.__wrapped__, args, kwargs)
+
+    class CallableWrapper(ObjectProxy):
+
+        def __init__(self, wrapped, wrapper):
+            super(CallableWrapper, self).__init__(wrapped)
+            self._self_wrapper = wrapper
+
+        def __get__(self, instance, owner):
+            function = self.__wrapped__.__get__(instance, owner)
+            return BoundCallableWrapper(function, self._self_wrapper)
+
+        def __call__(self, *args, **kwargs):
+            return self._self_wrapper(self.__wrapped__, args, kwargs)
+
+The ``CallableWrapper.__call__()`` method would therefore be invoked when
+``CallableWrapper`` is used around a regular function. The
+``BoundCallableWrapper.__call__()`` would instead be what is invoked for a
+bound method, the instance of ``BoundCallableWrapper`` having being created
+when the original wrapped method was bound to the class instance.
+
+This specific pattern is actually the basis of what is required to
+implement a robust function wrapper for use in implementing a decorator.
+Because it is a fundamental pattern, a predefined version is available as
+``wrapt.FunctionWrapper``.
+
+As with the illustrative example above, ``FunctionWrapper`` class accepts
+two key arguments:
+
+* ``wrapped`` - The function being wrapped.
+* ``wrapper`` - A wrapper function to be called when the wrapped function is invoked.
+
+Although in prior examples the wrapper function was shown as accepting three
+positional arguments of the wrapped function and the args and kwargs for when
+the wrapped function was called, when using ``FunctionWrapper``, it is
+expected that the wrapper function accepts four arguments. These are:
+
+* ``wrapped`` - The wrapped function which in turns needs to be called by your wrapper function.
+* ``instance`` - The object to which the wrapped function was bound when it was called.
+* ``args`` - The list of positional arguments supplied when the decorated function was called.
+* ``kwargs`` - The dictionary of keyword arguments supplied when the decorated function was called.
+
+When ``FunctionWrapper`` is applied to a normal function or static method,
+the wrapper function when called will be passed ``None`` as the
+``instance`` argument.
+
+When applied to an instance method, the wrapper function when called will
+be passed the instance of the class the method is being called on as the
+``instance`` argument. This will be the case even when the instance method
+was called explicitly via the class and the instance passed as the first
+argument. That is, the instance will never be passed as part of ``args``.
+
+When applied to a class method, the wrapper function when called will be
+passed the class type as the ``instance`` argument.
+
+When applied to a class, the wrapper function when called will be passed
+``None`` as the ``instance`` argument. The ``wrapped`` argument in this
+case will be the class.
+
+The above rules can be summarised with the following example.
+
+::
+
+    import inspect
+    
+    def wrapper(wrapped, instance, args, kwargs):
+        if instance is None:
+            if inspect.isclass(wrapped):
+                # Decorator was applied to a class.
+                return wrapped(*args, **kwargs)
+            else:
+                # Decorator was applied to a function or staticmethod.
+                return wrapped(*args, **kwargs)
+        else:
+            if inspect.isclass(instance):
+                # Decorator was applied to a classmethod.
+                return wrapped(*args, **kwargs)
+            else:
+                # Decorator was applied to an instancemethod.
+                return wrapped(*args, **kwargs)
+
+Using these checks it is therefore possible to create a universal function
+wrapper that can be applied in all situations. It is no longer necessary to
+create different variants of function wrappers for normal functions and
+instance methods.
+
+In all cases, the wrapped function passed to the wrapper function is called
+in the same way, with ``args`` and ``kwargs`` being passed. The
+``instance`` argument doesn't need to be used in calling the wrapped
+function.
+
+A simple decorator factory implementation which makes use of
+``FunctionWrapper`` to delegate execution of the wrapped function to
+the wrapper function  would be:
+
+::
+
+    def function_wrapper(wrapper):
+        @functools.wraps(wrapper)
+        def _wrapper(wrapped):
+            return FunctionWrapper(wrapped, wrapper)
+        return _wrapper
+
+It would be used like:
+
+::
+
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+    @wrapper
+    def function():
+        pass
+
+This example of a simplified decorator factory is made available as
+``wrapt.function_wrapper``. Although it is usuable in its own right, it is
+preferable that ``wrapt.decorator`` be used to create decorators as it
+provides additional features. The ``@function_wrapper`` decorator would
+generally be used more when performing monkey patching and needing to
+dynamically create function wrappers.
+
+::
+
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+    callback = wrapper(fetch_callback())
