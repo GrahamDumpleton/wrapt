@@ -1710,28 +1710,6 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
             self->object_proxy.wrapped, obj, type);
 
-    if (self->enabled != Py_None) {
-        if (PyCallable_Check(self->enabled)) {
-            PyObject *object = NULL;
-
-            object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
-
-            if (!object) {
-                Py_DECREF(descriptor);
-                return NULL;
-            }
-
-            if (PyObject_Not(object)) {
-                Py_DECREF(object);
-                return descriptor;
-            }
-
-            Py_DECREF(object);
-        }
-        else if (PyObject_Not(self->enabled))
-            return descriptor;
-    }
-
     /* No point looking up bound type if not a derived class. */
 
     if (Py_TYPE(self) != &WraptFunctionWrapper_Type) {
@@ -1749,7 +1727,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     if (descriptor) {
         result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
                 (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
-                obj, self->wrapper, Py_None, self->binding,
+                obj, self->wrapper, self->enabled, self->binding,
                 self, NULL);
     }
 
@@ -1913,6 +1891,27 @@ static PyObject *WraptBoundFunctionWrapper_call(
     PyObject *result = NULL;
 
     static PyObject *instancemethod_str = NULL;
+
+    if (self->enabled != Py_None) {
+        if (PyCallable_Check(self->enabled)) {
+            PyObject *object = NULL;
+
+            object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
+
+            if (!object)
+                return NULL;
+
+            if (PyObject_Not(object)) {
+                Py_DECREF(object);
+                return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+            }
+
+            Py_DECREF(object);
+        }
+        else if (PyObject_Not(self->enabled)) {
+            return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+        }
+    }
 
     if (!instancemethod_str) {
 #if PY_MAJOR_VERSION >= 3

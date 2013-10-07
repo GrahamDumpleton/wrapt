@@ -405,21 +405,9 @@ class _FunctionWrapperBase(ObjectProxy):
 
         descriptor = self.__wrapped__.__get__(instance, owner)
 
-        # If enabled has been specified, then evaluate it at this point
-        # and if the wrapper is not to be executed, then simply return
-        # the bound function rather than a bound wrapper for the bound
-        # function. When evaluating enabled, if it is callable we call
-        # it, otherwise we evaluate it as a boolean.
-
-        if self._self_enabled is not None:
-            if callable(self._self_enabled):
-                if not self._self_enabled():
-                    return descriptor
-            elif not self._self_enabled:
-                return descriptor
-
         return self.__bound_function_wrapper__(descriptor, instance,
-                self._self_wrapper, None, self._self_binding, self)
+                self._self_wrapper, self._self_enabled,
+                self._self_binding, self)
 
     def __call__(self, *args, **kwargs):
         # If enabled has been specified, then evaluate it at this point
@@ -447,6 +435,19 @@ class _FunctionWrapperBase(ObjectProxy):
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(self, *args, **kwargs):
+        # If enabled has been specified, then evaluate it at this point
+        # and if the wrapper is not to be executed, then simply return
+        # the bound function rather than a bound wrapper for the bound
+        # function. When evaluating enabled, if it is callable we call
+        # it, otherwise we evaluate it as a boolean.
+
+        if self._self_enabled is not None:
+            if callable(self._self_enabled):
+                if not self._self_enabled():
+                    return self.__wrapped__(*args, **kwargs)
+            elif not self._self_enabled:
+                return self.__wrapped__(*args, **kwargs)
+
         # We need to do things different depending on whether we are
         # likely wrapping an instance method vs a static method or class
         # method.
