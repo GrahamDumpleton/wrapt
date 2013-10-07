@@ -1,5 +1,5 @@
-Quick Start
-===========
+Getting Started
+===============
 
 To implement your decorator you need to first define a wrapper function.
 This will be called each time a decorated function is called. The wrapper

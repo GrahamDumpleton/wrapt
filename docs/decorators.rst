@@ -1,5 +1,5 @@
-Decorators
-==========
+Function Decorators
+===================
 
 The **wrapt** module provides various components, but the main reason that
 it likely is to be used is for creating decorators. This document covers the

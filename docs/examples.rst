@@ -1,12 +1,12 @@
-Examples
-========
+Assorted Examples
+=================
 
 This document provides various examples of decorators often described
 elsewhere, to exhibit what can be done with decorators using the **wrapt**
 module, for the purpose of comparison.
 
-Synchronization
----------------
+Thread Synchronization
+----------------------
 
 .. note::
     The final variant of the ``synchronized`` decorator described here

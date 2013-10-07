@@ -1,5 +1,5 @@
-Wrappers
-========
+Proxies and Wrappers
+====================
 
 Underlying the implementation of the decorators created by the **wrapt**
 module is a wrapper class which acts as a transparent object proxy. This

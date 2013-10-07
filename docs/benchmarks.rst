@@ -1,5 +1,5 @@
-Benchmarks
-==========
+Decorator Benchmarks
+====================
 
 The **wrapt** module ensures that your decorators will work in all
 situations. The implementation therefore does not take the shortcuts that
