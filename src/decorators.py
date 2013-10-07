@@ -13,9 +13,9 @@ from threading import Lock, RLock
 if not six.PY2:
     from inspect import signature
 
-from .wrappers import FunctionWrapper, ObjectProxy
+from .wrappers import FunctionWrapper, BoundFunctionWrapper, ObjectProxy
 
-# Object proxy for the wrapped function which will overlay certain
+# Adapter wrapper for the wrapped function which will overlay certain
 # properties from the adapter function onto the wrapped function so that
 # functions such as inspect.getargspec(), inspect.getfullargspec(),
 # inspect.signature() and inspect.getsource() return the correct results
@@ -47,10 +47,10 @@ class _AdapterFunctionCode(ObjectProxy):
     def co_varnames(self):
         return self._self_adapter_code.co_varnames
 
-class _AdapterFunction(ObjectProxy):
+class _AdapterFunctionSurrogate(ObjectProxy):
 
     def __init__(self, wrapped, adapter):
-        super(_AdapterFunction, self).__init__(wrapped)
+        super(_AdapterFunctionSurrogate, self).__init__(wrapped)
         self._self_adapter = adapter
 
     @property
@@ -81,6 +81,47 @@ class _AdapterFunction(ObjectProxy):
     if six.PY2:
         func_code = __code__
         func_defaults = __defaults__
+
+class _BoundAdapterWrapper(BoundFunctionWrapper):
+
+    @property
+    def __func__(self):
+        return _AdapterFunctionSurrogate(self.__wrapped__.__func__,
+                self._self_parent._self_adapter)
+
+    if six.PY2:
+        im_func = __func__
+
+class AdapterWrapper(FunctionWrapper):
+
+    __bound_function_wrapper__ = _BoundAdapterWrapper
+
+    def __init__(self, *args, **kwargs):
+        adapter = kwargs.pop('adapter')
+        super(AdapterWrapper, self).__init__(*args, **kwargs)
+        self._self_surrogate = _AdapterFunctionSurrogate(
+                self.__wrapped__, adapter)
+        self._self_adapter = adapter
+
+    @property
+    def __code__(self):
+        return self._self_surrogate.__code__
+
+    @property
+    def __defaults__(self):
+        return self._self_surrogate.__defaults__
+
+    @property
+    def __kwdefaults__(self):
+        return self._self_surrogate.__kwdefaults__
+
+    if six.PY2:
+        func_code = __code__
+        func_defaults = __defaults__
+
+    @property
+    def __signature__(self):
+        return self._self_surrogate.__signature__
 
 # Decorator for creating other decorators. This decorator and the
 # wrappers which they use are designed to properly preserve any name
@@ -122,9 +163,12 @@ def decorator(wrapper=None, adapter=None, enabled=None):
                     return func
                 _enabled = None
 
-            _adapter = adapter and _AdapterFunction(func, adapter)
-            result = FunctionWrapper(wrapped=func, wrapper=wrapper,
-                    adapter=_adapter, enabled=_enabled)
+            if adapter:
+                result = AdapterWrapper(wrapped=func, wrapper=wrapper,
+                        enabled=_enabled, adapter=adapter)
+            else:
+                result = FunctionWrapper(wrapped=func, wrapper=wrapper,
+                        enabled=_enabled)
 
             return result
 

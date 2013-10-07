@@ -36,6 +36,9 @@ Version 1.2.0
   ObjectProxy was being used. The derived class __getattr__() could also
   get ignored.
 
+* Using inspect.getargspec() now works correctly on bound methods when an
+  adapter function can be provided to @decorator.
+
 Version 1.1.3
 -------------
 

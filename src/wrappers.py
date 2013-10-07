@@ -380,17 +380,16 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
 
 class _FunctionWrapperBase(ObjectProxy):
 
-    __slots__ = ('_self_instance', '_self_wrapper', '_self_adapter',
-            '_self_enabled', '_self_binding', '_self_parent') 
+    __slots__ = ('_self_instance', '_self_wrapper', '_self_enabled',
+            '_self_binding', '_self_parent') 
 
-    def __init__(self, wrapped, instance, wrapper, adapter=None,
-            enabled=None, binding=None, parent=None):
+    def __init__(self, wrapped, instance, wrapper, enabled=None,
+            binding=None, parent=None):
 
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
         object.__setattr__(self, '_self_instance', instance)
         object.__setattr__(self, '_self_wrapper', wrapper)
-        object.__setattr__(self, '_self_adapter', adapter)
         object.__setattr__(self, '_self_enabled', enabled)
         object.__setattr__(self, '_self_binding', binding)
         object.__setattr__(self, '_self_parent', parent)
@@ -420,8 +419,7 @@ class _FunctionWrapperBase(ObjectProxy):
                 return descriptor
 
         return self.__bound_function_wrapper__(descriptor, instance,
-                self._self_wrapper, self._self_adapter, None,
-                self._self_binding, self)
+                self._self_wrapper, None, self._self_binding, self)
 
     def __call__(self, *args, **kwargs):
         # If enabled has been specified, then evaluate it at this point
@@ -445,43 +443,6 @@ class _FunctionWrapperBase(ObjectProxy):
 
         return self._self_wrapper(self.__wrapped__, self._self_instance,
                 args, kwargs)
-
-    # If an adapter function was provided we want to return certain
-    # attributes of the function from the adapter rather than the
-    # wrapped function so things like inspect.getargspec() will reflect
-    # the prototype of the adapter and not the wrapped function.
-
-    @property
-    def __code__(self):
-        if self._self_adapter:
-            return self._self_adapter.__code__
-        return self.__wrapped__.__code__
-
-    @property
-    def __defaults__(self):
-        if self._self_adapter:
-            return self._self_adapter.__defaults__
-        return self.__wrapped__.__defaults__
-
-    @property
-    def __kwdefaults__(self):
-        if self._self_adapter:
-            return self._self_adapter.__kwdefaults__
-        return self.__wrapped__.__kwdefaults__
-
-    if six.PY2:
-        func_code = __code__
-        func_defaults = __defaults__
-
-    # If an adapter function was provided, we also want to override the
-    # __signature__ attribute introduced in Python 3 so that we get the
-    # correct result when using inspect.signature().
-
-    @property
-    def __signature__(self):
-        if self._self_adapter:
-            return self._self_adapter.__signature__
-        return self.__wrapped__.__signature__
 
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
@@ -529,7 +490,7 @@ class FunctionWrapper(_FunctionWrapperBase):
 
     __bound_function_wrapper__ = BoundFunctionWrapper
 
-    def __init__(self, wrapped, wrapper, adapter=None, enabled=None):
+    def __init__(self, wrapped, wrapper, enabled=None):
         # We need to do special fixups on the args in the case of an
         # instancemethod where called via the class and the instance is
         # passed explicitly as the first argument. So work out when we
@@ -563,7 +524,7 @@ class FunctionWrapper(_FunctionWrapperBase):
             binding = 'instancemethod'
 
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
-                adapter, enabled, binding)
+                enabled, binding)
 
 try:
     from ._wrappers import (ObjectProxy, FunctionWrapper,

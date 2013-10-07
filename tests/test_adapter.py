@@ -76,6 +76,13 @@ class TestArgumentSpecification(unittest.TestCase):
         function1d_argspec = inspect.getargspec(function1d)
         self.assertEqual(function1a_argspec, function1d_argspec)
 
+        # Now bind the function to an instance. The argspec should
+        # still match.
+
+        bound_function1d = function1d.__get__(object(), object)
+        bound_function1d_argspec = inspect.getargspec(bound_function1d)
+        self.assertEqual(function1a_argspec, bound_function1d_argspec)
+
     def test_signature(self):
         # Test preservation of function argument specification. It
         # actually needs to match that of the adapter function the
