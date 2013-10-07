@@ -130,7 +130,7 @@ class AdapterWrapper(FunctionWrapper):
 # function so the wrapper is effectively indistinguishable from the
 # original wrapped function.
 
-def decorator(wrapper=None, adapter=None, enabled=None):
+def decorator(wrapper=None, enabled=None, adapter=None):
     # The decorator should be supplied with a single positional argument
     # which is the wrapper function to be used to implement the
     # decorator. This may be preceded by a step whereby the keyword
@@ -181,7 +181,7 @@ def decorator(wrapper=None, adapter=None, enabled=None):
         # decorator again wrapped in a partial using the collected
         # arguments.
 
-        return partial(decorator, adapter=adapter, enabled=enabled)
+        return partial(decorator, enabled=enabled, adapter=adapter)
 
 # Decorator for implementing thread synchronization. It can be used as a
 # decorator, in which case the synchronization context is determined by
