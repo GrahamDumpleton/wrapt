@@ -56,9 +56,54 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type,
 static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
         PyObject *wrapped)
 {
+    static PyObject *module_str = NULL;
+    static PyObject *doc_str = NULL;
+
+    PyObject *object = NULL;
+
     Py_INCREF(wrapped);
     Py_XDECREF(self->wrapped);
     self->wrapped = wrapped;
+
+    if (!module_str) {
+#if PY_MAJOR_VERSION >= 3
+        module_str = PyUnicode_InternFromString("__module__");
+#else
+        module_str = PyString_InternFromString("__module__");
+#endif
+    }
+
+    if (!doc_str) {
+#if PY_MAJOR_VERSION >= 3
+        doc_str = PyUnicode_InternFromString("__doc__");
+#else
+        doc_str = PyString_InternFromString("__doc__");
+#endif
+    }
+
+    object = PyObject_GetAttr(wrapped, module_str);
+
+    if (object) {
+        if (PyDict_SetItem(self->dict, module_str, object) == -1) {
+            Py_DECREF(object);
+            return -1;
+        }
+        Py_DECREF(object);
+    }
+    else
+        PyErr_Clear();
+
+    object = PyObject_GetAttr(wrapped, doc_str);
+
+    if (object) {
+        if (PyDict_SetItem(self->dict, doc_str, object) == -1) {
+            Py_DECREF(object);
+            return -1;
+        }
+        Py_DECREF(object);
+    }
+    else
+        PyErr_Clear();
 
     return 0;
 }
@@ -1051,7 +1096,10 @@ static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
       return -1;
     }
 
-    return PyObject_SetAttrString(self->wrapped, "__module__", value);
+    if (PyObject_SetAttrString(self->wrapped, "__module__", value) == -1)
+        return -1;
+
+    return PyDict_SetItemString(self->dict, "__module__", value);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1077,7 +1125,10 @@ static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
       return -1;
     }
 
-    return PyObject_SetAttrString(self->wrapped, "__doc__", value);
+    if (PyObject_SetAttrString(self->wrapped, "__doc__", value) == -1)
+        return -1;
+
+    return PyDict_SetItemString(self->dict, "__doc__", value);
 }
 
 /* ------------------------------------------------------------------------- */
