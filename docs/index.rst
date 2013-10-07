@@ -53,11 +53,11 @@ Contents
 
    quick-start
    decorators
+   wrappers
    examples
    benchmarks
    testing
    changes
    issues
 
-..   wrappers
 ..   proxies

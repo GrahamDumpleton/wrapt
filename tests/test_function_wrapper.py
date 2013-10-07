@@ -333,7 +333,7 @@ class TestGuardArgument(unittest.TestCase):
         result = []
         value = False
 
-        self.assertFalse(isinstance(c.function, wrapt.BoundFunctionWrapper))
+        self.assertTrue(isinstance(c.function, wrapt.BoundFunctionWrapper))
 
         c.function()
 
