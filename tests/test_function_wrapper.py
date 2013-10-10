@@ -90,7 +90,7 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2.__wrapped__, function1)
         self.assertEqual(function2._self_wrapper, decorator1)
-        self.assertEqual(function2._self_binding, 'instancemethod')
+        self.assertEqual(function2._self_binding, 'function')
 
     def test_instancemethod_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
@@ -104,7 +104,7 @@ class TestAttributeAccess(unittest.TestCase):
 
             self.assertEqual(function2.__wrapped__, function1)
             self.assertEqual(function2._self_wrapper, decorator1)
-            self.assertEqual(function2._self_binding, 'instancemethod')
+            self.assertEqual(function2._self_binding, 'function')
 
         instance = Class()
 
@@ -384,15 +384,54 @@ class TestFunctionBinding(unittest.TestCase):
 
         _bound_wrapper_1 = _wrapper.__get__(instance, type(instance))
 
+        self.assertTrue(_bound_wrapper_1._self_parent is _wrapper)
+
         self.assertTrue(isinstance(_bound_wrapper_1,
                 wrapt.BoundFunctionWrapper))
+        self.assertEqual(_bound_wrapper_1._self_instance, instance)
 
         _bound_wrapper_2 = _bound_wrapper_1.__get__(instance, type(instance))
 
+        self.assertTrue(_bound_wrapper_2._self_parent is _wrapper)
+
         self.assertTrue(isinstance(_bound_wrapper_2,
                 wrapt.BoundFunctionWrapper))
+        self.assertEqual(_bound_wrapper_2._self_instance,
+                _bound_wrapper_1._self_instance)
 
         self.assertTrue(_bound_wrapper_1 is _bound_wrapper_2)
+
+    def test_re_bind_after_none(self):
+
+        def function():
+            pass
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        _wrapper = wrapt.FunctionWrapper(function, wrapper)
+
+        self.assertTrue(isinstance(_wrapper, wrapt.FunctionWrapper))
+
+        instance = object()
+
+        _bound_wrapper_1 = _wrapper.__get__(None, type(instance))
+
+        self.assertTrue(_bound_wrapper_1._self_parent is _wrapper)
+
+        self.assertTrue(isinstance(_bound_wrapper_1,
+                wrapt.BoundFunctionWrapper))
+        self.assertEqual(_bound_wrapper_1._self_instance, None)
+
+        _bound_wrapper_2 = _bound_wrapper_1.__get__(instance, type(instance))
+
+        self.assertTrue(_bound_wrapper_2._self_parent is _wrapper)
+
+        self.assertTrue(isinstance(_bound_wrapper_2,
+                wrapt.BoundFunctionWrapper))
+        self.assertEqual(_bound_wrapper_2._self_instance, instance)
+
+        self.assertTrue(_bound_wrapper_1 is not _bound_wrapper_2)
 
 if __name__ == '__main__':
     unittest.main()

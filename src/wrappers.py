@@ -384,7 +384,7 @@ class _FunctionWrapperBase(ObjectProxy):
             '_self_binding', '_self_parent') 
 
     def __init__(self, wrapped, instance, wrapper, enabled=None,
-            binding=None, parent=None):
+            binding='function', parent=None):
 
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
@@ -395,19 +395,38 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, '_self_parent', parent)
 
     def __get__(self, instance, owner):
+        # If we are called in an unbound wrapper, then perform the binding.
+        # Note that we do this even if instance is None and accessing an
+        # unbound instance method from a class. This is because we need to
+        # be able to later detect that specific case as we will need to
+        # extract the instance from the first argument of those passed in.
+        # For the binding against an instance of None case, we also need to
+        # allow rebinding below.
+
+        if self._self_parent is None:
+            descriptor = self.__wrapped__.__get__(instance, owner)
+
+            return self.__bound_function_wrapper__(descriptor, instance,
+                    self._self_wrapper, self._self_enabled,
+                    self._self_binding, self)
+
         # If we have already been bound to an instance of something, we
-        # do not do it again and return ourselves again. This appears to
-        # mirror what Python itself does. Determine this by looking to
-        # see if we have a parent as it is the least expensive.
+        # would usually return ourselves again. This mirrors what Python
+        # does. The exception is where we were originally bound to an
+        # instance of None and we were an instance method. In that case
+        # we rebind against the original wrapped function from the parent
+        # again.
 
-        if self._self_parent is not None:
-            return self
+        if self._self_instance is None and self._self_binding == 'function':
+            descriptor = self._self_parent.__wrapped__.__get__(
+                    instance, owner)
 
-        descriptor = self.__wrapped__.__get__(instance, owner)
+            return self._self_parent.__bound_function_wrapper__(
+                    descriptor, instance, self._self_wrapper,
+                    self._self_enabled, self._self_binding,
+                    self._self_parent)
 
-        return self.__bound_function_wrapper__(descriptor, instance,
-                self._self_wrapper, self._self_enabled,
-                self._self_binding, self)
+        return self
 
     def __call__(self, *args, **kwargs):
         # If enabled has been specified, then evaluate it at this point
@@ -452,7 +471,7 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
         # likely wrapping an instance method vs a static method or class
         # method.
 
-        if self._self_binding == 'instancemethod':
+        if self._self_binding == 'function':
             if self._self_instance is None:
                 # This situation can occur where someone is calling the
                 # instancemethod via the class type and passing the instance
@@ -522,7 +541,7 @@ class FunctionWrapper(_FunctionWrapperBase):
         elif isinstance(wrapped, staticmethod):
             binding = 'staticmethod'
         else:
-            binding = 'instancemethod'
+            binding = 'function'
 
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
                 enabled, binding)
