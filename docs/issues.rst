@@ -1,5 +1,5 @@
-Issues
-======
+Known Issues
+============
 
 The following known issues exist.
 
@@ -21,6 +21,7 @@ it will instead be identified as being associated with a normal function,
 with the class type being passed as the first argument.
 
 The behaviour of the Python ``@classmethod`` is arguably wrong and a fix to
-Python 3.4 for this issue is being pursued. The only solution is the
+Python 3.4 for this issue is being pursued
+(http://bugs.python.org/issue19072). The only solution is the
 recommendation that decorators implemented using ``@wrapt.decorator``
 always be placed outside of ``@classmethod`` and never inside.

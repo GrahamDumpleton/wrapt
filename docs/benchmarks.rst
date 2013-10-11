@@ -1,5 +1,5 @@
-Benchmarks
-==========
+Decorator Benchmarks
+====================
 
 The **wrapt** module ensures that your decorators will work in all
 situations. The implementation therefore does not take the shortcuts that
@@ -164,34 +164,34 @@ implementation.
 **Test Results (C Extension)**::
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.function3()'
-    1000000 loops, best of 3: 0.384 usec per loop
+    1000000 loops, best of 3: 0.382 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3()'
-    1000000 loops, best of 3: 0.699 usec per loop
+    1000000 loops, best of 3: 0.836 usec per loop
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.Class.function3cmo()'
-    1000000 loops, best of 3: 0.901 usec per loop
+    1000000 loops, best of 3: 1.11 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3cmo()'
-    1000000 loops, best of 3: 0.84 usec per loop
+    1000000 loops, best of 3: 1.06 usec per loop
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.Class.function3cmi()'
-    1000000 loops, best of 3: 0.531 usec per loop
+    1000000 loops, best of 3: 0.535 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3cmi()'
     1000000 loops, best of 3: 0.455 usec per loop
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.Class.function3smo()'
-    1000000 loops, best of 3: 1.22 usec per loop
+    1000000 loops, best of 3: 1.37 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3smo()'
-    1000000 loops, best of 3: 1.21 usec per loop
+    1000000 loops, best of 3: 1.31 usec per loop
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.Class.function3smi()'
-    1000000 loops, best of 3: 0.454 usec per loop
+    1000000 loops, best of 3: 0.453 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3smi()'
-    1000000 loops, best of 3: 0.379 usec per loop
+    1000000 loops, best of 3: 0.378 usec per loop
 
 Note that results for where the decorator is inside that of the classmethod
 decorator is quite a bit less than that where it is outside. This due to a
@@ -202,34 +202,34 @@ function call, which has less overhead.
 **Test Results (Pure Python)**::
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.function3()'
-    1000000 loops, best of 3: 0.727 usec per loop
+    1000000 loops, best of 3: 0.771 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3()'
-    100000 loops, best of 3: 6.36 usec per loop
+    100000 loops, best of 3: 6.67 usec per loop
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.Class.function3cmo()'
-    100000 loops, best of 3: 6.42 usec per loop
+    100000 loops, best of 3: 6.89 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3cmo()'
-    100000 loops, best of 3: 6.36 usec per loop
+    100000 loops, best of 3: 6.77 usec per loop
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.Class.function3cmi()'
-    1000000 loops, best of 3: 0.853 usec per loop
+    1000000 loops, best of 3: 0.911 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3cmi()'
-    1000000 loops, best of 3: 0.803 usec per loop
+    1000000 loops, best of 3: 0.863 usec per loop
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.Class.function3smo()'
-    100000 loops, best of 3: 6.93 usec per loop
+    100000 loops, best of 3: 7.26 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3smo()'
-    100000 loops, best of 3: 6.97 usec per loop
+    100000 loops, best of 3: 7.17 usec per loop
 
     $ python -m timeit -s 'import benchmarks' 'benchmarks.Class.function3smi()'
-    1000000 loops, best of 3: 0.77 usec per loop
+    1000000 loops, best of 3: 0.835 usec per loop
 
     $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.function3smi()'
-    1000000 loops, best of 3: 0.727 usec per loop
+    1000000 loops, best of 3: 0.774 usec per loop
 
 Note that results for where the decorator is inside that of the classmethod
 decorator is quite a bit less than that where it is outside. This due to a

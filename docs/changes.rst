@@ -1,5 +1,43 @@
-Changes
-=======
+Release Notes
+=============
+
+Version 1.2.0
+-------------
+
+**New Features**
+
+* Added an 'enabled' option to @decorator and FunctionWrapper which can
+  be provided a boolean, or a function returning a boolean to allow the
+  work of the decorator to be disabled dynamically. When a boolean, is
+  used for @decorator, the wrapper will not even be applied if 'enabled'
+  is False. If a function, then will be called prior to wrapper being
+  called and if returns False, then original wrapped function called
+  directly rather than the wrapper being called.
+
+* Added in an implementation of a post import hook mechanism in line with
+  that described in PEP 369.
+
+* Added in helper functions specifically designed to assist in performing
+  monkey patching of existing code.
+
+**Features Changes**
+
+* Collapsed functionality of _BoundMethodWrapper into _BoundFunctionWrapper
+  and renamed the latter to BoundFunctionWrapper. If deriving from the
+  FunctionWrapper class and needing to override the type of the bound
+  wrapper, the class attribute ``__bound_function_wrapper__`` should be set
+  in the derived FunctionWrapper class to the replacement type.
+
+**Bugs Fixed**
+
+* When creating a custom proxy by deriving from ObjectProxy and the custom
+  proxy needed to override __getattr__(), it was not possible to called the
+  base class ObjectProxy.__getattr__() when the C implementation of
+  ObjectProxy was being used. The derived class __getattr__() could also
+  get ignored.
+
+* Using inspect.getargspec() now works correctly on bound methods when an
+  adapter function can be provided to @decorator.
 
 Version 1.1.3
 -------------

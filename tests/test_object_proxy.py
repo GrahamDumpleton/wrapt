@@ -1386,5 +1386,42 @@ class DerivedClassAttributes(unittest.TestCase):
         self.assertFalse(hasattr(obj, 'ATTRIBUTE'))
         self.assertFalse(hasattr(function, 'ATTRIBUTE'))
 
+class OverrideAttributeAccess(unittest.TestCase):
+
+    def test_attr_functions(self):
+
+        def function():
+            pass
+
+        proxy = wrapt.ObjectProxy(function)
+
+        self.assertTrue(hasattr(proxy, '__getattr__'))
+        self.assertTrue(hasattr(proxy, '__setattr__'))
+        self.assertTrue(hasattr(proxy, '__delattr__'))
+
+    def test_override_getattr(self):
+
+        def function():
+            pass
+
+        accessed = []
+
+        class DerivedObjectProxy(wrapt.ObjectProxy):
+            def __getattr__(self, name):
+                accessed.append(name)
+                try:
+                    __getattr__ = super(DerivedObjectProxy, self).__getattr__
+                except AttributeError as e:
+                    raise RuntimeError(str(e))
+                return __getattr__(name)
+
+        function.attribute = 1
+
+        proxy = DerivedObjectProxy(function)
+
+        self.assertEqual(proxy.attribute, 1)
+
+        self.assertTrue('attribute' in accessed)
+
 if __name__ == '__main__':
     unittest.main()

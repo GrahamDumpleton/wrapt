@@ -44,3 +44,7 @@ nosetests.xml
 
 # Sphinx documentation.
 docs/_build
+
+# Coverage.
+htmlcov
+.coverage

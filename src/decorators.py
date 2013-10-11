@@ -13,9 +13,9 @@ from threading import Lock, RLock
 if not six.PY2:
     from inspect import signature
 
-from .wrappers import FunctionWrapper, ObjectProxy
+from .wrappers import FunctionWrapper, BoundFunctionWrapper, ObjectProxy
 
-# Object proxy for the wrapped function which will overlay certain
+# Adapter wrapper for the wrapped function which will overlay certain
 # properties from the adapter function onto the wrapped function so that
 # functions such as inspect.getargspec(), inspect.getfullargspec(),
 # inspect.signature() and inspect.getsource() return the correct results
@@ -47,10 +47,10 @@ class _AdapterFunctionCode(ObjectProxy):
     def co_varnames(self):
         return self._self_adapter_code.co_varnames
 
-class _AdapterFunction(ObjectProxy):
+class _AdapterFunctionSurrogate(ObjectProxy):
 
     def __init__(self, wrapped, adapter):
-        super(_AdapterFunction, self).__init__(wrapped)
+        super(_AdapterFunctionSurrogate, self).__init__(wrapped)
         self._self_adapter = adapter
 
     @property
@@ -82,6 +82,47 @@ class _AdapterFunction(ObjectProxy):
         func_code = __code__
         func_defaults = __defaults__
 
+class _BoundAdapterWrapper(BoundFunctionWrapper):
+
+    @property
+    def __func__(self):
+        return _AdapterFunctionSurrogate(self.__wrapped__.__func__,
+                self._self_parent._self_adapter)
+
+    if six.PY2:
+        im_func = __func__
+
+class AdapterWrapper(FunctionWrapper):
+
+    __bound_function_wrapper__ = _BoundAdapterWrapper
+
+    def __init__(self, *args, **kwargs):
+        adapter = kwargs.pop('adapter')
+        super(AdapterWrapper, self).__init__(*args, **kwargs)
+        self._self_surrogate = _AdapterFunctionSurrogate(
+                self.__wrapped__, adapter)
+        self._self_adapter = adapter
+
+    @property
+    def __code__(self):
+        return self._self_surrogate.__code__
+
+    @property
+    def __defaults__(self):
+        return self._self_surrogate.__defaults__
+
+    @property
+    def __kwdefaults__(self):
+        return self._self_surrogate.__kwdefaults__
+
+    if six.PY2:
+        func_code = __code__
+        func_defaults = __defaults__
+
+    @property
+    def __signature__(self):
+        return self._self_surrogate.__signature__
+
 # Decorator for creating other decorators. This decorator and the
 # wrappers which they use are designed to properly preserve any name
 # attributes, function signatures etc, in addition to the wrappers
@@ -89,29 +130,48 @@ class _AdapterFunction(ObjectProxy):
 # function so the wrapper is effectively indistinguishable from the
 # original wrapped function.
 
-def decorator(wrapper=None, adapter=None):
+def decorator(wrapper=None, enabled=None, adapter=None):
     # The decorator should be supplied with a single positional argument
     # which is the wrapper function to be used to implement the
     # decorator. This may be preceded by a step whereby the keyword
     # arguments are supplied to customise the behaviour of the
-    # decorator. The 'adapter' argument is currently the only such
-    # keyword argument and is used to optionally denote a separate
-    # function which is notionally used by an adapter decorator. In that
-    # case parts of the function '__code__' and '__defaults__'
-    # attributes are used from the adapter function rather than those of
-    # the wrapped function. This allows for the argument specification
-    # from inspect.getargspec() to be overridden with a prototype for a
-    # different function than what was wrapped.
+    # decorator. The 'adapter' argument is used to optionally denote a
+    # separate function which is notionally used by an adapter
+    # decorator. In that case parts of the function '__code__' and
+    # '__defaults__' attributes are used from the adapter function
+    # rather than those of the wrapped function. This allows for the
+    # argument specification from inspect.getargspec() to be overridden
+    # with a prototype for a different function than what was wrapped.
+    # The 'enabled' argument provides a way to enable/disable the use
+    # of the decorator. If the type of 'enabled' is a boolean, then it
+    # is evaluated immediately and the wrapper not even applied if
+    # it is False. If not a boolean, it will be evaluated when the
+    # wrapper is called for an unbound wrapper, and when binding occurs
+    # for a bound wrapper. When being evaluated, if 'enabled' is callable
+    # it will be called to obtain the value to be checked. If False,
+    # the wrapper will not be called and instead the original wrapped
+    # function will be called directly instead.
 
     if wrapper is not None:
         # The wrapper has been provided so return the final decorator.
 
         @wraps(wrapper)
         def _wrapper(func):
-            _adapter = adapter and _AdapterFunction(func, adapter)
-            result = FunctionWrapper(wrapped=func, wrapper=wrapper,
-                    adapter=_adapter)
+            _enabled = enabled
+            if type(_enabled) is bool:
+                if not _enabled:
+                    return func
+                _enabled = None
+
+            if adapter:
+                result = AdapterWrapper(wrapped=func, wrapper=wrapper,
+                        enabled=_enabled, adapter=adapter)
+            else:
+                result = FunctionWrapper(wrapped=func, wrapper=wrapper,
+                        enabled=_enabled)
+
             return result
+
         _wrapper.__wrapped__ = wrapper
         return _wrapper
 
@@ -121,7 +181,7 @@ def decorator(wrapper=None, adapter=None):
         # decorator again wrapped in a partial using the collected
         # arguments.
 
-        return partial(decorator, adapter=adapter)
+        return partial(decorator, enabled=enabled, adapter=adapter)
 
 # Decorator for implementing thread synchronization. It can be used as a
 # decorator, in which case the synchronization context is determined by

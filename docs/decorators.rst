@@ -1,5 +1,5 @@
-Decorators
-==========
+Function Decorators
+===================
 
 The **wrapt** module provides various components, but the main reason that
 it likely is to be used is for creating decorators. This document covers the
@@ -207,6 +207,101 @@ You should not simply attempt to extract positional arguments from ``args``
 directly because this will fail if those positional arguments were actually
 passed as keyword arguments, and so were passed in ``kwargs`` with ``args``
 being an empty tuple.
+
+Enabling/Disabling Decorators
+-----------------------------
+
+A problem with using decorators is that once added into code, the actions
+of the wrapper function cannot be readily disabled. The use of the decorator
+would have to be removed from the code, or the specific wrapper function
+implemented in such a way as to check itself a flag indicating whether it
+should do what is required, or simply call the original wrapped function
+without doing anything.
+
+To make the task of enabling/disabling the actions of a wrapper function
+easier, such functionality is built in to ``wrapt.decorator``. The
+feature operates at a couple of levels, but in all cases, the ``enabled``
+option is used to ``wrapt.decorator``. This must be supplied as a keyword
+argument and cannot be supplied as a positional argument.
+
+In the first way in which this enabling feature can work, if it is supplied
+a boolean value, then it will immediately control whether a wrapper is
+applied around the function that the decorator was in turn applied to.
+
+In other words, where the ``enabled`` option was ``True``, then the
+decorator will still be applied to the target function and will operate as
+normal.
+
+::
+
+    ENABLED = True
+
+    @wrapt.decorator(enabled=ENABLED)
+    def pass_through(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+    @pass_through
+    def function():
+        pass
+
+    >>> type(function)
+    <type 'FunctionWrapper'>
+
+If however the ``enabled`` option was ``False``, then no wrapper is added
+to the target function and the original function returned instead.
+
+::
+
+    ENABLED = False
+
+    @wrapt.decorator(enabled=ENABLED)
+    def pass_through(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+    @pass_through
+    def function():
+        pass
+
+    >>> type(function)
+    <type 'function'>
+
+In this scenario, as no wrapper is applied there is no runtime overhead
+at the point of call when the decorator had been disabled. This therefore
+provides a convenient way of globally disabling a specific decorator
+without having to remove all uses of the decorator, or have a special
+variant of the decorator function.
+
+Dynamically Disabling Decorators
+--------------------------------
+
+Supplying a boolean value for the ``enabled`` option when defining a
+decorator provides control over whether the decorator should be applied or
+not. This is therefore a global switch and once disabled it cannot be
+dynamically re-enabled at runtime while the process is executing.
+Similarly, once enabled it cannot be disabled.
+
+An alternative to suppling a literal boolean, is to provide a callable
+for ``enabled`` which will yield a boolean value.
+
+::
+
+    def _enabled():
+        return True
+
+    @wrapt.decorator(enabled=_enabled)
+    def pass_through(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+When a callable function is supplied in this way, the callable will be
+invoked each time the decorated function is called. If the callable returns
+``True``, indicating that the decorator is active, the wrapper function
+will then be called. If the callable returns ``False`` however, the wrapper
+function will be bypassed and the original wrapped function called directly.
+
+If ``enabled`` is not ``None``, nor a boolean, or a callable, then a
+boolean check will be done on the object supplied instead. This allows one
+to use a custom object which supports logical operations. If the custom
+object evaluates as ``False`` the wrapper function will again be bypassed.
 
 Function Argument Specifications
 --------------------------------
