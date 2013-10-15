@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+Version 1.2.1
+-------------
+
+**Bugs Fixed**
+
+* In C implementation, not dealing with unbound method type creation
+  properly which would cause later problems when calling instance method
+  via the class type in certain circumstances. Introduced problem in 1.2.0.
+
+* Eliminated compiler warnings due to missing casts in C implementation.
+
 Version 1.2.0
 -------------
 
