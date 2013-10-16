@@ -1718,11 +1718,6 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     }
 
     if (self->parent == Py_None) {
-        if (!obj)
-            obj = Py_None;
-        if (!type)
-            type = Py_TYPE(obj);
-
         descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
                 self->object_proxy.wrapped, obj, type);
 
@@ -1735,6 +1730,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         }
 
         if (descriptor) {
+            if (obj == NULL)
+                obj = Py_None;
+
             result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
                     (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
                     obj, self->wrapper, self->enabled, self->binding,
@@ -1768,11 +1766,6 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         if (!wrapped)
             return NULL;
 
-        if (!obj)
-            obj = Py_None;
-        if (!type)
-            type = Py_TYPE(obj);
-
         descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
 
         Py_DECREF(wrapped);
@@ -1786,6 +1779,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         }
 
         if (descriptor) {
+            if (obj == NULL)
+                obj = Py_None;
+
             result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
                     (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
                     obj, self->wrapper, self->enabled, self->binding,
