@@ -1,0 +1,6 @@
+:tddium:
+  :tests:
+    - type: tox
+      mode: basic
+  :python:
+    :python_version: 2.7
