@@ -1,6 +1,6 @@
 :tddium:
   :tests:
-    - tox
+    - tox -e py27
   :python:
     :python_version: 2.7
     :pip_requirements_file: requirements.txt
