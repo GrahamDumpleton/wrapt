@@ -1,6 +1,6 @@
 :tddium:
   :tests:
-    - tox -e py27-without-extensions,py27-with-extensions
+    - ./run-tox.sh
   :python:
     :python_version: 2.7
     :pip_requirements_file: requirements.txt
