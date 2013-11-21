@@ -1,6 +1,6 @@
 :tddium:
   :tests:
-    - type: tox
-      mode: basic
+    - tox
   :python:
     :python_version: 2.7
+    :pip_requirements_file: requirements.txt

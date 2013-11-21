@@ -48,3 +48,4 @@ docs/_build
 # Coverage.
 htmlcov
 .coverage
+.tddium*
