@@ -3,7 +3,8 @@ __version__ = '.'.join(__version_info__)
 
 from .wrappers import (ObjectProxy, FunctionWrapper, BoundFunctionWrapper,
         WeakFunctionProxy, resolve_path, apply_patch, wrap_object,
-        function_wrapper, wrap_function_wrapper, patch_function_wrapper)
+        function_wrapper, wrap_function_wrapper, patch_function_wrapper,
+        transient_function_wrapper)
 
 from .decorators import decorator, synchronized
 
