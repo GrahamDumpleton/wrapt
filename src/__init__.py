@@ -1,4 +1,4 @@
-__version_info__ = ('1', '3', '0')
+__version_info__ = ('1', '3', '1')
 __version__ = '.'.join(__version_info__)
 
 from .wrappers import (ObjectProxy, FunctionWrapper, BoundFunctionWrapper,
@@ -8,4 +8,5 @@ from .wrappers import (ObjectProxy, FunctionWrapper, BoundFunctionWrapper,
 
 from .decorators import decorator, synchronized
 
-from .importer import register_post_import_hook, when_imported
+from .importer import (register_post_import_hook, when_imported,
+        discover_post_import_hooks)

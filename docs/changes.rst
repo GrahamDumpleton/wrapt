@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 1.3.1
+-------------
+
+**Bugs Fixed**
+
+* The discover_post_import_hooks() function had not been added to the
+  top level wrapt module.
+
 Version 1.3.0
 -------------
 
