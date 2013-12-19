@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 1.3.0
+-------------
+
+**New Features**
+
+* Added a @transient_function_wrapper decorator for applying a wrapper
+  function around a target function only for the life of a single function
+  call. The decorator is useful for performing mocking or pass through
+  data validation/modification when doing unit testing of packages.
+
 Version 1.2.1
 -------------
 

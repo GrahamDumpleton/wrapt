@@ -599,6 +599,20 @@ def patch_function_wrapper(module, name):
         return wrap_object(module, name, FunctionWrapper, (wrapper,))
     return _wrapper
 
+def transient_function_wrapper(module, name):
+    def _decorator(wrapper):
+        @function_wrapper
+        def _wrapper(wrapped, instance, args, kwargs):
+            try:
+                (parent, attribute, original) = resolve_path(module, name)
+                replacement = FunctionWrapper(original, wrapper)
+                setattr(parent, attribute, replacement)
+                return wrapped(*args, **kwargs)
+            finally:
+                setattr(parent, attribute, original)
+        return _wrapper
+    return _decorator
+
 # A weak function proxy. This will work on instance methods, class
 # methods, static methods and regular functions. Special treatment is
 # needed for the method types because the bound method is effectively a
