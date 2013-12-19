@@ -8,4 +8,5 @@ from .wrappers import (ObjectProxy, FunctionWrapper, BoundFunctionWrapper,
 
 from .decorators import decorator, synchronized
 
-from .importer import register_post_import_hook, when_imported
+from .importer import (register_post_import_hook, when_imported,
+        discover_post_import_hooks)
