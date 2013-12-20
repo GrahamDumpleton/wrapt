@@ -586,10 +586,16 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
 # creating decorators see the decorator decorator instead.
 
 def function_wrapper(wrapper):
-    @functools.wraps(wrapper)
-    def _wrapper(wrapped):
-        return FunctionWrapper(wrapped, wrapper)
-    return _wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+        target_wrapped = args[0]
+        if instance is None:
+            target_wrapper = wrapper
+        elif inspect.isclass(instance):
+            target_wrapper = wrapper.__get__(None, instance)
+        else:
+            target_wrapper = wrapper.__get__(instance, type(instance))
+        return FunctionWrapper(target_wrapped, target_wrapper)
+    return FunctionWrapper(wrapper, _wrapper)
 
 def wrap_function_wrapper(module, name, wrapper):
     return wrap_object(module, name, FunctionWrapper, (wrapper,))

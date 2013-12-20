@@ -5,8 +5,8 @@ as well as some commonly used decorators.
 
 from . import six
 
-from functools import wraps, partial
-from inspect import getargspec, ismethod
+from functools import partial
+from inspect import getargspec, ismethod, isclass
 from collections import namedtuple
 from threading import Lock, RLock
 
@@ -154,26 +154,37 @@ def decorator(wrapper=None, enabled=None, adapter=None):
 
     if wrapper is not None:
         # The wrapper has been provided so return the final decorator.
+        # The decorator is itself one of our function wrappers so we
+        # can determine when it is applied to functions, instance methods
+        # or class methods. This allows us to bind the instance or class
+        # method so the appropriate self or cls attribute is supplied
+        # when it is finally called.
 
-        @wraps(wrapper)
-        def _wrapper(func):
+        def _wrapper(wrapped, instance, args, kwargs):
+            target_wrapped = args[0]
+
             _enabled = enabled
             if type(_enabled) is bool:
                 if not _enabled:
-                    return func
+                    return target_wrapped
                 _enabled = None
 
-            if adapter:
-                result = AdapterWrapper(wrapped=func, wrapper=wrapper,
-                        enabled=_enabled, adapter=adapter)
+            if instance is None:
+                target_wrapper = wrapper
+            elif isclass(instance):
+                target_wrapper = wrapper.__get__(None, instance)
             else:
-                result = FunctionWrapper(wrapped=func, wrapper=wrapper,
-                        enabled=_enabled)
+                target_wrapper = wrapper.__get__(instance, type(instance))
 
-            return result
+            if adapter:
+                return AdapterWrapper(wrapped=target_wrapped,
+                        wrapper=target_wrapper, enabled=_enabled,
+                        adapter=adapter)
 
-        _wrapper.__wrapped__ = wrapper
-        return _wrapper
+            return FunctionWrapper(wrapped=target_wrapped,
+                    wrapper=target_wrapper, enabled=_enabled)
+
+        return FunctionWrapper(wrapper, _wrapper)
 
     else:
         # The wrapper still has not been provided, so we are just

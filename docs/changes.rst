@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+Version 1.4.0
+-------------
+
+**New Features**
+
+* Enhanced @wrapt.decorator and @wrapt.function_wrapper so they can be
+  applied to instance methods and class methods with the self/cls argument
+  being supplied correctly. This allows instance and class methods to be
+  used as decorators, with the instance or class type being able to be used
+  any state required for the decorator.
+
 Version 1.3.1
 -------------
 

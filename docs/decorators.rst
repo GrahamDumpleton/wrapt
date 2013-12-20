@@ -2,7 +2,7 @@ Function Decorators
 ===================
 
 The **wrapt** module provides various components, but the main reason that
-it likely is to be used is for creating decorators. This document covers the
+it would be used is for creating decorators. This document covers the
 creation of decorators and all the information needed to cover what you can
 do within the wrapper function linked to your decorator.
 
@@ -41,10 +41,10 @@ other functions.
 Decorators With Arguments
 -------------------------
 
-If you wish to implement a decorator which accepts arguments, then wrap the
-definition of the decorator in a function closure. Any arguments supplied
-to the outer function when the decorator is applied, will be available to
-the inner wrapper when the wrapped function is called.
+If you wish to implement a decorator which accepts arguments, then you can
+wrap the definition of the decorator in a function closure. Any arguments
+supplied to the outer function when the decorator is applied, will be
+available to the inner wrapper when the wrapped function is called.
 
 ::
 
@@ -76,6 +76,40 @@ use of keyword arguments when the decorator is used.
     @with_keyword_only_arguments(myarg1=1, myarg2=2)
     def function():
         pass
+
+An alternative approach to using a function closure to allow arguments is
+to use a class, where the wrapper function is the ``__call__()`` method of
+the class.
+
+::
+
+    import wrapt
+
+    class with_arguments(object):
+
+        def __init__(self, myarg1, myarg2):
+            self.myarg1 = myarg1
+            self.myarg2 = myarg2
+
+        @wrapt.decorator
+        def __call__(self, wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+    @with_arguments(1, 2)
+    def function():
+        pass
+
+In this case the wrapper function should also accept a ``self`` argument as
+is normal for instance methods of a class. The arguments to the decorator
+would then be accessed by the wrapper function from the class instance
+created when the decorator was applied to the target function, via the
+``self`` argument.
+
+Using a class in this way has the added benefit that other functions can be
+associated with the class providing for better encapsulation. The
+alternative would have been to have the class be separate and use it in
+conjunction with a function closure, where the class instance would have
+been created as a local variable within the outer function when called.
 
 Decorators With Optional Arguments
 ----------------------------------
@@ -207,6 +241,11 @@ You should not simply attempt to extract positional arguments from ``args``
 directly because this will fail if those positional arguments were actually
 passed as keyword arguments, and so were passed in ``kwargs`` with ``args``
 being an empty tuple.
+
+Note that in either case, the argument names used in the decorated function
+would need to match the names mapped by the wrapper function. This is a
+restriction which would need to be documented for the specific decorator to
+ensure that users do not use arbitrary argument names which do not match.
 
 Enabling/Disabling Decorators
 -----------------------------
@@ -535,7 +574,8 @@ decorator. If the decorator is placed inside of the ``@classmethod``
 decorator, then ``instance`` will be ``None`` and the decorator wrapper
 function will see the call as being the same as a normal function. As a
 result, always place any decorator outside of the ``@classmethod``
-decorator. Hopefully this issue in Python can be addressed in Python 3.4.
+decorator. Hopefully this issue in Python can be addressed in a future
+Python version.
 
 Decorating Static Methods
 -------------------------
