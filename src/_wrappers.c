@@ -1718,6 +1718,13 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     }
 
     if (self->parent == Py_None) {
+        if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL) {
+            PyErr_Format(PyExc_AttributeError,
+                    "'%s' object has no attribute '__get__'",
+                    Py_TYPE(self->object_proxy.wrapped)->tp_name);
+            return NULL;
+        }
+
         descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
                 self->object_proxy.wrapped, obj, type);
 
@@ -1765,6 +1772,14 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
 
         if (!wrapped)
             return NULL;
+
+        if (Py_TYPE(wrapped)->tp_descr_get == NULL) {
+            PyErr_Format(PyExc_AttributeError,
+                    "'%s' object has no attribute '__get__'",
+                    Py_TYPE(wrapped)->tp_name);
+            Py_DECREF(wrapped);
+            return NULL;
+        }
 
         descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
 

@@ -10,7 +10,14 @@ Version 1.4.0
   applied to instance methods and class methods with the self/cls argument
   being supplied correctly. This allows instance and class methods to be
   used as decorators, with the instance or class type being able to be used
-  any state required for the decorator.
+  to hold any state required for the decorator.
+
+**Bugs Fixed**
+
+* Fixed process crash in extension when the wrapped object passed as first
+  argument to FunctionWrapper did not have a tp_descr_get callback for the
+  type at C code level. Now raised an AttributeError exception in line with
+  what Python implementation does.
 
 Version 1.3.1
 -------------

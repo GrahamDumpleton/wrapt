@@ -433,5 +433,17 @@ class TestFunctionBinding(unittest.TestCase):
 
         self.assertTrue(_bound_wrapper_1 is not _bound_wrapper_2)
 
+class TestInvalidWrapper(unittest.TestCase):
+
+    def test_none_for_wrapped(self):
+
+        def run(*args):
+            def _wrapper(wrapped, instance, args, kwargs):
+                return wrapped(*args, **kwargs)
+            wrapper = wrapt.FunctionWrapper(None, _wrapper)
+            wrapper.__get__(list(), list)()
+
+        self.assertRaises(AttributeError, run, ())
+
 if __name__ == '__main__':
     unittest.main()
