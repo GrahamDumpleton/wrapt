@@ -1301,6 +1301,8 @@ static int WraptObjectProxy_setattro(
 
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
     }
+    else if (!match)
+        PyErr_Clear();
 
     Py_XDECREF(match);
 
