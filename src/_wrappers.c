@@ -991,7 +991,7 @@ static PyObject *WraptObjectProxy_enter(
 
     result = PyObject_Call(method, args, kwds);
 
-    Py_XDECREF(method);
+    Py_DECREF(method);
 
     return result;
 }
@@ -1016,7 +1016,7 @@ static PyObject *WraptObjectProxy_exit(
 
     result = PyObject_Call(method, args, kwds);
 
-    Py_XDECREF(method);
+    Py_DECREF(method);
 
     return result;
 }
