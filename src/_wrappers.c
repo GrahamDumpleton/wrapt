@@ -1726,6 +1726,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
                 self->object_proxy.wrapped, obj, type);
 
+        if (!descriptor)
+            return NULL;
+
         if (Py_TYPE(self) != &WraptFunctionWrapper_Type) {
             bound_type = PyObject_GenericGetAttr((PyObject *)self,
                     bound_type_str);
@@ -1734,18 +1737,16 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
                 PyErr_Clear();
         }
 
-        if (descriptor) {
-            if (obj == NULL)
-                obj = Py_None;
+        if (obj == NULL)
+            obj = Py_None;
 
-            result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
-                    (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
-                    obj, self->wrapper, self->enabled, self->binding,
-                    self, NULL);
-        }
+        result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
+                (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
+                obj, self->wrapper, self->enabled, self->binding,
+                self, NULL);
 
         Py_XDECREF(bound_type);
-        Py_XDECREF(descriptor);
+        Py_DECREF(descriptor);
 
         return result;
     }
@@ -1783,6 +1784,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
 
         Py_DECREF(wrapped);
 
+        if (!descriptor)
+            return NULL;
+
         if (Py_TYPE(self->parent) != &WraptFunctionWrapper_Type) {
             bound_type = PyObject_GenericGetAttr((PyObject *)self->parent,
                     bound_type_str);
@@ -1791,18 +1795,16 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
                 PyErr_Clear();
         }
 
-        if (descriptor) {
-            if (obj == NULL)
-                obj = Py_None;
+        if (obj == NULL)
+            obj = Py_None;
 
-            result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
-                    (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
-                    obj, self->wrapper, self->enabled, self->binding,
-                    self->parent, NULL);
-        }
+        result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
+                (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
+                obj, self->wrapper, self->enabled, self->binding,
+                self->parent, NULL);
 
         Py_XDECREF(bound_type);
-        Py_XDECREF(descriptor);
+        Py_DECREF(descriptor);
 
         return result;
     }
