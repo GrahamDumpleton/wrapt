@@ -1314,15 +1314,11 @@ static int WraptObjectProxy_setattro(
 #endif
     }
 
-    if (PyObject_RichCompareBool(name, wrapped_str, Py_EQ) == 1) {
-        Py_DECREF(wrapped_str);
-
+    if (PyObject_RichCompareBool(name, wrapped_str, Py_EQ) == 1)
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
-    }
 
-    if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name)) {
+    if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
-    }
 
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
