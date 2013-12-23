@@ -1997,11 +1997,6 @@ static PyObject *WraptBoundFunctionWrapper_call(
 #endif
     }
 
-    if (!kwds) {
-        param_kwds = PyDict_New();
-        kwds = param_kwds;
-    }
-
     /* 
     * We need to do things different depending on whether we are likely
     * wrapping an instance method vs a static method or class method.
@@ -2021,52 +2016,60 @@ static PyObject *WraptBoundFunctionWrapper_call(
              */
 
             PyObject *module = NULL;
+            PyObject *dict = NULL;
             PyObject *partial = NULL;
-            PyObject *object = NULL;
 
             module = PyImport_ImportModule("functools");
 
-            if (module) {
-                PyObject *dict = NULL;
+            if (!module)
+                return NULL;
 
-                dict = PyModule_GetDict(module);
-                partial = PyDict_GetItemString(dict, "partial");
+            dict = PyModule_GetDict(module);
+            partial = PyDict_GetItemString(dict, "partial");
 
+            if (!partial) {
                 Py_DECREF(module);
+                return NULL;
             }
 
-            if (!partial)
-                return NULL;
+            Py_INCREF(partial);
+            Py_DECREF(module);
 
             instance = PyTuple_GetItem(args, 0);
 
-            if (!instance)
+            if (!instance) {
+                Py_DECREF(partial);
                 return NULL;
+            }
 
-            object = PyObject_CallFunctionObjArgs(partial,
+            wrapped = PyObject_CallFunctionObjArgs(partial,
                     self->object_proxy.wrapped, instance, NULL);
 
-            if (!object)
-                return NULL;
+            Py_DECREF(partial);
 
-            wrapped = object;
+            if (!wrapped)
+                return NULL;
 
             param_args = PyTuple_GetSlice(args, 1, PyTuple_Size(args));
-            if (!param_args)
+
+            if (!param_args) {
+                Py_DECREF(wrapped);
                 return NULL;
+            }
+
             args = param_args;
         }
         else
             instance = self->instance;
 
-        if (!kwds) {
-            param_kwds = PyDict_New();
-            kwds = param_kwds;
-        }
-
         if (!wrapped) {
             Py_INCREF(self->object_proxy.wrapped);
             wrapped = self->object_proxy.wrapped;
+        }
+
+        if (!kwds) {
+            param_kwds = PyDict_New();
+            kwds = param_kwds;
         }
 
         result = PyObject_CallFunctionObjArgs(self->wrapper, wrapped,
@@ -2101,6 +2104,11 @@ static PyObject *WraptBoundFunctionWrapper_call(
             PyErr_Clear();
             Py_INCREF(Py_None);
             instance = Py_None;
+        }
+
+        if (!kwds) {
+            param_kwds = PyDict_New();
+            kwds = param_kwds;
         }
 
         result = PyObject_CallFunctionObjArgs(self->wrapper,
