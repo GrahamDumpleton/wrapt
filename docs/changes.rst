@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 1.4.1
+-------------
+
+**Bugs Fixed**
+
+* Overriding __wrapped__ attribute directly on any wrapper more than once
+  could cause corruption of memory due to incorrect reference count
+  decrement.
+
 Version 1.4.0
 -------------
 
