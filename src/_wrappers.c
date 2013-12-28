@@ -150,6 +150,8 @@ static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
 
 static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 {
+    PyObject_GC_UnTrack(self);
+
     WraptObjectProxy_clear(self);
 
     Py_TYPE(self)->tp_free(self);
@@ -1500,9 +1502,9 @@ PyTypeObject WraptObjectProxy_Type = {
     0,                      /*tp_descr_set*/
     offsetof(WraptObjectProxyObject, dict), /*tp_dictoffset*/
     (initproc)WraptObjectProxy_init, /*tp_init*/
-    0,                      /*tp_alloc*/
-    WraptObjectProxy_new,  /*tp_new*/
-    0,                      /*tp_free*/
+    PyType_GenericAlloc,    /*tp_alloc*/
+    WraptObjectProxy_new,   /*tp_new*/
+    PyObject_GC_Del,        /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 
