@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+Version 1.4.2
+-------------
+
+**Bugs Fixed**
+
+* A process could crash if the C extension module was used and when using
+  the ObjectProxy class a reference count cycle was created that required
+  the Python garbage collector to kick in to break the cycle. This was
+  occuring as the C extension had not implemented GC support in the
+  ObjectProxy class correctly.
+
 Version 1.4.1
 -------------
 
