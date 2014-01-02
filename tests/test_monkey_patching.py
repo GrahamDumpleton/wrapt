@@ -47,6 +47,61 @@ class TestMonkeyPatching(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
+    def test_function_wrapper_instance_method(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        _self = self
+
+        class wrapper(object):
+            @wrapt.function_wrapper
+            def __call__(self, wrapped, instance, args, kwargs):
+                _self.assertEqual(type(self), wrapper)
+                called.append((args, kwargs))
+                _self.assertEqual(instance, None)
+                _self.assertEqual(args, _args)
+                _self.assertEqual(kwargs, _kwargs)
+                return wrapped(*args, **kwargs)
+
+        @wrapper()
+        def function(*args, **kwargs):
+            return args, kwargs
+
+        result = function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_function_wrapper_class_method(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        class wrapper(object):
+            @wrapt.function_wrapper
+            @classmethod
+            def __call__(cls, wrapped, instance, args, kwargs):
+                self.assertEqual(cls, wrapper)
+                called.append((args, kwargs))
+                self.assertEqual(instance, None)
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return wrapped(*args, **kwargs)
+
+        @wrapper()
+        def function(*args, **kwargs):
+            return args, kwargs
+
+        result = function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
     def test_wrap_function_module_name(self):
 
         _args = (1, 2)
@@ -153,6 +208,64 @@ class TestMonkeyPatching(unittest.TestCase):
             return wrapped(*args, **kwargs)
 
         result = global_function_4(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def _test_transient_function_wrapper(self, *args, **kwargs):
+        return args, kwargs
+
+    def test_transient_function_wrapper(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        @wrapt.transient_function_wrapper(__name__,
+                'TestMonkeyPatching._test_transient_function_wrapper')
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(wrapped, self._test_transient_function_wrapper)
+            self.assertEqual(instance, self)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        @wrapper
+        def function(*args, **kwargs):
+            return self._test_transient_function_wrapper(*args, **kwargs)
+
+        result = function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_transient_function_wrapper_instance_method(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        _self = self
+
+        class wrapper(object):
+            @wrapt.transient_function_wrapper(__name__,
+                    'TestMonkeyPatching._test_transient_function_wrapper')
+            def __call__(self, wrapped, instance, args, kwargs):
+                called.append((args, kwargs))
+                _self.assertEqual(wrapped, _self._test_transient_function_wrapper)
+                _self.assertEqual(instance, _self)
+                _self.assertEqual(args, _args)
+                _self.assertEqual(kwargs, _kwargs)
+                return wrapped(*args, **kwargs)
+
+        @wrapper()
+        def function(*args, **kwargs):
+            return self._test_transient_function_wrapper(*args, **kwargs)
+
+        result = function(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
