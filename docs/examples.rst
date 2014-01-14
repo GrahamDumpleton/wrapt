@@ -66,7 +66,7 @@ explicitly, create one on demand and attach it to the wrapped function.
     def synchronized(wrapped, instance, args, kwargs):
         # Retrieve the lock from the wrapped function.
 
-        lock = vars(wrapped).get('_synchronized_lock', None):
+        lock = vars(wrapped).get('_synchronized_lock', None)
 
         if lock is None:
             # There was no lock yet associated with the function so we
@@ -114,7 +114,7 @@ call. In this case we can associate the lock with the instance instead.
 
         # Retrieve the lock for the specific context.
 
-        lock = context.get('_synchronized_lock', None):
+        lock = context.get('_synchronized_lock', None)
 
         if lock is None:
             # There was no lock yet associated with the function so we

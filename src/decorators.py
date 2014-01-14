@@ -248,7 +248,7 @@ def synchronized(wrapped):
     def _synchronized_lock(context):
         # Attempt to retrieve the lock for the specific context.
 
-        lock = getattr(context, '_synchronized_lock', None)
+        lock = vars(context).get('_synchronized_lock', None)
 
         if lock is None:
             # There is no existing lock defined for the context we
@@ -272,7 +272,7 @@ def synchronized(wrapped):
                 # at the same time and were competing to create the
                 # meta lock.
 
-                lock = getattr(context, '_synchronized_lock', None)
+                lock = vars(context).get('_synchronized_lock', None)
 
                 if lock is None:
                     lock = RLock()
