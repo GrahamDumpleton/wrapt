@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 1.5.1
+-------------
+
+**Bugs Fixed**
+
+* Instance method locking for the synchronized decorator was not correctly
+  locking on the instance but the class, if a synchronized class method
+  had been called prior to the synchronized instance method.
+
 Version 1.5.0
 -------------
 
