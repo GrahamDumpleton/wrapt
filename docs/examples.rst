@@ -176,7 +176,7 @@ the place to store the meta lock.
 
         # Retrieve the lock for the specific context.
 
-        lock = getattr(context, '_synchronized_lock', None)
+        lock = vars(context).get('_synchronized_lock', None)
 
         if lock is None:
             # There is no existing lock defined for the context we
@@ -200,7 +200,7 @@ the place to store the meta lock.
                 # at the same time and were competing to create the
                 # meta lock.
 
-                lock = getattr(context, '_synchronized_lock', None)
+                lock = vars(context).get('_synchronized_lock', None)
 
                 if lock is None:
                     lock = threading.RLock()
@@ -283,7 +283,7 @@ manager, but at the same time can still be used as a decorator as before.
         def _synchronized_lock(context):
             # Attempt to retrieve the lock for the specific context.
 
-            lock = getattr(context, '_synchronized_lock', None)
+            lock = vars(context).get('_synchronized_lock', None)
 
             if lock is None:
                 # There is no existing lock defined for the context we
@@ -307,7 +307,7 @@ manager, but at the same time can still be used as a decorator as before.
                     # at the same time and were competing to create the
                     # meta lock.
 
-                    lock = getattr(context, '_synchronized_lock', None)
+                    lock = vars(context).get('_synchronized_lock', None)
 
                     if lock is None:
                         lock = RLock()
@@ -445,7 +445,7 @@ frowned on by some, but the implementation would be as follows.
         def _synchronized_lock(context):
             # Attempt to retrieve the lock for the specific context.
 
-            lock = getattr(context, '_synchronized_lock', None)
+            lock = vars(context).get('_synchronized_lock', None)
 
             if lock is None:
                 # There is no existing lock defined for the context we
@@ -469,7 +469,7 @@ frowned on by some, but the implementation would be as follows.
                     # at the same time and were competing to create the
                     # meta lock.
 
-                    lock = getattr(context, '_synchronized_lock', None)
+                    lock = vars(context).get('_synchronized_lock', None)
 
                     if lock is None:
                         lock = RLock()
