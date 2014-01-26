@@ -375,6 +375,8 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __iter__(self):
         return iter(self.__wrapped__)
 
+class CallableObjectProxy(ObjectProxy):
+
     def __call__(self, *args, **kwargs):
         return self.__wrapped__(*args, **kwargs)
 
@@ -547,8 +549,8 @@ class FunctionWrapper(_FunctionWrapperBase):
                 enabled, binding)
 
 try:
-    from ._wrappers import (ObjectProxy, FunctionWrapper,
-            BoundFunctionWrapper, _FunctionWrapperBase)
+    from ._wrappers import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
+        BoundFunctionWrapper, _FunctionWrapperBase)
 except ImportError:
     pass
 
