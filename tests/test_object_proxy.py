@@ -313,7 +313,7 @@ class TestCallingObject(unittest.TestCase):
         def function(*args, **kwargs):
             return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(function)
+        wrapper = wrapt.CallableObjectProxy(function)
 
         result = wrapper()
 
@@ -326,7 +326,7 @@ class TestCallingObject(unittest.TestCase):
         def function(*args, **kwargs):
             return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(function)
+        wrapper = wrapt.CallableObjectProxy(function)
 
         result = wrapper(*_args)
 
@@ -339,7 +339,7 @@ class TestCallingObject(unittest.TestCase):
         def function(*args, **kwargs):
             return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(function)
+        wrapper = wrapt.CallableObjectProxy(function)
 
         result = wrapper(**_kwargs)
 
@@ -352,7 +352,7 @@ class TestCallingObject(unittest.TestCase):
         def function(*args, **kwargs):
             return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(function)
+        wrapper = wrapt.CallableObjectProxy(function)
 
         result = wrapper(*_args, **_kwargs)
 
@@ -366,7 +366,7 @@ class TestCallingObject(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper()
 
@@ -380,7 +380,7 @@ class TestCallingObject(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(*_args)
 
@@ -394,7 +394,7 @@ class TestCallingObject(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(**_kwargs)
 
@@ -408,7 +408,7 @@ class TestCallingObject(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(*_args, **_kwargs)
 
@@ -422,7 +422,7 @@ class TestCallingObject(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(Class())
 
@@ -436,7 +436,7 @@ class TestCallingObject(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(Class(), *_args)
 
@@ -450,7 +450,7 @@ class TestCallingObject(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(Class(), **_kwargs)
 
@@ -464,7 +464,7 @@ class TestCallingObject(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(Class(), *_args, **_kwargs)
 
@@ -479,7 +479,7 @@ class TestCallingObject(unittest.TestCase):
             def function(cls, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper()
 
@@ -494,7 +494,7 @@ class TestCallingObject(unittest.TestCase):
             def function(cls, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(*_args)
 
@@ -509,7 +509,7 @@ class TestCallingObject(unittest.TestCase):
             def function(cls, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(**_kwargs)
 
@@ -524,7 +524,7 @@ class TestCallingObject(unittest.TestCase):
             def function(cls, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(*_args, **_kwargs)
 
@@ -539,7 +539,7 @@ class TestCallingObject(unittest.TestCase):
             def function(cls, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper()
 
@@ -554,7 +554,7 @@ class TestCallingObject(unittest.TestCase):
             def function(cls, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(*_args)
 
@@ -569,7 +569,7 @@ class TestCallingObject(unittest.TestCase):
             def function(cls, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(**_kwargs)
 
@@ -584,7 +584,7 @@ class TestCallingObject(unittest.TestCase):
             def function(cls, *args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(*_args, **_kwargs)
 
@@ -599,7 +599,7 @@ class TestCallingObject(unittest.TestCase):
             def function(*args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper()
 
@@ -614,7 +614,7 @@ class TestCallingObject(unittest.TestCase):
             def function(*args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(*_args)
 
@@ -629,7 +629,7 @@ class TestCallingObject(unittest.TestCase):
             def function(*args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(**_kwargs)
 
@@ -644,7 +644,7 @@ class TestCallingObject(unittest.TestCase):
             def function(*args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class().function)
+        wrapper = wrapt.CallableObjectProxy(Class().function)
 
         result = wrapper(*_args, **_kwargs)
 
@@ -659,7 +659,7 @@ class TestCallingObject(unittest.TestCase):
             def function(*args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper()
 
@@ -674,7 +674,7 @@ class TestCallingObject(unittest.TestCase):
             def function(*args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(*_args)
 
@@ -689,7 +689,7 @@ class TestCallingObject(unittest.TestCase):
             def function(*args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(**_kwargs)
 
@@ -704,7 +704,7 @@ class TestCallingObject(unittest.TestCase):
             def function(*args, **kwargs):
                 return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(Class.function)
+        wrapper = wrapt.CallableObjectProxy(Class.function)
 
         result = wrapper(*_args, **_kwargs)
 
@@ -1422,6 +1422,38 @@ class OverrideAttributeAccess(unittest.TestCase):
         self.assertEqual(proxy.attribute, 1)
 
         self.assertTrue('attribute' in accessed)
+
+class CallableFunction(unittest.TestCase):
+
+    def test_proxy_hasattr_call(self):
+        proxy = wrapt.ObjectProxy(None)
+
+        self.assertFalse(hasattr(proxy, '__call__'))
+
+    def test_proxy_getattr_call(self):
+        proxy = wrapt.ObjectProxy(None)
+
+        self.assertEqual(getattr(proxy, '__call__', None), None)
+
+    def test_proxy_is_callable(self):
+        proxy = wrapt.ObjectProxy(None)
+
+        self.assertFalse(callable(proxy))
+
+    def test_callable_proxy_hasattr_call(self):
+        proxy = wrapt.CallableObjectProxy(None)
+
+        self.assertTrue(hasattr(proxy, '__call__'))
+
+    def test_callable_proxy_getattr_call(self):
+        proxy = wrapt.CallableObjectProxy(None)
+
+        self.assertTrue(getattr(proxy, '__call__', None), None)
+
+    def test_callable_proxy_is_callable(self):
+        proxy = wrapt.CallableObjectProxy(None)
+
+        self.assertTrue(callable(proxy))
 
 if __name__ == '__main__':
     unittest.main()

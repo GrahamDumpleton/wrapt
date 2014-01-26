@@ -1,6 +1,37 @@
 Release Notes
 =============
 
+Version 1.6.0
+-------------
+
+**Bugs Fixed**
+
+* The ObjectProxy class would return that the __call__() method existed
+  even though the wrapped object didn't have one. Similarly, callable()
+  would always return True even if the wrapped object was not callable.
+
+  This resulted due to the existance of the __call__() method on the
+  wrapper, required to support the possibility that the wrapped object
+  may be called via the proxy object even if it may not turn out that
+  the wrapped object was callable.
+
+  Because checking for the existance of a __call__() method or using
+  callable() can sometimes be used to indirectly infer the type of an
+  object, this could cause issues. To ensure that this now doesn't
+  occur, the ability to call a wrapped object via the proxy object has
+  been removed from ObjectProxy. Instead, a new class CallableObjectProxy
+  is now provided, with it being necessary to make a conscious choice as
+  to which should be used based on whether the object to be wrapped is
+  in fact callable.
+
+  Note that neither before this change, or with the introduction of the
+  class CallableObjectProxy, does the object proxy perform binding. If
+  binding behaviour is required it still needs to be implemented
+  explicitly to match the specific requirements of the use case.
+  Alternatively, the FunctionWrapper class should be used which does
+  implement binding, but also enforces a wrapper mechanism for
+  manipulating what happens at the time of the call.
+
 Version 1.5.1
 -------------
 
