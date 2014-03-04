@@ -47,7 +47,7 @@ argument to the decorator.
 
     class Class(object):
 
-        @synchronized(lock):
+        @synchronized(lock)
         def function(self):
             pass
 
