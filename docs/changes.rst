@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 1.7.0
+-------------
+
+**Bugs Fixed**
+
+* Need to explicitly proxy special methods __bytes__(), __reversed__()
+  and __round__() as they are only looked up on the class type and not
+  the instance, so can't rely on __getattr__() fallback.
+
 Version 1.6.0
 -------------
 
