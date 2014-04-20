@@ -1013,6 +1013,22 @@ static PyObject *WraptObjectProxy_exit(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_bytes(
+        WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *method = NULL;
+    PyObject *result = NULL;
+
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      return NULL;
+    }
+
+    return PyObject_Bytes(self->wrapped);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_name(
         WraptObjectProxyObject *self)
 {
@@ -1425,6 +1441,8 @@ static PyMethodDef WraptObjectProxy_methods[] = {
                     METH_VARARGS | METH_KEYWORDS, 0 },
     { "__getattr__", (PyCFunction)WraptObjectProxy_getattr,
                     METH_VARARGS , 0 },
+    { "__bytes__",  (PyCFunction)WraptObjectProxy_bytes,
+                    METH_VARARGS, 0 },
     { NULL, NULL },
 };
 

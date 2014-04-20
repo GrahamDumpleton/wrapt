@@ -97,6 +97,10 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __str__(self):
         return str(self.__wrapped__)
 
+    if six.PY3:
+        def __bytes__(self):
+            return bytes(self.__wrapped__)
+
     def __repr__(self):
         return '<%s at 0x%x for %s at 0x%x>' % (
                 type(self).__name__, id(self),
