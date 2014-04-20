@@ -1473,7 +1473,23 @@ class SpecialMethods(unittest.TestCase):
 
         proxy = wrapt.ObjectProxy(instance)
 
-        assert format(instance, 's') == format(proxy, 's')
+        self.assertEqual(format(instance, 's'), format(proxy, 's'))
+
+    def test_list_reversed(self):
+        instance = [1, 2]
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(list(reversed(instance)), list(reversed(proxy)))
+
+    def test_decimal_complex(self):
+        import decimal
+
+        instance = decimal.Decimal(123)
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(complex(instance), complex(proxy))
 
 if __name__ == '__main__':
     unittest.main()
