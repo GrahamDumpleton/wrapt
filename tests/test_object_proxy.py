@@ -1491,5 +1491,14 @@ class SpecialMethods(unittest.TestCase):
 
         self.assertEqual(complex(instance), complex(proxy))
 
+    def test_fractions_round(self):
+        import fractions
+
+        instance = fractions.Fraction('1/2')
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(round(instance), round(proxy))
+
 if __name__ == '__main__':
     unittest.main()

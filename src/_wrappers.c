@@ -1040,6 +1040,47 @@ static PyObject *WraptObjectProxy_reversed(
 
 /* ------------------------------------------------------------------------- */
 
+#if PY_MAJOR_VERSION >= 3
+static PyObject *WraptObjectProxy_round(
+        WraptObjectProxyObject *self, PyObject *args)
+{
+    PyObject *module = NULL;
+    PyObject *dict = NULL;
+    PyObject *round = NULL;
+
+    PyObject *result = NULL;
+
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      return NULL;
+    }
+
+    module = PyImport_ImportModule("builtins");
+
+    if (!module)
+        return NULL;
+
+    dict = PyModule_GetDict(module);
+    round = PyDict_GetItemString(dict, "round");
+
+    if (!round) {
+        Py_DECREF(module);
+        return NULL;
+    }
+
+    Py_INCREF(round);
+    Py_DECREF(module);
+
+    result = PyObject_CallFunctionObjectArgs(round, self->wrapped, NULL);
+
+    Py_DECREF(round);
+
+    return result;
+}
+#endif
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_name(
         WraptObjectProxyObject *self)
 {
@@ -1454,6 +1495,9 @@ static PyMethodDef WraptObjectProxy_methods[] = {
                     METH_VARARGS , 0 },
     { "__bytes__",  (PyCFunction)WraptObjectProxy_bytes, METH_NOARGS, 0 },
     { "__reversed__", (PyCFunction)WraptObjectProxy_reversed, METH_NOARGS, 0 },
+#if PY_MAJOR_VERSION >= 3
+    { "__round__",  (PyCFunction)WraptObjectProxy_round, METH_NOARGS, 0 },
+#endif
     { NULL, NULL },
 };
 

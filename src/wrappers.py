@@ -110,6 +110,10 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __reversed__(self):
         return reversed(self.__wrapped__)
 
+    if six.PY3:
+        def __round__(self):
+            return round(self.__wrapped__)
+
     def __lt__(self, other):
         return self.__wrapped__ < other
 
