@@ -619,6 +619,48 @@ is a class type.
 
     c = Class()
 
+Do note that whenever decorating a class, as you are replacing the aliased
+name for the class with a wrapper, it will complicate use of the class in
+cases where the original type is required.
+
+In particular, if using ``super()``, it is necessary to supply the original
+type and the wrapper cannot be used. It will therefore be necessary to use
+the ``__wrapped__`` attribute to get access to the original type, as in:
+
+::
+
+    @pass_through
+    class Class(BaseClass):
+        def __init__(self):
+            super(Class.__wrapped__, self).__init__()
+
+In this case one could also use:
+
+::
+
+    @pass_through
+    class Class(BaseClass):
+        def __init__(self):
+            BaseClass.__init__(self)
+
+but in general, use of ``super()`` in conjunction with the ``__wrapped__``
+attribute to get access to the original type is still recommended.
+
+If using Python 3, the issue can be avoided by simply using the new magic
+``super()`` calling convention whereby the type and ``self`` argument are
+not required.
+
+::
+
+    @pass_through
+    class Class(BaseClass):
+        def __init__(self):
+            super().__init__()
+
+The need for the new magic ``super()`` in Python 3 was actually in part
+driven by this specific case where the class type can have a decorator
+applied.
+
 Universal Decorators
 --------------------
 
