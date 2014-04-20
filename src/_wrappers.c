@@ -1026,6 +1026,20 @@ static PyObject *WraptObjectProxy_bytes(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_reversed(
+        WraptObjectProxyObject *self, PyObject *args)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)&PyReversed_Type,
+            self->wrapped, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_name(
         WraptObjectProxyObject *self)
 {
@@ -1439,6 +1453,7 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     { "__getattr__", (PyCFunction)WraptObjectProxy_getattr,
                     METH_VARARGS , 0 },
     { "__bytes__",  (PyCFunction)WraptObjectProxy_bytes, METH_NOARGS, 0 },
+    { "__reversed__", (PyCFunction)WraptObjectProxy_reversed, METH_NOARGS, 0 },
     { NULL, NULL },
 };
 

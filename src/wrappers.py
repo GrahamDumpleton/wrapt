@@ -107,6 +107,9 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
                 type(self.__wrapped__).__name__,
                 id(self.__wrapped__))
 
+    def __reversed__(self):
+        return reversed(self.__wrapped__)
+
     def __lt__(self, other):
         return self.__wrapped__ < other
 
