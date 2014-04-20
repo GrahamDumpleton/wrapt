@@ -1014,11 +1014,8 @@ static PyObject *WraptObjectProxy_exit(
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_bytes(
-        WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
+        WraptObjectProxyObject *self, PyObject *args)
 {
-    PyObject *method = NULL;
-    PyObject *result = NULL;
-
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
       return NULL;
@@ -1423,7 +1420,7 @@ static PySequenceMethods WraptObjectProxy_as_sequence = {
     0,                          /*sq_item*/
     0,                          /*sq_slice*/
     0,                          /*sq_ass_item*/
-    0,                           /*sq_ass_slice*/
+    0,                          /*sq_ass_slice*/
     (objobjproc)WraptObjectProxy_contains, /* sq_contains */
 };
 
@@ -1434,15 +1431,14 @@ static PyMappingMethods WraptObjectProxy_as_mapping = {
 };
 
 static PyMethodDef WraptObjectProxy_methods[] = {
-    { "__dir__",    (PyCFunction)WraptObjectProxy_dir,  METH_NOARGS, 0 },
+    { "__dir__",    (PyCFunction)WraptObjectProxy_dir, METH_NOARGS, 0 },
     { "__enter__",  (PyCFunction)WraptObjectProxy_enter,
                     METH_VARARGS | METH_KEYWORDS, 0 },
     { "__exit__",   (PyCFunction)WraptObjectProxy_exit,
                     METH_VARARGS | METH_KEYWORDS, 0 },
     { "__getattr__", (PyCFunction)WraptObjectProxy_getattr,
                     METH_VARARGS , 0 },
-    { "__bytes__",  (PyCFunction)WraptObjectProxy_bytes,
-                    METH_VARARGS, 0 },
+    { "__bytes__",  (PyCFunction)WraptObjectProxy_bytes, METH_NOARGS, 0 },
     { NULL, NULL },
 };
 
