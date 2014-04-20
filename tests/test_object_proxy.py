@@ -1455,5 +1455,25 @@ class CallableFunction(unittest.TestCase):
 
         self.assertTrue(callable(proxy))
 
+class SpecialMethods(unittest.TestCase):
+
+    def test_class_bytes(self):
+        if six.PY3:
+            class Class(object):
+                def __bytes__(self):
+                    return b'BYTES'
+            instance = Class()
+
+            proxy = wrapt.ObjectProxy(instance)
+
+            self.assertEqual(bytes(instance), bytes(proxy))
+
+    def test_str_format(self):
+        instance = 'abcd'
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        assert format(instance, 's') == format(proxy, 's')
+
 if __name__ == '__main__':
     unittest.main()
