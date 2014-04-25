@@ -10,6 +10,13 @@ Version 1.7.0
   wrapped function. For Python 2.7 this is actually inspect.getcallargs()
   with a local copy being used in the case of Python 2.6.
 
+* Added wrapt.wrap_object_attribute() as a way of wrapping or otherwise
+  modifying the result of trying to access the attribute of an object
+  instance. It works by adding a data descriptor with the same name as
+  the attribute, to the class type, allowing reading of the attribute
+  to be intercepted. It does not affect updates to or deletion of the
+  attribute.
+
 **Bugs Fixed**
 
 * Need to explicitly proxy special methods __bytes__(), __reversed__()
