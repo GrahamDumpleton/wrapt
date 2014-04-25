@@ -4,6 +4,12 @@ Release Notes
 Version 1.7.0
 -------------
 
+**New Features**
+
+* Provide wrapt.getcallargs() for determining how arguments mapped to a
+  wrapped function. For Python 2.7 this is actually inspect.getcallargs()
+  with a local copy being used in the case of Python 2.6.
+
 **Bugs Fixed**
 
 * Need to explicitly proxy special methods __bytes__(), __reversed__()
