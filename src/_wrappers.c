@@ -1071,7 +1071,7 @@ static PyObject *WraptObjectProxy_round(
     Py_INCREF(round);
     Py_DECREF(module);
 
-    result = PyObject_CallFunctionObjectArgs(round, self->wrapped, NULL);
+    result = PyObject_CallFunctionObjArgs(round, self->wrapped, NULL);
 
     Py_DECREF(round);
 
