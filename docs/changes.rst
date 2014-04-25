@@ -23,6 +23,11 @@ Version 1.7.0
   and __round__() as they are only looked up on the class type and not
   the instance, so can't rely on __getattr__() fallback.
 
+* Raise more appropriate TypeError, with corresponding message, rather
+  than IndexError, when a decorated instance or class method is called via
+  the class but the required 1st argument of the instance or class is not
+  supplied.
+
 Version 1.6.0
 -------------
 

@@ -493,6 +493,9 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
                 # instance to the wrapped function using a partial so the
                 # wrapper doesn't see anything as being different.
 
+                if not args:
+                    raise TypeError('missing 1 required positional argument')
+
                 instance, args = args[0], args[1:]
                 wrapped = functools.partial(self.__wrapped__, instance)
                 return self._self_wrapper(wrapped, instance, args, kwargs)

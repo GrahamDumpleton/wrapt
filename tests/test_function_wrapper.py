@@ -445,5 +445,22 @@ class TestInvalidWrapper(unittest.TestCase):
 
         self.assertRaises(AttributeError, run, ())
 
+class TestInvalidCalling(unittest.TestCase):
+
+    def test_missing_self_via_class(self):
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class(object):
+            @_decorator
+            def method(self):
+                pass
+
+        def run(*args):
+            Class.method()
+
+        self.assertRaises(TypeError, run, ())
+
 if __name__ == '__main__':
     unittest.main()

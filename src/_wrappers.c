@@ -2153,6 +2153,12 @@ static PyObject *WraptBoundFunctionWrapper_call(
             PyObject *dict = NULL;
             PyObject *partial = NULL;
 
+            if (PyTuple_Size(args) == 0) {
+                PyErr_SetString(PyExc_TypeError,
+                        "missing 1 required positional argument");
+                return NULL;
+            }
+
             module = PyImport_ImportModule("functools");
 
             if (!module)
