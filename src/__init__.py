@@ -10,3 +10,8 @@ from .decorators import decorator, synchronized
 
 from .importer import (register_post_import_hook, when_imported,
         discover_post_import_hooks)
+
+try:
+    from inspect import getcallargs
+except ImportError:
+    from .arguments import getcallargs
