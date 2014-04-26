@@ -64,6 +64,13 @@ Conference presentations related to the **wrapt** module:
 
 * http://lanyrd.com/2013/kiwipycon/scpkbk
 
+Blog Posts
+----------
+
+Blog posts related to the **wrapt** module:
+
+* https://github.com/GrahamDumpleton/wrapt/tree/master/blog 
+
 Installation
 ------------
 
