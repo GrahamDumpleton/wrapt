@@ -1,6 +1,42 @@
 Release Notes
 =============
 
+Version 1.8.0
+-------------
+
+**Features Changed**
+
+* Previously using @wrapt.decorator on a class type didn't really yield
+  anything which was practically useful. This is now changed and when
+  applied to a class an instance of the class will be automatically
+  created to be used as the decorator wrapper function. The requirement
+  for this is that the __call__() method be specified in the style as
+  would be done for the decorator wrapper function.
+
+  ::
+
+      @wrapt.decorator
+      class mydecoratorclass(object):
+          def __init__(self, arg=None):
+              self.arg = arg
+          def __call__(self, wrapped, instance, args, kwargs):
+              return wrapped(*args, **kwargs)
+
+      @mydecoratorclass
+      def function():
+          pass
+
+  If the resulting decorator class is to be used with no arguments, the
+  __init__() method of the class must have all default arguments. These
+  arguments can be optionally supplied though, by using keyword arguments
+  to the resulting decorator when applied to the function to be decorated.
+
+  ::
+
+      @mydecoratorclass(arg=1)
+      def function():
+          pass
+
 Version 1.7.0
 -------------
 
@@ -172,7 +208,7 @@ Version 1.2.0
 * Added in helper functions specifically designed to assist in performing
   monkey patching of existing code.
 
-**Features Changes**
+**Features Changed**
 
 * Collapsed functionality of _BoundMethodWrapper into _BoundFunctionWrapper
   and renamed the latter to BoundFunctionWrapper. If deriving from the

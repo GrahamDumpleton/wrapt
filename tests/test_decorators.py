@@ -81,12 +81,30 @@ class TestDecorator(unittest.TestCase):
         _kwargs = { 'one': 1, 'two': 2 }
 
         @wrapt.decorator
-        class CustomProxy(wrapt.ObjectProxy):
-            def __init__(self, wrapped, instance, args, kwargs):
-                result = wrapped(*args, **kwargs)
-                super(CustomProxy.__wrapped__, self).__init__(result)
+        class ClassDecorator(object):
+            def __call__(self, wrapped, instance, args, kwargs):
+                return wrapped(*args, **kwargs)
 
-        @CustomProxy
+        @ClassDecorator
+        def _function(*args, **kwargs):
+            return args, kwargs
+
+        result = _function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_class_type_as_decorator_args(self):
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        @wrapt.decorator
+        class ClassDecorator(object):
+            def __init__(self, arg):
+                assert arg == 1
+            def __call__(self, wrapped, instance, args, kwargs):
+                return wrapped(*args, **kwargs)
+
+        @ClassDecorator(arg=1)
         def _function(*args, **kwargs):
             return args, kwargs
 
