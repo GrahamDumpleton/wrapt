@@ -11,6 +11,12 @@ Version 1.9.0
   identifying a module. Similar for underlying ``wrapt.resolve_path()``
   function.
 
+**Bugs Fixed**
+
+* It is necessary to proxy the special ``__weakref__`` attribute in the
+  pure Python object proxy else using ``inspect.getmembers()`` on a
+  decorator class will fail.
+
 Version 1.8.0
 -------------
 
