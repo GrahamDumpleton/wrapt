@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 1.9.0
+-------------
+
+**Features Changed**
+
+* When using ``wrapt.wrap_object()``, it is now possible to pass an
+  arbitrary object in addition to a module object, or a string name
+  identifying a module. Similar for underlying ``wrapt.resolve_path()``
+  function.
+
 Version 1.8.0
 -------------
 
