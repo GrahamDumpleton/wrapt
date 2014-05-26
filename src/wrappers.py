@@ -580,7 +580,7 @@ except ImportError:
 # Helper functions for applying wrappers to existing functions.
 
 def resolve_path(module, name):
-    if not inspect.ismodule(module):
+    if isinstance(module, six.string_types):
         __import__(module)
         module = sys.modules[module]
 
