@@ -40,6 +40,15 @@ class _ObjectProxyMethods(object):
     def __dict__(self):
         return self.__wrapped__.__dict__
 
+    # Need to also propagate the special __weakref__ attribute for case
+    # where decorating classes which will define this. If do not define
+    # it and use a function like inspect.getmembers() on a decorator
+    # class it will fail. This can't be in the derived classes.
+
+    @property
+    def __weakref__(self):
+        return self.__wrapped__.__weakref__
+
 class _ObjectProxyMetaType(type):
      def __new__(cls, name, bases, dictionary):
          # Copy our special properties into the class so that they
