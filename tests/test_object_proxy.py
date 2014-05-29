@@ -55,7 +55,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, function1)
         self.assertEqual(function2.__name__, function1.__name__)
 
-        if six.PY3:
+        if sys.version_info >= (3, 3):
             self.assertEqual(function2.__qualname__, function1.__qualname__)
 
         function2.__wrapped__ = None
@@ -66,7 +66,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, None)
         self.assertFalse(hasattr(function2, '__name__'))
 
-        if six.PY3:
+        if sys.version_info >= (3, 3):
             self.assertFalse(hasattr(function2, '__qualname__'))
 
         def function3(*args, **kwargs):
@@ -78,7 +78,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, function3)
         self.assertEqual(function2.__name__, function3.__name__)
 
-        if six.PY3:
+        if sys.version_info >= (3, 3):
             self.assertEqual(function2.__qualname__, function3.__qualname__)
 
     def test_delete_wrapped(self):
