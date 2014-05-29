@@ -1,10 +1,11 @@
 from __future__ import print_function
 
+import sys
 import unittest
 
 import wrapt
 
-from wrapt import six
+import six
 
 @wrapt.decorator
 def passthru_decorator(wrapped, instance, args, kwargs):
@@ -45,7 +46,7 @@ class TestUpdateAttributes(unittest.TestCase):
         def function():
             pass
 
-        if six.PY3:
+        if sys.version_info >= (3, 3):
             method = self.test_update_qualname
             self.assertEqual(function.__qualname__,
                     (method.__qualname__ + '.<locals>.function'))
@@ -63,7 +64,7 @@ class TestUpdateAttributes(unittest.TestCase):
 
         instance = wrapt.FunctionWrapper(function, wrapper)
 
-        if six.PY3:
+        if sys.version_info >= (3, 3):
             method = self.test_update_qualname_modified_on_original
             self.assertEqual(instance.__qualname__,
                     (method.__qualname__ + '.<locals>.function'))

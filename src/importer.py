@@ -3,12 +3,12 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 
 """
 
-from . import six
+import six
 
 import sys
 import threading
 
-if six.PY3: 
+if six.PY3:
     import importlib
 
 from .decorators import synchronized
@@ -158,7 +158,7 @@ class ImportHookFinder:
         # Now call back into the import system again.
 
         try:
-            if six.PY3:
+            if sys.version_info >= (3, 3):
                 # For Python 3 we need to use find_loader() from
                 # the importlib module. It doesn't actually
                 # import the target module and only finds the

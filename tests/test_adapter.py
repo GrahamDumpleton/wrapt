@@ -3,10 +3,11 @@ from __future__ import print_function
 import unittest
 import inspect
 import imp
+import sys
 
 import wrapt
 
-from wrapt import six
+import six
 
 DECORATORS_CODE = """
 import wrapt
@@ -88,7 +89,7 @@ class TestArgumentSpecification(unittest.TestCase):
         # actually needs to match that of the adapter function the
         # prototype of which was supplied via the dummy function.
 
-        if six.PY2:
+        if sys.version_info < (3, 3):
             return
 
         def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass

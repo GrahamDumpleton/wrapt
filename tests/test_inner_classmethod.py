@@ -6,7 +6,7 @@ import imp
 
 import wrapt
 
-from wrapt import six
+import six
 
 DECORATORS_CODE = """
 import wrapt

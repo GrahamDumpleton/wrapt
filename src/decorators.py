@@ -3,14 +3,15 @@ as well as some commonly used decorators.
 
 """
 
-from . import six
+import six
 
+import sys
 from functools import partial
 from inspect import getargspec, ismethod, isclass
 from collections import namedtuple
 from threading import Lock, RLock
 
-if not six.PY2:
+if sys.version_info >= (3, 3):
     from inspect import signature
 
 from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
@@ -69,7 +70,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     @property
     def __signature__(self):
-        if six.PY2:
+        if sys.version_info < (3, 3):
             return self._self_adapter.__signature__
         else:
             # Can't allow this to fail on Python 3 else it falls
@@ -205,7 +206,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     # we need to first check that use of the decorator
                     # hadn't been disabled by a simple boolean. If it was,
                     # the target function to be wrapped is returned instead.
-                    
+
                     _enabled = enabled
                     if type(_enabled) is bool:
                         if not _enabled:
