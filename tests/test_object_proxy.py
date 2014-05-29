@@ -1473,7 +1473,7 @@ class SpecialMethods(unittest.TestCase):
 
         proxy = wrapt.ObjectProxy(instance)
 
-        self.assertEqual(format(instance, 's'), format(proxy, 's'))
+        self.assertEqual(format(instance, ''), format(proxy, ''))
 
     def test_list_reversed(self):
         instance = [1, 2]
