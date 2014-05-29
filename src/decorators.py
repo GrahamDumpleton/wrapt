@@ -3,7 +3,7 @@ as well as some commonly used decorators.
 
 """
 
-from . import six
+import six
 
 from functools import partial
 from inspect import getargspec, ismethod, isclass

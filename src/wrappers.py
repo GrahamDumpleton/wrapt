@@ -1,4 +1,4 @@
-from . import six
+import six
 
 import sys
 import functools

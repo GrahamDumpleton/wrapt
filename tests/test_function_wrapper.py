@@ -5,7 +5,7 @@ import unittest
 import wrapt
 import wrapt.wrappers
 
-from wrapt import six
+import six
 
 class TestClassInheritence(unittest.TestCase):
 

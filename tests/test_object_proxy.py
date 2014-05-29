@@ -9,7 +9,7 @@ is_pypy = '__pypy__' in sys.builtin_module_names
 
 import wrapt
 
-from wrapt import six
+import six
 
 OBJECTS_CODE = """
 class TargetBaseClass(object):

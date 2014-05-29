@@ -4,7 +4,7 @@ import unittest
 
 import wrapt
 
-from wrapt import six
+import six
 
 @wrapt.decorator
 def passthru_decorator(wrapped, instance, args, kwargs):

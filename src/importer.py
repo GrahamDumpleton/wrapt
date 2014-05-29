@@ -3,7 +3,7 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 
 """
 
-from . import six
+import six
 
 import sys
 import threading
