@@ -148,11 +148,112 @@ class TestAttributeAccess(unittest.TestCase):
             self.assertEqual(function2._self_wrapper, decorator1)
             self.assertEqual(function2._self_binding, 'staticmethod')
 
-        instance = Class()
+    def test_instancemethod_attributes_external_class(self):
+        def decorator1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        decorator2 = wrapt.decorator(decorator1)
 
-        self.assertEqual(instance.function2.__wrapped__, instance.function1)
-        self.assertEqual(instance.function2._self_instance, instance)
-        self.assertEqual(instance.function2._self_wrapper, decorator1)
+        class Class(object):
+            def function1(self, *args, **kwargs):
+                return args, kwargs
+
+        function2 = decorator2(Class.function1)
+
+        self.assertEqual(function2._self_wrapper, decorator2)
+
+        # We can't identify this as being an instance method in
+        # Python 3 because there is no concept of unbound methods.
+        # We therefore don't try for Python 2 either.
+
+        self.assertEqual(function2._self_binding, 'function')
+
+    def test_classmethod_attributes_external_class(self):
+        def decorator1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        decorator2 = wrapt.decorator(decorator1)
+
+        class Class(object):
+            @classmethod
+            def function1(cls, *args, **kwargs):
+                return args, kwargs
+
+        function2 = decorator2(Class.function1)
+
+        self.assertEqual(function2._self_wrapper, decorator2)
+        self.assertEqual(function2._self_binding, 'classmethod')
+
+    def test_staticmethod_attributes_external_class(self):
+        def decorator1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        decorator2 = wrapt.decorator(decorator1)
+
+        class Class(object):
+            @staticmethod
+            def function1(*args, **kwargs):
+                return args, kwargs
+
+        function2 = decorator2(Class.function1)
+
+        self.assertEqual(function2._self_wrapper, decorator2)
+
+        # We can't identify this as being a static method because
+        # the binding has resulted in a normal function being returned.
+
+        self.assertEqual(function2._self_binding, 'function')
+
+    def test_instancemethod_attributes_external_instance(self):
+        def decorator1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        decorator2 = wrapt.decorator(decorator1)
+
+        class Class(object):
+            def function1(self, *args, **kwargs):
+                return args, kwargs
+
+        function2 = decorator2(Class().function1)
+
+        self.assertEqual(function2._self_wrapper, decorator2)
+
+        # We can't identify this as being an instance method in
+        # Python 3 when it is a class so have to disable the check
+        # for Python 2. This has flow on effect of not working
+        # in the case of an instance either.
+
+        self.assertEqual(function2._self_binding, 'function')
+
+    def test_classmethod_attributes_external_instance(self):
+        def decorator1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        decorator2 = wrapt.decorator(decorator1)
+
+        class Class(object):
+            @classmethod
+            def function1(cls, *args, **kwargs):
+                return args, kwargs
+
+        function2 = decorator2(Class().function1)
+
+        self.assertEqual(function2._self_wrapper, decorator2)
+        self.assertEqual(function2._self_binding, 'classmethod')
+
+    def test_staticmethod_attributes_external_instance(self):
+        def decorator1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        decorator2 = wrapt.decorator(decorator1)
+
+        class Class(object):
+            @staticmethod
+            def function1(*args, **kwargs):
+                return args, kwargs
+
+        function2 = decorator2(Class().function1)
+
+        self.assertEqual(function2._self_wrapper, decorator2)
+
+        # We can't identify this as being a static method because
+        # the binding has resulted in a normal function being returned.
+
+        self.assertEqual(function2._self_binding, 'function')
 
 class TestParentReference(unittest.TestCase):
 
@@ -177,6 +278,18 @@ class TestParentReference(unittest.TestCase):
             pass
 
         self.assertEqual(Class._self_parent, None)
+
+    def test_nested_class_decorator(self):
+        @wrapt.decorator
+        def _decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class:
+            @_decorator
+            class Nested:
+                pass
+
+        self.assertEqual(Class.Nested._self_parent, None)
 
     def test_instancemethod(self):
         @wrapt.decorator

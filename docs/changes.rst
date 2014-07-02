@@ -17,6 +17,10 @@ Version 1.9.0
   pure Python object proxy else using ``inspect.getmembers()`` on a
   decorator class will fail.
 
+* The FunctionWrapper class was not passing through the instance correctly
+  to the wrapper function when it was applied to a method of an existing
+  instance of a class.
+
 Version 1.8.0
 -------------
 
