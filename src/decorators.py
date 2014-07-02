@@ -3,14 +3,17 @@ as well as some commonly used decorators.
 
 """
 
-from . import six
+import sys
+
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
 
 from functools import partial
 from inspect import getargspec, ismethod, isclass
 from collections import namedtuple
 from threading import Lock, RLock
 
-if not six.PY2:
+if not PY2:
     from inspect import signature
 
 from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
@@ -69,7 +72,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     @property
     def __signature__(self):
-        if six.PY2:
+        if PY2:
             return self._self_adapter.__signature__
         else:
             # Can't allow this to fail on Python 3 else it falls
@@ -79,7 +82,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
             return signature(self._self_adapter)
 
-    if six.PY2:
+    if PY2:
         func_code = __code__
         func_defaults = __defaults__
 
@@ -90,7 +93,7 @@ class _BoundAdapterWrapper(BoundFunctionWrapper):
         return _AdapterFunctionSurrogate(self.__wrapped__.__func__,
                 self._self_parent._self_adapter)
 
-    if six.PY2:
+    if PY2:
         im_func = __func__
 
 class AdapterWrapper(FunctionWrapper):
@@ -116,7 +119,7 @@ class AdapterWrapper(FunctionWrapper):
     def __kwdefaults__(self):
         return self._self_surrogate.__kwdefaults__
 
-    if six.PY2:
+    if PY2:
         func_code = __code__
         func_defaults = __defaults__
 

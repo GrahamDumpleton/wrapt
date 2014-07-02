@@ -1,10 +1,20 @@
-from . import six
-
 import sys
 import functools
 import operator
 import weakref
 import inspect
+
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    string_types = str,
+else:
+    string_types = basestring,
+
+def with_metaclass(meta, *bases):
+    """Create a base class with a metaclass."""
+    return meta("NewBase", bases, {})
 
 class _ObjectProxyMethods(object):
 
@@ -60,7 +70,7 @@ class _ObjectProxyMetaType(type):
 
          return type.__new__(cls, name, bases, dictionary)
 
-class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
+class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
     __slots__ = '__wrapped__'
 
@@ -106,7 +116,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __str__(self):
         return str(self.__wrapped__)
 
-    if six.PY3:
+    if PY3:
         def __bytes__(self):
             return bytes(self.__wrapped__)
 
@@ -119,7 +129,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __reversed__(self):
         return reversed(self.__wrapped__)
 
-    if six.PY3:
+    if PY3:
         def __round__(self):
             return round(self.__wrapped__)
 
@@ -668,7 +678,7 @@ except ImportError:
 # Helper functions for applying wrappers to existing functions.
 
 def resolve_path(module, name):
-    if isinstance(module, six.string_types):
+    if isinstance(module, string_types):
         __import__(module)
         module = sys.modules[module]
 
