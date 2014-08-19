@@ -5,7 +5,7 @@ import unittest
 import wrapt
 import wrapt.wrappers
 
-from wrapt import six
+from compat import PY2, PY3, exec_
 
 class TestClassInheritence(unittest.TestCase):
 

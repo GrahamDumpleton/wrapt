@@ -3,14 +3,10 @@ from __future__ import print_function
 import unittest
 import inspect
 import imp
-import sys
 
 import wrapt
 
-from wrapt import six
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
+from compat import PY2, PY3, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -23,7 +19,7 @@ def adapter1(wrapped, instance, args, kwargs):
 """
 
 decorators = imp.new_module('decorators')
-six.exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 def function1(arg1, arg2):
     '''documentation'''

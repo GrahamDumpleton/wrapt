@@ -6,7 +6,7 @@ import imp
 
 import wrapt
 
-from wrapt import six
+from compat import PY2, PY3, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -17,7 +17,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 """
 
 decorators = imp.new_module('decorators')
-six.exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class class1(object):
     pass

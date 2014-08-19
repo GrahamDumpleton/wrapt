@@ -1,14 +1,10 @@
 from __future__ import print_function
 
 import unittest
-import sys
 
 import wrapt
 
-from wrapt import six
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
+from compat import PY2, PY3, exec_
 
 @wrapt.decorator
 def passthru_decorator(wrapped, instance, args, kwargs):

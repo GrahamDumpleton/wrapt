@@ -9,10 +9,7 @@ is_pypy = '__pypy__' in sys.builtin_module_names
 
 import wrapt
 
-from wrapt import six
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
+from compat import PY2, PY3, exec_
 
 OBJECTS_CODE = """
 class TargetBaseClass(object):
@@ -27,7 +24,7 @@ def target():
 """
 
 objects = imp.new_module('objects')
-six.exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
+exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
 class TestAttributeAccess(unittest.TestCase):
 

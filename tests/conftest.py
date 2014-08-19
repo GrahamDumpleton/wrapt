@@ -1,9 +1,6 @@
-import sys
-
 import pytest
 
-PY2 = sys.version_info[0] < 3
-PY3 = sys.version_info[0] >= 3
+from compat import PY2, PY3
 
 class DummyCollector(pytest.collect.File):
     def collect(self):
