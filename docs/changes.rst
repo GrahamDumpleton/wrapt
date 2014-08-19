@@ -17,9 +17,19 @@ Version 1.9.0
   pure Python object proxy else using ``inspect.getmembers()`` on a
   decorator class will fail.
 
-* The FunctionWrapper class was not passing through the instance correctly
-  to the wrapper function when it was applied to a method of an existing
-  instance of a class.
+* The ``FunctionWrapper`` class was not passing through the instance
+  correctly to the wrapper function when it was applied to a method of an
+  existing instance of a class.
+
+* The ``FunctionWrapper`` was not always working when applied around a
+  method of a class type by accessing the method to be wrapped using
+  ``getattr()``. Instead it is necessary to access the original unbound
+  method from the class ``__dict__``. Updated the ``FunctionWrapper`` to
+  work better in such situations, but also modify ``resolve_path()`` to
+  always grab the class method from the class ``__dict__`` when wrapping
+  methods using ``wrapt.wrap_object()`` so wrapping is more predictable.
+  When doing monkey patching ``wrapt.wrap_object()`` should always be
+  used to ensure correct operation.
 
 Version 1.8.0
 -------------
