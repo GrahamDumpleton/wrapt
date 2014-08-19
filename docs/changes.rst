@@ -31,6 +31,10 @@ Version 1.9.0
   When doing monkey patching ``wrapt.wrap_object()`` should always be
   used to ensure correct operation.
 
+* The ``AttributeWrapper`` class used internally to the function
+  ``wrap_object_attribute()`` had wrongly named the ``__delete__`` method
+  for the descriptor as ``__del__``.
+
 Version 1.8.0
 -------------
 

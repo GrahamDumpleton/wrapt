@@ -747,7 +747,7 @@ class AttributeWrapper(object):
     def __set__(self, instance, value):
         instance.__dict__[self.attribute] = value
 
-    def __del__(self, instance):
+    def __delete__(self, instance):
         del instance.__dict__[self.attribute]
 
 def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
