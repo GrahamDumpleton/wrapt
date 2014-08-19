@@ -6,7 +6,7 @@ import imp
 
 import wrapt
 
-from wrapt import six
+from compat import PY2, PY3, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -19,7 +19,7 @@ def adapter1(wrapped, instance, args, kwargs):
 """
 
 decorators = imp.new_module('decorators')
-six.exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 def function1(arg1, arg2):
     '''documentation'''
@@ -52,7 +52,7 @@ class TestArgumentSpecification(unittest.TestCase):
         # actually needs to match that of the adapter function the
         # prototype of which was supplied via the dummy function.
 
-        if six.PY2:
+        if PY2:
             return
 
         def _adapter(arg1, arg2, *, arg3=None, **kwargs): pass

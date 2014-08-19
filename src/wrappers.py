@@ -1,10 +1,20 @@
-from . import six
-
 import sys
 import functools
 import operator
 import weakref
 import inspect
+
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    string_types = str,
+else:
+    string_types = basestring,
+
+def with_metaclass(meta, *bases):
+    """Create a base class with a metaclass."""
+    return meta("NewBase", bases, {})
 
 class _ObjectProxyMethods(object):
 
@@ -40,6 +50,15 @@ class _ObjectProxyMethods(object):
     def __dict__(self):
         return self.__wrapped__.__dict__
 
+    # Need to also propagate the special __weakref__ attribute for case
+    # where decorating classes which will define this. If do not define
+    # it and use a function like inspect.getmembers() on a decorator
+    # class it will fail. This can't be in the derived classes.
+
+    @property
+    def __weakref__(self):
+        return self.__wrapped__.__weakref__
+
 class _ObjectProxyMetaType(type):
      def __new__(cls, name, bases, dictionary):
          # Copy our special properties into the class so that they
@@ -51,7 +70,7 @@ class _ObjectProxyMetaType(type):
 
          return type.__new__(cls, name, bases, dictionary)
 
-class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
+class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
     __slots__ = '__wrapped__'
 
@@ -97,7 +116,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __str__(self):
         return str(self.__wrapped__)
 
-    if six.PY3:
+    if PY3:
         def __bytes__(self):
             return bytes(self.__wrapped__)
 
@@ -110,7 +129,7 @@ class ObjectProxy(six.with_metaclass(_ObjectProxyMetaType)):
     def __reversed__(self):
         return reversed(self.__wrapped__)
 
-    if six.PY3:
+    if PY3:
         def __round__(self):
             return round(self.__wrapped__)
 
@@ -408,27 +427,49 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, '_self_parent', parent)
 
     def __get__(self, instance, owner):
-        # If we are called in an unbound wrapper, then perform the binding.
-        # Note that we do this even if instance is None and accessing an
-        # unbound instance method from a class. This is because we need to
-        # be able to later detect that specific case as we will need to
-        # extract the instance from the first argument of those passed in.
-        # For the binding against an instance of None case, we also need to
-        # allow rebinding below.
+        # This method is actually doing double duty for both unbound and
+        # bound derived wrapper classes. It should possibly be broken up
+        # and the distinct functionality moved into the derived classes.
+        # Can't do that straight away due to some legacy code which is
+        # relying on it being here in this base class.
+        #
+        # The distinguishing attribute which determines whether we are
+        # being called in an unbound or bound wrapper is the parent
+        # attribute. If binding has never occured, then the parent will
+        # be None.
+        #
+        # First therefore, is if we are called in an unbound wrapper. In
+        # this case we perform the binding.
+        #
+        # We have one special case to worry about here. This is where we
+        # are decorating a nested class. In this case the wrapped class
+        # would not have a __get__() method to call. In that case we
+        # simply return self.
+        #
+        # Note that we otherwise still do binding even if instance is
+        # None and accessing an unbound instance method from a class.
+        # This is because we need to be able to later detect that
+        # specific case as we will need to extract the instance from the
+        # first argument of those passed in.
 
         if self._self_parent is None:
-            descriptor = self.__wrapped__.__get__(instance, owner)
+            if not inspect.isclass(self.__wrapped__):
+                descriptor = self.__wrapped__.__get__(instance, owner)
 
-            return self.__bound_function_wrapper__(descriptor, instance,
-                    self._self_wrapper, self._self_enabled,
-                    self._self_binding, self)
+                return self.__bound_function_wrapper__(descriptor, instance,
+                        self._self_wrapper, self._self_enabled,
+                        self._self_binding, self)
 
-        # If we have already been bound to an instance of something, we
-        # would usually return ourselves again. This mirrors what Python
-        # does. The exception is where we were originally bound to an
-        # instance of None and we were an instance method. In that case
-        # we rebind against the original wrapped function from the parent
-        # again.
+            return self
+
+        # Now we have the case of binding occuring a second time on what
+        # was already a bound function. In this case we would usually
+        # return ourselves again. This mirrors what Python does.
+        #
+        # The special case this time is where we were originally bound
+        # with an instance of None and we were likely an instance
+        # method. In that case we rebind against the original wrapped
+        # function from the parent again.
 
         if self._self_instance is None and self._self_binding == 'function':
             descriptor = self._self_parent.__wrapped__.__get__(
@@ -454,6 +495,17 @@ class _FunctionWrapperBase(ObjectProxy):
                     return self.__wrapped__(*args, **kwargs)
             elif not self._self_enabled:
                 return self.__wrapped__(*args, **kwargs)
+
+        # This can occur where initial function wrapper was applied to
+        # a function that was already bound to an instance. In that case
+        # we want to extract the instance from the function and use it.
+
+        if self._self_binding == 'function':
+            if self._self_instance is None:
+                instance = getattr(self.__wrapped__, '__self__', None)
+                if instance is not None:
+                    return self._self_wrapper(self.__wrapped__, instance,
+                            args, kwargs)
 
         # This is generally invoked when the wrapped function is being
         # called as a normal function and is not bound to a class as an
@@ -527,18 +579,52 @@ class FunctionWrapper(_FunctionWrapperBase):
     __bound_function_wrapper__ = BoundFunctionWrapper
 
     def __init__(self, wrapped, wrapper, enabled=None):
-        # We need to do special fixups on the args in the case of an
-        # instancemethod where called via the class and the instance is
-        # passed explicitly as the first argument. So work out when we
-        # believe it is likely an instancemethod. That is, anytime it
-        # isn't classmethod or staticmethod.
+        # What it is we are wrapping here could be anything. We need to
+        # try and detect specific cases though. In particular, we need
+        # to detect when we are given something that is a method of a
+        # class. Further, we need to know when it is likely an instance
+        # method, as opposed to a class or static method. This can
+        # become problematic though as there isn't strictly a fool proof
+        # method of knowing.
         #
-        # Note that there isn't strictly a fool proof method of knowing
-        # which is occuring because if a decorator using this code wraps
-        # other decorators and they are poorly implemented they can
-        # throw away important information needed to determine it.
+        # The situations we could encounter when wrapping a method are:
         #
-        # Anyway, the best we can do is look at the original type of the
+        # 1. The wrapper is being applied as part of a decorator which
+        # is a part of the class definition. In this case what we are
+        # given is the raw unbound function, classmethod or staticmethod
+        # wrapper objects.
+        #
+        # The problem here is that we will not know we are being applied
+        # in the context of the class being set up. This becomes
+        # important later for the case of an instance method, because in
+        # that case we just see it as a raw function and can't
+        # distinguish it from wrapping a normal function outside of
+        # a class context.
+        #
+        # 2. The wrapper is being applied when performing monkey
+        # patching of the class type afterwards and the method to be
+        # wrapped was retrieved direct from the __dict__ of the class
+        # type. This is effectively the same as (1) above.
+        #
+        # 3. The wrapper is being applied when performing monkey
+        # patching of the class type afterwards and the method to be
+        # wrapped was retrieved from the class type. In this case
+        # binding will have been performed where the instance against
+        # which the method is bound will be None at that point.
+        #
+        # This case is a problem because we can no longer tell if the
+        # method was a static method, plus if using Python3, we cannot
+        # tell if it was an instance method as the concept of an
+        # unnbound method no longer exists.
+        #
+        # 4. The wrapper is being applied when performing monkey
+        # patching of an instance of a class. In this case binding will
+        # have been perfomed where the instance was not None.
+        #
+        # This case is a problem because we can no longer tell if the
+        # method was a static method.
+        #
+        # Overall, the best we can do is look at the original type of the
         # object which was wrapped prior to any binding being done and
         # see if it is an instance of classmethod or staticmethod. In
         # the case where other decorators are between us and them, if
@@ -551,11 +637,32 @@ class FunctionWrapper(_FunctionWrapperBase):
         # that being an issue is very small, so we accept it and suggest
         # that those other decorators be fixed. It is also only an issue
         # if a decorator wants to actually do things with the arguments.
+        #
+        # As to not being able to identify static methods properly, we
+        # just hope that that isn't something people are going to want
+        # to wrap, or if they do suggest they do it the correct way by
+        # ensuring that it is decorated in the class definition itself,
+        # or patch it in the __dict__ of the class type.
+        #
+        # So to get the best outcome we can, whenever we aren't sure what
+        # it is, we label it as a 'function'. If it was already bound and
+        # that is rebound later, we assume that it will be an instance
+        # method and try an cope with the possibility that the 'self'
+        # argument it being passed as an explicit argument and shuffle
+        # the arguments around to extract 'self' for use as the instance.
 
         if isinstance(wrapped, classmethod):
             binding = 'classmethod'
+
         elif isinstance(wrapped, staticmethod):
             binding = 'staticmethod'
+
+        elif hasattr(wrapped, '__self__'):
+            if inspect.isclass(wrapped.__self__):
+                binding = 'classmethod'
+            else:
+                binding = 'function'
+
         else:
             binding = 'function'
 
@@ -571,7 +678,7 @@ except ImportError:
 # Helper functions for applying wrappers to existing functions.
 
 def resolve_path(module, name):
-    if not inspect.ismodule(module):
+    if isinstance(module, string_types):
         __import__(module)
         module = sys.modules[module]
 
@@ -583,7 +690,30 @@ def resolve_path(module, name):
     original = getattr(parent, attribute)
     for attribute in path[1:]:
         parent = original
-        original = getattr(original, attribute)
+
+        # We can't just always use getattr() because in doing
+        # that on a class it will cause binding to occur which
+        # will complicate things later and cause some things not
+        # to work. For the case of a class we therefore access
+        # the __dict__ directly. To cope though with the wrong
+        # class being given to us, or a method being moved into
+        # a base class, we need to walk the class heirarchy to
+        # work out exactly which __dict__ the method was defined
+        # in, as accessing it from __dict__ will fail if it was
+        # not actually on the class given. Fallback to using
+        # getattr() if we can't find it. If it truly doesn't
+        # exist, then that will fail.
+
+        if inspect.isclass(original):
+            for cls in inspect.getmro(original):
+                if attribute in vars(original):
+                    original = vars(original)[attribute]
+                    break
+            else:
+                original = getattr(original, attribute)
+
+        else:
+            original = getattr(original, attribute)
 
     return (parent, attribute, original)
 
@@ -617,7 +747,7 @@ class AttributeWrapper(object):
     def __set__(self, instance, value):
         instance.__dict__[self.attribute] = value
 
-    def __del__(self, instance):
+    def __delete__(self, instance):
         del instance.__dict__[self.attribute]
 
 def wrap_object_attribute(module, name, factory, args=(), kwargs={}):

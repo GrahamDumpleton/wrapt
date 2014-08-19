@@ -173,7 +173,7 @@ the decorated function is called will be passed in the ``args`` and
 
 Note that these are always passed as their own unique arguments and are not
 broken out and bound in any way to the decorator wrapper arguments. In
-other words, the decorater wrapper function signature must always be::
+other words, the decorator wrapper function signature must always be::
 
     @wrapt.decorator
     def my_decorator(wrapped, instance, args, kwargs): # CORRECT
@@ -439,9 +439,9 @@ function.
 
 ::
 
-    def _my_adpater_prototype(arg1, arg2): pass
+    def _my_adapter_prototype(arg1, arg2): pass
 
-    @wrapt.decorator(adapter=_my_adpater_prototype)
+    @wrapt.decorator(adapter=_my_adapter_prototype)
     def my_adapter(wrapped, instance, args, kwargs):
         """Adapter documentation."""
 
@@ -698,6 +698,6 @@ These rules can be summarised by the following.
                 # Decorator was applied to an instancemethod.
                 return wrapped(*args, **kwargs)
 
-To be truly robust, a universal decorator should raise a runtime exception
-at the point it is subsequently called, when it was applied as a decorator
-in a scenario it does not support.
+To be truly robust, if a universal decorator is being applied in a
+scenario it does not support, it should raise a runtime exception
+at the point it is called.

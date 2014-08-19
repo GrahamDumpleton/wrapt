@@ -6,7 +6,7 @@ import imp
 
 import wrapt
 
-from wrapt import six
+from compat import PY2, PY3, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -17,7 +17,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 """
 
 decorators = imp.new_module('decorators')
-six.exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class OldClass1():
     def function(self, arg):
@@ -105,6 +105,10 @@ class TestNamingInstanceMethodOldStyle(unittest.TestCase):
         original_argspec = inspect.getargspec(OldClass1o().function)
         function_argspec = inspect.getargspec(OldClass1d().function)
         self.assertEqual(original_argspec, function_argspec)
+
+    def test_getmembers(self):
+        original_members = inspect.getmembers(OldClass1o().function)
+        function_members = inspect.getmembers(OldClass1d().function)
 
     def test_class_isinstance(self):
         # Test preservation of isinstance() checks.

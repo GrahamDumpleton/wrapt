@@ -9,7 +9,7 @@ is_pypy = '__pypy__' in sys.builtin_module_names
 
 import wrapt
 
-from wrapt import six
+from compat import PY2, PY3, exec_
 
 OBJECTS_CODE = """
 class TargetBaseClass(object):
@@ -24,7 +24,7 @@ def target():
 """
 
 objects = imp.new_module('objects')
-six.exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
+exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
 class TestAttributeAccess(unittest.TestCase):
 
@@ -55,7 +55,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, function1)
         self.assertEqual(function2.__name__, function1.__name__)
 
-        if six.PY3:
+        if PY3:
             self.assertEqual(function2.__qualname__, function1.__qualname__)
 
         function2.__wrapped__ = None
@@ -66,7 +66,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, None)
         self.assertFalse(hasattr(function2, '__name__'))
 
-        if six.PY3:
+        if PY3:
             self.assertFalse(hasattr(function2, '__qualname__'))
 
         def function3(*args, **kwargs):
@@ -78,7 +78,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, function3)
         self.assertEqual(function2.__name__, function3.__name__)
 
-        if six.PY3:
+        if PY3:
             self.assertEqual(function2.__qualname__, function3.__qualname__)
 
     def test_delete_wrapped(self):
@@ -810,7 +810,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         self.assertEqual(int(one), 1)
 
-        if not six.PY3:
+        if not PY3:
             self.assertEqual(long(one), 1)
 
     def test_float(self):
@@ -1458,7 +1458,7 @@ class CallableFunction(unittest.TestCase):
 class SpecialMethods(unittest.TestCase):
 
     def test_class_bytes(self):
-        if six.PY3:
+        if PY3:
             class Class(object):
                 def __bytes__(self):
                     return b'BYTES'
@@ -1473,7 +1473,7 @@ class SpecialMethods(unittest.TestCase):
 
         proxy = wrapt.ObjectProxy(instance)
 
-        self.assertEqual(format(instance, 's'), format(proxy, 's'))
+        self.assertEqual(format(instance, ''), format(proxy, ''))
 
     def test_list_reversed(self):
         instance = [1, 2]
