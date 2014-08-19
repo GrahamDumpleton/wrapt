@@ -11,6 +11,9 @@ import wrapt
 
 from wrapt import six
 
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
 OBJECTS_CODE = """
 class TargetBaseClass(object):
     "documentation"
@@ -55,7 +58,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, function1)
         self.assertEqual(function2.__name__, function1.__name__)
 
-        if six.PY3:
+        if PY3:
             self.assertEqual(function2.__qualname__, function1.__qualname__)
 
         function2.__wrapped__ = None
@@ -66,7 +69,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, None)
         self.assertFalse(hasattr(function2, '__name__'))
 
-        if six.PY3:
+        if PY3:
             self.assertFalse(hasattr(function2, '__qualname__'))
 
         def function3(*args, **kwargs):
@@ -78,7 +81,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, function3)
         self.assertEqual(function2.__name__, function3.__name__)
 
-        if six.PY3:
+        if PY3:
             self.assertEqual(function2.__qualname__, function3.__qualname__)
 
     def test_delete_wrapped(self):
@@ -810,7 +813,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         self.assertEqual(int(one), 1)
 
-        if not six.PY3:
+        if not PY3:
             self.assertEqual(long(one), 1)
 
     def test_float(self):
@@ -1458,7 +1461,7 @@ class CallableFunction(unittest.TestCase):
 class SpecialMethods(unittest.TestCase):
 
     def test_class_bytes(self):
-        if six.PY3:
+        if PY3:
             class Class(object):
                 def __bytes__(self):
                     return b'BYTES'
