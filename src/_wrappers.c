@@ -1785,6 +1785,16 @@ static PyObject *WraptFunctionWrapperBase_call(
 
     PyObject *result = NULL;
 
+    static PyObject *function_str = NULL;
+
+    if (!function_str) {
+#if PY_MAJOR_VERSION >= 3
+        function_str = PyUnicode_InternFromString("function");
+#else
+        function_str = PyString_InternFromString("function");
+#endif
+    }
+
     if (self->enabled != Py_None) {
         if (PyCallable_Check(self->enabled)) {
             PyObject *object = NULL;
@@ -1811,8 +1821,29 @@ static PyObject *WraptFunctionWrapperBase_call(
         kwds = param_kwds;
     }
 
+    if (self->instance == Py_None && (self->binding == function_str ||
+            PyObject_RichCompareBool(self->binding, function_str,
+            Py_EQ) == 1)) {
+
+        PyObject *instance = NULL;
+
+        instance = PyObject_GetAttrString(self->object_proxy.wrapped,
+                "__self__");
+
+        if (instance) {
+            result = PyObject_CallFunctionObjArgs(self->wrapper,
+                    self->object_proxy.wrapped, instance, args, kwds, NULL);
+
+            Py_XDECREF(param_kwds);
+
+            return result;
+        }
+        else
+            PyErr_Clear();
+    }
+
     result = PyObject_CallFunctionObjArgs(self->wrapper,
-            self->object_proxy.wrapped, Py_None, args, kwds, NULL);
+            self->object_proxy.wrapped, self->instance, args, kwds, NULL);
 
     Py_XDECREF(param_kwds);
 
@@ -1850,6 +1881,21 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     }
 
     if (self->parent == Py_None) {
+#if PY_MAJOR_VERSION < 3
+        if (PyObject_IsInstance(self->object_proxy.wrapped,
+                (PyObject *)&PyClass_Type) || PyObject_IsInstance(
+                self->object_proxy.wrapped, (PyObject *)&PyType_Type)) {
+            Py_INCREF(self);
+            return (PyObject *)self;
+        }
+#else
+        if (PyObject_IsInstance(self->object_proxy.wrapped,
+                (PyObject *)&PyType_Type)) {
+            Py_INCREF(self);
+            return (PyObject *)self;
+        }
+#endif
+
         if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL) {
             PyErr_Format(PyExc_AttributeError,
                     "'%s' object has no attribute '__get__'",
@@ -2329,6 +2375,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     PyObject *wrapper = NULL;
     PyObject *enabled = Py_None;
     PyObject *binding = NULL;
+    PyObject *instance = NULL;
 
     static PyObject *classmethod_str = NULL;
     static PyObject *staticmethod_str = NULL;
@@ -2367,12 +2414,31 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 #endif
     }
 
-    if (PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type))
+    if (PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type)) {
         binding = classmethod_str;
-    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type))
+    }
+    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type)) {
         binding = staticmethod_str;
-    else
+    }
+    else if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
+#if PY_MAJOR_VERSION < 3
+        if (PyObject_IsInstance(instance, (PyObject *)&PyClass_Type) ||
+                PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
+            binding = classmethod_str;
+        }
+#else
+        if (PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
+            binding = classmethod_str;
+        }
+#endif
+        else
+            binding = function_str;
+    }
+    else {
+        PyErr_Clear();
+
         binding = function_str;
+    }
 
     result = WraptFunctionWrapperBase_raw_init(self, wrapped, Py_None,
             wrapper, enabled, binding, Py_None);

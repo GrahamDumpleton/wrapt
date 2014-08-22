@@ -25,3 +25,53 @@ Python for this issue is being pursued (http://bugs.python.org/issue19072).
 The only solution is the recommendation that decorators implemented using
 ``@wrapt.decorator`` always be placed outside of ``@classmethod`` and never
 inside.
+
+Using decorated class with super()
+----------------------------------
+
+In the implementation of a decorated class, if needing to use a reference
+to the class type with super, it is necessary to access the original
+wrapped class and use it instead of the decorated class.
+
+::
+
+    @mydecorator
+    class Derived(Base):
+
+        def __init__(self):
+            super(Derived.__wrapped__, self).__init__()
+
+If using Python 3, one can simply use ``super()`` with no arguments and
+everything will work fine.
+
+::
+
+    @mydecorator
+    class Derived(Base):
+
+        def __init__(self):
+            super().__init__()
+
+
+Deriving from decorated class
+-----------------------------
+
+If deriving from a decorated class, it is necessary to access the original
+wrapped class and use it as the base class.
+
+::
+
+    @mydecorator
+    class Base(object):
+        pass
+
+    class Derived(Base.__wrapped__):
+        pass
+
+In doing this, the functionality of any decorator on the base class is not
+inherited. If creation of a derived class needs to also be mediated via the
+decorator, the decorator would need to be applied to the derived class also.
+
+In this case of trying to decorate a base class in a class hierarchy, it
+may turn out to be more appropriate to use a meta class instead of trying
+to decorate the base class.

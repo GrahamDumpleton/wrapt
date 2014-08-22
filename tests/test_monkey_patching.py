@@ -21,6 +21,16 @@ class Class_1(object):
     def method(self, *args, **kwargs):
         return args, kwargs
 
+class Class_2(object):
+    @classmethod
+    def method(cls, *args, **kwargs):
+        return args, kwargs
+
+class Class_3(object):
+    @staticmethod
+    def method(*args, **kwargs):
+        return args, kwargs
+
 class TestMonkeyPatching(unittest.TestCase):
 
     def test_function_wrapper(self):
@@ -170,6 +180,50 @@ class TestMonkeyPatching(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
+    def test_wrap_class_method_module_name(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, Class_2)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        wrapt.wrap_function_wrapper(__name__, 'Class_2.method',
+                wrapper)
+
+        result = Class_2.method(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_wrap_static_method_module_name(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        wrapt.wrap_function_wrapper(__name__, 'Class_3.method',
+                wrapper)
+
+        result = Class_3.method(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
     def test_patch_function_module_name(self):
 
         _args = (1, 2)
@@ -264,6 +318,120 @@ class TestMonkeyPatching(unittest.TestCase):
         @wrapper()
         def function(*args, **kwargs):
             return self._test_transient_function_wrapper(*args, **kwargs)
+
+        result = function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+class TestExplicitMonkeyPatching(unittest.TestCase):
+
+    def test_patch_instance_method_class(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        @wrapt.function_wrapper
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, _instance)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        Class.function = wrapper(Class.function)
+
+        _instance = Class()
+
+        result = _instance.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_patch_instance_method_dict(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        @wrapt.function_wrapper
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, _instance)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        Class.function = wrapper(vars(Class)['function'])
+
+        _instance = Class()
+
+        result = _instance.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_patch_instance_method_instance(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        @wrapt.function_wrapper
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, _instance)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        _instance = Class()
+
+        _instance.function = wrapper(_instance.function)
+
+        result = _instance.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_patch_instance_method_extracted(self):
+
+        _args = (1, 2)
+        _kwargs = { 'one': 1, 'two': 2 }
+
+        called = []
+
+        @wrapt.function_wrapper
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, _instance)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        class Class(object):
+            def function(self, *args, **kwargs):
+                return args, kwargs
+
+        _instance = Class()
+
+        function = wrapper(_instance.function)
 
         result = function(*_args, **_kwargs)
 
