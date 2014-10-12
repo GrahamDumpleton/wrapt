@@ -13,8 +13,10 @@ from inspect import getargspec, ismethod, isclass
 from collections import namedtuple
 from threading import Lock, RLock
 
-if not PY2:
+try:
     from inspect import signature
+except ImportError:
+    pass
 
 from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
     CallableObjectProxy)
@@ -72,7 +74,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     @property
     def __signature__(self):
-        if PY2:
+        if 'signature' not in globals():
             return self._self_adapter.__signature__
         else:
             # Can't allow this to fail on Python 3 else it falls

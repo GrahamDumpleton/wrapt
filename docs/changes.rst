@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 1.9.1
+-------------
+
+**Bugs Fixed**
+
+* The ``inspect.signature()`` function was only added in Python 3.3.
+  Use fallback when doesn't exist and on Python 3.2 or earlier Python 3
+  versions.
+  
+  Note that testing is only performed for Python 3.3+, so it isn't
+  actually known if the ``wrapt`` package works on Python 3.2.
+
 Version 1.9.0
 -------------
 
