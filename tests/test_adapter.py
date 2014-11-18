@@ -102,5 +102,34 @@ class TestArgumentSpecification(unittest.TestCase):
 
         self.assertTrue(isinstance(function1d, type(function1o)))
 
+class TestDynamicAdapter(unittest.TestCase):
+
+    def test_dynamic_adapter(self):
+        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
+
+        argspec = inspect.getargspec(_adapter)
+
+        @wrapt.decorator(adapter=argspec)
+        def _wrapper_1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @_wrapper_1
+        def _function_1():
+            pass
+
+        self.assertEqual(inspect.getargspec(_function_1), argspec)
+
+        args = inspect.formatargspec(*argspec)
+
+        @wrapt.decorator(adapter=args)
+        def _wrapper_2(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @_wrapper_2
+        def _function_2():
+            pass
+
+        self.assertEqual(inspect.getargspec(_function_2), argspec)
+
 if __name__ == '__main__':
     unittest.main()

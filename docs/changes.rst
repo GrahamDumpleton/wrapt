@@ -1,8 +1,18 @@
 Release Notes
 =============
 
-Version 1.9.1
--------------
+Version 1.10.0
+--------------
+
+**New Features**
+
+* When specifying an adapter for a decorator, it is now possible to pass
+  in, in addition to passing in a callable, a tuple of the form which
+  is returned by ``inspect.getargspec()``, or a string of the form which
+  is returned by ``inspect.formatargspec()``. In these two cases the
+  decorator will automatically compile a stub function to use as the
+  adapter. This eliminates the need for a caller to generate the stub
+  function if generating the signature on the fly.
 
 **Bugs Fixed**
 
