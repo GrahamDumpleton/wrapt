@@ -131,5 +131,23 @@ class TestDynamicAdapter(unittest.TestCase):
 
         self.assertEqual(inspect.getargspec(_function_2), argspec)
 
+    def test_adapter_factory(self):
+        def factory(wrapped):
+            argspec = inspect.getargspec(wrapped)
+            argspec.args.insert(0, 'arg0')
+            return argspec
+
+        @wrapt.decorator(adapter=wrapt.adapter_factory(factory))
+        def _wrapper_1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @_wrapper_1
+        def _function_1(arg1, arg2):
+            pass
+
+        argspec = inspect.getargspec(_function_1)
+
+        self.assertEqual(argspec.args, ['arg0', 'arg1', 'arg2'])
+
 if __name__ == '__main__':
     unittest.main()

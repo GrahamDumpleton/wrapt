@@ -151,6 +151,19 @@ class AdapterWrapper(FunctionWrapper):
     def __signature__(self):
         return self._self_surrogate.__signature__
 
+class AdapterFactory(object):
+    def __call__(self, wrapped):
+        raise NotImplementedError()
+
+class DelegatedAdapterFactory(AdapterFactory):
+    def __init__(self, factory):
+        super(DelegatedAdapterFactory, self).__init__()
+        self.factory = factory
+    def __call__(self, wrapped):
+        return self.factory(wrapped)
+
+adapter_factory = DelegatedAdapterFactory
+
 # Decorator for creating other decorators. This decorator and the
 # wrappers which they use are designed to properly preserve any name
 # attributes, function signatures etc, in addition to the wrappers
@@ -186,6 +199,9 @@ def decorator(wrapper=None, enabled=None, adapter=None):
 
         def _build(wrapped, wrapper, enabled=None, adapter=None):
             if adapter:
+                if isinstance(adapter, AdapterFactory):
+                    adapter = adapter(wrapped)
+
                 if not callable(adapter):
                     ns = {}
                     if not isinstance(adapter, string_types):
