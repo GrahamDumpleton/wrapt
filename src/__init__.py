@@ -1,4 +1,4 @@
-__version_info__ = ('1', '9', '0')
+__version_info__ = ('1', '10', '0')
 __version__ = '.'.join(__version_info__)
 
 from .wrappers import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
@@ -7,7 +7,8 @@ from .wrappers import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
         wrap_function_wrapper, patch_function_wrapper,
         transient_function_wrapper)
 
-from .decorators import decorator, synchronized
+from .decorators import (adapter_factory, AdapterFactory, decorator,
+        synchronized)
 
 from .importer import (register_post_import_hook, when_imported,
         discover_post_import_hooks)

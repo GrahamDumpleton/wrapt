@@ -1,6 +1,97 @@
 Release Notes
 =============
 
+Version 1.10.0
+--------------
+
+**New Features**
+
+* When specifying an adapter for a decorator, it is now possible to pass
+  in, in addition to passing in a callable, a tuple of the form which
+  is returned by ``inspect.getargspec()``, or a string of the form which
+  is returned by ``inspect.formatargspec()``. In these two cases the
+  decorator will automatically compile a stub function to use as the
+  adapter. This eliminates the need for a caller to generate the stub
+  function if generating the signature on the fly.
+
+  ::
+
+      def argspec_factory(wrapped):
+          argspec = inspect.getargspec(wrapped)
+
+          args = argspec.args[1:]
+          defaults = argspec.defaults and argspec.defaults[-len(argspec.args):]
+
+          return inspect.ArgSpec(args, argspec.varargs,
+                  argspec.keywords, defaults)
+
+      def session(wrapped):
+          @wrapt.decorator(adapter=argspec_factory(wrapped))
+          def _session(wrapped, instance, args, kwargs):
+              with transaction() as session:
+                  return wrapped(session, *args, **kwargs)
+
+          return _session(wrapped)
+
+  This mechanism and the original mechanism to pass a function, meant
+  that the adapter function had to be created in advance. If the adapter
+  needed to be generated on demand for the specific function to be
+  wrapped, then it would have been necessary to use a closure around
+  the definition of the decorator as above, such that the generator could
+  be passed in.
+
+  As a convenience, instead of using such a closure, it is also now
+  possible to write:
+
+  ::
+
+      def argspec_factory(wrapped):
+          argspec = inspect.getargspec(wrapped)
+
+          args = argspec.args[1:]
+          defaults = argspec.defaults and argspec.defaults[-len(argspec.args):]
+
+          return inspect.ArgSpec(args, argspec.varargs,
+                  argspec.keywords, defaults)
+
+      @wrapt.decorator(adapter=wrapt.adapter_factory(argspec_factory))
+      def _session(wrapped, instance, args, kwargs):
+          with transaction() as session:
+              return wrapped(session, *args, **kwargs)
+
+  The result of ``wrapt.adapter_factory()`` will be recognised as indicating
+  that the creation of the adapter is to be deferred until the decorator is
+  being applied to a function. The factory function for generating the
+  adapter function or specification on demand will be passed the function
+  being wrapped by the decorator.
+
+  If wishing to create a library of routines for generating adapter
+  functions or specifications dynamically, then you can do so by creating
+  classes which derive from ``wrapt.AdapterFactory`` as that is the type
+  which is recognised as indicating lazy evaluation of the adapter
+  function. For example, ``wrapt.adapter_factory()`` is itself implemented
+  as:
+
+  ::
+
+      class DelegatedAdapterFactory(wrapt.AdapterFactory):
+          def __init__(self, factory):
+              super(DelegatedAdapterFactory, self).__init__()
+              self.factory = factory
+          def __call__(self, wrapped):
+              return self.factory(wrapped)
+
+      adapter_factory = DelegatedAdapterFactory
+
+**Bugs Fixed**
+
+* The ``inspect.signature()`` function was only added in Python 3.3.
+  Use fallback when doesn't exist and on Python 3.2 or earlier Python 3
+  versions.
+  
+  Note that testing is only performed for Python 3.3+, so it isn't
+  actually known if the ``wrapt`` package works on Python 3.2.
+
 Version 1.9.0
 -------------
 

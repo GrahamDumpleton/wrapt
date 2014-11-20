@@ -8,13 +8,37 @@ import sys
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
+if PY3:
+    string_types = str,
+
+    import builtins
+    exec_ = getattr(builtins, "exec")
+    del builtins
+
+else:
+    string_types = basestring,
+
+    def exec_(_code_, _globs_=None, _locs_=None):
+        """Execute code in a namespace."""
+        if _globs_ is None:
+            frame = sys._getframe(1)
+            _globs_ = frame.f_globals
+            if _locs_ is None:
+                _locs_ = frame.f_locals
+            del frame
+        elif _locs_ is None:
+            _locs_ = _globs_
+        exec("""exec _code_ in _globs_, _locs_""")
+
 from functools import partial
-from inspect import getargspec, ismethod, isclass
+from inspect import getargspec, ismethod, isclass, formatargspec
 from collections import namedtuple
 from threading import Lock, RLock
 
-if not PY2:
+try:
     from inspect import signature
+except ImportError:
+    pass
 
 from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
     CallableObjectProxy)
@@ -72,7 +96,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     @property
     def __signature__(self):
-        if PY2:
+        if 'signature' not in globals():
             return self._self_adapter.__signature__
         else:
             # Can't allow this to fail on Python 3 else it falls
@@ -127,6 +151,19 @@ class AdapterWrapper(FunctionWrapper):
     def __signature__(self):
         return self._self_surrogate.__signature__
 
+class AdapterFactory(object):
+    def __call__(self, wrapped):
+        raise NotImplementedError()
+
+class DelegatedAdapterFactory(AdapterFactory):
+    def __init__(self, factory):
+        super(DelegatedAdapterFactory, self).__init__()
+        self.factory = factory
+    def __call__(self, wrapped):
+        return self.factory(wrapped)
+
+adapter_factory = DelegatedAdapterFactory
+
 # Decorator for creating other decorators. This decorator and the
 # wrappers which they use are designed to properly preserve any name
 # attributes, function signatures etc, in addition to the wrappers
@@ -162,6 +199,16 @@ def decorator(wrapper=None, enabled=None, adapter=None):
 
         def _build(wrapped, wrapper, enabled=None, adapter=None):
             if adapter:
+                if isinstance(adapter, AdapterFactory):
+                    adapter = adapter(wrapped)
+
+                if not callable(adapter):
+                    ns = {}
+                    if not isinstance(adapter, string_types):
+                        adapter = formatargspec(*adapter)
+                    exec_('def adapter{0}: pass'.format(adapter), ns, ns)
+                    adapter = ns['adapter']
+
                 return AdapterWrapper(wrapped=wrapped, wrapper=wrapper,
                         enabled=enabled, adapter=adapter)
 
