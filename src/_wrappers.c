@@ -1836,6 +1836,8 @@ static PyObject *WraptFunctionWrapperBase_call(
 
             Py_XDECREF(param_kwds);
 
+            Py_DECREF(instance);
+
             return result;
         }
         else
@@ -2433,6 +2435,8 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 #endif
         else
             binding = function_str;
+
+        Py_DECREF(instance);
     }
     else {
         PyErr_Clear();
