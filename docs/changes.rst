@@ -1,6 +1,27 @@
 Release Notes
 =============
 
+Version 1.10.1
+--------------
+
+**Bugs Fixed**
+
+* When using ``FunctionWrapper`` around a method of an existing instance of
+  a class, rather than on the type, then a memory leak could occur in two
+  different scenarios.
+
+  The first issue was that wrapping a method on an instance of a class was
+  causing an unwanted reference to the class meaning that if the class type
+  was transient, such as it is being created inside of a function call, the
+  type object would leak.
+
+  The second issue was that wrapping a method on an instance of a class and
+  then calling the method was causing an unwanted reference to the instance
+  meaning that if the instance was transient, it would leak.
+
+  This was only occuring when the C extension component for the
+  ``wrapt`` module was being used.
+
 Version 1.10.0
 --------------
 
