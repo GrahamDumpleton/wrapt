@@ -187,6 +187,12 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
             setattr(self.__wrapped__, name, value)
 
     def __getattr__(self, name):
+        # If we are being to lookup '__wrapped__' then the
+        # '__init__()' method cannot have been called.
+
+        if name == '__wrapped__':
+            raise ValueError('wrapper has not been initialised')
+
         return getattr(self.__wrapped__, name)
 
     def __delattr__(self, name):

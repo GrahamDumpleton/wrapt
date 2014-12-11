@@ -28,6 +28,20 @@ exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
 class TestAttributeAccess(unittest.TestCase):
 
+    def test_init_not_called(self):
+        a = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        b = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            a.__wrapped__
+        except ValueError:
+            pass
+
+        try:
+            a + b
+        except ValueError:
+            pass
+
     def test_attributes(self):
         def function1(*args, **kwargs):
             return args, kwargs
