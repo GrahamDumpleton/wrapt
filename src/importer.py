@@ -84,7 +84,7 @@ def discover_post_import_hooks(group):
         def proxy_post_import_hook(module):
             __import__(entrypoint.module_name)
             callback = sys.modules[entrypoint.module_name]
-            for attr in entrypoints.attrs:
+            for attr in entrypoint.attrs:
                 callback = getattr(callback, attr)
             return callback(module)
 
