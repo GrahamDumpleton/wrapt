@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Version 1.10.3
+--------------
+
+**Bugs Fixed**
+
+* Post import hook discovery from third party modules declared via
+  ``setuptools`` entry points was failing due to typo in temporary variable
+  name. Also added the ``discover_post_import_hooks()`` to the public API
+  as was missing.
+
+**Features Changed**
+
+* To ensure parity between pure Python and C extension variants of the
+  ``ObjectProxy`` class, allow the ``__wrapped__`` attribute to be set
+  in a derived class when the ``ObjectProxy.__init__()`` method hasn't
+  been called.
+
 Version 1.10.2
 --------------
 

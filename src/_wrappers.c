@@ -1387,18 +1387,13 @@ static PyObject *WraptObjectProxy_get_wrapped(
 static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
         PyObject *value)
 {
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-      return -1;
-    }
-
     if (!value) {
         PyErr_SetString(PyExc_TypeError, "__wrapped__ must be an object");
         return -1;
     }
 
     Py_INCREF(value);
-    Py_DECREF(self->wrapped);
+    Py_XDECREF(self->wrapped);
 
     self->wrapped = value;
 
@@ -1511,9 +1506,6 @@ static int WraptObjectProxy_setattro(
         wrapped_str = PyString_InternFromString("__wrapped__");
 #endif
     }
-
-    if (PyObject_RichCompareBool(name, wrapped_str, Py_EQ) == 1)
-        return PyObject_GenericSetAttr((PyObject *)self, name, value);
 
     if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
