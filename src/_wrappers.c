@@ -1387,18 +1387,13 @@ static PyObject *WraptObjectProxy_get_wrapped(
 static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
         PyObject *value)
 {
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-      return -1;
-    }
-
     if (!value) {
         PyErr_SetString(PyExc_TypeError, "__wrapped__ must be an object");
         return -1;
     }
 
     Py_INCREF(value);
-    Py_DECREF(self->wrapped);
+    Py_XDECREF(self->wrapped);
 
     self->wrapped = value;
 

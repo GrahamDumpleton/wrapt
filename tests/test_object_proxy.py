@@ -1304,6 +1304,21 @@ class TestDerivedClassCreation(unittest.TestCase):
 
         obj = DerivedObjectProxy(function)
 
+    def test_derived_missing_init(self):
+
+        class DerivedObjectProxy(wrapt.ObjectProxy):
+
+            def __init__(self, wrapped):
+                self.__wrapped__ = wrapped
+
+        def function():
+            pass
+
+        obj = DerivedObjectProxy(function)
+
+        self.assertEqual(function, obj)
+        self.assertEqual(function, obj.__wrapped__)
+
 class DerivedClassAttributes(unittest.TestCase):
 
     def test_setup_class_attributes(self):
