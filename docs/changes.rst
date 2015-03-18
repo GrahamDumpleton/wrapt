@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 1.10.4
+--------------
+
+**Bugs Fixed**
+
+* Fixup botched package version number from 1.10.3 release.
+
 Version 1.10.3
 --------------
 
