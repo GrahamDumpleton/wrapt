@@ -74,6 +74,15 @@ def register_post_import_hook(hook, name):
 
 # Register post import hooks defined as package entry points.
 
+def _create_import_hook_from_entrypoint(entrypoint):
+    def import_hook(module):
+        __import__(entrypoint.module_name)
+        callback = sys.modules[entrypoint.module_name]
+        for attr in entrypoint.attrs:
+            callback = getattr(callback, attr)
+        return callback(module)
+    return import_hook
+
 def discover_post_import_hooks(group):
     try:
         import pkg_resources
@@ -81,14 +90,8 @@ def discover_post_import_hooks(group):
         return
 
     for entrypoint in pkg_resources.iter_entry_points(group=group):
-        def proxy_post_import_hook(module):
-            __import__(entrypoint.module_name)
-            callback = sys.modules[entrypoint.module_name]
-            for attr in entrypoint.attrs:
-                callback = getattr(callback, attr)
-            return callback(module)
-
-        register_post_import_hook(proxy_post_import_hook, entrypoint.name)
+        callback = _create_import_hook_from_entrypoint(entrypoint)
+        register_post_import_hook(callback, entrypoint.name)
 
 # Indicate that a module has been loaded. Any post import hooks which
 # were registered against the target module will be invoked. If an

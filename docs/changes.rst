@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 1.10.5
+--------------
+
+**Bugs Fixed**
+
+* Post import hook discovery was not working correctly where multiple
+  target modules were registered in the same entry point list. Only the
+  callback for the last would be called regardless of the target module.
+
 Version 1.10.4
 --------------
 
