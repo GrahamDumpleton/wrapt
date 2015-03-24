@@ -10,6 +10,16 @@ Version 1.10.5
   target modules were registered in the same entry point list. Only the
   callback for the last would be called regardless of the target module.
 
+**Features Changed**
+
+* The ``register_post_import_hook()`` function, modelled after the
+  function of the same name in PEP-369 has been extended to allow a string
+  name to be supplied for the import hook. This needs to be of the form
+  ``module::function`` and will result in an import hook proxy being used
+  which will only load and call the function of the specified moduled when
+  the import hook is required. This avoids needing to load the code needed
+  to operate on the target module unless required.
+
 Version 1.10.4
 --------------
 

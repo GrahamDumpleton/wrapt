@@ -11,6 +11,9 @@ PY3 = sys.version_info[0] == 3
 
 if PY3: 
     import importlib
+    string_types = str,
+else:
+    string_types = basestring,
 
 from .decorators import synchronized
 
@@ -24,10 +27,32 @@ _post_import_hooks = {}
 _post_import_hooks_init = False
 _post_import_hooks_lock = threading.RLock()
 
-# Register a new post import hook for the target module name.
+# Register a new post import hook for the target module name. This
+# differs from the PEP-369 implementation in that it also allows the
+# hook function to be specified as a string consisting of the name of
+# the callback in the form 'module:function'. This will result in a
+# proxy callback being registered which will defer loading of the
+# specified module containing the callback function until required.
+
+def _create_import_hook_from_string(name):
+    def import_hook(module):
+        module_name, function = name.split(':')
+        attrs = function.split('.')
+        __import__(module_name)
+        callback = sys.modules[module_name]
+        for attr in attrs:
+            callback = getattr(callback, attr)
+        return callback(module)
+    return import_hook
 
 @synchronized(_post_import_hooks_lock)
 def register_post_import_hook(hook, name):
+    # Create a deferred import hook if hook is a string name rather than
+    # a callable function.
+
+    if isinstance(hook, string_types):
+        hook = _create_import_hook_from_string(hook)
+
     # Automatically install the import hook finder if it has not already
     # been installed.
 
