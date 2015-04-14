@@ -55,6 +55,7 @@ primary pattern for this was:
 ```
 import wrapt
 import inspect 
+
 @wrapt.decorator
 def universal(wrapped, instance, args, kwargs):
     if instance is None:
@@ -138,6 +139,7 @@ In effect you are doing:
 class Example(object):
     def name(self):
         return 'name'
+
 Example.name = universal(Example.name)
 ```
 
@@ -155,6 +157,7 @@ class Example(object):
     def name(self):
         return 'name'
     print type(name)
+
 print type(Example.name)
 ```
 
@@ -195,6 +198,7 @@ To add the wrapper function to a target function we now use the
 class Example(object):
     def name(self):
         return 'name'
+
 import wrapt
 
 wrapt.wrap_function_wrapper(Example, 'name', wrapper)
@@ -207,6 +211,7 @@ done:
 import example
 
 import wrapt
+
 wrapt.wrap_function_wrapper(example, 'Example.name', wrapper)
 ```
 
@@ -219,6 +224,7 @@ of the module.
 
 ```
 import wrapt
+
 wrapt.wrap_function_wrapper('example', 'Example.name', wrapper)
 ```
 
@@ -262,6 +268,7 @@ If you come along later and have:
 
 ```
 import wrapt
+
 @wrapt.patch_function_wrapper('example', 'function')
 def wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
