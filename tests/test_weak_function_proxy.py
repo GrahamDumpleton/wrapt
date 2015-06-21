@@ -172,5 +172,23 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(id(proxy), result[0])
 
+    def test_decorator_method(self):
+        @wrapt.decorator
+        def bark(wrapped, instance, args, kwargs):
+            return 'bark'
+
+        class Animal(object):
+            @bark
+            def squeal(self):
+                return 'squeal'
+
+        animal = Animal()
+
+        self.assertEqual(animal.squeal(), 'bark')
+
+        method = wrapt.WeakFunctionProxy(animal.squeal)
+
+        self.assertEqual(method(), 'bark')
+
 if __name__ == '__main__':
     unittest.main()

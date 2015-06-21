@@ -10,6 +10,10 @@ Version 1.10.5
   target modules were registered in the same entry point list. Only the
   callback for the last would be called regardless of the target module.
 
+* If a ``WeakFunctionProxy`` wrapper was used around a method of a class
+  which was decorated using a wrapt decorator, the decorator wasn't being
+  invoked when the method was called via the weakref proxy.
+
 **Features Changed**
 
 * The ``register_post_import_hook()`` function, modelled after the

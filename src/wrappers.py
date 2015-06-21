@@ -855,6 +855,20 @@ class WeakFunctionProxy(ObjectProxy):
 
         self._self_expired = False
 
+        if isinstance(wrapped, _FunctionWrapperBase):
+            self._self_instance = weakref.ref(wrapped._self_instance,
+                    _callback)
+
+            if wrapped._self_parent is not None:
+                super(WeakFunctionProxy, self).__init__(
+                        weakref.proxy(wrapped._self_parent, _callback))
+
+            else:
+                super(WeakFunctionProxy, self).__init__(
+                        weakref.proxy(wrapped, _callback))
+
+            return
+
         try:
             self._self_instance = weakref.ref(wrapped.__self__, _callback)
 
