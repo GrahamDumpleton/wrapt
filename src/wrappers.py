@@ -170,7 +170,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
                 object.__delattr__(self, '__qualname__')
             except AttributeError:
                 pass
-            object.__setattr__(self, name, value)
             try:
                 object.__setattr__(self, '__qualname__', value.__qualname__)
             except AttributeError:
