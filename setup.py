@@ -34,7 +34,7 @@ class optional_build_ext(build_ext):
 
 setup_kwargs = dict(
       name = 'wrapt',
-      version = '1.10.4',
+      version = '1.10.5',
       description = 'Module for decorators, wrappers and monkey patching.',
       author = 'Graham Dumpleton',
       author_email = 'Graham.Dumpleton@gmail.com',
