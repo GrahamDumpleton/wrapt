@@ -1,12 +1,17 @@
 wrapt Appveyor Support
 ======================
 
-![alt text][badge]
+![status badge][badge]
 
 This repo is a fork of [Graham Dumpleton's wrapt][wrapt] for
 the purpose of testing on Windows and building Windows wheels.
 
-The build results and wheels are publicly available on the [Appveyor project page][project].
+The build results and wheels are publicly available on the [Appveyor project page][project].  To
+find the built wheels:
+
+* go to the [project page][project]
+* find the job that corresponds to the python version you need
+* go to the artifacts tab
 
 Service provided by [Level 12][level12]: Principled People, Software That Works.
 
