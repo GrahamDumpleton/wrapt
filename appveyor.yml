@@ -1,0 +1,54 @@
+environment:
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_env.cmd"
+
+  matrix:
+
+    # Pre-installed Python versions, which Appveyor may upgrade to
+    # a later point release.
+
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "2.7.9"
+      PYTHON_ARCH: "32"
+      TOX_ENV_BASE: py27
+
+    - PYTHON: "C:\\Python34"
+      PYTHON_VERSION: "3.4.3"
+      PYTHON_ARCH: "32"
+      TOX_ENV_BASE: py34
+
+install:
+  - ECHO "Filesystem root:"
+  - ps: "ls \"C:/\""
+
+  - ECHO "Installed SDKs:"
+  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
+
+  # Prepend newly installed Python to the PATH of this build (this cannot be
+  # done from inside the powershell script as it would require to restart
+  # the parent CMD process).
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+
+  # Check that we have the expected version and architecture for Python
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+
+    - "%CMD_IN_ENV% pip install tox"
+
+build: false  # Not a C# project, build stuff at the test step instead.
+
+test_script:
+  # Build the compiled extension and run the project tests
+  - "%CMD_IN_ENV% tox -e %TOX_ENV_BASE%-with-extensions,%TOX_ENV_BASE%-without-extensions"
+
+after_test:
+  # If tests are successful, create a whl package for the project.
+  - "%CMD_IN_ENV% python setup.py bdist_wheel"
+  - ps: "ls dist"
+
+artifacts:
+  # Archive the generated wheel package in the ci.appveyor.com build report.
+  - path: dist\*
