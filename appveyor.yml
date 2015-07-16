@@ -36,7 +36,7 @@ install:
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
-  - "%CMD_IN_ENV% pip install tox"
+  - "%CMD_IN_ENV% pip install tox wheel"
 
 build: false  # Not a C# project, build stuff at the test step instead.
 
