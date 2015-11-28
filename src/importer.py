@@ -89,6 +89,7 @@ def register_post_import_hook(hook, name):
         # module was done and the hooks already fired. Fire the hook
         # immediately.
 
+        module = sys.modules[name]
         hook(module)
 
     else:
