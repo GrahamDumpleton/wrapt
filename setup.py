@@ -41,7 +41,7 @@ setup_kwargs = dict(
       license = 'BSD',
       url = 'https://github.com/GrahamDumpleton/wrapt',
       packages = ['wrapt'],
-      package_dir={'wrapt': 'src'},
+      package_dir = {'': 'src'},
      )
 
 def run_setup(with_extensions):
@@ -49,7 +49,7 @@ def run_setup(with_extensions):
 
     if with_extensions:
         setup_kwargs_tmp['ext_modules'] = [
-                Extension("wrapt._wrappers", ["src/_wrappers.c"])]
+                Extension("wrapt._wrappers", ["src/wrapt/_wrappers.c"])]
         setup_kwargs_tmp['cmdclass'] = dict(build_ext=optional_build_ext)
 
     setup(**setup_kwargs_tmp)
