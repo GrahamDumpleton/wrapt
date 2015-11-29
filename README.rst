@@ -13,5 +13,5 @@ For full documentation see:
    :target: https://travis-ci.org/GrahamDumpleton/wrapt?branch=develop
 .. |Coveralls| image:: https://img.shields.io/coveralls/GrahamDumpleton/wrapt/develop.svg?style=plastic
    :target: https://coveralls.io/github/GrahamDumpleton/wrapt?branch=develop
-.. |PyPI| image:: https://img.shields.io/pypi/w/wrapt.svg?style=plastic
+.. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg?style=plastic
    :target: https://pypi.python.org/pypi/wrapt
