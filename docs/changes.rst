@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 1.10.6
+--------------
+
+**Bugs Fixed**
+
+* Registration of post import hook would fail with an exception if
+registered after another import hook for the same target module had been
+registered and the target module also imported.
+
 Version 1.10.5
 --------------
 
