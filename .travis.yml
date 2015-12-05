@@ -7,7 +7,8 @@ env:
 install:
   - pip install tox coveralls
 script:
-  - tox
+  # travis lacks python3.5
+  - tox --skip-missing-interpreters
 after_script:
   - coverage combine
   - coveralls
