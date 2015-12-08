@@ -26,8 +26,8 @@ MANIFEST
 # Installer logs
 pip-log.txt
 
-# Unit test / coverage reports
-.coverage
+# Unit test
+.cache
 .tox
 nosetests.xml
 
@@ -48,4 +48,5 @@ docs/_build
 # Coverage.
 htmlcov
 .coverage
+.coverage.*
 .tddium*

@@ -1,0 +1,20 @@
+[run]
+
+# Measure coverage of both tests and wrapt module.
+source =
+    tests
+    wrapt
+
+# This doesn't run the tests in parallel, it just causes the output to land
+# in uniquely-named .coverage.* files to be combined at the end of running
+# tox over the matrix.
+parallel = true
+
+[paths]
+
+# For the coverage combine command, consider these paths equivalent with
+# the first one being primary.
+src =
+    src/
+    .tox/*/lib/*/site-packages/
+    .tox/pypy*/site-packages/

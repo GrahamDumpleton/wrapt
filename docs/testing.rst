@@ -39,3 +39,22 @@ Python 3 specific, then end the name of the Python code file as
 ``_py2.py`` or ``_py3.py`` appropriately.
 
 For further options refer to the documentation for ``tox``.
+
+Coverage
+--------
+
+Coverage is collected and sent to `Coveralls <https://coveralls.io>`_ when
+running the tests automatically in `Travis CI <https://travis-ci.org>`_.
+To collect and view coverage results locally, here's the sequence of
+commands:
+
+::
+
+    export COVERAGE_CMD="coverage run -m"
+    export COVERAGE_DEP=coverage
+    tox
+    coverage combine
+    coverage html --ignore-errors
+
+At this point there's a directly called ``htmlcov`` with the formatted
+results.
