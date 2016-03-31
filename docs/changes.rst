@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 1.10.7
+--------------
+
+**Bugs Fixed**
+
+* The mod operator '%' was being incorrectly proxied in Python variant of
+  object proxy to the xor operator '^'.
+
 Version 1.10.6
 --------------
 
