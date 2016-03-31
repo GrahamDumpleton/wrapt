@@ -230,7 +230,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         return self.__wrapped__ // other
 
     def __mod__(self, other):
-        return self.__wrapped__ ^ other
+        return self.__wrapped__ % other
 
     def __divmod__(self, other):
         return divmod(self.__wrapped__, other)
