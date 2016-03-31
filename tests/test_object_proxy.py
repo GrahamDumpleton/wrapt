@@ -867,21 +867,21 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(2/three, 2/3)
         self.assertEqual(two/3, 2/3)
 
+    def test_floordiv(self):
+        two = wrapt.ObjectProxy(2)
+        four = wrapt.ObjectProxy(4)
+
+        self.assertEqual(four//two, 4//2)
+        self.assertEqual(4//two, 4//2)
+        self.assertEqual(four//2, 4//2)
+
     def test_mod(self):
         two = wrapt.ObjectProxy(2)
-        three = wrapt.ObjectProxy(3)
+        four = wrapt.ObjectProxy(4)
 
-        self.assertEqual(three//two, 3//2)
-        self.assertEqual(3//two, 3//2)
-        self.assertEqual(three//2, 3//2)
-
-    def test_mod(self):
-        two = wrapt.ObjectProxy(2)
-        three = wrapt.ObjectProxy(3)
-
-        self.assertEqual(three%two, 3%2)
-        self.assertEqual(3%two, 3%2)
-        self.assertEqual(three%2, 3%2)
+        self.assertEqual(four%two, 4%2)
+        self.assertEqual(4%two, 4%2)
+        self.assertEqual(four%2, 4%2)
 
     def test_divmod(self):
         two = wrapt.ObjectProxy(2)
