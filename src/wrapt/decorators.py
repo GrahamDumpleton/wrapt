@@ -31,7 +31,7 @@ else:
         exec("""exec _code_ in _globs_, _locs_""")
 
 from functools import partial
-from inspect import getargspec, ismethod, isclass, formatargspec
+from inspect import ismethod, isclass, formatargspec
 from collections import namedtuple
 from threading import Lock, RLock
 
@@ -181,17 +181,17 @@ def decorator(wrapper=None, enabled=None, adapter=None):
     # decorator. In that case parts of the function '__code__' and
     # '__defaults__' attributes are used from the adapter function
     # rather than those of the wrapped function. This allows for the
-    # argument specification from inspect.getargspec() to be overridden
-    # with a prototype for a different function than what was wrapped.
-    # The 'enabled' argument provides a way to enable/disable the use
-    # of the decorator. If the type of 'enabled' is a boolean, then it
-    # is evaluated immediately and the wrapper not even applied if
-    # it is False. If not a boolean, it will be evaluated when the
-    # wrapper is called for an unbound wrapper, and when binding occurs
-    # for a bound wrapper. When being evaluated, if 'enabled' is callable
-    # it will be called to obtain the value to be checked. If False,
-    # the wrapper will not be called and instead the original wrapped
-    # function will be called directly instead.
+    # argument specification from inspect.getargspec() and similar
+    # functions to be overridden with a prototype for a different
+    # function than what was wrapped. The 'enabled' argument provides a
+    # way to enable/disable the use of the decorator. If the type of
+    # 'enabled' is a boolean, then it is evaluated immediately and the
+    # wrapper not even applied if it is False. If not a boolean, it will
+    # be evaluated when the wrapper is called for an unbound wrapper,
+    # and when binding occurs for a bound wrapper. When being evaluated,
+    # if 'enabled' is callable it will be called to obtain the value to
+    # be checked. If False, the wrapper will not be called and instead
+    # the original wrapped function will be called directly instead.
 
     if wrapper is not None:
         # Helper function for creating wrapper of the appropriate
