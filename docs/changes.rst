@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 1.10.8
+--------------
+
+**Bugs Fixed**
+
+* Ensure that ``inspect.getargspec()`` is only used with Python 2.6 where
+  required, as function has been removed in Python 3.6.
+
 Version 1.10.7
 --------------
 
