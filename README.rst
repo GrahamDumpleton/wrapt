@@ -7,7 +7,7 @@ A Python module for decorators, wrappers and monkey patching.
 
 For full documentation see:
 
-  http://wrapt.readthedocs.org
+  https://wrapt.readthedocs.io
 
 .. |Travis| image:: https://img.shields.io/travis/GrahamDumpleton/wrapt/develop.svg?style=plastic
    :target: https://travis-ci.org/GrahamDumpleton/wrapt?branch=develop
