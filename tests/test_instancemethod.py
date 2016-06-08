@@ -228,7 +228,7 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         # instance directly.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -254,7 +254,7 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         # Test calling instancemethod via class instance.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -281,7 +281,7 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         # instance directly.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -308,7 +308,7 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         # Test calling instancemethod via class instance.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -338,7 +338,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         # instance directly.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -364,7 +364,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         # Test calling instancemethod via class instance.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -391,7 +391,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         # instance directly.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -418,7 +418,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         # Test calling instancemethod via class instance.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):

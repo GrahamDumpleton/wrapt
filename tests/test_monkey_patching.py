@@ -36,7 +36,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_function_wrapper(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -60,7 +60,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_function_wrapper_instance_method(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -88,7 +88,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_function_wrapper_class_method(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -115,7 +115,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_function_module_name(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -136,7 +136,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_function_module(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -159,7 +159,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_instance_method_module_name(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -183,7 +183,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_class_method_module_name(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -205,7 +205,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_static_method_module_name(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -227,7 +227,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_patch_function_module_name(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -247,7 +247,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_patch_function_module(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -272,7 +272,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_transient_function_wrapper(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -298,7 +298,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_transient_function_wrapper_instance_method(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -329,7 +329,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
     def test_patch_instance_method_class(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -357,7 +357,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
     def test_patch_instance_method_dict(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -385,7 +385,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
     def test_patch_instance_method_instance(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 
@@ -413,7 +413,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
     def test_patch_instance_method_extracted(self):
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         called = []
 

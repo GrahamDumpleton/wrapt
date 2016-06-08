@@ -348,7 +348,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_function_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         def function(*args, **kwargs):
             return args, kwargs
@@ -361,7 +361,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_function_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         def function(*args, **kwargs):
             return args, kwargs
@@ -402,7 +402,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_instancemethod_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             def function(self, *args, **kwargs):
@@ -416,7 +416,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_instancemethod_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             def function(self, *args, **kwargs):
@@ -458,7 +458,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_instancemethod_via_class_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             def function(self, *args, **kwargs):
@@ -472,7 +472,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_instancemethod_via_class_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             def function(self, *args, **kwargs):
@@ -516,7 +516,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_classmethod_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @classmethod
@@ -531,7 +531,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_classmethod_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @classmethod
@@ -576,7 +576,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_classmethod_via_class_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @classmethod
@@ -591,7 +591,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_classmethod_via_class_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @classmethod
@@ -636,7 +636,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_staticmethod_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @staticmethod
@@ -651,7 +651,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_staticmethod_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @staticmethod
@@ -696,7 +696,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_staticmethod_via_class_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @staticmethod
@@ -711,7 +711,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_staticmethod_via_class_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @staticmethod
