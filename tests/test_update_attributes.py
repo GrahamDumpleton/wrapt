@@ -143,7 +143,7 @@ class TestUpdateAttributes(unittest.TestCase):
 
             self.assertRaises(AttributeError, run, ())
 
-        override_annotations = { 'override_annotations': '' }
+        override_annotations = {'override_annotations': ''}
         function.__annotations__ = override_annotations
 
         self.assertEqual(function.__annotations__, override_annotations)
@@ -166,7 +166,7 @@ class TestUpdateAttributes(unittest.TestCase):
 
             self.assertRaises(AttributeError, run, ())
 
-        override_annotations = { 'override_annotations': '' }
+        override_annotations = {'override_annotations': ''}
         instance.__annotations__ = override_annotations
 
         self.assertEqual(function.__annotations__, override_annotations)

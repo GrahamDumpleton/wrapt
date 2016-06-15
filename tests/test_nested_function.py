@@ -79,7 +79,7 @@ class TestCallingNestedFunction(unittest.TestCase):
 
     def test_call_function(self):
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):

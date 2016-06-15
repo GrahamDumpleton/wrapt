@@ -8,7 +8,7 @@ class TestDecorator(unittest.TestCase):
 
     def test_no_parameters(self):
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -24,7 +24,7 @@ class TestDecorator(unittest.TestCase):
 
     def test_instance_method_as_decorator(self):
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         class Instance(object):
             def __init__(self):
@@ -52,7 +52,7 @@ class TestDecorator(unittest.TestCase):
 
     def test_class_method_as_decorator(self):
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         class Instance(object):
             count = 0
@@ -78,7 +78,7 @@ class TestDecorator(unittest.TestCase):
 
     def test_class_type_as_decorator(self):
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         class ClassDecorator(object):
@@ -95,7 +95,7 @@ class TestDecorator(unittest.TestCase):
 
     def test_class_type_as_decorator_args(self):
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         class ClassDecorator(object):

@@ -124,7 +124,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         # Test calling classmethod.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -151,7 +151,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         # Test calling classmethod via class instance.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -178,7 +178,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         # Test calling classmethod.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -206,7 +206,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         # Test calling classmethod via class instance.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
