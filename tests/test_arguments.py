@@ -8,7 +8,7 @@ class TestArguments(unittest.TestCase):
 
     def test_getcallargs(self):
         def function(a, b=2, c=3, d=4, e=5, *args, **kwargs):
-           pass
+            pass
 
         expected = {'a': 10, 'c': 3, 'b': 20, 'e': 5, 'd': 40,
                 'args': (), 'kwargs': {'f': 50}}
