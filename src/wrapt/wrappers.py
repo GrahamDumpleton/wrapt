@@ -12,9 +12,11 @@ if PY3:
 else:
     string_types = basestring,
 
+
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     return meta("NewBase", bases, {})
+
 
 class _ObjectProxyMethods(object):
 
@@ -59,6 +61,7 @@ class _ObjectProxyMethods(object):
     def __weakref__(self):
         return self.__wrapped__.__weakref__
 
+
 class _ObjectProxyMetaType(type):
     def __new__(cls, name, bases, dictionary):
          # Copy our special properties into the class so that they
@@ -69,6 +72,7 @@ class _ObjectProxyMetaType(type):
         dictionary.update(vars(_ObjectProxyMethods))
 
         return type.__new__(cls, name, bases, dictionary)
+
 
 class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
@@ -410,10 +414,12 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __iter__(self):
         return iter(self.__wrapped__)
 
+
 class CallableObjectProxy(ObjectProxy):
 
     def __call__(self, *args, **kwargs):
         return self.__wrapped__(*args, **kwargs)
+
 
 class _FunctionWrapperBase(ObjectProxy):
 
@@ -521,6 +527,7 @@ class _FunctionWrapperBase(ObjectProxy):
         return self._self_wrapper(self.__wrapped__, self._self_instance,
                 args, kwargs)
 
+
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(self, *args, **kwargs):
@@ -578,6 +585,7 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
 
             return self._self_wrapper(self.__wrapped__, instance, args,
                     kwargs)
+
 
 class FunctionWrapper(_FunctionWrapperBase):
 
@@ -682,6 +690,7 @@ except ImportError:
 
 # Helper functions for applying wrappers to existing functions.
 
+
 def resolve_path(module, name):
     if isinstance(module, string_types):
         __import__(module)
@@ -722,8 +731,10 @@ def resolve_path(module, name):
 
     return (parent, attribute, original)
 
+
 def apply_patch(parent, attribute, replacement):
     setattr(parent, attribute, replacement)
+
 
 def wrap_object(module, name, factory, args=(), kwargs={}):
     (parent, attribute, original) = resolve_path(module, name)
@@ -736,6 +747,7 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
 # on the class which is a descriptor and which intercepts access to the
 # instance attribute. Note that this cannot be used on attributes which
 # are themselves defined by a property object.
+
 
 class AttributeWrapper(object):
 
@@ -755,6 +767,7 @@ class AttributeWrapper(object):
     def __delete__(self, instance):
         del instance.__dict__[self.attribute]
 
+
 def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
     path, attribute = name.rsplit('.', 1)
     parent = resolve_path(module, path)[2]
@@ -766,6 +779,7 @@ def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
 # plus short cut functions for applying wrappers to functions. These are
 # for use when doing monkey patching. For a more featured way of
 # creating decorators see the decorator decorator instead.
+
 
 def function_wrapper(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):
@@ -779,13 +793,16 @@ def function_wrapper(wrapper):
         return FunctionWrapper(target_wrapped, target_wrapper)
     return FunctionWrapper(wrapper, _wrapper)
 
+
 def wrap_function_wrapper(module, name, wrapper):
     return wrap_object(module, name, FunctionWrapper, (wrapper,))
+
 
 def patch_function_wrapper(module, name):
     def _wrapper(wrapper):
         return wrap_object(module, name, FunctionWrapper, (wrapper,))
     return _wrapper
+
 
 def transient_function_wrapper(module, name):
     def _decorator(wrapper):
@@ -797,6 +814,7 @@ def transient_function_wrapper(module, name):
                 target_wrapper = wrapper.__get__(None, instance)
             else:
                 target_wrapper = wrapper.__get__(instance, type(instance))
+
             def _execute(wrapped, instance, args, kwargs):
                 (parent, attribute, original) = resolve_path(module, name)
                 replacement = FunctionWrapper(original, target_wrapper)
@@ -818,6 +836,7 @@ def transient_function_wrapper(module, name):
 # and the original function. The function is then rebound at the point
 # of a call via the weak function proxy.
 
+
 def _weak_function_proxy_callback(ref, proxy, callback):
     if proxy._self_expired:
         return
@@ -830,6 +849,7 @@ def _weak_function_proxy_callback(ref, proxy, callback):
 
     if callback is not None:
         callback(proxy)
+
 
 class WeakFunctionProxy(ObjectProxy):
 

@@ -6,6 +6,7 @@ import inspect
 
 import wrapt
 
+
 @wrapt.decorator
 def memoize(wrapped, instance, args, kwargs):
     if instance is None and inspect.isclass(wrapped):
@@ -30,9 +31,11 @@ def memoize(wrapped, instance, args, kwargs):
         result = cache[key] = wrapped(*args, **kwargs)
         return result
 
+
 @memoize
 def function1(count, text):
     return count * text
+
 
 class C1(object):
 
@@ -51,6 +54,7 @@ class C1(object):
         return count * text
 
 c1 = C1()
+
 
 class TestSynchronized(unittest.TestCase):
 

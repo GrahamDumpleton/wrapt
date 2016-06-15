@@ -19,12 +19,14 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = imp.new_module('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 class class1(object):
     pass
 
 class1o = class1
 
 class1d = decorators.passthru_decorator(class1)
+
 
 class Testintrospection(unittest.TestCase):
 

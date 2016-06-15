@@ -21,11 +21,13 @@ def adapter1(wrapped, instance, args, kwargs):
 decorators = imp.new_module('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 def function1(arg1, arg2):
     '''documentation'''
     return arg1, arg2
 
 function1o = function1
+
 
 @decorators.adapter1
 def function1(arg1, arg2):
@@ -33,6 +35,7 @@ def function1(arg1, arg2):
     return arg1, arg2
 
 function1d = function1
+
 
 class TestAdapterAttributes(unittest.TestCase):
 
@@ -62,6 +65,7 @@ class TestAdapterAttributes(unittest.TestCase):
         # of the adapter.
 
         self.assertEqual(function1d.__doc__, 'documentation')
+
 
 class TestArgumentSpecification(unittest.TestCase):
 
@@ -101,6 +105,7 @@ class TestArgumentSpecification(unittest.TestCase):
         # Test preservation of isinstance() checks.
 
         self.assertTrue(isinstance(function1d, type(function1o)))
+
 
 class TestDynamicAdapter(unittest.TestCase):
 

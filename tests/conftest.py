@@ -4,9 +4,11 @@ import sys
 
 version = tuple(sys.version_info[:2])
 
+
 class DummyCollector(pytest.collect.File):
     def collect(self):
         return []
+
 
 def pytest_pycollect_makemodule(path, parent):
     if '_py33' in path.basename and version < (3, 3):

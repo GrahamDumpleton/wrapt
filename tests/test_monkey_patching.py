@@ -5,31 +5,39 @@ import sys
 
 import wrapt
 
+
 def global_function_1(*args, **kwargs):
     return args, kwargs
+
 
 def global_function_2(*args, **kwargs):
     return args, kwargs
 
+
 def global_function_3(*args, **kwargs):
     return args, kwargs
+
 
 def global_function_4(*args, **kwargs):
     return args, kwargs
 
+
 class Class_1(object):
     def method(self, *args, **kwargs):
         return args, kwargs
+
 
 class Class_2(object):
     @classmethod
     def method(cls, *args, **kwargs):
         return args, kwargs
 
+
 class Class_3(object):
     @staticmethod
     def method(*args, **kwargs):
         return args, kwargs
+
 
 class TestMonkeyPatching(unittest.TestCase):
 
@@ -323,6 +331,7 @@ class TestMonkeyPatching(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
+
 
 class TestExplicitMonkeyPatching(unittest.TestCase):
 

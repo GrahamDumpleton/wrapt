@@ -19,12 +19,14 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = imp.new_module('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 class OldClass1():
     def function(self, arg):
         '''documentation'''
         return arg
 
 OldClass1o = OldClass1
+
 
 class OldClass1():
     @decorators.passthru_decorator
@@ -33,6 +35,7 @@ class OldClass1():
         return arg
 
 OldClass1d = OldClass1
+
 
 class TestNamingInstanceMethodOldStyle(unittest.TestCase):
 
@@ -122,12 +125,14 @@ class TestNamingInstanceMethodOldStyle(unittest.TestCase):
         self.assertTrue(isinstance(OldClass1d().function,
                 type(OldClass1o().function)))
 
+
 class NewClass1(object):
     def function(self, arg):
         '''documentation'''
         return arg
 
 NewClass1o = NewClass1
+
 
 class NewClass1(object):
     @decorators.passthru_decorator
@@ -136,6 +141,7 @@ class NewClass1(object):
         return arg
 
 NewClass1d = NewClass1
+
 
 class TestNamingInstanceMethodNewStyle(unittest.TestCase):
 
@@ -220,6 +226,7 @@ class TestNamingInstanceMethodNewStyle(unittest.TestCase):
 
         self.assertTrue(isinstance(NewClass1d().function,
                 type(NewClass1o().function)))
+
 
 class TestCallingInstanceMethodOldStyle(unittest.TestCase):
 
@@ -330,6 +337,7 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         result = Class()._function(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
+
 
 class TestCallingInstanceMethodNewStyle(unittest.TestCase):
 
