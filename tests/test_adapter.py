@@ -70,7 +70,8 @@ class TestArgumentSpecification(unittest.TestCase):
         # actually needs to match that of the adapter function the
         # prototype of which was supplied via the dummy function.
 
-        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
+        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): 
+            pass
 
         function1a_argspec = inspect.getargspec(_adapter)
         function1d_argspec = inspect.getargspec(function1d)
@@ -91,7 +92,8 @@ class TestArgumentSpecification(unittest.TestCase):
         if PY2:
             return
 
-        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
+        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): 
+            pass
 
         function1a_signature = str(inspect.signature(_adapter))
         function1d_signature = str(inspect.signature(function1d))
@@ -105,7 +107,8 @@ class TestArgumentSpecification(unittest.TestCase):
 class TestDynamicAdapter(unittest.TestCase):
 
     def test_dynamic_adapter(self):
-        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
+        def _adapter(arg1, arg2, arg3=None, *args, **kwargs): 
+            pass
 
         argspec = inspect.getargspec(_adapter)
 
