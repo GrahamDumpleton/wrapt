@@ -54,41 +54,41 @@ c1 = C1()
 
 class TestSynchronized(unittest.TestCase):
 
-   def test_function(self):
-     value1 = function1(10, '0123456789')
-     value2 = function1(10, '0123456789')
+    def test_function(self):
+        value1 = function1(10, '0123456789')
+        value2 = function1(10, '0123456789')
 
-     self.assertEqual(value1, value2)
-     self.assertEqual(id(value1), id(value2))
+        self.assertEqual(value1, value2)
+        self.assertEqual(id(value1), id(value2))
 
-     self.assertTrue(hasattr(function1, '_memoize_cache'))
+        self.assertTrue(hasattr(function1, '_memoize_cache'))
 
-   def test_instancemethod(self):
-     value1 = c1.function1(10, '0123456789')
-     value2 = c1.function1(10, '0123456789')
+    def test_instancemethod(self):
+        value1 = c1.function1(10, '0123456789')
+        value2 = c1.function1(10, '0123456789')
 
-     self.assertEqual(value1, value2)
-     self.assertEqual(id(value1), id(value2))
+        self.assertEqual(value1, value2)
+        self.assertEqual(id(value1), id(value2))
 
-     self.assertTrue(hasattr(C1.function1, '_memoize_cache'))
+        self.assertTrue(hasattr(C1.function1, '_memoize_cache'))
 
-   def test_classmethod(self):
-     value1 = C1.function2(10, '0123456789')
-     value2 = C1.function2(10, '0123456789')
+    def test_classmethod(self):
+        value1 = C1.function2(10, '0123456789')
+        value2 = C1.function2(10, '0123456789')
 
-     self.assertEqual(value1, value2)
-     self.assertEqual(id(value1), id(value2))
+        self.assertEqual(value1, value2)
+        self.assertEqual(id(value1), id(value2))
 
-     self.assertTrue(hasattr(C1.function2, '_memoize_cache'))
+        self.assertTrue(hasattr(C1.function2, '_memoize_cache'))
 
-   def test_staticmethod(self):
-     value1 = C1.function3(10, '0123456789')
-     value2 = C1.function3(10, '0123456789')
+    def test_staticmethod(self):
+        value1 = C1.function3(10, '0123456789')
+        value2 = C1.function3(10, '0123456789')
 
-     self.assertEqual(value1, value2)
-     self.assertEqual(id(value1), id(value2))
+        self.assertEqual(value1, value2)
+        self.assertEqual(id(value1), id(value2))
 
-     self.assertTrue(hasattr(C1.function3, '_memoize_cache'))
+        self.assertTrue(hasattr(C1.function3, '_memoize_cache'))
 
 if __name__ == '__main__':
     unittest.main()
