@@ -33,16 +33,16 @@ class optional_build_ext(build_ext):
             raise BuildExtFailed()
 
 setup_kwargs = dict(
-      name = 'wrapt',
-      version = '1.10.8',
-      description = 'Module for decorators, wrappers and monkey patching.',
-      long_description = open('README.rst').read(),
-      author = 'Graham Dumpleton',
-      author_email = 'Graham.Dumpleton@gmail.com',
-      license = 'BSD',
-      url = 'https://github.com/GrahamDumpleton/wrapt',
-      packages = ['wrapt'],
-      package_dir = {'': 'src'},
+      name='wrapt',
+      version='1.10.8',
+      description='Module for decorators, wrappers and monkey patching.',
+      long_description=open('README.rst').read(),
+      author='Graham Dumpleton',
+      author_email='Graham.Dumpleton@gmail.com',
+      license='BSD',
+      url='https://github.com/GrahamDumpleton/wrapt',
+      packages=['wrapt'],
+      package_dir={'': 'src'},
      )
 
 def run_setup(with_extensions):
