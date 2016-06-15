@@ -255,7 +255,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     # we need to first check that use of the decorator
                     # hadn't been disabled by a simple boolean. If it was,
                     # the target function to be wrapped is returned instead.
-                    
+ 
                     _enabled = enabled
                     if type(_enabled) is bool:
                         if not _enabled:

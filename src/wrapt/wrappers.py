@@ -418,7 +418,7 @@ class CallableObjectProxy(ObjectProxy):
 class _FunctionWrapperBase(ObjectProxy):
 
     __slots__ = ('_self_instance', '_self_wrapper', '_self_enabled',
-            '_self_binding', '_self_parent') 
+            '_self_binding', '_self_parent')
 
     def __init__(self, wrapped, instance, wrapper, enabled=None,
             binding='function', parent=None):
