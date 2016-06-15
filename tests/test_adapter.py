@@ -52,7 +52,7 @@ class TestAdapterAttributes(unittest.TestCase):
             self.assertEqual(function1d.__qualname__, __qualname__)
 
     def test_module_name(self):
-       # Test preservation of function __module__ attribute.
+        # Test preservation of function __module__ attribute.
 
         self.assertEqual(function1d.__module__, __name__)
 

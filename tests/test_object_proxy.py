@@ -167,7 +167,7 @@ class TestNamingObjectProxy(unittest.TestCase):
             self.assertEqual(wrapper.__qualname__, __qualname__)
 
     def test_class_module_name(self):
-       # Test preservation of class __module__ attribute.
+        # Test preservation of class __module__ attribute.
 
         target = objects.Target
         wrapper = wrapt.ObjectProxy(target)
@@ -183,7 +183,7 @@ class TestNamingObjectProxy(unittest.TestCase):
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
     def test_instance_module_name(self):
-       # Test preservation of instance __module__ attribute.
+        # Test preservation of instance __module__ attribute.
 
         target = objects.Target()
         wrapper = wrapt.ObjectProxy(target)
@@ -220,7 +220,7 @@ class TestNamingObjectProxy(unittest.TestCase):
             self.assertEqual(wrapper.__qualname__, __qualname__)
 
     def test_function_module_name(self):
-       # Test preservation of function __module__ attribute.
+        # Test preservation of function __module__ attribute.
 
         target = objects.target
         wrapper = wrapt.ObjectProxy(target)

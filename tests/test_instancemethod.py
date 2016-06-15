@@ -69,13 +69,13 @@ class TestNamingInstanceMethodOldStyle(unittest.TestCase):
             self.assertEqual(OldClass1d().function.__qualname__, __qualname__)
 
     def test_class_module_name(self):
-       # Test preservation of instance method __module__ attribute.
+        # Test preservation of instance method __module__ attribute.
 
         self.assertEqual(OldClass1d.function.__module__,
                 OldClass1o.function.__module__)
 
     def test_instance_module_name(self):
-       # Test preservation of instance method __module__ attribute.
+        # Test preservation of instance method __module__ attribute.
 
         self.assertEqual(OldClass1d().function.__module__,
                 OldClass1o().function.__module__)
@@ -172,13 +172,13 @@ class TestNamingInstanceMethodNewStyle(unittest.TestCase):
             self.assertEqual(NewClass1d().function.__qualname__, __qualname__)
 
     def test_class_module_name(self):
-       # Test preservation of instance method __module__ attribute.
+        # Test preservation of instance method __module__ attribute.
 
         self.assertEqual(NewClass1d.function.__module__,
                 NewClass1o.function.__module__)
 
     def test_instance_module_name(self):
-       # Test preservation of instance method __module__ attribute.
+        # Test preservation of instance method __module__ attribute.
 
         self.assertEqual(NewClass1d().function.__module__,
                 NewClass1o().function.__module__)
