@@ -125,7 +125,7 @@ original function object. When the now wrapped function is called, it is
 actually the ``__call__()`` method of the wrapper object which is invoked.
 This in turn would then call the original wrapped function.
 
-Simply passing through the call to the wrapper alone isnt particularly
+Simply passing through the call to the wrapper alone isn't particularly
 useful, so normally you would actually want to do some work either before
 or after the wrapped function is called. Or you may want to modify the
 input arguments or the result as they pass through the wrapper. This is
