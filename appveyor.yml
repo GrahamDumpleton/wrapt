@@ -1,5 +1,5 @@
 environment:
-  COVERAGE_CMD: "coverage run -m"
+  COVERAGE_CMD: coverage run -m
   COVERAGE_DEP: coverage
 
 install:

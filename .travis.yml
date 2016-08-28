@@ -3,11 +3,10 @@ python: 3.5
 env:
   global:
     - COVERAGE_CMD="coverage run -m"
-    - COVERAGE_DEP=coverage
+    - COVERAGE_DEP="coverage"
 install:
   - pip install tox coveralls
 script:
-  # travis lacks python3.5
   - tox --skip-missing-interpreters
 after_script:
   - coverage combine
