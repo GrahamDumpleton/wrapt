@@ -1,7 +1,7 @@
 The @synchronized decorator as context manager
 ==============================================
 
-This is the eigth post in my series of blog posts about Python decorators
+This is the eight post in my series of blog posts about Python decorators
 and how I believe they are generally poorly implemented. It follows on from
 the previous post titled [The missing @synchronized
 decorator](07-the-missing-synchronized-decorator.md), with the very first

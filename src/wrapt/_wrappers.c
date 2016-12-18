@@ -2678,7 +2678,7 @@ moduleinit(void)
     if (PyType_Ready(&WraptObjectProxy_Type) < 0)
         return NULL;
 
-    /* Ensure that inheritence relationships specified. */
+    /* Ensure that inheritance relationships specified. */
 
     WraptCallableObjectProxy_Type.tp_base = &WraptObjectProxy_Type;
     WraptFunctionWrapperBase_Type.tp_base = &WraptObjectProxy_Type;

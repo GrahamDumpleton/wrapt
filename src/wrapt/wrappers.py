@@ -440,7 +440,7 @@ class _FunctionWrapperBase(ObjectProxy):
         #
         # The distinguishing attribute which determines whether we are
         # being called in an unbound or bound wrapper is the parent
-        # attribute. If binding has never occured, then the parent will
+        # attribute. If binding has never occurred, then the parent will
         # be None.
         #
         # First therefore, is if we are called in an unbound wrapper. In
@@ -467,7 +467,7 @@ class _FunctionWrapperBase(ObjectProxy):
 
             return self
 
-        # Now we have the case of binding occuring a second time on what
+        # Now we have the case of binding occurring a second time on what
         # was already a bound function. In this case we would usually
         # return ourselves again. This mirrors what Python does.
         #
@@ -702,7 +702,7 @@ def resolve_path(module, name):
         # to work. For the case of a class we therefore access
         # the __dict__ directly. To cope though with the wrong
         # class being given to us, or a method being moved into
-        # a base class, we need to walk the class heirarchy to
+        # a base class, we need to walk the class hierarchy to
         # work out exactly which __dict__ the method was defined
         # in, as accessing it from __dict__ will fail if it was
         # not actually on the class given. Fallback to using

@@ -14,7 +14,7 @@ where it has used:
 from module import function
 ```
 
-If we cant get in early enough, then it becomes necessary to monkey patch
+If we can't get in early enough, then it becomes necessary to monkey patch
 all such uses of a target function as well, which in the general case is
 impossible as we will not know where the function has been imported.
 
@@ -24,7 +24,7 @@ the module is even returned back to any code where it is being imported.
 This technique is still though dependent on the post import hook mechanism
 itself being installed before any other code is effectively run. This means
 having to manually modify the main Python script file for an application,
-something which isnt always practical.
+something which isn't always practical.
 
 The point of this post is to look at how we can avoid the need to even
 modify that main Python script file. For this there are a few techniques
@@ -135,7 +135,7 @@ In practice however, the code we will need is actually going to have to be
 slightly more complicated than this and as a result not something that can
 be readily added directly to a .pth file due to the limitation of code
 needing to all be on one line. What we will therefore do is put all our
-code in a separate module and execute it from there. We dont want to be too
+code in a separate module and execute it from there. We don't want to be too
 nasty and import that module every time though, perhaps scaring users when
 they see it imported even if not used, so we will gate even that by the
 presence of the environment variable.
@@ -149,7 +149,7 @@ import os, sys; os.environ.get('AUTOWRAPT_BOOTSTRAP') and __import__('autowrapt.
 That is, if the environment variable is set to a non empty value only then
 do we import our module containing our bootstrap code and execute it.
 
-As to the bootstrap code, this is where things get a bit messy. We cant
+As to the bootstrap code, this is where things get a bit messy. We can't
 just use the code we had used before when manually modifying the Python
 application script file. This is because of where in the Python interpreter
 initialisation the parsing of .pth files is done.
@@ -235,7 +235,7 @@ def bootstrap():
 
 Despite everything I have ever said about how manually constructed monkey
 patches is bad and that the wrapt module should be used for doing monkey
-patching, we cant actually use the wrapt module in this case. This is
+patching, we can't actually use the wrapt module in this case. This is
 because technically, as a user installed package, the wrapt package may not
 be usable at this point. This could occur where wrapt was installed in such
 a way that the ability to import it was itself dependent on the processing
@@ -307,7 +307,7 @@ within the site-packages directory.
 
 The only .pth file added to the site-packages directory will be that used
 to map that the autowrapt package exists in the sub directory. The
-addsitepackages() function called from the site module doesnt in turn
+addsitepackages() function called from the site module doesn't in turn
 process .pth files contained in a directory added by a .pth file, so our
 custom .pth file would be skipped.
 
@@ -346,7 +346,7 @@ So to run the test do:
 pip install autowrapt
 ```
 
-This should also install the wrapt module if you dont have the required
+This should also install the wrapt module if you don't have the required
 minimum version.
 
 Now run the command line interpreter as normal and at the prompt do:
@@ -384,7 +384,7 @@ import this
 
 we should now see an extended version of the Zen of Python.
 
-We didnt actually monkey patch any code in the target module in this case,
+We didn't actually monkey patch any code in the target module in this case,
 but it shows that the monkey patch function was actually triggered when
 expected.
 
