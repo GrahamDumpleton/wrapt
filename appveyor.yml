@@ -1,0 +1,11 @@
+environment:
+  COVERAGE_CMD: coverage run -m
+  COVERAGE_DEP: coverage
+
+install:
+  - ps: C:\Python35-x64\python.exe -m pip install tox
+
+build: off
+
+test_script:
+  - ps: C:\Python35-x64\python.exe -m tox --skip-missing-interpreters
