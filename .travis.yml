@@ -4,7 +4,7 @@ python:
 env:
   global:
     - COVERAGE_CMD="coverage run -m"
-    - COVERAGE_DEP=coverage
+    - COVERAGE_DEP="coverage"
 install:
   - pip install tox coveralls
 script:
