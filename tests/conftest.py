@@ -1,6 +1,6 @@
-import pytest
-
 import sys
+
+import pytest
 
 version = tuple(sys.version_info[:2])
 
