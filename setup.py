@@ -11,7 +11,7 @@ from distutils.errors import (CCompilerError, DistutilsExecError,
 
 if sys.platform == 'win32':
     build_ext_errors = (CCompilerError, DistutilsExecError,
-            DistutilsPlatformError, IOError)
+            DistutilsPlatformError, IOError, OSError)
 else:
     build_ext_errors = (CCompilerError, DistutilsExecError,
             DistutilsPlatformError)
