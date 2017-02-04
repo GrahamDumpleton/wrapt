@@ -295,7 +295,7 @@ definition.
     AttributeError: 'int' object has no attribute 'attribute'
 
 Alternatively, the attribute can be specified as a class attribute, with
-that then being overidden if necessary, with a specific value in the
+that then being overridden if necessary, with a specific value in the
 ``__init__()`` method of the class.
 
 ::
@@ -457,7 +457,7 @@ It would be used like:
         pass
 
 This example of a simplified decorator factory is made available as
-``wrapt.function_wrapper``. Although it is usuable in its own right, it is
+``wrapt.function_wrapper``. Although it is usable in its own right, it is
 preferable that ``wrapt.decorator`` be used to create decorators as it
 provides additional features. The ``@function_wrapper`` decorator would
 generally be used more when performing monkey patching and needing to

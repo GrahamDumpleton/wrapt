@@ -18,7 +18,7 @@ associating a thread mutex with a specific context and when a function is
 called the lock is acquired prior to the call and then released once the
 function returns.
 
-The simplist example of a decorator for synchronization is one where the
+The simplest example of a decorator for synchronization is one where the
 lock is explicitly provided when the decorator is applied to a function. By
 being supplied explicitly, it is up to the user of the decorator to
 determine what context the lock applies to. For example, a lock may be
@@ -409,7 +409,7 @@ frowned on by some, but the implementation would be as follows.
 
         if hasattr(wrapped, 'acquire') and hasattr(wrapped, 'release'):
             # We remember what the original lock is and then return a new
-            # decorator which acceses and locks it. When returning the new
+            # decorator which accesses and locks it. When returning the new
             # decorator we wrap it with an object proxy so we can override
             # the context manager methods in case it is being used to wrap
             # synchronized statements with a 'with' statement.
@@ -439,7 +439,7 @@ frowned on by some, but the implementation would be as follows.
         # automatically based on the context of what was supplied. In
         # this case we supply a final decorator, but need to use
         # FunctionWrapper directly as we want to derive from it to add
-        # context manager methods in in case it is being used to wrap
+        # context manager methods in case it is being used to wrap
         # synchronized statements with a 'with' statement.
 
         def _synchronized_lock(context):
