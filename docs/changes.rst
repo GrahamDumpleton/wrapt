@@ -83,7 +83,7 @@ Version 1.10.2
 **Bugs Fixed**
 
 * When creating a derived ``ObjectProxy``, if the base class ``__init__()``
-  method wasn't called and the the ``__wrapped__`` attribute was accessed,
+  method wasn't called and the ``__wrapped__`` attribute was accessed,
   in the pure Python implementation a recursive call of ``__getattr__()``
   would occur and the maximum stack depth would be reached and an exception
   raised.
@@ -549,7 +549,7 @@ Version 1.1.0
 * When deriving from ObjectProxy, and the C extension variant
   was being used, if a derived class __init__() attempted to update
   attributes, even the special '_self_' attributed before calling the base
-  class __init__() methid, then an exception would be raised indicating
+  class __init__() method, then an exception would be raised indicating
   that the 'wrapper has not been initialised'.
 
 Version 1.0.0

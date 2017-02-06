@@ -319,7 +319,7 @@ not. This is therefore a global switch and once disabled it cannot be
 dynamically re-enabled at runtime while the process is executing.
 Similarly, once enabled it cannot be disabled.
 
-An alternative to suppling a literal boolean, is to provide a callable
+An alternative to supplying a literal boolean, is to provide a callable
 for ``enabled`` which will yield a boolean value.
 
 ::

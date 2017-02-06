@@ -424,7 +424,7 @@ def synchronized(wrapped):
 
     if hasattr(wrapped, 'acquire') and hasattr(wrapped, 'release'):
         # We remember what the original lock is and then return a new
-        # decorator which acceses and locks it. When returning the new
+        # decorator which accesses and locks it. When returning the new
         # decorator we wrap it with an object proxy so we can override
         # the context manager methods in case it is being used to wrap
         # synchronized statements with a 'with' statement.
@@ -453,7 +453,7 @@ def synchronized(wrapped):
     # Following only apply when the lock is being created automatically
     # based on the context of what was supplied. In this case we supply
     # a final decorator, but need to use FunctionWrapper directly as we
-    # want to derive from it to add context manager methods in in case it is
+    # want to derive from it to add context manager methods in case it is
     # being used to wrap synchronized statements with a 'with' statement.
 
     def _synchronized_lock(context):
