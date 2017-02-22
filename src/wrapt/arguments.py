@@ -4,6 +4,7 @@
 # of the PSF license used for Python 2.7.
 
 from inspect import getargspec, ismethod
+import sys
 
 def getcallargs(func, *positional, **named):
     """Get the mapping of arguments to values.
