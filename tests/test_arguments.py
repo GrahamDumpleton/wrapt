@@ -21,3 +21,10 @@ class TestArguments(unittest.TestCase):
         calculated = wrapt.getcallargs(function, 10, 20, 30, 40, 50, 60)
 
         self.assertEqual(expected, calculated)
+
+    def test_unexpected_unicode_keyword(self):
+        def function(a=2):
+            pass
+
+        kwargs = { u'b': 40 }
+        self.assertRaises(TypeError, wrapt.getcallargs, function, **kwargs)
