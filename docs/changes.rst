@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 1.10.10
+---------------
+
+**Features Changed**
+
+* Added back missing description and categorisations when releasing to PyPi.
+
 Version 1.10.9
 --------------
 
