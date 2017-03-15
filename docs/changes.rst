@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 1.10.9
+--------------
+
+**Bugs Fixed**
+
+* Code for ``inspect.getargspec()`` when using Python 2.6 was missing
+  import of ``sys`` module.
+
 Version 1.10.8
 --------------
 
