@@ -11,7 +11,7 @@ from distutils.errors import (CCompilerError, DistutilsExecError,
 
 if sys.platform == 'win32':
     build_ext_errors = (CCompilerError, DistutilsExecError,
-            DistutilsPlatformError, IOError)
+            DistutilsPlatformError, IOError, OSError)
 else:
     build_ext_errors = (CCompilerError, DistutilsExecError,
             DistutilsPlatformError)
@@ -33,16 +33,16 @@ class optional_build_ext(build_ext):
             raise BuildExtFailed()
 
 setup_kwargs = dict(
-      name = 'wrapt',
-      version = '1.10.8',
-      description = 'Module for decorators, wrappers and monkey patching.',
-      long_description = open('README.rst').read(),
-      author = 'Graham Dumpleton',
-      author_email = 'Graham.Dumpleton@gmail.com',
-      license = 'BSD',
-      url = 'https://github.com/GrahamDumpleton/wrapt',
-      packages = ['wrapt'],
-      package_dir = {'': 'src'},
+      name='wrapt',
+      version='1.10.9',
+      description='Module for decorators, wrappers and monkey patching.',
+      long_description=open('README.rst').read(),
+      author='Graham Dumpleton',
+      author_email='Graham.Dumpleton@gmail.com',
+      license='BSD',
+      url='https://github.com/GrahamDumpleton/wrapt',
+      packages=['wrapt'],
+      package_dir={'': 'src'},
      )
 
 def run_setup(with_extensions):

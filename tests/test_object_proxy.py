@@ -167,7 +167,7 @@ class TestNamingObjectProxy(unittest.TestCase):
             self.assertEqual(wrapper.__qualname__, __qualname__)
 
     def test_class_module_name(self):
-       # Test preservation of class __module__ attribute.
+        # Test preservation of class __module__ attribute.
 
         target = objects.Target
         wrapper = wrapt.ObjectProxy(target)
@@ -183,7 +183,7 @@ class TestNamingObjectProxy(unittest.TestCase):
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
     def test_instance_module_name(self):
-       # Test preservation of instance __module__ attribute.
+        # Test preservation of instance __module__ attribute.
 
         target = objects.Target()
         wrapper = wrapt.ObjectProxy(target)
@@ -220,7 +220,7 @@ class TestNamingObjectProxy(unittest.TestCase):
             self.assertEqual(wrapper.__qualname__, __qualname__)
 
     def test_function_module_name(self):
-       # Test preservation of function __module__ attribute.
+        # Test preservation of function __module__ attribute.
 
         target = objects.target
         wrapper = wrapt.ObjectProxy(target)
@@ -348,7 +348,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_function_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         def function(*args, **kwargs):
             return args, kwargs
@@ -361,7 +361,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_function_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         def function(*args, **kwargs):
             return args, kwargs
@@ -402,7 +402,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_instancemethod_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             def function(self, *args, **kwargs):
@@ -416,7 +416,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_instancemethod_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             def function(self, *args, **kwargs):
@@ -458,7 +458,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_instancemethod_via_class_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             def function(self, *args, **kwargs):
@@ -472,7 +472,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_instancemethod_via_class_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             def function(self, *args, **kwargs):
@@ -516,7 +516,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_classmethod_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @classmethod
@@ -531,7 +531,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_classmethod_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @classmethod
@@ -576,7 +576,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_classmethod_via_class_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @classmethod
@@ -591,7 +591,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_classmethod_via_class_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @classmethod
@@ -636,7 +636,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_staticmethod_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @staticmethod
@@ -651,7 +651,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_staticmethod_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @staticmethod
@@ -696,7 +696,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_staticmethod_via_class_kwargs(self):
         _args = ()
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @staticmethod
@@ -711,7 +711,7 @@ class TestCallingObject(unittest.TestCase):
 
     def test_staticmethod_via_class_args_plus_kwargs(self):
         _args = (1, 2)
-        _kwargs = { "one": 1, "two": 2 }
+        _kwargs = {"one": 1, "two": 2}
 
         class Class(object):
             @staticmethod
@@ -879,9 +879,9 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
         four = wrapt.ObjectProxy(4)
 
-        self.assertEqual(four%two, 4%2)
-        self.assertEqual(4%two, 4%2)
-        self.assertEqual(four%2, 4%2)
+        self.assertEqual(four % two, 4 % 2)
+        self.assertEqual(4 % two, 4 % 2)
+        self.assertEqual(four % 2, 4 % 2)
 
     def test_divmod(self):
         two = wrapt.ObjectProxy(2)
@@ -915,41 +915,41 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
 
-        self.assertEqual(three<<two, 3<<2)
-        self.assertEqual(3<<two, 3<<2)
-        self.assertEqual(three<<2, 3<<2)
+        self.assertEqual(three << two, 3 << 2)
+        self.assertEqual(3 << two, 3 << 2)
+        self.assertEqual(three << 2, 3 << 2)
 
     def test_rshift(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
 
-        self.assertEqual(three>>two, 3>>2)
-        self.assertEqual(3>>two, 3>>2)
-        self.assertEqual(three>>2, 3>>2)
+        self.assertEqual(three >> two, 3 >> 2)
+        self.assertEqual(3 >> two, 3 >> 2)
+        self.assertEqual(three >> 2, 3 >> 2)
 
     def test_and(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
 
-        self.assertEqual(three&two, 3&2)
-        self.assertEqual(3&two, 3&2)
-        self.assertEqual(three&2, 3&2)
+        self.assertEqual(three & two, 3 & 2)
+        self.assertEqual(3 & two, 3 & 2)
+        self.assertEqual(three & 2, 3 & 2)
 
     def test_xor(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
 
-        self.assertEqual(three^two, 3^2)
-        self.assertEqual(3^two, 3^2)
-        self.assertEqual(three^2, 3^2)
+        self.assertEqual(three ^ two, 3 ^ 2)
+        self.assertEqual(3 ^ two, 3 ^ 2)
+        self.assertEqual(three ^ 2, 3 ^ 2)
 
     def test_or(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
 
-        self.assertEqual(three|two, 3|2)
-        self.assertEqual(3|two, 3|2)
-        self.assertEqual(three|2, 3|2)
+        self.assertEqual(three | two, 3 | 2)
+        self.assertEqual(3 | two, 3 | 2)
+        self.assertEqual(three | 2, 3 | 2)
 
     def test_iadd(self):
         value = wrapt.ObjectProxy(1)
@@ -1029,12 +1029,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
 
         value %= 2
-        self.assertEqual(value, 10%2)
+        self.assertEqual(value, 10 % 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
         value %= two
-        self.assertEqual(value, 10%2%2)
+        self.assertEqual(value, 10 % 2 % 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
@@ -1057,12 +1057,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
 
         value <<= 2
-        self.assertEqual(value, 256<<2)
+        self.assertEqual(value, 256 << 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
         value <<= two
-        self.assertEqual(value, 256<<2<<2)
+        self.assertEqual(value, 256 << 2 << 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
@@ -1071,12 +1071,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
 
         value >>= 2
-        self.assertEqual(value, 2>>2)
+        self.assertEqual(value, 2 >> 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
         value >>= two
-        self.assertEqual(value, 2>>2>>2)
+        self.assertEqual(value, 2 >> 2 >> 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
@@ -1085,12 +1085,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
 
         value &= 2
-        self.assertEqual(value, 1&2)
+        self.assertEqual(value, 1 & 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
         value &= two
-        self.assertEqual(value, 1&2&2)
+        self.assertEqual(value, 1 & 2 & 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
@@ -1099,12 +1099,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
 
         value ^= 2
-        self.assertEqual(value, 1^2)
+        self.assertEqual(value, 1 ^ 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
         value ^= two
-        self.assertEqual(value, 1^2^2)
+        self.assertEqual(value, 1 ^ 2 ^ 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
@@ -1113,12 +1113,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
 
         value |= 2
-        self.assertEqual(value, 1|2)
+        self.assertEqual(value, 1 | 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
         value |= two
-        self.assertEqual(value, 1|2|2)
+        self.assertEqual(value, 1 | 2 | 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
@@ -1263,9 +1263,9 @@ class TestObjectRepresentationObjectProxy(unittest.TestCase):
 
         self.assertEqual(str(value), str([10]))
 
-        value = wrapt.ObjectProxy({10:10})
+        value = wrapt.ObjectProxy({10: 10})
 
-        self.assertEqual(str(value), str({10:10}))
+        self.assertEqual(str(value), str({10: 10}))
 
     def test_repr(self):
         number = 10

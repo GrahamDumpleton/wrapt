@@ -1,5 +1,5 @@
-import wrapt # https://pypi.python.org/pypi/wrapt
-import decorator # https://pypi.python.org/pypi/decorator
+import wrapt  # https://pypi.python.org/pypi/wrapt
+import decorator  # https://pypi.python.org/pypi/decorator
 
 def function1():
     pass

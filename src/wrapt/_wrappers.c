@@ -2587,7 +2587,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     return result;
 }
 
-/* ------------------------------------------------------------------------- */;
+/* ------------------------------------------------------------------------- */
 
 static PyGetSetDef WraptFunctionWrapper_getset[] = {
     { "__module__",         (getter)WraptObjectProxy_get_module,
@@ -2645,7 +2645,7 @@ PyTypeObject WraptFunctionWrapper_Type = {
     0,                      /*tp_is_gc*/
 };
 
-/* ------------------------------------------------------------------------- */;
+/* ------------------------------------------------------------------------- */
 
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
@@ -2678,7 +2678,7 @@ moduleinit(void)
     if (PyType_Ready(&WraptObjectProxy_Type) < 0)
         return NULL;
 
-    /* Ensure that inheritence relationships specified. */
+    /* Ensure that inheritance relationships specified. */
 
     WraptCallableObjectProxy_Type.tp_base = &WraptObjectProxy_Type;
     WraptFunctionWrapperBase_Type.tp_base = &WraptObjectProxy_Type;

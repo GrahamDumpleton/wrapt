@@ -83,7 +83,7 @@ Version 1.10.2
 **Bugs Fixed**
 
 * When creating a derived ``ObjectProxy``, if the base class ``__init__()``
-  method wasn't called and the the ``__wrapped__`` attribute was accessed,
+  method wasn't called and the ``__wrapped__`` attribute was accessed,
   in the pure Python implementation a recursive call of ``__getattr__()``
   would occur and the maximum stack depth would be reached and an exception
   raised.
@@ -110,7 +110,7 @@ Version 1.10.1
   then calling the method was causing an unwanted reference to the instance
   meaning that if the instance was transient, it would leak.
 
-  This was only occuring when the C extension component for the
+  This was only occurring when the C extension component for the
   ``wrapt`` module was being used.
 
 Version 1.10.0
@@ -310,12 +310,12 @@ Version 1.6.0
   even though the wrapped object didn't have one. Similarly, callable()
   would always return True even if the wrapped object was not callable.
 
-  This resulted due to the existance of the __call__() method on the
+  This resulted due to the existence of the __call__() method on the
   wrapper, required to support the possibility that the wrapped object
   may be called via the proxy object even if it may not turn out that
   the wrapped object was callable.
 
-  Because checking for the existance of a __call__() method or using
+  Because checking for the existence of a __call__() method or using
   callable() can sometimes be used to indirectly infer the type of an
   object, this could cause issues. To ensure that this now doesn't
   occur, the ability to call a wrapped object via the proxy object has
@@ -367,7 +367,7 @@ Version 1.4.2
 * A process could crash if the C extension module was used and when using
   the ObjectProxy class a reference count cycle was created that required
   the Python garbage collector to kick in to break the cycle. This was
-  occuring as the C extension had not implemented GC support in the
+  occurring as the C extension had not implemented GC support in the
   ObjectProxy class correctly.
 
 Version 1.4.1
@@ -509,7 +509,7 @@ Version 1.1.1
 
 **Bugs Fixed**
 
-* Python object memory leak was occuring due to incorrect increment of
+* Python object memory leak was occurring due to incorrect increment of
   object reference count in C implementation of object proxy when an
   instance method was called via the class and the instance passed in
   explicitly.
@@ -549,7 +549,7 @@ Version 1.1.0
 * When deriving from ObjectProxy, and the C extension variant
   was being used, if a derived class __init__() attempted to update
   attributes, even the special '_self_' attributed before calling the base
-  class __init__() methid, then an exception would be raised indicating
+  class __init__() method, then an exception would be raised indicating
   that the 'wrapper has not been initialised'.
 
 Version 1.0.0

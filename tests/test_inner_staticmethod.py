@@ -49,7 +49,7 @@ class TestNamingInnerStaticMethod(unittest.TestCase):
                 Original().function.__name__)
 
     def test_class_module_name(self):
-       # Test preservation of instance method __module__ attribute.
+        # Test preservation of instance method __module__ attribute.
 
         self.assertEqual(Class.function.__module__,
                 Original.function.__module__)
@@ -75,7 +75,7 @@ class TestNamingInnerStaticMethod(unittest.TestCase):
             self.assertEqual(Class().function.__qualname__, __qualname__)
 
     def test_instance_module_name(self):
-       # Test preservation of instance method __module__ attribute.
+        # Test preservation of instance method __module__ attribute.
 
         self.assertEqual(Class().function.__module__,
                 Original().function.__module__)
@@ -124,7 +124,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # Test calling staticmethod.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -151,7 +151,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # Test calling staticmethod via class instance.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -178,7 +178,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # Test calling staticmethod.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -206,7 +206,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # Test calling staticmethod via class instance.
 
         _args = (1, 2)
-        _kwargs = { 'one': 1, 'two': 2 }
+        _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
