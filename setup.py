@@ -32,14 +32,28 @@ class optional_build_ext(build_ext):
         except build_ext_errors:
             raise BuildExtFailed()
 
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
+    'License :: OSI Approved :: BSD License',
+    'Programming Language :: Python :: 2.6',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3.3',
+    'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: Implementation :: CPython',
+    'Programming Language :: Python :: Implementation :: PyPy',
+]
+
 setup_kwargs = dict(
       name='wrapt',
-      version='1.10.9',
+      version='1.10.10',
       description='Module for decorators, wrappers and monkey patching.',
       long_description=open('README.rst').read(),
       author='Graham Dumpleton',
       author_email='Graham.Dumpleton@gmail.com',
       license='BSD',
+      classifiers=classifiers,
       url='https://github.com/GrahamDumpleton/wrapt',
       packages=['wrapt'],
       package_dir={'': 'src'},
