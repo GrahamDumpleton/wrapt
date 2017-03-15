@@ -4,9 +4,11 @@ import unittest
 
 import wrapt
 
+
 @wrapt.synchronized
 def function():
     print('function')
+
 
 class C1(object):
 
@@ -26,13 +28,16 @@ class C1(object):
 
 c1 = C1()
 
+
 @wrapt.synchronized
 class C2(object):
     pass
 
+
 @wrapt.synchronized
 class C3:
     pass
+
 
 class C4(object):
 
@@ -54,6 +59,7 @@ class C4(object):
         print('function3')
 
 c4 = C4()
+
 
 class TestSynchronized(unittest.TestCase):
 

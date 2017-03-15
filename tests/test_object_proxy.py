@@ -26,6 +26,7 @@ def target():
 objects = imp.new_module('objects')
 exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
+
 class TestAttributeAccess(unittest.TestCase):
 
     def test_init_not_called(self):
@@ -143,6 +144,7 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(getattr(function2, 'variable', None), None)
 
+
 class TestNamingObjectProxy(unittest.TestCase):
 
     def test_class_object_name(self):
@@ -235,6 +237,7 @@ class TestNamingObjectProxy(unittest.TestCase):
 
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
+
 class TestTypeObjectProxy(unittest.TestCase):
 
     def test_class_of_class(self):
@@ -267,6 +270,7 @@ class TestTypeObjectProxy(unittest.TestCase):
         self.assertEqual(wrapper.__class__, target.__class__)
 
         self.assertTrue(isinstance(wrapper, type(target)))
+
 
 class TestDirObjectProxy(unittest.TestCase):
 
@@ -317,6 +321,7 @@ class TestDirObjectProxy(unittest.TestCase):
         wrapper = wrapt.ObjectProxy(target)
 
         self.assertEqual(vars(wrapper), vars(target))
+
 
 class TestCallingObject(unittest.TestCase):
 
@@ -724,6 +729,7 @@ class TestCallingObject(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
+
 class TestIterObjectProxy(unittest.TestCase):
 
     def test_iteration(self):
@@ -735,12 +741,14 @@ class TestIterObjectProxy(unittest.TestCase):
 
         self.assertEqual(result, items)
 
+
 class TestContextManagerObjectProxy(unittest.TestCase):
 
     def test_context_manager(self):
         class Class(object):
             def __enter__(self):
                 return self
+
             def __exit__(*args, **kwargs):
                 return
 
@@ -750,6 +758,7 @@ class TestContextManagerObjectProxy(unittest.TestCase):
 
         with wrapper:
             pass
+
 
 class TestEqualityObjectProxy(unittest.TestCase):
 
@@ -803,6 +812,7 @@ class TestEqualityObjectProxy(unittest.TestCase):
         self.assertTrue(two != one)
         self.assertTrue(two == two)
         self.assertTrue(two != three)
+
 
 class TestAsNumberObjectProxy(unittest.TestCase):
 
@@ -1161,6 +1171,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         self.assertEqual(items[value], items[1])
 
+
 class TestAsSequenceObjectProxy(unittest.TestCase):
 
     def test_length(self):
@@ -1215,6 +1226,7 @@ class TestAsSequenceObjectProxy(unittest.TestCase):
         self.assertEqual(len(value), 2)
         self.assertEqual(value, [0, 4])
 
+
 class TestAsMappingObjectProxy(unittest.TestCase):
 
     def test_length(self):
@@ -1248,6 +1260,7 @@ class TestAsMappingObjectProxy(unittest.TestCase):
 
         self.assertEqual(len(value), 2)
 
+
 class TestObjectRepresentationObjectProxy(unittest.TestCase):
 
     def test_str(self):
@@ -1272,6 +1285,7 @@ class TestObjectRepresentationObjectProxy(unittest.TestCase):
         value = wrapt.ObjectProxy(number)
 
         self.assertNotEqual(repr(value).find('ObjectProxy at'), -1)
+
 
 class TestDerivedClassCreation(unittest.TestCase):
 
@@ -1318,6 +1332,7 @@ class TestDerivedClassCreation(unittest.TestCase):
 
         self.assertEqual(function, obj)
         self.assertEqual(function, obj.__wrapped__)
+
 
 class DerivedClassAttributes(unittest.TestCase):
 
@@ -1377,12 +1392,15 @@ class DerivedClassAttributes(unittest.TestCase):
             def __init__(self, wrapped):
                 super(DerivedObjectProxy, self).__init__(wrapped)
                 self._self_attribute = 1
+
             @property
             def ATTRIBUTE(self):
                 return self._self_attribute
+
             @ATTRIBUTE.setter
             def ATTRIBUTE(self, value):
                 self._self_attribute = value
+
             @ATTRIBUTE.deleter
             def ATTRIBUTE(self):
                 del self._self_attribute
@@ -1414,6 +1432,7 @@ class DerivedClassAttributes(unittest.TestCase):
 
         self.assertFalse(hasattr(obj, 'ATTRIBUTE'))
         self.assertFalse(hasattr(function, 'ATTRIBUTE'))
+
 
 class OverrideAttributeAccess(unittest.TestCase):
 
@@ -1452,6 +1471,7 @@ class OverrideAttributeAccess(unittest.TestCase):
 
         self.assertTrue('attribute' in accessed)
 
+
 class CallableFunction(unittest.TestCase):
 
     def test_proxy_hasattr_call(self):
@@ -1483,6 +1503,7 @@ class CallableFunction(unittest.TestCase):
         proxy = wrapt.CallableObjectProxy(None)
 
         self.assertTrue(callable(proxy))
+
 
 class SpecialMethods(unittest.TestCase):
 

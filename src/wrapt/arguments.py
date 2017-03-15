@@ -6,6 +6,7 @@
 from inspect import getargspec, ismethod
 import sys
 
+
 def getcallargs(func, *positional, **named):
     """Get the mapping of arguments to values.
 
@@ -17,7 +18,9 @@ def getcallargs(func, *positional, **named):
     arg2value = {}
 
     # The following closures are basically because of tuple parameter unpacking.
+
     assigned_tuple_params = []
+
     def assign(arg, value):
         if isinstance(arg, str):
             arg2value[arg] = value
@@ -35,8 +38,10 @@ def getcallargs(func, *positional, **named):
                 next(value)
             except StopIteration:
                 pass
+
             else:
                 raise ValueError('too many values to unpack')
+
     def is_assigned(arg):
         if isinstance(arg, str):
             return arg in arg2value

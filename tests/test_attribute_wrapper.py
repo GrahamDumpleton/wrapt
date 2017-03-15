@@ -4,9 +4,11 @@ import unittest
 
 import wrapt
 
+
 class Class(object):
     def __init__(self, value):
         self.value = value
+
 
 class TestAttributeProxy(unittest.TestCase):
 

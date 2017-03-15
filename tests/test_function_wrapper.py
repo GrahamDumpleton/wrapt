@@ -7,6 +7,7 @@ import wrapt.wrappers
 
 from compat import PY2, PY3, exec_
 
+
 class TestClassInheritence(unittest.TestCase):
 
     def test_function_type_inheritence(self):
@@ -76,6 +77,7 @@ class TestClassInheritence(unittest.TestCase):
 
         self.assertFalse(isinstance(instance.function, wrapt.FunctionWrapper))
         self.assertTrue(isinstance(instance.function, wrapt.ObjectProxy))
+
 
 class TestAttributeAccess(unittest.TestCase):
 
@@ -255,6 +257,7 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2._self_binding, 'function')
 
+
 class TestParentReference(unittest.TestCase):
 
     def test_function_decorator(self):
@@ -332,6 +335,7 @@ class TestParentReference(unittest.TestCase):
 
         self.assertNotEqual(Class.function_sm_inner._self_parent, None)
 
+
 class TestGuardArgument(unittest.TestCase):
 
     def test_boolean_false_guard_on_decorator(self):
@@ -359,6 +363,7 @@ class TestGuardArgument(unittest.TestCase):
     def test_boolean_dynamic_guard_on_decorator(self):
         class Guard(object):
             value = True
+
             def __nonzero__(self):
                 return self.value
             __bool__ = __nonzero__
@@ -391,6 +396,7 @@ class TestGuardArgument(unittest.TestCase):
 
     def test_function_guard_on_decorator(self):
         value = True
+
         def guard():
             return value
 
@@ -420,6 +426,7 @@ class TestGuardArgument(unittest.TestCase):
 
     def test_guard_on_instancemethod(self):
         value = True
+
         def guard():
             return value
 
@@ -452,6 +459,7 @@ class TestGuardArgument(unittest.TestCase):
 
         self.assertEqual(len(result), 0)
 
+
 class TestDerivedFunctionWrapper(unittest.TestCase):
 
     def test_override_bound_type(self):
@@ -478,6 +486,7 @@ class TestDerivedFunctionWrapper(unittest.TestCase):
 
         self.assertTrue(isinstance(_bound_wrapper, _BoundFunctionWrapper))
         self.assertEqual(_bound_wrapper.ATTRIBUTE, 1)
+
 
 class TestFunctionBinding(unittest.TestCase):
 
@@ -546,6 +555,7 @@ class TestFunctionBinding(unittest.TestCase):
 
         self.assertTrue(_bound_wrapper_1 is not _bound_wrapper_2)
 
+
 class TestInvalidWrapper(unittest.TestCase):
 
     def test_none_for_wrapped(self):
@@ -557,6 +567,7 @@ class TestInvalidWrapper(unittest.TestCase):
             wrapper.__get__(list(), list)()
 
         self.assertRaises(AttributeError, run, ())
+
 
 class TestInvalidCalling(unittest.TestCase):
 

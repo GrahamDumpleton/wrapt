@@ -34,6 +34,7 @@ _post_import_hooks_lock = threading.RLock()
 # proxy callback being registered which will defer loading of the
 # specified module containing the callback function until required.
 
+
 def _create_import_hook_from_string(name):
     def import_hook(module):
         module_name, function = name.split(':')
@@ -44,6 +45,7 @@ def _create_import_hook_from_string(name):
             callback = getattr(callback, attr)
         return callback(module)
     return import_hook
+
 
 @synchronized(_post_import_hooks_lock)
 def register_post_import_hook(hook, name):
@@ -100,6 +102,7 @@ def register_post_import_hook(hook, name):
 
 # Register post import hooks defined as package entry points.
 
+
 def _create_import_hook_from_entrypoint(entrypoint):
     def import_hook(module):
         __import__(entrypoint.module_name)
@@ -108,6 +111,7 @@ def _create_import_hook_from_entrypoint(entrypoint):
             callback = getattr(callback, attr)
         return callback(module)
     return import_hook
+
 
 def discover_post_import_hooks(group):
     try:
@@ -123,6 +127,7 @@ def discover_post_import_hooks(group):
 # were registered against the target module will be invoked. If an
 # exception is raised in any of the post import hooks, that will cause
 # the import of the target module to fail.
+
 
 @synchronized(_post_import_hooks_lock)
 def notify_module_loaded(module):
@@ -140,6 +145,7 @@ def notify_module_loaded(module):
 # interest. When a module of interest is imported, then any post import
 # hooks which are registered will be invoked.
 
+
 class _ImportHookLoader:
 
     def load_module(self, fullname):
@@ -147,6 +153,7 @@ class _ImportHookLoader:
         notify_module_loaded(module)
 
         return module
+
 
 class _ImportHookChainedLoader:
 
@@ -158,6 +165,7 @@ class _ImportHookChainedLoader:
         notify_module_loaded(module)
 
         return module
+
 
 class ImportHookFinder:
 
@@ -220,6 +228,7 @@ class ImportHookFinder:
 
 # Decorator for marking that a function should be called as a post
 # import hook when the target module is imported.
+
 
 def when_imported(name):
     def register(hook):

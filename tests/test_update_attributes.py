@@ -6,9 +6,11 @@ import wrapt
 
 from compat import PY2, PY3, exec_
 
+
 @wrapt.decorator
 def passthru_decorator(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
+
 
 class TestUpdateAttributes(unittest.TestCase):
 

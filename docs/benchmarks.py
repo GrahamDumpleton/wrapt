@@ -1,33 +1,41 @@
 import wrapt  # https://pypi.python.org/pypi/wrapt
 import decorator  # https://pypi.python.org/pypi/decorator
 
+
 def function1():
     pass
+
 
 def wrapper2(func):
     def _wrapper2(*args, **kwargs):
         return func(*args, **kwargs)
     return _wrapper2
 
+
 @wrapper2
 def function2():
     pass
+
 
 @wrapt.decorator
 def wrapper3(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
+
 @wrapper3
 def function3():
     pass
+
 
 @decorator.decorator
 def wrapper4(wrapped, *args, **kwargs):
     return wrapped(*args, **kwargs)
 
+
 @wrapper4
 def function4():
     pass
+
 
 class Class(object):
 

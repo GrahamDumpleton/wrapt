@@ -19,6 +19,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = imp.new_module('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 class Class(object):
     @classmethod
     def function(self, arg):
@@ -27,12 +28,14 @@ class Class(object):
 
 Original = Class
 
+
 class Class(object):
     @decorators.passthru_decorator
     @classmethod
     def function(self, arg):
         '''documentation'''
         return arg
+
 
 class TestNamingInnerClassMethod(unittest.TestCase):
 
@@ -117,6 +120,7 @@ class TestNamingInnerClassMethod(unittest.TestCase):
 
         self.assertTrue(isinstance(Class().function,
                 type(Original().function)))
+
 
 class TestCallingInnerClassMethod(unittest.TestCase):
 

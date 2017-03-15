@@ -6,6 +6,7 @@ import sys
 import wrapt
 from wrapt.importer import _post_import_hooks
 
+
 class TestPostImportHooks(unittest.TestCase):
 
     def setUp(self):

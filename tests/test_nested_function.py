@@ -19,6 +19,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = imp.new_module('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 def function1():
     def inner(arg):
         '''documentation'''
@@ -26,6 +27,7 @@ def function1():
     return inner
 
 function1o = function1
+
 
 def function1():
     @decorators.passthru_decorator
@@ -35,6 +37,7 @@ def function1():
     return inner
 
 function1d = function1
+
 
 class TestNamingNestedFunction(unittest.TestCase):
 
@@ -74,6 +77,7 @@ class TestNamingNestedFunction(unittest.TestCase):
         # Test preservation of isinstance() checks.
 
         self.assertTrue(isinstance(function1d(), type(function1o())))
+
 
 class TestCallingNestedFunction(unittest.TestCase):
 

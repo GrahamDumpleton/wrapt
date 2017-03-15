@@ -16,8 +16,10 @@ else:
     build_ext_errors = (CCompilerError, DistutilsExecError,
             DistutilsPlatformError)
 
+
 class BuildExtFailed(Exception):
     pass
+
 
 class optional_build_ext(build_ext):
     def run(self):
@@ -58,6 +60,7 @@ setup_kwargs = dict(
       packages=['wrapt'],
       package_dir={'': 'src'},
      )
+
 
 def run_setup(with_extensions):
     setup_kwargs_tmp = dict(setup_kwargs)

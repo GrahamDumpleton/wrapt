@@ -4,6 +4,7 @@ import unittest
 
 import wrapt
 
+
 class TestDecorator(unittest.TestCase):
 
     def test_no_parameters(self):
@@ -29,6 +30,7 @@ class TestDecorator(unittest.TestCase):
         class Instance(object):
             def __init__(self):
                 self.count = 0
+
             @wrapt.decorator
             def decorator(self, wrapped, instance, args, kwargs):
                 self.count += 1
@@ -56,6 +58,7 @@ class TestDecorator(unittest.TestCase):
 
         class Instance(object):
             count = 0
+
             @wrapt.decorator
             @classmethod
             def decorator(cls, wrapped, instance, args, kwargs):
@@ -101,6 +104,7 @@ class TestDecorator(unittest.TestCase):
         class ClassDecorator(object):
             def __init__(self, arg):
                 assert arg == 1
+
             def __call__(self, wrapped, instance, args, kwargs):
                 return wrapped(*args, **kwargs)
 

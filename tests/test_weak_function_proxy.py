@@ -5,6 +5,7 @@ import gc
 
 import wrapt
 
+
 class TestWeakFunctionProxy(unittest.TestCase):
 
     def test_isinstance(self):

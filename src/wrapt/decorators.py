@@ -49,6 +49,7 @@ from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
 # inspect.signature() and inspect.getsource() return the correct results
 # one would expect.
 
+
 class _AdapterFunctionCode(CallableObjectProxy):
 
     def __init__(self, wrapped_code, adapter_code):
@@ -74,6 +75,7 @@ class _AdapterFunctionCode(CallableObjectProxy):
     @property
     def co_varnames(self):
         return self._self_adapter_code.co_varnames
+
 
 class _AdapterFunctionSurrogate(CallableObjectProxy):
 
@@ -110,6 +112,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
         func_code = __code__
         func_defaults = __defaults__
 
+
 class _BoundAdapterWrapper(BoundFunctionWrapper):
 
     @property
@@ -119,6 +122,7 @@ class _BoundAdapterWrapper(BoundFunctionWrapper):
 
     if PY2:
         im_func = __func__
+
 
 class AdapterWrapper(FunctionWrapper):
 
@@ -151,14 +155,17 @@ class AdapterWrapper(FunctionWrapper):
     def __signature__(self):
         return self._self_surrogate.__signature__
 
+
 class AdapterFactory(object):
     def __call__(self, wrapped):
         raise NotImplementedError()
+
 
 class DelegatedAdapterFactory(AdapterFactory):
     def __init__(self, factory):
         super(DelegatedAdapterFactory, self).__init__()
         self.factory = factory
+
     def __call__(self, wrapped):
         return self.factory(wrapped)
 
@@ -170,6 +177,7 @@ adapter_factory = DelegatedAdapterFactory
 # themselves acting like a transparent proxy for the original wrapped
 # function so the wrapper is effectively indistinguishable from the
 # original wrapped function.
+
 
 def decorator(wrapper=None, enabled=None, adapter=None):
     # The decorator should be supplied with a single positional argument
@@ -414,6 +422,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
 # and acquire() methods. In that case that will be used directly as the
 # synchronization primitive without creating a separate lock against the
 # derived or supplied context.
+
 
 def synchronized(wrapped):
     # Determine if being passed an object which is a synchronization
