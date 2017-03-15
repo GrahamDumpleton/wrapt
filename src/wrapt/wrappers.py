@@ -122,9 +122,9 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
     def __repr__(self):
         return '<%s at 0x%x for %s at 0x%x>' % (
-                type(self).__name__, id(self),
-                type(self.__wrapped__).__name__,
-                id(self.__wrapped__))
+            type(self).__name__, id(self),
+            type(self.__wrapped__).__name__,
+            id(self.__wrapped__))
 
     def __reversed__(self):
         return reversed(self.__wrapped__)
@@ -478,12 +478,12 @@ class _FunctionWrapperBase(ObjectProxy):
 
         if self._self_instance is None and self._self_binding == 'function':
             descriptor = self._self_parent.__wrapped__.__get__(
-                    instance, owner)
+                instance, owner)
 
             return self._self_parent.__bound_function_wrapper__(
-                    descriptor, instance, self._self_wrapper,
-                    self._self_enabled, self._self_binding,
-                    self._self_parent)
+                descriptor, instance, self._self_wrapper,
+                self._self_enabled, self._self_binding,
+                self._self_parent)
 
         return self
 
@@ -849,8 +849,8 @@ class WeakFunctionProxy(ObjectProxy):
         # the callback here so as not to cause any odd reference cycles.
 
         _callback = callback and functools.partial(
-                _weak_function_proxy_callback, proxy=self,
-                callback=callback)
+            _weak_function_proxy_callback, proxy=self,
+            callback=callback)
 
         self._self_expired = False
 
@@ -860,11 +860,11 @@ class WeakFunctionProxy(ObjectProxy):
 
             if wrapped._self_parent is not None:
                 super(WeakFunctionProxy, self).__init__(
-                        weakref.proxy(wrapped._self_parent, _callback))
+                    weakref.proxy(wrapped._self_parent, _callback))
 
             else:
                 super(WeakFunctionProxy, self).__init__(
-                        weakref.proxy(wrapped, _callback))
+                    weakref.proxy(wrapped, _callback))
 
             return
 
@@ -872,13 +872,13 @@ class WeakFunctionProxy(ObjectProxy):
             self._self_instance = weakref.ref(wrapped.__self__, _callback)
 
             super(WeakFunctionProxy, self).__init__(
-                    weakref.proxy(wrapped.__func__, _callback))
+                weakref.proxy(wrapped.__func__, _callback))
 
         except AttributeError:
             self._self_instance = None
 
             super(WeakFunctionProxy, self).__init__(
-                    weakref.proxy(wrapped, _callback))
+                weakref.proxy(wrapped, _callback))
 
     def __call__(self, *args, **kwargs):
         # We perform a boolean check here on the instance and wrapped

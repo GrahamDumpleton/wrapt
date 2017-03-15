@@ -180,20 +180,20 @@ htmlhelp_basename = 'wraptdoc'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'wrapt.tex', u'wrapt Documentation',
+    ('index', 'wrapt.tex', u'wrapt Documentation',
    u'Graham Dumpleton', 'manual'),
 ]
 
@@ -237,7 +237,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'wrapt', u'wrapt Documentation',
+    ('index', 'wrapt', u'wrapt Documentation',
    u'Graham Dumpleton', 'wrapt', 'One line description of project.',
    'Miscellaneous'),
 ]

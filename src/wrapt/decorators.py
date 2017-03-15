@@ -128,7 +128,7 @@ class AdapterWrapper(FunctionWrapper):
         adapter = kwargs.pop('adapter')
         super(AdapterWrapper, self).__init__(*args, **kwargs)
         self._self_surrogate = _AdapterFunctionSurrogate(
-                self.__wrapped__, adapter)
+            self.__wrapped__, adapter)
         self._self_adapter = adapter
 
     @property
@@ -475,7 +475,7 @@ def synchronized(wrapped):
             # the context.
 
             meta_lock = vars(synchronized).setdefault(
-                    '_synchronized_meta_lock', Lock())
+                '_synchronized_meta_lock', Lock())
 
             with meta_lock:
                 # We need to check again for whether the lock we want
