@@ -24,7 +24,13 @@ class Class_1(object):
 class Class_2(object):
     @classmethod
     def method(cls, *args, **kwargs):
-        return args, kwargs
+        return cls, args, kwargs
+
+class Class_2_1(Class_2):
+    pass
+
+class Class_2_2(Class_2_1):
+    pass
 
 class Class_3(object):
     @staticmethod
@@ -199,7 +205,32 @@ class TestMonkeyPatching(unittest.TestCase):
 
         result = Class_2.method(*_args, **_kwargs)
 
-        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(result, (Class_2, _args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_wrap_class_method_inherited(self):
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        called = []
+
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        wrapt.wrap_function_wrapper(__name__, 'Class_2_1.method',
+                wrapper)
+
+        result = Class_2_1.method(*_args, **_kwargs)
+        self.assertEqual(result, (Class_2_1, _args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+        called.pop()
+
+        result = Class_2_2.method(*_args, **_kwargs)
+        self.assertEqual(result, (Class_2_2, _args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
     def test_wrap_static_method_module_name(self):

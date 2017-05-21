@@ -711,8 +711,8 @@ def resolve_path(module, name):
 
         if inspect.isclass(original):
             for cls in inspect.getmro(original):
-                if attribute in vars(original):
-                    original = vars(original)[attribute]
+                if attribute in vars(cls):
+                    original = vars(cls)[attribute]
                     break
             else:
                 original = getattr(original, attribute)
