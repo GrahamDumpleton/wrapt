@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 1.10.11
+---------------
+
+**Bugs Fixed**
+
+* When wrapping a ``@classmethod`` in a class used as a base class, when
+  the method was called via the derived class type, the base class type was
+  being passed for the ``cls`` argument instead of the derived class type
+  through which the call was made.
+
 Version 1.10.10
 ---------------
 
