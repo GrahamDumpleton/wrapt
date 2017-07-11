@@ -1,3 +1,4 @@
+import os
 import sys
 import functools
 import operator
@@ -675,8 +676,9 @@ class FunctionWrapper(_FunctionWrapperBase):
                 enabled, binding)
 
 try:
-    from ._wrappers import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
-        BoundFunctionWrapper, _FunctionWrapperBase)
+    if not os.environ.get('WRAPT_DISABLE_EXTENSIONS', None):
+        from ._wrappers import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
+            BoundFunctionWrapper, _FunctionWrapperBase)
 except ImportError:
     pass
 
