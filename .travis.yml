@@ -7,6 +7,9 @@ env:
   global:
     - COVERAGE_CMD="coverage run -m"
     - COVERAGE_DEP="coverage"
+  matrix:
+    - WRAPT_DISABLE_EXTENSIONS=1
+    - IRRELEVANT=
 install:
   - pip install tox coveralls
 script:
