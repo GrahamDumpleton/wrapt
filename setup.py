@@ -69,7 +69,13 @@ def run_setup(with_extensions):
 
     setup(**setup_kwargs_tmp)
 
-with_extensions = os.environ.get('WRAPT_EXTENSIONS', None)
+with_extensions = os.environ.get('WRAPT_INSTALL_EXTENSIONS')
+
+# Use WRAPT_INSTALL_EXTENSIONS now, but also check WRAPT_EXTENSIONS
+# for backward compatibility in case people had hard wired that.
+
+if with_extensions is None:
+    with_extensions = os.environ.get('WRAPT_EXTENSIONS')
 
 if with_extensions:
     if with_extensions.lower() == 'true':
