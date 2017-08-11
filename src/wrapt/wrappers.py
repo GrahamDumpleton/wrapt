@@ -1,3 +1,4 @@
+import os
 import sys
 import functools
 import operator
@@ -675,8 +676,9 @@ class FunctionWrapper(_FunctionWrapperBase):
                 enabled, binding)
 
 try:
-    from ._wrappers import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
-        BoundFunctionWrapper, _FunctionWrapperBase)
+    if not os.environ.get('WRAPT_DISABLE_EXTENSIONS'):
+        from ._wrappers import (ObjectProxy, CallableObjectProxy,
+            FunctionWrapper, BoundFunctionWrapper, _FunctionWrapperBase)
 except ImportError:
     pass
 
@@ -711,8 +713,8 @@ def resolve_path(module, name):
 
         if inspect.isclass(original):
             for cls in inspect.getmro(original):
-                if attribute in vars(original):
-                    original = vars(original)[attribute]
+                if attribute in vars(cls):
+                    original = vars(cls)[attribute]
                     break
             else:
                 original = getattr(original, attribute)

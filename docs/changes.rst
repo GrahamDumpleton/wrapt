@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Version 1.10.11
+---------------
+
+**Bugs Fixed**
+
+* When wrapping a ``@classmethod`` in a class used as a base class, when
+  the method was called via the derived class type, the base class type was
+  being passed for the ``cls`` argument instead of the derived class type
+  through which the call was made.
+
+**New Features**
+
+* The C extension can be disabled at runtime by setting the environment
+  variable ``WRAPT_DISABLE_EXTENSIONS``. This may be necessary where there
+  is currently a difference in behaviour between pure Python implementation
+  and C extension and the C extension isn't having the desired result.
+
 Version 1.10.10
 ---------------
 
