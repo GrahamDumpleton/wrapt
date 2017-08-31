@@ -13,3 +13,37 @@ script:
 after_script:
   - coverage combine
   - coveralls
+
+jobs:
+  include:
+    - stage: Build
+      dist: trusty
+      python: 2.7
+      sudo: required
+      services:
+        - docker
+      script: pip install cibuildwheel==0.4.1 && mkdir -p wheelhouse/${TRAVIS_TAG} && cibuildwheel --output-dir wheelhouse/${TRAVIS_TAG}
+      env:
+        - CIBW_TEST_REQUIRES=pytest
+        - CIBW_TEST_COMMAND="py.test {project}/tests"
+      after_script:
+    - os: osx
+      language: c  # Travis doesn't support Python builds on OSX, so let's lie a bit
+      script: pip install cibuildwheel==0.4.1 && mkdir -p wheelhouse/${TRAVIS_TAG} && cibuildwheel --output-dir wheelhouse/${TRAVIS_TAG}
+      env:
+        - CIBW_TEST_REQUIRES=pytest
+        - CIBW_TEST_COMMAND="py.test {project}/tests"
+      after_script:
+
+deploy:
+  provider: s3
+  access_key_id: ""
+  secret_access_key:
+    secure: ""
+  bucket: wrapt-wheels
+  skip_cleanup: true
+  local_dir: wheelhouse
+  acl: public_read
+  on:
+    repo: GrahamDumpleton/wrapt
+    tags: true
