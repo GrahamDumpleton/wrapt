@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Version 1.10.12
+---------------
+
+**Bugs Fixed**
+
+* When using arithmetic operations through a proxy object, checks about
+  the types of arguments were not being performed correctly, which could
+  result in an exception being raised to indicate that a proxy object had
+  not been initialised when in fact the argument wasn't even an instance
+  of a proxy object.
+  
+  Because an incorrect cast in C level code was being performed and
+  an attribute in memory checked on the basis of it being a type different
+  to what it actually was, technically it may have resulted in a process
+  crash if the size of the object was smaller than the type being casted
+  to.
+
 Version 1.10.11
 ---------------
 

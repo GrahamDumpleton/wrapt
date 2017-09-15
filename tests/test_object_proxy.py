@@ -840,6 +840,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(1+two, 1+2)
         self.assertEqual(one+2, 1+2)
 
+    def test_add_uninitialized_args(self):
+        result = object()
+
+        one = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        two = wrapt.ObjectProxy(2)
+
+        try:
+            assert one + two == result
+        except ValueError:
+            pass
+
+        one = wrapt.ObjectProxy(1)
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert one + two == result
+        except ValueError:
+            pass
+
     def test_sub(self):
         one = wrapt.ObjectProxy(1)
         two = wrapt.ObjectProxy(2)
@@ -848,6 +867,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(1-two, 1-2)
         self.assertEqual(one-2, 1-2)
 
+    def test_sub_uninitialized_args(self):
+        result = object()
+
+        one = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        two = wrapt.ObjectProxy(2)
+
+        try:
+            assert one - two == result
+        except ValueError:
+            pass
+
+        one = wrapt.ObjectProxy(1)
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert one - two == result
+        except ValueError:
+            pass
+
     def test_mul(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
@@ -855,6 +893,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(two*three, 2*3)
         self.assertEqual(2*three, 2*3)
         self.assertEqual(two*3, 2*3)
+
+    def test_mul_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert two * three == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert two * three == result
+        except ValueError:
+            pass
 
     def test_div(self):
         # On Python 2 this will pick up div and on Python
@@ -867,6 +924,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(2/three, 2/3)
         self.assertEqual(two/3, 2/3)
 
+    def test_div_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert two / three == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert two / three == result
+        except ValueError:
+            pass
+
     def test_floordiv(self):
         two = wrapt.ObjectProxy(2)
         four = wrapt.ObjectProxy(4)
@@ -874,6 +950,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(four//two, 4//2)
         self.assertEqual(4//two, 4//2)
         self.assertEqual(four//2, 4//2)
+
+    def test_floordiv_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        four = wrapt.ObjectProxy(4)
+
+        try:
+            assert two // four == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        four = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert two // four == result
+        except ValueError:
+            pass
 
     def test_mod(self):
         two = wrapt.ObjectProxy(2)
@@ -883,6 +978,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(4 % two, 4 % 2)
         self.assertEqual(four % 2, 4 % 2)
 
+    def test_mod_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        four = wrapt.ObjectProxy(4)
+
+        try:
+            assert two % four == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        four = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert two % four == result
+        except ValueError:
+            pass
+
     def test_divmod(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
@@ -890,6 +1004,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(divmod(three, two), divmod(3, 2))
         self.assertEqual(divmod(3, two), divmod(3, 2))
         self.assertEqual(divmod(three, 2), divmod(3, 2))
+
+    def test_divmod_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert divmod(two, three) == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert divmod(two, three) == result
+        except ValueError:
+            pass
 
     def test_pow(self):
         two = wrapt.ObjectProxy(2)
@@ -911,6 +1044,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         self.assertEqual(pow(three, 2, 2), pow(3, 2, 2))
 
+    def test_pow_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert three**two == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert three**two == result
+        except ValueError:
+            pass
+
     def test_lshift(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
@@ -918,6 +1070,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(three << two, 3 << 2)
         self.assertEqual(3 << two, 3 << 2)
         self.assertEqual(three << 2, 3 << 2)
+
+    def test_lshift_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert three << two == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert three << two == result
+        except ValueError:
+            pass
 
     def test_rshift(self):
         two = wrapt.ObjectProxy(2)
@@ -927,6 +1098,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(3 >> two, 3 >> 2)
         self.assertEqual(three >> 2, 3 >> 2)
 
+    def test_rshift_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert three >> two == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert three >> two == result
+        except ValueError:
+            pass
+
     def test_and(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
@@ -934,6 +1124,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(three & two, 3 & 2)
         self.assertEqual(3 & two, 3 & 2)
         self.assertEqual(three & 2, 3 & 2)
+
+    def test_and_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert three & two == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert three & two == result
+        except ValueError:
+            pass
 
     def test_xor(self):
         two = wrapt.ObjectProxy(2)
@@ -943,6 +1152,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(3 ^ two, 3 ^ 2)
         self.assertEqual(three ^ 2, 3 ^ 2)
 
+    def test_xor_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert three ^ two == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert three ^ two == result
+        except ValueError:
+            pass
+
     def test_or(self):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
@@ -950,6 +1178,25 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(three | two, 3 | 2)
         self.assertEqual(3 | two, 3 | 2)
         self.assertEqual(three | 2, 3 | 2)
+
+    def test_or_uninitialized_args(self):
+        result = object()
+
+        two = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+        three = wrapt.ObjectProxy(3)
+
+        try:
+            assert three | two == result
+        except ValueError:
+            pass
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
+
+        try:
+            assert three | two == result
+        except ValueError:
+            pass
 
     def test_iadd(self):
         value = wrapt.ObjectProxy(1)
