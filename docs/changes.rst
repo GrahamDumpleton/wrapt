@@ -18,6 +18,9 @@ Version 1.10.12
   crash if the size of the object was smaller than the type being casted
   to.
 
+* The ``__complex__()`` special method wasn't implemented and using
+  ``complex()`` on a proxy object would give wrong results or fail.
+
 Version 1.10.11
 ---------------
 

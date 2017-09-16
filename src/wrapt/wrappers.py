@@ -369,6 +369,9 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __float__(self):
         return float(self.__wrapped__)
 
+    def __complex__(self):
+        return complex(self.__wrapped__)
+
     def __oct__(self):
         return oct(self.__wrapped__)
 
