@@ -944,6 +944,9 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
 
     object = PyNumber_InPlaceOr(self->wrapped, other);
 
+    if (!object)
+        return NULL;
+
     Py_DECREF(self->wrapped);
     self->wrapped = object;
 

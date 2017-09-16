@@ -1369,6 +1369,14 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
+    def test_ior_list_self(self):
+        value = wrapt.ObjectProxy([])
+
+        try:
+            value |= value
+        except TypeError:
+            pass
+
     def test_neg(self):
         value = wrapt.ObjectProxy(1)
 

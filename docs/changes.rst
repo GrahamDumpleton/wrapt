@@ -21,6 +21,11 @@ Version 1.10.12
 * The ``__complex__()`` special method wasn't implemented and using
   ``complex()`` on a proxy object would give wrong results or fail.
 
+* When using the C extension, if an exception was raised when using inplace
+  or, ie., ``|=``, the error condition wasn't being correctly propagated
+  back which would result in an exception showing up as wrong location
+  in subsequent code.
+
 Version 1.10.11
 ---------------
 
