@@ -1758,6 +1758,13 @@ class SpecialMethods(unittest.TestCase):
 
         self.assertEqual(list(reversed(instance)), list(reversed(proxy)))
 
+    def test_complex(self):
+        instance = 1.0+2j
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(complex(instance), complex(proxy))
+
     def test_decimal_complex(self):
         import decimal
 
