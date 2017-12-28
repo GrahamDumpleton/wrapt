@@ -189,18 +189,19 @@ class ImportHookFinder:
 
         try:
             if PY3:
-                # For Python 3 we need to use find_loader() from
-                # the importlib module. It doesn't actually
+                # For Python 3 we need to use find_spec().loader
+                # from the importlib.util module. It doesn't actually
                 # import the target module and only finds the
                 # loader. If a loader is found, we need to return
                 # our own loader which will then in turn call the
                 # real loader to import the module and invoke the
                 # post import hooks.
 
-                loader = importlib.find_loader(fullname, path)
+                # loader = importlib.find_loader(fullname, path)
+                spec = importlib.util.find_spec(fullname)
 
-                if loader:
-                    return _ImportHookChainedLoader(loader)
+                if spec:
+                    return _ImportHookChainedLoader(spec.loader)
 
             else:
                 # For Python 2 we don't have much choice but to
