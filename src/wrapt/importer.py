@@ -196,11 +196,13 @@ class ImportHookFinder:
                 # our own loader which will then in turn call the
                 # real loader to import the module and invoke the
                 # post import hooks.
-
-                spec = importlib.util.find_spec(fullname)
-
-                if spec:
-                    return _ImportHookChainedLoader(spec.loader)
+                try:
+                    import importlib.util
+                    loader = importlib.util.find_spec(fullname).loader
+                except (ImportError, AttributeError):
+                    loader = importlib.find_loader(fullname, path)
+                if loader:
+                    return _ImportHookChainedLoader(loader)
 
             else:
                 # For Python 2 we don't have much choice but to
