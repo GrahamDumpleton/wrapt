@@ -192,7 +192,7 @@ static long WraptObjectProxy_hash(WraptObjectProxyObject *self)
       return -1;
     }
 
-    return PyObject_Hash(self->wrapped);
+    return (long)PyObject_Hash(self->wrapped);
 }
 
 /* ------------------------------------------------------------------------- */
