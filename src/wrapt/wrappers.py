@@ -122,7 +122,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
             return bytes(self.__wrapped__)
 
     def __repr__(self):
-        return '<%s at 0x%x for %s at 0x%x>' % (
+        return '<{} at 0x{:x} for {} at 0x{:x}>'.format(
                 type(self).__name__, id(self),
                 type(self.__wrapped__).__name__,
                 id(self.__wrapped__))
