@@ -26,6 +26,10 @@ Version 1.10.12
   back which would result in an exception showing up as wrong location
   in subsequent code.
 
+* Type of ``long`` was used instead of ``Py_hash_t`` for Python 3.3+. This
+  caused compiler warnings on Windows, which depending on what locale was
+  set to, would cause pip to fail when installing the package.
+
 Version 1.10.11
 ---------------
 

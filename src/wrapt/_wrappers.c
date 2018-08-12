@@ -185,7 +185,11 @@ static PyObject *WraptObjectProxy_repr(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static long WraptObjectProxy_hash(WraptObjectProxyObject *self)
+#if PY_MAJOR_VERSION < 3 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 3)
+typedef long Py_hash_t;
+#endif
+
+static Py_hash_t WraptObjectProxy_hash(WraptObjectProxyObject *self)
 {
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
