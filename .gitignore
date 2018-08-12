@@ -30,6 +30,7 @@ pip-log.txt
 .cache
 .tox
 nosetests.xml
+.pytest_cache
 
 # Translations
 *.mo
