@@ -1,6 +1,7 @@
 language: python
 python:
   - "3.6"
+  - "pypy3.5"
 env:
   global:
     - COVERAGE_CMD="coverage run -m"
