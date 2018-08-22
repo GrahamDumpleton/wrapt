@@ -135,8 +135,8 @@ and unit tests, can be obtained from github.
 
 * https://github.com/GrahamDumpleton/wrapt
 
-.. |Travis| image:: https://img.shields.io/travis/GrahamDumpleton/wrapt/develop.svg?style=plastic
-   :target: https://travis-ci.org/GrahamDumpleton/wrapt?branch=develop
+.. |Travis| image:: https://travis-ci.org/GrahamDumpleton/wrapt.svg?branch=develop
+   :target: https://travis-ci.org/GrahamDumpleton/wrapt
 .. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true
    :target: https://ci.appveyor.com/project/GrahamDumpleton/wrapt/branch/developer
 .. |Coveralls| image:: https://img.shields.io/coveralls/GrahamDumpleton/wrapt/develop.svg?style=plastic
