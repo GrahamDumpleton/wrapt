@@ -24,6 +24,15 @@ PyTypeObject WraptCallableObjectProxy_Type;
 typedef struct {
     WraptObjectProxyObject object_proxy;
 
+    PyObject *args;
+    PyObject *kwargs;
+} WraptPartialCallableObjectProxyObject;
+
+PyTypeObject WraptPartialCallableObjectProxy_Type;
+
+typedef struct {
+    WraptObjectProxyObject object_proxy;
+
     PyObject *instance;
     PyObject *wrapper;
     PyObject *enabled;
@@ -1829,6 +1838,192 @@ PyTypeObject WraptCallableObjectProxy_Type = {
 
 /* ------------------------------------------------------------------------- */
 
+static int WraptPartialCallableObjectProxy_raw_init(
+        WraptPartialCallableObjectProxyObject *self,
+        PyObject *wrapped, PyObject *args, PyObject *kwargs)
+{
+    int result = 0;
+
+    result = WraptObjectProxy_raw_init((WraptObjectProxyObject *)self,
+            wrapped);
+
+    if (result == 0) {
+        Py_INCREF(args);
+        Py_XDECREF(self->args);
+        self->args = args;
+
+        Py_XINCREF(kwargs);
+        Py_XDECREF(self->kwargs);
+        self->kwargs = kwargs;
+    }
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptPartialCallableObjectProxy_init(
+        WraptPartialCallableObjectProxyObject *self, PyObject *args,
+        PyObject *kwds)
+{
+    PyObject *wrapped = NULL;
+    PyObject *fnargs = NULL;
+
+    int result = 0;
+
+    if (!PyObject_Length(args)) {
+        PyErr_SetString(PyExc_TypeError,
+		"__init__ of partial needs an argument");
+        return -1;
+    }
+
+    if (PyObject_Length(args) < 2) {
+        PyErr_SetString(PyExc_TypeError,
+		"partial type takes at least one argument");
+        return -1;
+    }
+
+    wrapped = PyTuple_GetItem(args, 0);
+
+    if (!PyCallable_Check(wrapped)) {
+        PyErr_SetString(PyExc_TypeError,
+		"the first argument must be callable");
+        return -1;
+    }
+
+    fnargs = PyTuple_GetSlice(args, 1, PyTuple_Size(args));
+
+    if (!fnargs)
+        return -1;
+
+    result = WraptPartialCallableObjectProxy_raw_init(self, wrapped,
+	    fnargs, kwds);
+
+    Py_DECREF(fnargs);
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptPartialCallableObjectProxy_call(
+        WraptPartialCallableObjectProxyObject *self, PyObject *args,
+        PyObject *kwds)
+{
+    PyObject *fnargs = NULL;
+    PyObject *fnkwargs = NULL;
+
+    PyObject *result = NULL;
+
+    long i;
+    long offset;
+
+    if (!self->object_proxy.wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      return NULL;
+    }
+
+    fnargs = PyTuple_New(PyTuple_Size(self->args)+PyTuple_Size(args));
+
+    for (i=0; i<PyTuple_Size(self->args); i++) {
+        PyObject *item;
+        item = PyTuple_GetItem(self->args, 0);
+        Py_INCREF(item);
+        PyTuple_SetItem(fnargs, i, item);
+    }
+
+    offset = PyTuple_Size(self->args);
+
+    for (i=0; i<PyTuple_Size(args); i++) {
+        PyObject *item;
+        item = PyTuple_GetItem(args, i);
+        Py_INCREF(item);
+        PyTuple_SetItem(fnargs, offset+i, item);
+    }
+
+    fnkwargs = PyDict_New();
+
+    if (self->kwargs && PyDict_Update(fnargs, self->kwargs) == -1) {
+        Py_DECREF(fnargs);
+        Py_DECREF(fnkwargs);
+        return NULL;
+    }
+
+    if (kwds && PyDict_Update(fnkwargs, kwds) == -1) {
+        Py_DECREF(fnargs);
+        Py_DECREF(fnkwargs);
+        return NULL;
+    }
+
+    result = PyObject_Call(self->object_proxy.wrapped,
+           fnargs, fnkwargs);
+
+    Py_DECREF(fnargs);
+    Py_DECREF(fnkwargs);
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */;
+
+static PyGetSetDef WraptPartialCallableObjectProxy_getset[] = {
+    { "__module__",         (getter)WraptObjectProxy_get_module,
+                            (setter)WraptObjectProxy_set_module, 0 },
+    { "__doc__",            (getter)WraptObjectProxy_get_doc,
+                            (setter)WraptObjectProxy_set_doc, 0 },
+    { NULL },
+};
+
+PyTypeObject WraptPartialCallableObjectProxy_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "PartialCallableObjectProxy",   /*tp_name*/
+    sizeof(WraptPartialCallableObjectProxyObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    0,                      /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    (ternaryfunc)WraptPartialCallableObjectProxy_call, /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+#if PY_MAJOR_VERSION < 3
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
+#else
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+#endif
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    0,                      /*tp_methods*/
+    0,                      /*tp_members*/
+    WraptPartialCallableObjectProxy_getset, /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    (initproc)WraptPartialCallableObjectProxy_init, /*tp_init*/
+    0,                      /*tp_alloc*/
+    0,                      /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptFunctionWrapperBase_new(PyTypeObject *type,
         PyObject *args, PyObject *kwds)
 {
@@ -2384,43 +2579,20 @@ static PyObject *WraptBoundFunctionWrapper_call(
              * so the wrapper doesn't see anything as being different.
              */
 
-            PyObject *module = NULL;
-            PyObject *dict = NULL;
-            PyObject *partial = NULL;
-
             if (PyTuple_Size(args) == 0) {
                 PyErr_SetString(PyExc_TypeError,
                         "missing 1 required positional argument");
                 return NULL;
             }
 
-            module = PyImport_ImportModule("functools");
-
-            if (!module)
-                return NULL;
-
-            dict = PyModule_GetDict(module);
-            partial = PyDict_GetItemString(dict, "partial");
-
-            if (!partial) {
-                Py_DECREF(module);
-                return NULL;
-            }
-
-            Py_INCREF(partial);
-            Py_DECREF(module);
-
             instance = PyTuple_GetItem(args, 0);
 
-            if (!instance) {
-                Py_DECREF(partial);
+            if (!instance)
                 return NULL;
-            }
 
-            wrapped = PyObject_CallFunctionObjArgs(partial,
+            wrapped = PyObject_CallFunctionObjArgs(
+                    (PyObject *)&WraptPartialCallableObjectProxy_Type,
                     self->object_proxy.wrapped, instance, NULL);
-
-            Py_DECREF(partial);
 
             if (!wrapped)
                 return NULL;
@@ -2731,11 +2903,14 @@ moduleinit(void)
     /* Ensure that inheritance relationships specified. */
 
     WraptCallableObjectProxy_Type.tp_base = &WraptObjectProxy_Type;
+    WraptPartialCallableObjectProxy_Type.tp_base = &WraptObjectProxy_Type;
     WraptFunctionWrapperBase_Type.tp_base = &WraptObjectProxy_Type;
     WraptBoundFunctionWrapper_Type.tp_base = &WraptFunctionWrapperBase_Type;
     WraptFunctionWrapper_Type.tp_base = &WraptFunctionWrapperBase_Type;
 
     if (PyType_Ready(&WraptCallableObjectProxy_Type) < 0)
+        return NULL;
+    if (PyType_Ready(&WraptPartialCallableObjectProxy_Type) < 0)
         return NULL;
     if (PyType_Ready(&WraptFunctionWrapperBase_Type) < 0)
         return NULL;
@@ -2750,6 +2925,8 @@ moduleinit(void)
     Py_INCREF(&WraptCallableObjectProxy_Type);
     PyModule_AddObject(module, "CallableObjectProxy",
             (PyObject *)&WraptCallableObjectProxy_Type);
+    PyModule_AddObject(module, "PartialCallableObjectProxy",
+            (PyObject *)&WraptPartialCallableObjectProxy_Type);
     Py_INCREF(&WraptFunctionWrapper_Type);
     PyModule_AddObject(module, "FunctionWrapper",
             (PyObject *)&WraptFunctionWrapper_Type);

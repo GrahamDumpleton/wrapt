@@ -30,6 +30,11 @@ Version 1.10.12
   caused compiler warnings on Windows, which depending on what locale was
   set to, would cause pip to fail when installing the package.
 
+* If calling ``Class.instancemethod`` and passing ``self`` explicitly, the
+  ability to access ``__name__`` and ``__module__`` on the final bound
+  method were not preserved. This was due to a ``partial`` being used for
+  this special case, and it doesn't preserve introspection.
+
 Version 1.10.11
 ---------------
 
