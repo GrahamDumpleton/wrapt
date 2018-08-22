@@ -474,10 +474,7 @@ def synchronized(wrapped):
             # creation and assignment of the lock attribute against
             # the context.
 
-            meta_lock = vars(synchronized).setdefault(
-                    '_synchronized_meta_lock', Lock())
-
-            with meta_lock:
+            with synchronized._synchronized_meta_lock:
                 # We need to check again for whether the lock we want
                 # exists in case two threads were trying to create it
                 # at the same time and were competing to create the
@@ -510,3 +507,5 @@ def synchronized(wrapped):
             self._self_lock.release()
 
     return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
+
+synchronized._synchronized_meta_lock = Lock()
