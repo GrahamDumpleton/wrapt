@@ -6,10 +6,15 @@ env:
   global:
     - COVERAGE_CMD="coverage run -m"
     - COVERAGE_DEP="coverage"
+    - TOX_ARGS=""
+matrix:
+  include:
+  - python: "pypy3.5"
+    env: TOX_ARGS="-e pypy-without-extensions"
 install:
   - pip install tox coveralls
 script:
-  - tox --skip-missing-interpreters
+  - tox --skip-missing-interpreters $TOX_ARGS
 after_script:
   - coverage combine
   - coveralls
