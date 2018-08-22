@@ -24,13 +24,8 @@ def function1(arg):
     return arg
 
 function1o = function1
-
-@decorators.passthru_decorator
-def function(arg):
-    '''documentation'''
-    return arg
-
-function1d = function1
+function1d = decorators.passthru_decorator(function1)
+assert(function1d is not function1o)
 
 class TestNamingFunction(unittest.TestCase):
 
