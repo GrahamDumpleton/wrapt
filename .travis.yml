@@ -14,6 +14,8 @@ matrix:
   - python: "3.6"
     env: TOX_ARGS="-e py36-install-extensions,py36-disable-extensions,py36-without-extensions"
   - python: "3.7"
+    dist: xenial
+    sudo: true
     env: TOX_ARGS="-e py37-install-extensions,py37-disable-extensions,py37-without-extensions"
   - python: "pypy3.5"
     env: TOX_ARGS="-e pypy-without-extensions"
