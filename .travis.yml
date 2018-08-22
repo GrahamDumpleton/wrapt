@@ -13,12 +13,14 @@ matrix:
     env: TOX_ARGS="-e py35-install-extensions,py35-disable-extensions,py35-without-extensions"
   - python: "3.6"
     env: TOX_ARGS="-e py36-install-extensions,py36-disable-extensions,py36-without-extensions"
+  - python: "3.7"
+    env: TOX_ARGS="-e py37-install-extensions,py37-disable-extensions,py37-without-extensions"
   - python: "pypy3.5"
     env: TOX_ARGS="-e pypy-without-extensions"
 install:
   - pip install tox coveralls
 script:
-  - tox --skip-missing-interpreters $TOX_ARGS
+  - tox $TOX_ARGS
 after_script:
   - coverage combine
   - coveralls
