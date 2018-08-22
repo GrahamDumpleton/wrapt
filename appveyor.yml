@@ -1,11 +1,25 @@
 environment:
-  COVERAGE_CMD: coverage run -m
-  COVERAGE_DEP: coverage
+  matrix:
+    - PYTHON: "C:\\Python27-x64"
+      TOX_ENV: "py27-install-extensions,py27-disable-extensions,py27-without-extensions"
+
+    - PYTHON: "C:\\Python34-x64"
+      TOX_ENV: "py34-install-extensions,py34-disable-extensions,py34-without-extensions"
+
+    - PYTHON: "C:\\Python35-x64"
+      TOX_ENV: "py35-install-extensions,py35-disable-extensions,py35-without-extensions"
+
+    - PYTHON: "C:\\Python36-x64"
+      TOX_ENV: "py36-install-extensions,py36-disable-extensions,py36-without-extensions"
+
+    - PYTHON: "C:\\Python37-x64"
+      TOX_ENV: "py37-install-extensions,py37-disable-extensions,py37-without-extensions"
 
 install:
-  - ps: C:\Python35-x64\python.exe -m pip install tox
+  - "%PYTHON%/Scripts/easy_install -U pip"
+  - "%PYTHON%/Scripts/pip install tox"
 
-build: off
+build: false
 
 test_script:
-  - ps: C:\Python35-x64\python.exe -m tox --skip-missing-interpreters
+  - "%PYTHON%/Scripts/tox -e %TOX_ENV%"
