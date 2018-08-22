@@ -35,6 +35,10 @@ Version 1.11.0
   method were not preserved. This was due to a ``partial`` being used for
   this special case, and it doesn't preserve introspection.
 
+**Features Changed**
+
+* Dropped support for Python 2.6 and 3.3.
+
 Version 1.10.11
 ---------------
 
