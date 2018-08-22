@@ -1,14 +1,24 @@
 language: python
 python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
   - "3.6"
   - "pypy3.5"
 env:
   global:
     - COVERAGE_CMD="coverage run -m"
     - COVERAGE_DEP="coverage"
-    - TOX_ARGS=""
 matrix:
   include:
+  - python: "2.7"
+    env: TOX_ARGS="-e py27-install-extensions,py27-disable-extensions,py27-without-extensions"
+  - python: "3.4"
+    env: TOX_ARGS="-e py34-install-extensions,py34-disable-extensions,py34-without-extensions"
+  - python: "3.5"
+    env: TOX_ARGS="-e py35-install-extensions,py35-disable-extensions,py35-without-extensions"
+  - python: "3.6"
+    env: TOX_ARGS="-e py36-install-extensions,py36-disable-extensions,py36-without-extensions"
   - python: "pypy3.5"
     env: TOX_ARGS="-e pypy-without-extensions"
 install:
