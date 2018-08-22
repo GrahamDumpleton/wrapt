@@ -1,7 +1,7 @@
 wrapt
 =====
 
-|Travis| |Coveralls| |PyPI|
+|Travis| |AppVeyor| |Coveralls| |PyPI|
 
 The aim of the **wrapt** module is to provide a transparent object proxy
 for Python, which can be used as the basis for the construction of function
@@ -137,6 +137,8 @@ and unit tests, can be obtained from github.
 
 .. |Travis| image:: https://img.shields.io/travis/GrahamDumpleton/wrapt/develop.svg?style=plastic
    :target: https://travis-ci.org/GrahamDumpleton/wrapt?branch=develop
+.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true
+   :target: https://ci.appveyor.com/project/GrahamDumpleton/wrapt/branch/developer
 .. |Coveralls| image:: https://img.shields.io/coveralls/GrahamDumpleton/wrapt/develop.svg?style=plastic
    :target: https://coveralls.io/github/GrahamDumpleton/wrapt?branch=develop
 .. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg?style=plastic
