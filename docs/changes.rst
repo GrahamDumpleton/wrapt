@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 1.10.12
+Version 1.11.0
 ---------------
 
 **Bugs Fixed**

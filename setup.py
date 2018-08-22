@@ -47,7 +47,7 @@ classifiers = [
 
 setup_kwargs = dict(
       name='wrapt',
-      version='1.10.12',
+      version='1.11.0',
       description='Module for decorators, wrappers and monkey patching.',
       long_description=open('README.rst').read(),
       author='Graham Dumpleton',
