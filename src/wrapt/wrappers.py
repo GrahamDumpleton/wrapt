@@ -702,6 +702,18 @@ class FunctionWrapper(_FunctionWrapperBase):
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
                 enabled, binding)
 
+
+# noinspection PyPep8Naming
+def ClassProxy(wrapped):
+    # noinspection PyShadowingNames
+    class ClassProxy(CallableObjectProxy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(wrapped=wrapped)
+            self.__wrapped__ = wrapped(*args, **kwargs)
+
+    return ClassProxy
+
+
 try:
     if not os.environ.get('WRAPT_DISABLE_EXTENSIONS'):
         from ._wrappers import (ObjectProxy, CallableObjectProxy,
