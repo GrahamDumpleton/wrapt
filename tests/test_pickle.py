@@ -8,7 +8,7 @@ import wrapt
 
 class CustomObjectProxy(wrapt.ObjectProxy):
 
-    def __reduce__(self):
+    def __reduce_ex__(self, proto):
         return (list, (self.__wrapped__,))
 
 class TestObjectPickle(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestObjectPickle(unittest.TestCase):
             data = pickle.dumps(proxy)
 
         self.assertTrue(str(context.exception) ==
-                'object proxy must define __reduce__() or __reduce_ex__()')
+                'object proxy must define __reduce_ex__()')
 
     def test_pickle_proxy(self):
         proxy1 = CustomObjectProxy([1])

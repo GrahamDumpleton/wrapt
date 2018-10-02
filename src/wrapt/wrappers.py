@@ -422,7 +422,11 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
     def __reduce__(self):
         raise NotImplementedError(
-                'object proxy must define __reduce__() or __reduce_ex__()')
+                'object proxy must define __reduce_ex__()')
+
+    def __reduce_ex__(self, proto):
+        raise NotImplementedError(
+                'object proxy must define __reduce_ex__()')
 
 class CallableObjectProxy(ObjectProxy):
 

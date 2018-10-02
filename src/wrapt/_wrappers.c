@@ -1228,7 +1228,18 @@ static PyObject *WraptObjectProxy_reduce(
         WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
 {
     PyErr_SetString(PyExc_NotImplementedError,
-                    "object proxy must define __reduce__() or __reduce_ex__()");
+                    "object proxy must define __reduce_ex__()");
+
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_reduce_ex(
+        WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
+{
+    PyErr_SetString(PyExc_NotImplementedError,
+                    "object proxy must define __reduce_ex__()");
 
     return NULL;
 }
@@ -1725,6 +1736,8 @@ static PyMethodDef WraptObjectProxy_methods[] = {
                     METH_VARARGS | METH_KEYWORDS, 0 },
     { "__reduce__", (PyCFunction)WraptObjectProxy_reduce,
                     METH_NOARGS, 0 },
+    { "__reduce_ex__", (PyCFunction)WraptObjectProxy_reduce_ex,
+                    METH_VARARGS | METH_KEYWORDS, 0 },
     { "__getattr__", (PyCFunction)WraptObjectProxy_getattr,
                     METH_VARARGS , 0 },
     { "__bytes__",  (PyCFunction)WraptObjectProxy_bytes, METH_NOARGS, 0 },
