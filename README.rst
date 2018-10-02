@@ -138,7 +138,7 @@ and unit tests, can be obtained from github.
 .. |Travis| image:: https://travis-ci.org/GrahamDumpleton/wrapt.svg?branch=develop
    :target: https://travis-ci.org/GrahamDumpleton/wrapt
 .. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true
-   :target: https://ci.appveyor.com/project/GrahamDumpleton/wrapt/branch/developer
+   :target: https://ci.appveyor.com/project/GrahamDumpleton/wrapt/branch/develop
 .. |Coveralls| image:: https://img.shields.io/coveralls/GrahamDumpleton/wrapt/develop.svg
    :target: https://coveralls.io/github/GrahamDumpleton/wrapt?branch=develop
 .. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg
