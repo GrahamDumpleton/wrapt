@@ -45,6 +45,12 @@ Version 1.11.0
   ``__copy__()`` or ``__deepcopy__()`` method. This is in place of the
   default ``TypeError`` exception with message indicating a pickle error.
 
+* If ``pickle.dump()`` or ``pickle.dumps()`` is used on an instance of the
+  ``ObjectProxy`` class, a ``NotImplementedError`` exception is raised, with
+  a message indicating that the object proxy must implement the
+  ``__reduce__()`` or ``__reduce_ex__()`` method. This is in place of the
+  default ``TypeError`` exception with message indicating a pickle error.
+
 Version 1.10.11
 ---------------
 

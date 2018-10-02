@@ -420,6 +420,10 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __deepcopy__(self, memo):
         raise NotImplementedError('object proxy must define __deepcopy__()')
 
+    def __reduce__(self):
+        raise NotImplementedError(
+                'object proxy must define __reduce__() or __reduce_ex__()')
+
 class CallableObjectProxy(ObjectProxy):
 
     def __call__(self, *args, **kwargs):
