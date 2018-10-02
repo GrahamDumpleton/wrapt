@@ -1202,6 +1202,28 @@ static PyObject *WraptObjectProxy_exit(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_copy(
+        WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
+{
+    PyErr_SetString(PyExc_NotImplementedError,
+                    "object proxy must define __copy__()");
+
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_deepcopy(
+        WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
+{
+    PyErr_SetString(PyExc_NotImplementedError,
+                    "object proxy must define __deepcopy__()");
+
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_bytes(
         WraptObjectProxyObject *self, PyObject *args)
 {
@@ -1685,6 +1707,10 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     { "__enter__",  (PyCFunction)WraptObjectProxy_enter,
                     METH_VARARGS | METH_KEYWORDS, 0 },
     { "__exit__",   (PyCFunction)WraptObjectProxy_exit,
+                    METH_VARARGS | METH_KEYWORDS, 0 },
+    { "__copy__",   (PyCFunction)WraptObjectProxy_copy,
+                    METH_NOARGS, 0 },
+    { "__deepcopy__", (PyCFunction)WraptObjectProxy_deepcopy,
                     METH_VARARGS | METH_KEYWORDS, 0 },
     { "__getattr__", (PyCFunction)WraptObjectProxy_getattr,
                     METH_VARARGS , 0 },

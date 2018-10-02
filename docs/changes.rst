@@ -39,6 +39,12 @@ Version 1.11.0
 
 * Dropped support for Python 2.6 and 3.3.
 
+* If ``copy.copy()`` or ``copy.deepcopy()`` is used on an instance of the
+  ``ObjectProxy`` class, a ``NotImplementedError`` exception is raised, with
+  a message indicating that the object proxy must implement the
+  ``__copy__()`` or ``__deepcopy__()`` method. This is in place of the
+  default ``TypeError`` exception with message indicating a pickle error.
+
 Version 1.10.11
 ---------------
 

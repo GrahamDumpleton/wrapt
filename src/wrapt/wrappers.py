@@ -414,6 +414,12 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __iter__(self):
         return iter(self.__wrapped__)
 
+    def __copy__(self):
+        raise NotImplementedError('object proxy must define __copy__()')
+
+    def __deepcopy__(self, memo):
+        raise NotImplementedError('object proxy must define __deepcopy__()')
+
 class CallableObjectProxy(ObjectProxy):
 
     def __call__(self, *args, **kwargs):
