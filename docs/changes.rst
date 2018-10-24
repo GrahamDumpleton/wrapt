@@ -35,6 +35,10 @@ Version 1.11.0
   method were not preserved. This was due to a ``partial`` being used for
   this special case, and it doesn't preserve introspection.
 
+* Fixed typo in the getter property of ``ObjectProxy`` for accessing
+  ``__annotations__``. Appeared that it was still working as would fall back
+  to using generic ``__getattr__()`` to access attribute on wrapped object.
+
 **Features Changed**
 
 * Dropped support for Python 2.6 and 3.3.
