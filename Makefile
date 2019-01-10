@@ -15,4 +15,4 @@ clean :
 	rm -rf build dist wrapt.egg-info
 
 test :
-	tox
+	tox --skip-missing-interpreters
