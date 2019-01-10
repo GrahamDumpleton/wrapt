@@ -1,4 +1,4 @@
-__version_info__ = ('1', '10', '11')
+__version_info__ = ('1', '11', '0')
 __version__ = '.'.join(__version_info__)
 
 from .wrappers import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
@@ -13,7 +13,4 @@ from .decorators import (adapter_factory, AdapterFactory, decorator,
 from .importer import (register_post_import_hook, when_imported,
         notify_module_loaded, discover_post_import_hooks)
 
-try:
-    from inspect import getcallargs
-except ImportError:
-    from .arguments import getcallargs
+from inspect import getcallargs

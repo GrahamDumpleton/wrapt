@@ -136,6 +136,8 @@ class TestCallingOuterClassMethod(unittest.TestCase):
             self.assertEqual(instance, None)
             self.assertEqual(args, (Class,)+_args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -168,6 +170,8 @@ class TestCallingOuterClassMethod(unittest.TestCase):
             self.assertEqual(instance, None)
             self.assertEqual(args, (Class,)+_args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator

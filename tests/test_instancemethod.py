@@ -235,6 +235,8 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
             self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -261,6 +263,8 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
             self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -288,6 +292,8 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
             self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -315,6 +321,8 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
             self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -345,6 +353,8 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
             self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -371,6 +381,8 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
             self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -398,6 +410,8 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
             self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -425,6 +439,8 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
             self.assertNotEqual(instance, None)
             self.assertEqual(args, _args)
             self.assertEqual(kwargs, _kwargs)
+            self.assertEqual(wrapped.__module__, _function.__module__)
+            self.assertEqual(wrapped.__name__, _function.__name__)
             return wrapped(*args, **kwargs)
 
         @_decorator

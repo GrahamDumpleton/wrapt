@@ -146,6 +146,7 @@ class TestUpdateAttributes(unittest.TestCase):
         override_annotations = {'override_annotations': ''}
         function.__annotations__ = override_annotations
 
+        self.assertEqual(function.__wrapped__.__annotations__, override_annotations)
         self.assertEqual(function.__annotations__, override_annotations)
 
     def test_update_annotations_modified_on_original(self):

@@ -1,6 +1,60 @@
 Release Notes
 =============
 
+Version 1.11.0
+---------------
+
+**Bugs Fixed**
+
+* When using arithmetic operations through a proxy object, checks about
+  the types of arguments were not being performed correctly, which could
+  result in an exception being raised to indicate that a proxy object had
+  not been initialised when in fact the argument wasn't even an instance
+  of a proxy object.
+  
+  Because an incorrect cast in C level code was being performed and
+  an attribute in memory checked on the basis of it being a type different
+  to what it actually was, technically it may have resulted in a process
+  crash if the size of the object was smaller than the type being casted
+  to.
+
+* The ``__complex__()`` special method wasn't implemented and using
+  ``complex()`` on a proxy object would give wrong results or fail.
+
+* When using the C extension, if an exception was raised when using inplace
+  or, ie., ``|=``, the error condition wasn't being correctly propagated
+  back which would result in an exception showing up as wrong location
+  in subsequent code.
+
+* Type of ``long`` was used instead of ``Py_hash_t`` for Python 3.3+. This
+  caused compiler warnings on Windows, which depending on what locale was
+  set to, would cause pip to fail when installing the package.
+
+* If calling ``Class.instancemethod`` and passing ``self`` explicitly, the
+  ability to access ``__name__`` and ``__module__`` on the final bound
+  method were not preserved. This was due to a ``partial`` being used for
+  this special case, and it doesn't preserve introspection.
+
+* Fixed typo in the getter property of ``ObjectProxy`` for accessing
+  ``__annotations__``. Appeared that it was still working as would fall back
+  to using generic ``__getattr__()`` to access attribute on wrapped object.
+
+**Features Changed**
+
+* Dropped support for Python 2.6 and 3.3.
+
+* If ``copy.copy()`` or ``copy.deepcopy()`` is used on an instance of the
+  ``ObjectProxy`` class, a ``NotImplementedError`` exception is raised, with
+  a message indicating that the object proxy must implement the
+  ``__copy__()`` or ``__deepcopy__()`` method. This is in place of the
+  default ``TypeError`` exception with message indicating a pickle error.
+
+* If ``pickle.dump()`` or ``pickle.dumps()`` is used on an instance of the
+  ``ObjectProxy`` class, a ``NotImplementedError`` exception is raised, with
+  a message indicating that the object proxy must implement the
+  ``__reduce_ex__()`` method. This is in place of the default ``TypeError``
+  exception with message indicating a pickle error.
+
 Version 1.10.11
 ---------------
 
