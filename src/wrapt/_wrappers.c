@@ -1979,7 +1979,7 @@ static PyObject *WraptPartialCallableObjectProxy_call(
 
     for (i=0; i<PyTuple_Size(self->args); i++) {
         PyObject *item;
-        item = PyTuple_GetItem(self->args, 0);
+        item = PyTuple_GetItem(self->args, i);
         Py_INCREF(item);
         PyTuple_SetItem(fnargs, i, item);
     }
@@ -1995,7 +1995,7 @@ static PyObject *WraptPartialCallableObjectProxy_call(
 
     fnkwargs = PyDict_New();
 
-    if (self->kwargs && PyDict_Update(fnargs, self->kwargs) == -1) {
+    if (self->kwargs && PyDict_Update(fnkwargs, self->kwargs) == -1) {
         Py_DECREF(fnargs);
         Py_DECREF(fnkwargs);
         return NULL;

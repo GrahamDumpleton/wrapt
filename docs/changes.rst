@@ -11,6 +11,16 @@ Version 1.11.1
   which correctly handles binding when applied to methods of classes,
   couldn't be used when no positional arguments were supplied.
 
+* When the C extension variant of ``PartialCallableObjectProxy`` was
+  used and multiple positional arguments were supplied, the first
+  argument would be replicated and used to all arguments, instead of
+  correct values, when the partial was called.
+
+* When the C extension variant of ``PartialCallableObjectProxy`` was
+  used and keyword arguments were supplied, it would fail as was
+  incorrectly using the positional arguments where the keyword arguments
+  should have been used.
+
 Version 1.11.0
 ---------------
 
