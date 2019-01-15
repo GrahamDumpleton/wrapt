@@ -1929,7 +1929,7 @@ static int WraptPartialCallableObjectProxy_init(
         return -1;
     }
 
-    if (PyObject_Length(args) < 2) {
+    if (PyObject_Length(args) < 1) {
         PyErr_SetString(PyExc_TypeError,
 		"partial type takes at least one argument");
         return -1;

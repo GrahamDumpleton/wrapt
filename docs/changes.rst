@@ -4,6 +4,13 @@ Release Notes
 Version 1.11.1
 ---------------
 
+**Bugs Fixed**
+
+* The C extension variant of the ``PartialCallableObjectProxy`` class
+  introduced in 1.11.0, which is a version of ``functools.partial``
+  which correctly handles binding when applied to methods of classes,
+  couldn't be used when no positional arguments were supplied.
+
 Version 1.11.0
 ---------------
 
