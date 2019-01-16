@@ -6,6 +6,11 @@ Version 1.11.1
 
 **Bugs Fixed**
 
+* Fixed memory leak in C extension variant of ``PartialCallableObjectProxy``
+  class introduced in 1.11.0, when it was being used to perform binding,
+  when a call of an instance method was made through the class type, and
+  the self object passed explicitly as first argument.
+
 * The C extension variant of the ``PartialCallableObjectProxy`` class
   introduced in 1.11.0, which is a version of ``functools.partial``
   which correctly handles binding when applied to methods of classes,
