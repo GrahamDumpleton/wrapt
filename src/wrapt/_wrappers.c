@@ -1890,6 +1890,25 @@ PyTypeObject WraptCallableObjectProxy_Type = {
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptPartialCallableObjectProxy_new(PyTypeObject *type,
+        PyObject *args, PyObject *kwds)
+{
+    WraptPartialCallableObjectProxyObject *self;
+
+    self = (WraptPartialCallableObjectProxyObject *)WraptObjectProxy_new(type,
+            args, kwds);
+
+    if (!self)
+        return NULL;
+
+    self->args = NULL;
+    self->kwargs = NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static int WraptPartialCallableObjectProxy_raw_init(
         WraptPartialCallableObjectProxyObject *self,
         PyObject *wrapped, PyObject *args, PyObject *kwargs)
@@ -1929,7 +1948,7 @@ static int WraptPartialCallableObjectProxy_init(
         return -1;
     }
 
-    if (PyObject_Length(args) < 2) {
+    if (PyObject_Length(args) < 1) {
         PyErr_SetString(PyExc_TypeError,
 		"partial type takes at least one argument");
         return -1;
@@ -1958,6 +1977,43 @@ static int WraptPartialCallableObjectProxy_init(
 
 /* ------------------------------------------------------------------------- */
 
+static int WraptPartialCallableObjectProxy_traverse(
+        WraptPartialCallableObjectProxyObject *self,
+        visitproc visit, void *arg)
+{
+    WraptObjectProxy_traverse((WraptObjectProxyObject *)self, visit, arg);
+
+    Py_VISIT(self->args);
+    Py_VISIT(self->kwargs);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptPartialCallableObjectProxy_clear(
+        WraptPartialCallableObjectProxyObject *self)
+{
+    WraptObjectProxy_clear((WraptObjectProxyObject *)self);
+
+    Py_CLEAR(self->args);
+    Py_CLEAR(self->kwargs);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void WraptPartialCallableObjectProxy_dealloc(
+        WraptPartialCallableObjectProxyObject *self)
+{
+    WraptPartialCallableObjectProxy_clear(self);
+
+    WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptPartialCallableObjectProxy_call(
         WraptPartialCallableObjectProxyObject *self, PyObject *args,
         PyObject *kwds)
@@ -1979,7 +2035,7 @@ static PyObject *WraptPartialCallableObjectProxy_call(
 
     for (i=0; i<PyTuple_Size(self->args); i++) {
         PyObject *item;
-        item = PyTuple_GetItem(self->args, 0);
+        item = PyTuple_GetItem(self->args, i);
         Py_INCREF(item);
         PyTuple_SetItem(fnargs, i, item);
     }
@@ -1995,7 +2051,7 @@ static PyObject *WraptPartialCallableObjectProxy_call(
 
     fnkwargs = PyDict_New();
 
-    if (self->kwargs && PyDict_Update(fnargs, self->kwargs) == -1) {
+    if (self->kwargs && PyDict_Update(fnkwargs, self->kwargs) == -1) {
         Py_DECREF(fnargs);
         Py_DECREF(fnkwargs);
         return NULL;
@@ -2032,7 +2088,7 @@ PyTypeObject WraptPartialCallableObjectProxy_Type = {
     sizeof(WraptPartialCallableObjectProxyObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    0,                      /*tp_dealloc*/
+    (destructor)WraptPartialCallableObjectProxy_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -2048,13 +2104,15 @@ PyTypeObject WraptPartialCallableObjectProxy_Type = {
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
 #if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+        Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
 #else
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+        Py_TPFLAGS_HAVE_GC, /*tp_flags*/
 #endif
     0,                      /*tp_doc*/
-    0,                      /*tp_traverse*/
-    0,                      /*tp_clear*/
+    (traverseproc)WraptPartialCallableObjectProxy_traverse, /*tp_traverse*/
+    (inquiry)WraptPartialCallableObjectProxy_clear, /*tp_clear*/
     0,                      /*tp_richcompare*/
     offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
@@ -2069,7 +2127,7 @@ PyTypeObject WraptPartialCallableObjectProxy_Type = {
     0,                      /*tp_dictoffset*/
     (initproc)WraptPartialCallableObjectProxy_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    0,                      /*tp_new*/
+    WraptPartialCallableObjectProxy_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
