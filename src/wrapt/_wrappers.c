@@ -160,7 +160,7 @@ static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static void WraptObjectProxyObject_base_dealloc(
+static void WraptObjectProxy_base_dealloc(
         WraptObjectProxyObject *self,
         int (*clear_func)(WraptObjectProxyObject *))
 {
@@ -177,7 +177,7 @@ static void WraptObjectProxyObject_base_dealloc(
 static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 {
     int (*clear_func)(WraptObjectProxyObject *) = WraptObjectProxy_clear;
-    WraptObjectProxyObject_base_dealloc(self, clear_func);
+    WraptObjectProxy_base_dealloc(self, clear_func);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2017,7 +2017,7 @@ static void WraptPartialCallableObjectProxy_dealloc(
 {
     int (*clear_func)(WraptObjectProxyObject *) =
     (int (*)(WraptObjectProxyObject *)) WraptPartialCallableObjectProxy_clear;
-    WraptObjectProxyObject_base_dealloc(
+    WraptObjectProxy_base_dealloc(
             (WraptObjectProxyObject *) self, clear_func);
 }
 
@@ -2274,7 +2274,7 @@ static void WraptFunctionWrapperBase_dealloc(WraptFunctionWrapperObject *self)
 {
     int (*clear_func)(WraptObjectProxyObject *) =
     (int (*)(WraptObjectProxyObject *)) WraptFunctionWrapperBase_clear;
-    WraptObjectProxyObject_base_dealloc(
+    WraptObjectProxy_base_dealloc(
             (WraptObjectProxyObject *) self, clear_func);
 }
 
