@@ -160,16 +160,24 @@ static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
+static void WraptObjectProxyObject_base_dealloc(
+        WraptObjectProxyObject *self,
+        int (*clear_func)(WraptObjectProxyObject *))
 {
     PyObject_GC_UnTrack(self);
 
     if (self->weakreflist != NULL)
         PyObject_ClearWeakRefs((PyObject *)self);
 
-    WraptObjectProxy_clear(self);
+    clear_func(self);
 
     Py_TYPE(self)->tp_free(self);
+}
+
+static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
+{
+    int (*clear_func)(WraptObjectProxyObject *) = WraptObjectProxy_clear;
+    WraptObjectProxyObject_base_dealloc(self, clear_func);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2007,9 +2015,10 @@ static int WraptPartialCallableObjectProxy_clear(
 static void WraptPartialCallableObjectProxy_dealloc(
         WraptPartialCallableObjectProxyObject *self)
 {
-    WraptPartialCallableObjectProxy_clear(self);
-
-    WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
+    int (*clear_func)(WraptObjectProxyObject *) =
+    (int (*)(WraptObjectProxyObject *)) WraptPartialCallableObjectProxy_clear;
+    WraptObjectProxyObject_base_dealloc(
+            (WraptObjectProxyObject *) self, clear_func);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2263,9 +2272,10 @@ static int WraptFunctionWrapperBase_clear(WraptFunctionWrapperObject *self)
 
 static void WraptFunctionWrapperBase_dealloc(WraptFunctionWrapperObject *self)
 {
-    WraptFunctionWrapperBase_clear(self);
-
-    WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
+    int (*clear_func)(WraptObjectProxyObject *) =
+    (int (*)(WraptObjectProxyObject *)) WraptFunctionWrapperBase_clear;
+    WraptObjectProxyObject_base_dealloc(
+            (WraptObjectProxyObject *) self, clear_func);
 }
 
 /* ------------------------------------------------------------------------- */
