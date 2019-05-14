@@ -2007,6 +2007,8 @@ static int WraptPartialCallableObjectProxy_clear(
 static void WraptPartialCallableObjectProxy_dealloc(
         WraptPartialCallableObjectProxyObject *self)
 {
+    PyObject_GC_UnTrack(self);
+
     WraptPartialCallableObjectProxy_clear(self);
 
     WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
@@ -2263,6 +2265,8 @@ static int WraptFunctionWrapperBase_clear(WraptFunctionWrapperObject *self)
 
 static void WraptFunctionWrapperBase_dealloc(WraptFunctionWrapperObject *self)
 {
+    PyObject_GC_UnTrack(self);
+
     WraptFunctionWrapperBase_clear(self);
 
     WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);

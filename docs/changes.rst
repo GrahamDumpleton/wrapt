@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 1.11.2
+---------------
+
+**Bugs Fixed**
+
+* Fix possible crash when garbage collection kicks when invoking a
+  destructor of wrapped object.
+
 Version 1.11.1
 ---------------
 
