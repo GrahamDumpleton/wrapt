@@ -393,9 +393,12 @@ def decorator(wrapper=None, enabled=None, adapter=None):
 
         # We first return our magic function wrapper here so we can
         # determine in what context the decorator factory was used. In
-        # other words, it is itself a universal decorator.
+        # other words, it is itself a universal decorator. The decorator
+        # function is used as the adapter so that linters see a signature
+        # corresponding to the decorator and not the wrapper it is being
+        # applied to.
 
-        return _build(wrapper, _wrapper)
+        return _build(wrapper, _wrapper, adapter=decorator)
 
     else:
         # The wrapper still has not been provided, so we are just
