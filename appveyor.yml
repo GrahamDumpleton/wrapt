@@ -22,5 +22,5 @@ install:
 build: false
 
 test_script:
-  - "%PYTHON%/Scripts/pip install -U pip"
+  - "%PYTHON%/Scripts/pip install -U pip setuptools wheel"
   - "%PYTHON%/Scripts/tox -e %TOX_ENV%"
