@@ -11,7 +11,7 @@ from distutils.errors import (CCompilerError, DistutilsExecError,
 
 if sys.platform == 'win32':
     build_ext_errors = (CCompilerError, DistutilsExecError,
-            DistutilsPlatformError, IOError, OSError)
+            DistutilsPlatformError, IOError, OSError, ValueError)
 else:
     build_ext_errors = (CCompilerError, DistutilsExecError,
             DistutilsPlatformError)
@@ -48,7 +48,7 @@ classifiers = [
 
 setup_kwargs = dict(
       name='wrapt',
-      version='1.11.1',
+      version='1.11.2',
       description='Module for decorators, wrappers and monkey patching.',
       long_description=open('README.rst').read(),
       author='Graham Dumpleton',
