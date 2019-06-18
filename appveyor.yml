@@ -3,6 +3,9 @@ environment:
     - PYTHON: "C:\\Python27-x64"
       TOX_ENV: "py27-install-extensions,py27-disable-extensions,py27-without-extensions"
 
+    - PYTHON: "C:\\Python34-x64"
+      TOX_ENV: "py34-without-extensions"
+
     - PYTHON: "C:\\Python35-x64"
       TOX_ENV: "py35-install-extensions,py35-disable-extensions,py35-without-extensions"
 
