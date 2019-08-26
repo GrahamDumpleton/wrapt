@@ -14,7 +14,7 @@ environment:
 
 install:
   - "%PYTHON%/Scripts/easy_install -U pip"
-  - "%PYTHON%/Scripts/pip install tox"
+  - "%PYTHON%/Scripts/pip install -U tox"
 
 build: false
 
