@@ -6,16 +6,8 @@ as well as some commonly used decorators.
 import sys
 
 PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
 
-if PY3:
-    string_types = str,
-
-    import builtins
-    exec_ = getattr(builtins, "exec")
-    del builtins
-
-else:
+if PY2:
     string_types = basestring,
 
     def exec_(_code_, _globs_=None, _locs_=None):
@@ -29,6 +21,14 @@ else:
         elif _locs_ is None:
             _locs_ = _globs_
         exec("""exec _code_ in _globs_, _locs_""")
+
+else:
+    string_types = str,
+
+    import builtins
+
+    exec_ = getattr(builtins, "exec")
+    del builtins
 
 from functools import partial
 from inspect import ismethod, isclass, formatargspec
