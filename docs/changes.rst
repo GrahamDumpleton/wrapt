@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 1.12.0
+--------------
+
+**Features Changed**
+
+* Provided that you only want to support Python 3.7, when deriving from
+  a base class which has a decorator applied to it, you no longer need
+  to access the true type of the base class using ``__wrapped__`` in
+  the inherited class list of the derived class.
+
 Version 1.11.2
 --------------
 

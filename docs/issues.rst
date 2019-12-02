@@ -75,3 +75,7 @@ decorator, the decorator would need to be applied to the derived class also.
 In this case of trying to decorate a base class in a class hierarchy, it
 may turn out to be more appropriate to use a meta class instead of trying
 to decorate the base class.
+
+Note that as of Python 3.7 and wrapt 1.12.0, accessing the true type of the
+base class using ``__wrapped__`` is not required. Such code though will not
+work for versions of Python older than Python 3.7.
