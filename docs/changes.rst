@@ -2,7 +2,7 @@ Release Notes
 =============
 
 Version 1.11.2
----------------
+--------------
 
 **Bugs Fixed**
 
@@ -10,7 +10,7 @@ Version 1.11.2
   destructor of wrapped object.
 
 Version 1.11.1
----------------
+--------------
 
 **Bugs Fixed**
 
@@ -35,7 +35,7 @@ Version 1.11.1
   should have been used.
 
 Version 1.11.0
----------------
+--------------
 
 **Bugs Fixed**
 
