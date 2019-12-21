@@ -3,6 +3,7 @@ from __future__ import print_function
 import os
 import sys
 
+import setuptools
 from distutils.core import setup
 from distutils.core import Extension
 from distutils.command.build_ext import build_ext

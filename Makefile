@@ -6,7 +6,7 @@ install : all
 	pip install -U .
 
 package :
-	python setup.py sdist
+	python3.6 setup.py sdist bdist_wheel
 
 release : clean package
 	twine upload dist/*
