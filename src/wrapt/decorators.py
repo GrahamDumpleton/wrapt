@@ -496,7 +496,7 @@ def synchronized(wrapped):
         # desired context is held. If instance is None then the
         # wrapped function is used as the context.
 
-        with _synchronized_lock(instance or wrapped):
+        with _synchronized_lock(instance if instance is not None else wrapped):
             return wrapped(*args, **kwargs)
 
     class _FinalDecorator(FunctionWrapper):
