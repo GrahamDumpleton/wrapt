@@ -11,6 +11,13 @@ Version 1.12.0
   to access the true type of the base class using ``__wrapped__`` in
   the inherited class list of the derived class.
 
+**Bugs Fixed**
+
+* When using the ``synchronized`` decorator on instance methods of a
+  class, if the class declared special methods to override the result for
+  when the class instance was tested as a boolean so that it returned
+  ``False`` all the time, the synchronized method would fail when called.
+
 Version 1.11.2
 --------------
 

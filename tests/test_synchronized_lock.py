@@ -55,6 +55,18 @@ class C4(object):
 
 c4 = C4()
 
+class C5(object):
+
+    def __bool__(self):
+        return False
+    __nonzero__=__bool__
+
+    @wrapt.synchronized
+    def function1(self):
+        print('function1')
+
+c5 = C5()
+
 class TestSynchronized(unittest.TestCase):
 
     def test_synchronized_function(self):
@@ -260,6 +272,17 @@ class TestSynchronized(unittest.TestCase):
         _lock3 = getattr(C3, '_synchronized_lock', None)
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
+
+    def test_synchronized_false_instance(self):
+        c5.function1()
+
+        self.assertEqual(bool(c5), False)
+
+        _lock1 = getattr(C5, '_synchronized_lock', None)
+        self.assertEqual(_lock1, None)
+
+        _lock2 = getattr(c5, '_synchronized_lock', None)
+        self.assertNotEqual(_lock2, None)
 
 if __name__ == '__main__':
     unittest.main()
