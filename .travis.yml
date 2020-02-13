@@ -17,7 +17,7 @@ matrix:
     dist: xenial
     sudo: true
     env: TOX_ARGS="-e py37-install-extensions,py37-disable-extensions,py37-without-extensions"
-  - python: "pypy3.5"
+  - python: "pypy3.6"
     env: TOX_ARGS="-e pypy-without-extensions"
 install:
   - pip install tox coveralls
