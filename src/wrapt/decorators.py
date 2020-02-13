@@ -99,11 +99,6 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
         if 'signature' not in globals():
             return self._self_adapter.__signature__
         else:
-            # Can't allow this to fail on Python 3 else it falls
-            # through to using __wrapped__, but that will be the
-            # wrong function we want to derive the signature
-            # from. Thus generate the signature ourselves.
-
             return signature(self._self_adapter)
 
     if PY2:
@@ -116,6 +111,13 @@ class _BoundAdapterWrapper(BoundFunctionWrapper):
     def __func__(self):
         return _AdapterFunctionSurrogate(self.__wrapped__.__func__,
                 self._self_parent._self_adapter)
+
+    @property
+    def __signature__(self):
+        if 'signature' not in globals():
+            return self.__wrapped__.__signature__
+        else:
+            return signature(self._self_parent._self_adapter)
 
     if PY2:
         im_func = __func__

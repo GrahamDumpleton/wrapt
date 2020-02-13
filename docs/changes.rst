@@ -18,6 +18,11 @@ Version 1.12.0
   when the class instance was tested as a boolean so that it returned
   ``False`` all the time, the synchronized method would fail when called.
 
+* When using an adapter function to change the signature of the decorated
+  function, ``inspect.signature()`` was returning the wrong signature
+  when an instance method was inspected by accessing the method via the
+  class type.
+
 Version 1.11.2
 --------------
 

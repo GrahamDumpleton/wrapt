@@ -104,7 +104,7 @@ class TestArgumentSpecification(unittest.TestCase):
 
 class TestDynamicAdapter(unittest.TestCase):
 
-    def test_dynamic_adapter(self):
+    def test_dynamic_adapter_function(self):
         def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
 
         argspec = inspect.getargspec(_adapter)
@@ -130,6 +130,78 @@ class TestDynamicAdapter(unittest.TestCase):
             pass
 
         self.assertEqual(inspect.getargspec(_function_2), argspec)
+
+    def test_dynamic_adapter_instancemethod(self):
+        def _adapter(self, arg1, arg2, arg3=None, *args, **kwargs): pass
+
+        argspec = inspect.getargspec(_adapter)
+
+        @wrapt.decorator(adapter=argspec)
+        def _wrapper_1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class1(object):
+            @_wrapper_1
+            def function(self):
+                pass
+
+        instance1 = Class1()
+
+        self.assertEqual(inspect.getargspec(Class1.function), argspec)
+        self.assertEqual(inspect.getargspec(instance1.function), argspec)
+
+        args = inspect.formatargspec(*argspec)
+
+        @wrapt.decorator(adapter=args)
+        def _wrapper_2(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class2(object):
+            @_wrapper_2
+            def function(self):
+                pass
+
+        instance2 = Class2()
+
+        self.assertEqual(inspect.getargspec(Class2.function), argspec)
+        self.assertEqual(inspect.getargspec(instance2.function), argspec)
+
+    def test_dynamic_adapter_classmethod(self):
+        def _adapter(cls, arg1, arg2, arg3=None, *args, **kwargs): pass
+
+        argspec = inspect.getargspec(_adapter)
+
+        @wrapt.decorator(adapter=argspec)
+        def _wrapper_1(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class1(object):
+            @_wrapper_1
+            @classmethod
+            def function(cls):
+                pass
+
+        instance1 = Class1()
+
+        self.assertEqual(inspect.getargspec(Class1.function), argspec)
+        self.assertEqual(inspect.getargspec(instance1.function), argspec)
+
+        args = inspect.formatargspec(*argspec)
+
+        @wrapt.decorator(adapter=args)
+        def _wrapper_2(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class2(object):
+            @_wrapper_2
+            @classmethod
+            def function(self):
+                pass
+
+        instance2 = Class2()
+
+        self.assertEqual(inspect.getargspec(Class2.function), argspec)
+        self.assertEqual(inspect.getargspec(instance2.function), argspec)
 
     def test_adapter_factory(self):
         def factory(wrapped):
