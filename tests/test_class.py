@@ -26,8 +26,42 @@ class1o = class1
 
 class1d = decorators.passthru_decorator(class1)
 
-class Testintrospection(unittest.TestCase):
+class TestIntrospection(unittest.TestCase):
 
     def test_getmembers(self):
         class1o_members = inspect.getmembers(class1o)
         class1d_members = inspect.getmembers(class1d)
+
+class TestInheritance(unittest.TestCase):
+
+    def test_single_inheritance(self):
+        @wrapt.decorator
+        def passthru(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @passthru
+        class BaseClass(object):
+            def __init__(self):
+                self.value = 1
+
+        class DerivedClass(BaseClass.__wrapped__):
+            def __init__(self):
+                super(DerivedClass, self).__init__()
+                self.value = 2
+
+        base = BaseClass()
+
+        self.assertEqual(type(base), BaseClass.__wrapped__)
+        self.assertTrue(isinstance(base, BaseClass.__wrapped__))
+        self.assertEqual(base.value, 1)
+
+        self.assertEqual(type(base).__mro__, (BaseClass.__wrapped__, object))
+
+        derived = DerivedClass()
+
+        self.assertEqual(type(derived), DerivedClass)
+        self.assertTrue(isinstance(derived, BaseClass.__wrapped__))
+        self.assertTrue(isinstance(derived, DerivedClass))
+        self.assertEqual(derived.value, 2)
+
+        self.assertEqual(type(derived).__mro__, (DerivedClass, BaseClass.__wrapped__, object))

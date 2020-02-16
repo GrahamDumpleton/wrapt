@@ -42,13 +42,14 @@ classifiers = [
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: Implementation :: CPython',
     'Programming Language :: Python :: Implementation :: PyPy',
 ]
 
 setup_kwargs = dict(
       name='wrapt',
-      version='1.11.2',
+      version='1.12.0',
       description='Module for decorators, wrappers and monkey patching.',
       long_description=open('README.rst').read(),
       author='Graham Dumpleton',

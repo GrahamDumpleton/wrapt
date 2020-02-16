@@ -1,8 +1,30 @@
 Release Notes
 =============
 
+Version 1.12.0
+--------------
+
+**Features Changed**
+
+* Provided that you only want to support Python 3.7, when deriving from
+  a base class which has a decorator applied to it, you no longer need
+  to access the true type of the base class using ``__wrapped__`` in
+  the inherited class list of the derived class.
+
+**Bugs Fixed**
+
+* When using the ``synchronized`` decorator on instance methods of a
+  class, if the class declared special methods to override the result for
+  when the class instance was tested as a boolean so that it returned
+  ``False`` all the time, the synchronized method would fail when called.
+
+* When using an adapter function to change the signature of the decorated
+  function, ``inspect.signature()`` was returning the wrong signature
+  when an instance method was inspected by accessing the method via the
+  class type.
+
 Version 1.11.2
----------------
+--------------
 
 **Bugs Fixed**
 
@@ -10,7 +32,7 @@ Version 1.11.2
   destructor of wrapped object.
 
 Version 1.11.1
----------------
+--------------
 
 **Bugs Fixed**
 
@@ -35,7 +57,7 @@ Version 1.11.1
   should have been used.
 
 Version 1.11.0
----------------
+--------------
 
 **Bugs Fixed**
 

@@ -134,6 +134,10 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         def __round__(self):
             return round(self.__wrapped__)
 
+    if sys.hexversion >= 0x03070000:
+        def __mro_entries__(self, bases):
+            return (self.__wrapped__,)
+
     def __lt__(self, other):
         return self.__wrapped__ < other
 

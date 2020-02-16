@@ -1328,6 +1328,19 @@ static PyObject *WraptObjectProxy_complex(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_mro_entries(
+        WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      return NULL;
+    }
+
+    return Py_BuildValue("(O)", self->wrapped);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_name(
         WraptObjectProxyObject *self)
 {
@@ -1746,6 +1759,10 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     { "__round__",  (PyCFunction)WraptObjectProxy_round, METH_NOARGS, 0 },
 #endif
     { "__complex__",  (PyCFunction)WraptObjectProxy_complex, METH_NOARGS, 0 },
+#if PY_MAJOR_VERSION > 3 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 7)
+    { "__mro_entries__", (PyCFunction)WraptObjectProxy_mro_entries,
+                    METH_VARARGS | METH_KEYWORDS, 0 },
+#endif
     { NULL, NULL },
 };
 
