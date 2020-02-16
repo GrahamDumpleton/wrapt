@@ -7,13 +7,12 @@ import sys
 import threading
 
 PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
 
-if PY3:
+if PY2:
+    string_types = basestring,
+else:
     import importlib
     string_types = str,
-else:
-    string_types = basestring,
 
 from .decorators import synchronized
 
@@ -188,7 +187,20 @@ class ImportHookFinder:
         # Now call back into the import system again.
 
         try:
-            if PY3:
+            if PY2:
+                # For Python 2 we don't have much choice but to
+                # call back in to __import__(). This will
+                # actually cause the module to be imported. If no
+                # module could be found then ImportError will be
+                # raised. Otherwise we return a loader which
+                # returns the already loaded module and invokes
+                # the post import hooks.
+
+                __import__(fullname)
+
+                return _ImportHookLoader()
+
+            else:
                 # For Python 3 we need to use find_spec().loader
                 # from the importlib.util module. It doesn't actually
                 # import the target module and only finds the
@@ -204,18 +216,6 @@ class ImportHookFinder:
                 if loader:
                     return _ImportHookChainedLoader(loader)
 
-            else:
-                # For Python 2 we don't have much choice but to
-                # call back in to __import__(). This will
-                # actually cause the module to be imported. If no
-                # module could be found then ImportError will be
-                # raised. Otherwise we return a loader which
-                # returns the already loaded module and invokes
-                # the post import hooks.
-
-                __import__(fullname)
-
-                return _ImportHookLoader()
 
         finally:
             del self.in_progress[fullname]

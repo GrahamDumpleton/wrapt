@@ -6,12 +6,11 @@ import weakref
 import inspect
 
 PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
 
-if PY3:
-    string_types = str,
-else:
+if PY2:
     string_types = basestring,
+else:
+    string_types = str,
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
@@ -117,7 +116,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __str__(self):
         return str(self.__wrapped__)
 
-    if PY3:
+    if not PY2:
         def __bytes__(self):
             return bytes(self.__wrapped__)
 
@@ -130,7 +129,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __reversed__(self):
         return reversed(self.__wrapped__)
 
-    if PY3:
+    if not PY2:
         def __round__(self):
             return round(self.__wrapped__)
 
