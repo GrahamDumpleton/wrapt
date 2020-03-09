@@ -230,5 +230,55 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
+    def test_class_externally_applied_wrapper(self):
+        # Test calling staticmethod via class instance when
+        # the decorator has been applied from external to
+        # the class using wrapping function.
+
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        class Class(object):
+            @staticmethod
+            def _function(*args, **kwargs):
+                return (args, kwargs)
+
+        wrapt.wrap_function_wrapper(Class, "_function", _decorator)
+
+        result = Class._function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instance_externally_applied_wrapper(self):
+        # Test calling staticmethod via class instance when
+        # the decorator has been applied from external to
+        # the class using wrapping function.
+
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        def _decorator(wrapped, instance, args, kwargs):
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        class Class(object):
+            @staticmethod
+            def _function(*args, **kwargs):
+                return (args, kwargs)
+
+        wrapt.wrap_function_wrapper(Class, "_function", _decorator)
+
+        result = Class()._function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
 if __name__ == '__main__':
     unittest.main()

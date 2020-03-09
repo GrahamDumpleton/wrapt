@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 1.12.1
+--------------
+
+**Bugs Fixed**
+
+* Applying a function wrapper to a static method of a class using the
+  ``wrap_function_wrapper()`` function, or wrapper for the same, wasn't
+  being done correctly when the static method was the immediate child of
+  the target object. It was working when the name path had multiple name
+  components. A failure would subsequently occur when the static method
+  was called via an instance of the class, rather than the class.
+
 Version 1.12.0
 --------------
 
