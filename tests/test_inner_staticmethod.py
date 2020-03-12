@@ -231,7 +231,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
 
     def test_class_externally_applied_wrapper(self):
-        # Test calling staticmethod via class instance when
+        # Test calling staticmethod via class when
         # the decorator has been applied from external to
         # the class using wrapping function.
 
