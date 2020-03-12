@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+Version 1.12.2
+--------------
+
+**Bus Fixed**
+
+* When a reference to a class method was taken out of a class, and then
+  wrapped in a function wrapper, and called, the class type was not being
+  passed as the instance argument, but as the first argument in args,
+  with the instance being ``None``. The class type should have been passed
+  as the instance argument.
+
 Version 1.12.1
 --------------
 
