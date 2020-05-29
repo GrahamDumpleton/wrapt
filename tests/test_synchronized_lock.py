@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import sys
 import unittest
 
 import wrapt
@@ -157,34 +158,33 @@ class TestSynchronized(unittest.TestCase):
         self.assertEqual(_lock3, _lock2)
 
     def test_synchronized_outer_classmethod(self):
-        # XXX If all was good, this would be detected as a class
+        # Bug in Python < 3.9:
+        # If all was good, this would be detected as a class
         # method call, but the classmethod decorator doesn't bind
         # the wrapped function to the class before calling and
         # just calls it direct, explicitly passing the class as
-        # first argument. This screws things up. Would be nice if
-        # Python were fixed, but that isn't likely to happen.
+        # first argument. This screws things up.
 
-        #_lock0 = getattr(C4, '_synchronized_lock', None)
-        _lock0 = getattr(C4.function2, '_synchronized_lock', None)
+        lock_target = (C4 if sys.hexversion >= 0x03090000
+                       else C4.function2)
+
+        _lock0 = getattr(lock_target, '_synchronized_lock', None)
         self.assertEqual(_lock0, None)
 
         c4.function2()
 
-        #_lock1 = getattr(C4, '_synchronized_lock', None)
-        _lock1 = getattr(C4.function2, '_synchronized_lock', None)
+        _lock1 = getattr(lock_target, '_synchronized_lock', None)
         self.assertNotEqual(_lock1, None)
 
         C4.function2()
 
-        #_lock2 = getattr(C4, '_synchronized_lock', None)
-        _lock2 = getattr(C4.function2, '_synchronized_lock', None)
+        _lock2 = getattr(lock_target, '_synchronized_lock', None)
         self.assertNotEqual(_lock2, None)
         self.assertEqual(_lock2, _lock1)
 
         C4.function2()
 
-        #_lock3 = getattr(C4, '_synchronized_lock', None)
-        _lock3 = getattr(C4.function2, '_synchronized_lock', None)
+        _lock3 = getattr(lock_target, '_synchronized_lock', None)
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 
