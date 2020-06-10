@@ -15,12 +15,12 @@ done at a later time.
 
 At this point I want to start looking at ways this decorator pattern can be
 used to implement better decorators. For this post I want to look at the
-``@synchronized`` decorator.
+`@synchronized` decorator.
 
-The concept of the ``@synchronized`` decorator originates from Java and the
+The concept of the `@synchronized` decorator originates from Java and the
 idea of being able to write such a decorator in Python was a bit of a
 poster child when decorators were first added to Python. Despite this,
-there is no standard ``@synchronized`` decorator in the Python standard
+there is no standard `@synchronized` decorator in the Python standard
 library. If this was such a good example of why decorators are so useful,
 why is this the case?
 
@@ -33,15 +33,15 @@ These are synchronized methods and synchronized statements.
 In Java, to make a method synchronized, you simply add the synchronized
 keyword to its declaration:
 
-```
+```java
 public class SynchronizedCounter {
-    private int c = 0; 
+    private int c = 0;
     public synchronized void increment() {
         c++;
-    } 
+    }
     public synchronized void decrement() {
         c--;
-    } 
+    }
     public synchronized int value() {
         return c;
     }
@@ -65,7 +65,7 @@ The second way to create synchronized code in Java is with synchronized
 statements. Unlike synchronized methods, synchronized statements must
 specify the object that provides the intrinsic lock:
 
-```
+```java
 public void addName(String name) {
     synchronized(this) {
         lastName = name;
@@ -81,17 +81,17 @@ synchronize on. If more fined grained locking is required within a class
 one can simply create or use an existing arbitrary object to synchronize
 on.
 
-```
+```java
 public class MsLunch {
     private long c1 = 0;
     private long c2 = 0;
     private Object lock1 = new Object();
-    private Object lock2 = new Object(); 
+    private Object lock2 = new Object();
     public void inc1() {
         synchronized(lock1) {
             c1++;
         }
-    } 
+    }
     public void inc2() {
         synchronized(lock2) {
             c2++;
@@ -109,15 +109,15 @@ Synchronizing off a thread mutex
 
 In Python it isn't possible to synchronize off an arbitrary object. Instead
 it is necessary to create a specific lock object which internally holds a
-thread mutex. Such a lock object provides an ``acquire()`` and
-``release()`` method for manipulating the lock.
+thread mutex. Such a lock object provides an `acquire()` and
+`release()` method for manipulating the lock.
 
 Since context managers were introduced to Python however, locks also
-support being used in conjunction with the ``with`` statement. Using this
+support being used in conjunction with the `with` statement. Using this
 specific feature, the typical recipe given for implementing a
-``@synchronized`` decorator for Python is:
+`@synchronized` decorator for Python is:
 
-```
+```python
 def synchronized(lock=None):
     def _decorator(wrapped):
         @functools.wraps(wrapped)
@@ -125,9 +125,9 @@ def synchronized(lock=None):
             with lock:
                 return wrapped(*args, **kwargs)
         return _wrapper
-    return _decorator 
+    return _decorator
 
-lock = threading.RLock() 
+lock = threading.RLock()
 
 @synchronized(lock)
 def function():
@@ -141,14 +141,14 @@ companion thread lock to go with it.
 The alternative to needing to pass in the lock object each time, is to
 create one automatically for each use of the decorator.
 
-```
+```python
 def synchronized(wrapped):
-    lock = threading.RLock() 
+    lock = threading.RLock()
     @functools.wraps(wrapped)
     def _wrapper(*args, **kwargs):
         with lock:
             return wrapped(*args, **kwargs)
-    return _wrapper 
+    return _wrapper
 
 @synchronized
 def function():
@@ -158,23 +158,23 @@ def function():
 We can even use the pattern described previously for allowing optional
 decorator arguments to permit either approach.
 
-```
+```python
 def synchronized(wrapped=None, lock=None):
     if wrapped is None:
-        return functools.partial(synchronized, lock=lock) 
+        return functools.partial(synchronized, lock=lock)
     if lock is None:
-        lock = threading.RLock() 
+        lock = threading.RLock()
     @functools.wraps(wrapped)
     def _wrapper(*args, **kwargs):
         with lock:
             return wrapped(*args, **kwargs)
-    return _wrapper 
+    return _wrapper
 
 @synchronized
 def function1():
-    pass 
+    pass
 
-lock = threading.Lock() 
+lock = threading.Lock()
 
 @synchronized(lock=lock)
 def function2():
@@ -185,13 +185,13 @@ Whatever the approach, the decorator being based on a function closure
 suffers all the problems we have already outlined. The first step we can
 therefore take is to update it to use our new decorator factory instead.
 
-```
+```python
 def synchronized(wrapped=None, lock=None):
     if wrapped is None:
-        return functools.partial(synchronized, lock=lock) 
+        return functools.partial(synchronized, lock=lock)
 
     if lock is None:
-        lock = threading.RLock() 
+        lock = threading.RLock()
 
     @decorator
     def _wrapper(wrapped, instance, args, kwargs):
@@ -245,20 +245,22 @@ on the class.
 Lets first consider the case of a normal function. In that case what we can
 do is store the required thread lock on the wrapped function object itself.
 
-```
+```python
 @decorator
 def synchronized(wrapped, instance, args, kwargs):
-    lock = vars(wrapped).get('_synchronized_lock', None) 
+    lock = vars(wrapped).get('_synchronized_lock', None)
     if lock is None:
-        lock = vars(wrapped).setdefault('_synchronized_lock', threading.RLock()) 
+        lock = vars(wrapped).setdefault('_synchronized_lock', threading.RLock())
     with lock:
-        return wrapped(*args, **kwargs) 
+        return wrapped(*args, **kwargs)
 
 @synchronized
 def function():
-    pass 
+    pass
+```
 
->>> function() 
+```pycon
+>>> function()
 >>> function._synchronized_lock
 <_RLock owner=None count=0>
 ```
@@ -267,7 +269,7 @@ A key issue we have to deal with in doing this is how to create the thread
 lock the first time it is required. To do that the first thing we need do
 is to see if we already have created a thread lock.
 
-```
+```python
 lock = vars(wrapped).get('_synchronized_lock', None)
 ```
 
@@ -279,16 +281,16 @@ same time and both believe it is responsible for creating the thread lock.
 
 The trick we use to solve this is to use:
 
-```
+```python
 lock = vars(wrapped).setdefault('_synchronized_lock', threading.RLock())
 ```
 
 In the case of two threads trying to set the lock at the same time, they
 will both actually create an instance of a thread lock, but by virtue of
-using ``dict.setdefault()``, only one of them will win and actually be able
+using `dict.setdefault()`, only one of them will win and actually be able
 to set it to the instance of the thread lock it created.
 
-As ``dict.setdefault()`` then returns whichever is the first value to be
+As `dict.setdefault()` then returns whichever is the first value to be
 stored, both threads will then continue on and attempt to acquire the same
 thread lock object. It doesn't matter here that one of the thread objects
 gets thrown away as it will only occur at the time of initialisation and
@@ -305,20 +307,20 @@ the decorator was used.
 
 Specifically, what we want to do is detect when we are being used on an
 instance method or class method, and store the lock on the object passed as
-the ``instance`` argument instead.
+the `instance` argument instead.
 
-```
+```python
 @decorator
 def synchronized(wrapped, instance, args, kwargs):
     if instance is None:
         context = vars(wrapped)
     else:
-        context = vars(instance) 
+        context = vars(instance)
 
-    lock = context.get('_synchronized_lock', None) 
+    lock = context.get('_synchronized_lock', None)
 
     if lock is None:
-        lock = context.setdefault('_synchronized_lock', threading.RLock()) 
+        lock = context.setdefault('_synchronized_lock', threading.RLock())
 
     with lock:
         return wrapped(*args, **kwargs)
@@ -327,21 +329,22 @@ class Object(object):
 
     @synchronized
     def method_im(self):
-        pass 
+        pass
 
     @synchronized
     @classmethod
     def method_cm(cls):
         pass
+```
 
-o1 = Object()
-o2 = Object() 
-
+```pycon
+>>> o1 = Object()
+>>> o2 = Object()
 >>> o1.method_im()
 >>> o1._synchronized_lock
 <_RLock owner=None count=0>
 >>> id(o1._synchronized_lock)
-4386605392 
+4386605392
 
 >>> o2.method_im()
 >>> o2._synchronized_lock
@@ -369,7 +372,7 @@ actually what we want.
 
 Does the code work though for a class method?
 
-```
+```pycon
 >>> Object.method_cm()
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -382,10 +385,10 @@ AttributeError: 'dictproxy' object has no attribute 'setdefault'
 
 Unfortunately not.
 
-The reason this is the case is that the ``__dict__`` of a class type is not
+The reason this is the case is that the `__dict__` of a class type is not
 a normal dictionary, but a dictproxy. A dictproxy doesn't share the same
 methods as a normal dict and in particular, it does not provide the
-``setdefault()`` method.
+`setdefault()` method.
 
 We therefore need a different way of synchronizing the creation of the
 thread lock the first time for the case where instance is a class.
@@ -393,7 +396,7 @@ thread lock the first time for the case where instance is a class.
 We also have another issue due to a dictproxy being used. That is that
 dictproxy doesn't support item assignment.
 
-```
+```pycon
 >>> vars(Object)['_synchronized_lock'] = threading.RLock()
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -402,7 +405,7 @@ TypeError: 'dictproxy' object does not support item assignment
 
 What it does still support though is attribute assignment.
 
-```
+```pycon
 >>> setattr(Object, '_synchronized_lock', threading.RLock())
 >>> Object._synchronized_lock
 <_RLock owner=None count=0>
@@ -416,30 +419,30 @@ Storing a meta lock on the decorator
 
 As to an alternative for using dict.setdefault() as an atomic way of
 setting the lock the first time, what we can do instead is use a meta
-thread lock stored on the ``@synchronized`` decorator itself. With this we
+thread lock stored on the `@synchronized` decorator itself. With this we
 still have the issue though of ensuring that only one thread can get to set
-it. We therefore use ``dict.setdefault()`` to control creation of the meta
+it. We therefore use `dict.setdefault()` to control creation of the meta
 lock at least.
 
-```
+```python
 @decorator
 def synchronized(wrapped, instance, args, kwargs):
     if instance is None:
         owner = wrapped
     else:
-        owner = instance 
+        owner = instance
 
-    lock = vars(owner).get('_synchronized_lock', None) 
+    lock = vars(owner).get('_synchronized_lock', None)
 
     if lock is None:
         meta_lock = vars(synchronized).setdefault(
-                '_synchronized_meta_lock', threading.Lock()) 
+                '_synchronized_meta_lock', threading.Lock())
 
         with meta_lock:
-            lock = vars(owner).get('_synchronized_lock', None) 
+            lock = vars(owner).get('_synchronized_lock', None)
             if lock is None:
                 lock = threading.RLock()
-                setattr(owner, '_synchronized_lock', lock) 
+                setattr(owner, '_synchronized_lock', lock)
 
     with lock:
         return wrapped(*args, **kwargs)
@@ -453,81 +456,83 @@ and are racing to be the first to create the lock.
 
 Now one thing which is very important in this change is that we only
 swapped to using attribute access for updating the lock for the wrapped
-function. We have not changed to using ``getattr()`` for looking up the
-lock in the first place and are still looking it up in ``__dict__`` as
-returned by ``vars()``.
+function. We have not changed to using `getattr()` for looking up the
+lock in the first place and are still looking it up in `__dict__` as
+returned by `vars()`.
 
-This is necessary because when ``getattr()`` is used on an instance of a
+This is necessary because when `getattr()` is used on an instance of a
 class, if that attribute doesn't exist on the instance of the class, then
 the lookup rules mean that if the attribute instead existed on the class
 type, then that would be returned instead.
 
 This would cause problems if a synchronized class method was the first to
 be called, because it would then leave a lock on the class type. When the
-instance method was subsequently called, if ``getattr()`` were used, it
+instance method was subsequently called, if `getattr()` were used, it
 would find the lock on the class type and return it and it would be wrongly
-used. Thus we stay with looking for the lock via ``__dict__`` as that will
+used. Thus we stay with looking for the lock via `__dict__` as that will
 only contain what actually exists in the instance.
 
 With these changes we are now all done and all lock creation is now
 completely automatic, with an appropriate lock created for the different
 contexts the decorator is used in.
 
-```
+```python
 @synchronized
 def function():
-    pass 
+    pass
 
 class Object(object):
 
     @synchronized
     def method_im(self):
-        pass 
+        pass
 
     @synchronized
     @classmethod
     def method_cm(cls):
-        pass 
+        pass
+```
 
-o = Object() 
+```pyco
+>>> o = Object()
 
 >>> function()
 >>> id(function._synchronized_lock)
-4338158480 
+4338158480
 
 >>> Object.method_cm()
 >>> id(Object._synchronized_lock)
-4338904656 
+4338904656
 
 >>> o.method_im()
 >>> id(o._synchronized_lock)
 4338904592
 ```
 
-The code also works for where ``@synchronized`` is used on a static method
+The code also works for where `@synchronized` is used on a static method
 or class type. In summary, the result for the different places
-``@synchronized`` can be placed is:
+`@synchronized` can be placed is:
 
-```
+```python
 @synchronized # lock bound to function1
 def function1():
-    pass 
+    pass
 
 @synchronized # lock bound to function2
 def function2():
-    pass 
+    pass
 
 @synchronized # lock bound to Class
-class Class(object): 
+class Class(object):
 
     @synchronized # lock bound to instance of Class
     def function_im(self):
-        pass 
+        pass
 
     @synchronized # lock bound to Class
     @classmethod
     def function_cm(cls):
-        pass 
+        pass
 
     @synchronized # lock bound to function_sm
     @staticmethod
@@ -542,24 +547,24 @@ So we are all done with implementing support for synchronized methods, but
 what about those synchronized statements. The goal here is that we want to
 be able to write:
 
-```
-class Object(object): 
+```python
+class Object(object):
 
     @synchronized
     def function_im_1(self):
-        pass 
+        pass
 
     def function_im_2(self):
         with synchronized(self):
             pass
 ```
 
-That is, we need for ``synchronized`` to not only be usable as a decorator,
+That is, we need for `synchronized` to not only be usable as a decorator,
 but for it also be able to be used as a context manager.
 
 In this role, similar to with Java, it would be supplied the object on
 which synchronization is to occur, which for instance methods would be the
-``self`` object or instance of the class.
+`self` object or instance of the class.
 
 For an explanation of how we can do this though, you will need to wait for
 the next instalment in this series of posts.

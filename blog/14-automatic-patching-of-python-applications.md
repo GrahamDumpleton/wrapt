@@ -10,7 +10,7 @@ this case is where other code has imported a reference to a function within
 a module by name and stored that in it is own namespace. In other words,
 where it has used:
 
-```
+```python
 from module import function
 ```
 
@@ -67,7 +67,7 @@ has though since also been used in the implementation of easy_install and
 if you have ever run easy-install and looked at the easy-install.pth file
 in the site-packages directory you will find some code which looks like:
 
-```
+```python
 import sys; sys.__plen = len(sys.path)
 ./antigravity-0.1-py2.7.egg
 import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)
@@ -106,7 +106,7 @@ In the previous post where I talked about the post import hook mechanism,
 the code I gave as needing to be able to be manually added at the start of
 any Python application script file was:
 
-```
+```python
 import os
 
 from wrapt import discover_post_import_hooks
@@ -142,7 +142,7 @@ presence of the environment variable.
 
 What we can therefore use in our ‘.pth’ is:
 
-```
+```python
 import os, sys; os.environ.get('AUTOWRAPT_BOOTSTRAP') and __import__('autowrapt.bootstrap') and sys.modules['autowrapt.bootstrap'].bootstrap()
 ```
 
@@ -172,7 +172,7 @@ Python interpreter ‘site’ module
 The actual final parts of Python interpreter initialisation is performed
 from the main() function of the site module:
 
-```
+```python
 def main():
     global ENABLE_USER_SITE
     abs__file__()
@@ -210,7 +210,7 @@ We have to monkey patch both because the usercustomize.py processing is
 optional dependent on whether ENABLE_USER_SITE is true or not. Our
 'bootstrap() function therefore needs to look like:
 
-```
+```python
 def _execsitecustomize_wrapper(wrapped):
     def _execsitecustomize(*args, **kwargs):
         try:
@@ -247,9 +247,9 @@ ends up calling _register_bootstrap_functions() is dependent on whether
 ENABLE_USER_SITE is true or not, only calling it in execsitecustomize() if
 support for usersitecustomize was enabled.
 
-Finally we now have our '_register_bootstrap_functions()’ defined as:
+Finally we now have our `_register_bootstrap_functions()` defined as:
 
-```
+```python
 _registered = False
 
 def _register_bootstrap_functions():
@@ -270,7 +270,7 @@ We have worked out the various bits we require, but how do we get this
 installed, in particular how do we get the custom .pth file installed. For
 that we use a setup.py file of:
 
-```
+```python
 import sys
 import os
 
@@ -331,7 +331,7 @@ try it, and use it if you really want to.
 To allow for a easy quick test to see that it works, the autowrapt package
 bundles an example monkey patch. In the above setup.py this was set up by:
 
-```
+```python
 entry_points = {'autowrapt.examples’: ['this = autowrapt.examples:autowrapt_this']},
 ```
 
@@ -351,7 +351,7 @@ minimum version.
 
 Now run the command line interpreter as normal and at the prompt do:
 
-```
+```python
 import this
 ```
 
@@ -364,12 +364,12 @@ AUTOWRAPT_BOOTSTRAP=autowrapt.examples python
 ```
 
 This runs the Python interpreter again, but also sets the environment
-variable AUTOWRAPT_BOOTSTRAP with the value autowrapt.examples matching the
-name of the entry point defined in the setup.py file for autowrapt'.
+variable `AUTOWRAPT_BOOTSTRAP` with the value `autowrapt.examples` matching the
+name of the entry point defined in the setup.py file for autowrapt.
 
-The actual code for the ‘autowrapt_this()’ function was:
+The actual code for the `autowrapt_this()` function was:
 
-```
+```python
 from __future__ import print_function
 
 def autowrapt_this(module):
@@ -378,7 +378,7 @@ def autowrapt_this(module):
 
 so if we now again run:
 
-```
+```python
 import this
 ```
 

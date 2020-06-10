@@ -38,7 +38,7 @@ wrapped function was called, or modify input arguments or the result.
 This function wrapper was used in conjunction with the decorator factory
 which was also described:
 
-```
+```python
 def decorator(wrapper):
     @functools.wraps(wrapper)
     def _decorator(wrapped):
@@ -48,13 +48,13 @@ def decorator(wrapper):
 
 allowing a user to define their own decorator as:
 
-```
+```python
 @decorator
 def my_function_wrapper(wrapped, instance, args, kwargs):
     print('INSTANCE', instance)
     print('ARGS', args)
     print('KWARGS', kwargs)
-    return wrapped(*args, **kwargs) 
+    return wrapped(*args, **kwargs)
 
 @my_function_wrapper
 def function(a, b):
@@ -72,12 +72,12 @@ Using a function closure to collect arguments
 The easiest way to implement a decorator which accepts arguments is using a
 function closure.
 
-```
+```python
 def with_arguments(arg):
     @decorator
     def _wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
-    return _wrapper 
+    return _wrapper
 
 @with_arguments(arg=1)
 def function():
@@ -107,12 +107,12 @@ decorator, even though one would not need to pass the argument, one cannot
 avoid needing to still write it out as a distinct call. That is, you still
 need to supply empty parentheses.
 
-```
+```python
 def with_arguments(arg='default'):
     @decorator
     def _wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
-    return _wrapper 
+    return _wrapper
 
 @with_arguments()
 def function():
@@ -126,7 +126,7 @@ have default values and none are being supplied explicitly. In other words,
 the desire is that when there are no arguments to be passed, that one can
 write:
 
-```
+```python
 @with_arguments
 def function():
     pass
@@ -145,16 +145,16 @@ Optionally allowing decorator arguments
 To allow the decorator arguments to be optionally supplied, we can change
 the above recipe to:
 
-```
+```python
 def optional_arguments(wrapped=None, arg=1):
     if wrapped is None:
-        return functools.partial(optional_arguments, arg=arg) 
+        return functools.partial(optional_arguments, arg=arg)
 
     @decorator
     def _wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
-    return _wrapper(wrapped) 
+    return _wrapper(wrapped)
 
 @optional_arguments(arg=2)
 def function1():
@@ -162,7 +162,7 @@ def function1():
 
 @optional_arguments
 def function2():
-    pass 
+    pass
 ```
 
 With the arguments having default values, the outer decorator factory would
@@ -182,10 +182,10 @@ Now why I said a convention of having keyword arguments may perhaps be
 preferable, is that Python 3 allows you to enforce it using the new keyword
 only argument syntax.
 
-```
+```python
 def optional_arguments(wrapped=None, *, arg=1):
     if wrapped is None:
-        return functools.partial(optional_arguments, arg=arg)  
+        return functools.partial(optional_arguments, arg=arg)
 
     @decorator
     def _wrapper(wrapped, instance, args, kwargs):
@@ -199,12 +199,12 @@ decorator argument as the positional argument for wrapped. For consistency,
 keyword only arguments can also be enforced for required arguments even
 though it isn't strictly necessary.
 
-```
+```python
 def required_arguments(*, arg):
     @decorator
     def _wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
-    return _wrapper  
+    return _wrapper
 ```
 
 Maintaining state between wrapper calls
@@ -224,7 +224,7 @@ There are a few ways in which this can be done.
 The first is to require that the object which maintains the state, be
 passed in as an explicit argument to the decorator.
 
-```
+```python
 def cache(d):
     @decorator
     def _wrapper(wrapped, instance, args, kwargs):
@@ -234,9 +234,9 @@ def cache(d):
         except KeyError:
             result = d[key] = wrapped(*args, **kwargs)
             return result
-    return _wrapper 
+    return _wrapper
 
-_d = {} 
+_d = {}
 
 @cache(_d)
 def function():
@@ -247,7 +247,7 @@ Unless there is a specific need to be able to pass in the state object, a
 second better way is to create the state object on the stack within the
 call of the outer function.
 
-```
+```python
 def cache(wrapped):
     d = {}
 
@@ -260,7 +260,7 @@ def cache(wrapped):
             result = d[key] = wrapped(*args, **kwargs)
             return result
 
-    return _wrapper(wrapped) 
+    return _wrapper(wrapped)
 
 @cache
 def function():
@@ -275,13 +275,13 @@ If this was a reasonable default, but you did in some cases still need to
 optionally pass the state object in as an argument, then optional decorator
 arguments could instead be used.
 
-```
+```python
 def cache(wrapped=None, d=None):
     if wrapped is None:
-        return functools.partial(cache, d=d) 
+        return functools.partial(cache, d=d)
 
     if d is None:
-        d = {} 
+        d = {}
 
     @decorator
     def _wrapper(wrapped, instance, args, kwargs):
@@ -292,17 +292,17 @@ def cache(wrapped=None, d=None):
             result = d[key] = wrapped(*args, **kwargs)
             return result
 
-    return _wrapper(wrapped) 
+    return _wrapper(wrapped)
 
 @cache
 def function1():
-    return time.time() 
+    return time.time()
 
-_d = {} 
+_d = {}
 
 @cache(d=_d)
 def function2():
-    return time.time() 
+    return time.time()
 
 @cache(d=_d)
 def function3():
@@ -315,7 +315,7 @@ Decorators as a class
 Now way back in the very first post in this series of blog posts, a way in
 which a decorator could be implemented as a class was described.
 
-```
+```python
 class function_wrapper(object):
 
     def __init__(self, wrapped):
@@ -331,7 +331,7 @@ also able to maintain state. Specifically, the constructor of the class can
 save away the state object as an attribute of the instance of the class,
 along with the reference to the wrapped function.
 
-```
+```python
 class cache(object):
 
     def __init__(self, wrapped):
@@ -344,7 +344,7 @@ class cache(object):
             return self.d[key]
         except KeyError:
             result = self.d[key] = self.wrapped(*args, **kwargs)
-            return result 
+            return result
 
 @cache
 def function():
@@ -370,15 +370,15 @@ thing with our new decorator pattern. Turns out there possibly is.
 What one should be able to do, at least for where there are required
 arguments, is do:
 
-```
-class with_arguments(object): 
+```python
+class with_arguments(object):
 
     def __init__(self, arg):
-        self.arg = arg 
+        self.arg = arg
 
     @decorator
     def __call__(self, wrapped, instance, args, kwargs):
-        return wrapped(*args, **kwargs) 
+        return wrapped(*args, **kwargs)
 
 @with_arguments(arg=1)
 def function():
@@ -388,19 +388,19 @@ def function():
 What will happen here is that application of the decorator with arguments
 being supplied, will result in an instance of the class being created. In
 the next phase where that is called with the wrapped function, the
-``__call__()`` method with ``@decorator`` applied will be used as a
+`__call__()` method with `@decorator` applied will be used as a
 decorator on the wrapped function. The end result should be that the
-``__call__()`` method of the class instance created ends up being our
+`__call__()` method of the class instance created ends up being our
 wrapper function.
 
-When the decorated function is now called, the ``__call__()`` method of the
+When the decorated function is now called, the `__call__()` method of the
 class would be called to then in turn call the wrapped function. As the
-``__call__()`` method at that point is bound to an instance of the class,
+`__call__()` method at that point is bound to an instance of the class,
 it would have access to the state that it contained.
 
 What actually happens when we do this though?
 
-```
+```pycon
 Traceback (most recent call last):
   File "test.py", line 483, in <module>
     @with_arguments(1)
@@ -415,7 +415,7 @@ by now, I don't give up that easily.
 Now the reason this failed is actually because of how our decorator factory
 is implemented.
 
-```
+```python
 def decorator(wrapper):
     @functools.wraps(wrapper)
     def _decorator(wrapped):
