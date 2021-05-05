@@ -31,6 +31,7 @@ else:
     del builtins
 
 from functools import partial
+import inspect
 from inspect import ismethod, isclass, formatargspec
 from collections import namedtuple
 from threading import Lock, RLock
@@ -205,7 +206,12 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     adapter = adapter(wrapped)
 
                 if not callable(adapter):
-                    ns = {}
+                    # Get the globals from the calling module so we get their imports.
+                    try:
+                        ns = dict(inspect.getmembers(inspect.stack()[3][0]))["f_globals"]
+                    except:
+                        ns = {}
+
                     if not isinstance(adapter, string_types):
                         adapter = formatargspec(*adapter)
                     exec_('def adapter{}: pass'.format(adapter), ns, ns)
