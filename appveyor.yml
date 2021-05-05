@@ -13,7 +13,7 @@ environment:
       TOX_ENV: "py37-install-extensions,py37-disable-extensions,py37-without-extensions"
 
 install:
-  - "%PYTHON%/Scripts/easy_install -U pip"
+  - "%PYTHON%/Scripts/easy_install pip"
   - "%PYTHON%/Scripts/pip install tox"
 
 build: false
