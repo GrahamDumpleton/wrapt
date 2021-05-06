@@ -2299,12 +2299,15 @@ static PyObject *WraptFunctionWrapperBase_call(
     PyObject *result = NULL;
 
     static PyObject *function_str = NULL;
+    static PyObject *classmethod_str = NULL;
 
     if (!function_str) {
 #if PY_MAJOR_VERSION >= 3
         function_str = PyUnicode_InternFromString("function");
+        classmethod_str = PyUnicode_InternFromString("classmethod");
 #else
         function_str = PyString_InternFromString("function");
+        classmethod_str = PyString_InternFromString("classmethod");
 #endif
     }
 
@@ -2336,7 +2339,9 @@ static PyObject *WraptFunctionWrapperBase_call(
 
     if (self->instance == Py_None && (self->binding == function_str ||
             PyObject_RichCompareBool(self->binding, function_str,
-            Py_EQ) == 1)) {
+            Py_EQ) == 1) || self->binding == classmethod_str ||
+            PyObject_RichCompareBool(self->binding, classmethod_str,
+            Py_EQ) == 1) {
 
         PyObject *instance = NULL;
 

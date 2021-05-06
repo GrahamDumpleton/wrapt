@@ -2,29 +2,31 @@ import sys
 
 import pytest
 
+try:
+    from pytest import File as FileCollector
+except ImportError:
+    from pytest.collect import File as FileCollector
+
 version = tuple(sys.version_info[:2])
 
-
-class DummyCollector(pytest.File):
+class DummyCollector(FileCollector):
     def collect(self):
         return []
 
-
-def collect(path, parent):
-    """Helper function deal with differences between Python 2 and 3."""
-    if version[0] == 2:
-        return DummyCollector(path, parent=parent)
+def construct_dummy(path, parent):
+    if hasattr(DummyCollector, "from_parent"):
+        item = DummyCollector.from_parent(parent, fspath=path)
+        return item
     else:
-        return DummyCollector.from_parent(parent, fspath=path)
-
+        return DummyCollector(path, parent=parent)
 
 def pytest_pycollect_makemodule(path, parent):
     """Use a dummy collector to collect version-incompatible test files."""
     if '_py33' in path.basename and version < (3, 3):
-        return collect(path, parent)
+        return construct_dummy(path, parent)
     if '_py37' in path.basename and version < (3, 7):
-        return collect(path, parent)
+        return construct_dummy(path, parent)
     if '_py3' in path.basename and version < (3, 0):
-        return collect(path, parent)
+        return construct_dummy(path, parent)
     if '_py2' in path.basename and version >= (3, 0):
-        return collect(path, parent)
+        return construct_dummy(path, parent)
