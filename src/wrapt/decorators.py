@@ -206,11 +206,12 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     adapter = adapter(wrapped)
 
                 if not callable(adapter):
-                    # Get the globals from the calling module so we get their imports.
-                    try:
-                        ns = dict(inspect.getmembers(inspect.stack()[3][0]))["f_globals"]
-                    except:
-                        ns = {}
+                    ns = {}
+
+                    # Check if the signature has annotations.
+                    # If yes, then remove them so that we don't get a NameError.
+                    if len(adapter) == 7:
+                        adapter = adapter[:-1]
 
                     if not isinstance(adapter, string_types):
                         adapter = formatargspec(*adapter)
