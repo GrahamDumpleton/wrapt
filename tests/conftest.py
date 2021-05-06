@@ -1,7 +1,5 @@
 import sys
 
-import pytest
-
 try:
     from pytest import File as FileCollector
 except ImportError:
@@ -9,9 +7,11 @@ except ImportError:
 
 version = tuple(sys.version_info[:2])
 
+
 class DummyCollector(FileCollector):
     def collect(self):
         return []
+
 
 def construct_dummy(path, parent):
     if hasattr(DummyCollector, "from_parent"):
@@ -19,6 +19,7 @@ def construct_dummy(path, parent):
         return item
     else:
         return DummyCollector(path, parent=parent)
+
 
 def pytest_pycollect_makemodule(path, parent):
     """Use a dummy collector to collect version-incompatible test files."""
