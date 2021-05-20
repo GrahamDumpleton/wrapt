@@ -360,7 +360,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     # This one is a bit strange because binding was actually
                     # performed on the wrapper created by our decorator
                     # factory. We need to apply that binding to the decorator
-                    # wrapper function which which the decorator factory
+                    # wrapper function that the decorator factory
                     # was applied to.
 
                     target_wrapper = wrapper.__get__(None, instance)
@@ -384,7 +384,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     # This one is a bit strange because binding was actually
                     # performed on the wrapper created by our decorator
                     # factory. We need to apply that binding to the decorator
-                    # wrapper function which which the decorator factory
+                    # wrapper function that the decorator factory
                     # was applied to.
 
                     target_wrapper = wrapper.__get__(instance, type(instance))
