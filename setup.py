@@ -1,6 +1,6 @@
 import os
+import platform
 import setuptools
-import sys
 
 
 # # --- Detect if extensions should be disabled ------------------------------
@@ -12,7 +12,7 @@ if wrapt_env is not None:
     disable_extensions = wrapt_env.lower() == 'false'
 else:
     disable_extensions = False
-if sys.implementation.name != "cpython":
+if platform.python_implementation() != "CPython":
     disable_extensions = True
 
 # --- C extension ------------------------------------------------------------
