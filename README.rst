@@ -46,7 +46,7 @@ The decorator ``@wrapt.decorator`` then needs to be applied to the wrapper
 function to convert it into a decorator which can in turn be applied to
 other functions.
 
-::
+.. code-block:: python
 
     import wrapt
     
@@ -63,7 +63,7 @@ definition of the decorator in a function closure. Any arguments supplied
 to the outer function when the decorator is applied, will be available to
 the inner wrapper when the wrapped function is called.
 
-::
+.. code-block:: python
 
     import wrapt
 
@@ -95,7 +95,7 @@ case will be the class.
 
 The above rules can be summarised with the following example.
 
-::
+.. code-block:: python
 
     import inspect
     
