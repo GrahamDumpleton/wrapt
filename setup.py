@@ -10,8 +10,10 @@ if wrapt_env is None:
     wrapt_env = os.environ.get('WRAPT_EXTENSIONS')
 if wrapt_env is not None:
     disable_extensions = wrapt_env.lower() == 'false'
+    force_extensions = wrapt_env.lower() == 'true'
 else:
     disable_extensions = False
+    force_extensions = False
 if platform.python_implementation() != "CPython":
     disable_extensions = True
 
@@ -21,7 +23,7 @@ extensions = [
     setuptools.Extension(
         "wrapt._wrappers",
         sources=[ os.path.realpath(os.path.join(__file__, "..", "src", "wrapt", "_wrappers.c"))],
-        optional=True,
+        optional=not force_extensions,
     )
 ]
 
