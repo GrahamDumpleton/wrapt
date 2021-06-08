@@ -1,75 +1,99 @@
 name: Package
 
 on:
-  push:
-    tags:
-      - v*.*.*
+  - push
+# WIP
+#   push:
+#     tags:
+#       - v*.*.*
 
 jobs:
 
-  wheel-linux:
-    runs-on: ubuntu-latest
-    name: Build Linux wheels
-    strategy:
-      matrix:
-        include:
-        - python-version: 3.6
-          pyo3-python: /opt/python/cp36-cp36m/bin/python
-        - python-version: 3.7
-          pyo3-python: /opt/python/cp37-cp37m/bin/python
-        - python-version: 3.8
-          pyo3-python: /opt/python/cp38-cp38/bin/python
-        - python-version: 3.9
-          pyo3-python: /opt/python/cp39-cp39/bin/python
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: Build manylinux wheels
-      uses: addnab/docker-run-action@v2
-      with:
-        image: pypywheels/manylinux2010-pypy_x86_64
-        options: -v ${{ github.workspace }}:/io -e TERM=$TERM
-        shell: bash
-        run: |
-          ${{ matrix.pyo3-python }} -m pip install -U wheel auditwheel
-          ${{ matrix.pyo3-python }} -m pip wheel --no-deps -vv /io -w /tmp
-          for whl in /tmp/*.whl; do ${{ matrix.pyo3-python }} -m auditwheel repair $whl -w /io/dist; done
-    - name: Store built wheels
-      uses: actions/upload-artifact@v2
-      with:
-        name: dist
-        path: dist/*
+  bdist_wheel:
 
-  wheel-osx:
-    runs-on: macos-latest
-    name: Build OSX wheels
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version:
-        - 3.6
-        - 3.7
-        - 3.8
-        - 3.9
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install Python requirements
-      run: python -m pip install -r ci/requirements.txt
-    - name: Build wheel distribution
-      run: python setup.py bdist_wheel
-    - name: Store built wheels
-      uses: actions/upload-artifact@v2
-      with:
-        name: dist
-        path: dist/*
+      - uses: actions/checkout@v2
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v1.11.1.post1
+        with:
+          output-dir: dist
+        env:
+            WRAPT_INSTALL_EXTENSIONS: true  # fail if extensions doesn't compile
+            CIBW_SKIP: pp*                  # skip building wheels for PyPy
+      - uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist/*.whl
+
+  # wheel-linux:
+  #   runs-on: ubuntu-latest
+  #   name: Build Linux wheels
+  #   strategy:
+  #     matrix:
+  #       include:
+  #       - python-version: 3.6
+  #         pyo3-python: /opt/python/cp36-cp36m/bin/python
+  #       - python-version: 3.7
+  #         pyo3-python: /opt/python/cp37-cp37m/bin/python
+  #       - python-version: 3.8
+  #         pyo3-python: /opt/python/cp38-cp38/bin/python
+  #       - python-version: 3.9
+  #         pyo3-python: /opt/python/cp39-cp39/bin/python
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v2
+  #     with:
+  #       submodules: true
+  #   - name: Build manylinux wheels
+  #     uses: addnab/docker-run-action@v2
+  #     with:
+  #       image: pypywheels/manylinux2010-pypy_x86_64
+  #       options: -v ${{ github.workspace }}:/io -e TERM=$TERM
+  #       shell: bash
+  #       run: |
+  #         ${{ matrix.pyo3-python }} -m pip install -U wheel auditwheel
+  #         ${{ matrix.pyo3-python }} -m pip wheel --no-deps -vv /io -w /tmp
+  #         for whl in /tmp/*.whl; do ${{ matrix.pyo3-python }} -m auditwheel repair $whl -w /io/dist; done
+  #   - name: Store built wheels
+  #     uses: actions/upload-artifact@v2
+  #     with:
+  #       name: dist
+  #       path: dist/*
+  #
+  # wheel-osx:
+  #   runs-on: macos-latest
+  #   name: Build OSX wheels
+  #   strategy:
+  #     matrix:
+  #       python-version:
+  #       - 3.6
+  #       - 3.7
+  #       - 3.8
+  #       - 3.9
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v2
+  #     with:
+  #       submodules: true
+  #   - name: Set up Python ${{ matrix.python-version }}
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
+  #   - name: Install Python requirements
+  #     run: python -m pip install -r ci/requirements.txt
+  #   - name: Build wheel distribution
+  #     run: python setup.py bdist_wheel
+  #   - name: Store built wheels
+  #     uses: actions/upload-artifact@v2
+  #     with:
+  #       name: dist
+  #       path: dist/*
 
   sdist:
     runs-on: ubuntu-latest
@@ -97,8 +121,9 @@ jobs:
     name: Upload
     needs:
     - sdist
-    - wheel-linux
-    - wheel-osx
+    - bdist_wheel
+    # - wheel-linux
+    # - wheel-osx
     steps:
     - name: Download built distributions
       uses: actions/download-artifact@v2
