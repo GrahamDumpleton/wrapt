@@ -46,7 +46,7 @@ The decorator ``@wrapt.decorator`` then needs to be applied to the wrapper
 function to convert it into a decorator which can in turn be applied to
 other functions.
 
-::
+.. code-block:: python
 
     import wrapt
     
@@ -63,7 +63,7 @@ definition of the decorator in a function closure. Any arguments supplied
 to the outer function when the decorator is applied, will be available to
 the inner wrapper when the wrapped function is called.
 
-::
+.. code-block:: python
 
     import wrapt
 
@@ -95,7 +95,7 @@ case will be the class.
 
 The above rules can be summarised with the following example.
 
-::
+.. code-block:: python
 
     import inspect
     
@@ -135,11 +135,11 @@ and unit tests, can be obtained from github.
 
 * https://github.com/GrahamDumpleton/wrapt
 
-.. |Travis| image:: https://travis-ci.org/GrahamDumpleton/wrapt.svg?branch=develop
-   :target: https://travis-ci.org/GrahamDumpleton/wrapt
-.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true
+.. |Actions| image:: https://img.shields.io/github/workflow/status/GrahamDumpleton/wrapt/Test/develop?logo=github&cacheSeconds=600
+   :target: https://github.com/GrahamDumpleton/wrapt/actions
+.. |Appveyor| image:: https://img.shields.io/appveyor/build/GrahamDumpleton/wrapt/develop?logo=appveyor&cacheSeconds=600
    :target: https://ci.appveyor.com/project/GrahamDumpleton/wrapt/branch/develop
-.. |Coveralls| image:: https://img.shields.io/coveralls/GrahamDumpleton/wrapt/develop.svg
+.. |Coveralls| image:: https://img.shields.io/coveralls/GrahamDumpleton/wrapt/develop?logo=coveralls&cacheSeconds=600
    :target: https://coveralls.io/github/GrahamDumpleton/wrapt?branch=develop
-.. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg
+.. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg?logo=python&cacheSeconds=3600
    :target: https://pypi.python.org/pypi/wrapt
