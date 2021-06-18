@@ -10,7 +10,7 @@ run the command:
 
     tox
 
-By default tests are run for Python 2.7, 3.4-3.7 and PyPy, with and
+By default tests are run for Python 2.7, 3.4-3.9 and PyPy, with and
 without the C extensions.
 
 ::
@@ -46,17 +46,16 @@ Coverage
 --------
 
 Coverage is collected and sent to `Coveralls <https://coveralls.io>`_ when
-running the tests automatically in `Travis CI <https://travis-ci.org>`_.
+running the tests automatically in `GitHub Actions <https://github.com/GrahamDumpleton/wrapt/actions>`_.
 To collect and view coverage results locally, here's the sequence of
 commands:
 
 ::
 
-    export COVERAGE_CMD="coverage run -m"
-    export COVERAGE_DEP=coverage
     tox
     coverage combine
     coverage html --ignore-errors
 
 At this point there's a directly called ``htmlcov`` with the formatted
 results.
+

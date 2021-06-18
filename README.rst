@@ -1,7 +1,7 @@
 wrapt
 =====
 
-|Travis| |AppVeyor| |Coveralls| |PyPI|
+|Actions| |Coveralls| |PyPI|
 
 The aim of the **wrapt** module is to provide a transparent object proxy
 for Python, which can be used as the basis for the construction of function
