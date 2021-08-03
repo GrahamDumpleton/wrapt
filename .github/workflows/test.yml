@@ -73,6 +73,7 @@ jobs:
       run: python -m tox
 
   coveralls:
+    if: ${{ false }}  # disable for now
     needs: test_unix
     runs-on: ubuntu-latest
     steps:
