@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import sys
 import unittest
 import inspect
 import imp
@@ -7,6 +8,8 @@ import imp
 import wrapt
 
 from compat import PY2, PY3, exec_
+
+PYXY = tuple(sys.version_info[:2])
 
 DECORATORS_CODE = """
 import wrapt
@@ -133,11 +136,17 @@ class TestCallingOuterClassMethod(unittest.TestCase):
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            self.assertEqual(instance, None)
-            self.assertEqual(args, (Class,)+_args)
+            if PYXY < (3, 9):
+                self.assertEqual(instance, None)
+                self.assertEqual(args, (Class,)+_args)
+            else:
+                self.assertEqual(instance, Class)
+                self.assertEqual(args, _args)
+
             self.assertEqual(kwargs, _kwargs)
             self.assertEqual(wrapped.__module__, _function.__module__)
             self.assertEqual(wrapped.__name__, _function.__name__)
+
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -167,11 +176,17 @@ class TestCallingOuterClassMethod(unittest.TestCase):
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            self.assertEqual(instance, None)
-            self.assertEqual(args, (Class,)+_args)
+            if PYXY < (3, 9):
+                self.assertEqual(instance, None)
+                self.assertEqual(args, (Class,)+_args)
+            else:
+                self.assertEqual(instance, Class)
+                self.assertEqual(args, _args)
+
             self.assertEqual(kwargs, _kwargs)
             self.assertEqual(wrapped.__module__, _function.__module__)
             self.assertEqual(wrapped.__name__, _function.__name__)
+
             return wrapped(*args, **kwargs)
 
         @_decorator
