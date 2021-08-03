@@ -1,0 +1,69 @@
+name: Test
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python-version:
+          - 2.7
+          - 3.5
+          - 3.6
+          - 3.7
+          - 3.8
+          - 3.9
+          - pypy-2.7
+          - pypy-3.6
+          - pypy-3.7
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v1
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Update pip
+      run: python -m pip install -U pip wheel setuptools
+    - name: Install tox
+      run: python -m pip install tox tox-gh-actions
+    - name: Test with tox
+      run: python -m tox
+    - name: Store partial coverage reports
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage
+        path: .coverage.*
+
+  coveralls:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v1
+    - name: Setup Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install coverage package
+      run: python -m pip install -U coverage
+    - name: Download partial coverage reports
+      uses: actions/download-artifact@v2
+      with:
+        name: coverage
+    - name: Combine coverage
+      run: python -m coverage combine
+    - name: Report coverage
+      run: python -m coverage report
+    - name: Export coverage to XML
+      run: python -m coverage xml
+    - name: Upload coverage statistics to Coveralls
+      uses: AndreMiras/coveralls-python-action@develop
