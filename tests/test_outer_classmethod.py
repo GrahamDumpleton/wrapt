@@ -7,9 +7,7 @@ import imp
 
 import wrapt
 
-from compat import PY2, PY3, exec_
-
-PYXY = tuple(sys.version_info[:2])
+from compat import PY2, PY3, PYXY exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -124,12 +122,14 @@ class TestNamingOuterClassMethod(unittest.TestCase):
 class TestCallingOuterClassMethod(unittest.TestCase):
 
     def test_class_call_function(self):
-        # Test calling classmethod. The instance and class passed to the
-        # wrapper will both be None because our decorator is surrounded
-        # by the classmethod decorator. The classmethod decorator
-        # doesn't bind the method and treats it like a normal function,
-        # explicitly passing the class as the first argument with the
-        # actual arguments following that.
+        # Test calling classmethod. Prior to Python 3.9, the instance
+        # and class passed to the wrapper will both be None because our
+        # decorator is surrounded by the classmethod decorator. The
+        # classmethod decorator doesn't bind the method and treats it
+        # like a normal function, explicitly passing the class as the
+        # first argument with the actual arguments following that. This
+        # was only finally fixed in Python 3.9. For more details see:
+        # https://bugs.python.org/issue19072
 
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
@@ -164,12 +164,14 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
 
     def test_instance_call_function(self):
-        # Test calling classmethod via class instance. The instance
-        # and class passed to the wrapper will both be None because our
-        # decorator is surrounded by the classmethod decorator. The
-        # classmethod decorator doesn't bind the method and treats it
-        # like a normal function, explicitly passing the class as the
-        # first argument with the actual arguments following that.
+        # Test calling classmethod via class instance. Prior to Python
+        # 3.9, the instance and class passed to the wrapper will both be
+        # None because our decorator is surrounded by the classmethod
+        # decorator. The classmethod decorator doesn't bind the method
+        # and treats it like a normal function, explicitly passing the
+        # class as the first argument with the actual arguments
+        # following that. This was only finally fixed in Python 3.9. For
+        # more details see: https://bugs.python.org/issue19072
 
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
