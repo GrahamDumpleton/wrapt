@@ -7,7 +7,7 @@ import imp
 
 import wrapt
 
-from compat import PY2, PY3, PYXY exec_
+from compat import PY2, PY3, PYXY, exec_
 
 DECORATORS_CODE = """
 import wrapt
