@@ -207,15 +207,31 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                 if not callable(adapter):
                     ns = {}
 
-                    # Check if the signature has annotations.
-                    # If yes, then remove them so that we don't get a NameError.
-                    if len(adapter) == 7:
-                        adapter = adapter[:-1]
+                    # Check if the signature argument specification has
+                    # annotations. If it does then we need to remember
+                    # it but also drop it when attempting to manufacture
+                    # a standin adapter function. This is necessary else
+                    # it will try and look up any types referenced in
+                    # the annotations in the empty namespace we use,
+                    # which will fail.
+
+                    annotations = {}
 
                     if not isinstance(adapter, string_types):
+                        if len(adapter) == 7:
+                            annotations = adapter[-1]
+                            adapter = adapter[:-1]
                         adapter = formatargspec(*adapter)
+
                     exec_('def adapter{}: pass'.format(adapter), ns, ns)
                     adapter = ns['adapter']
+
+                    # Override the annotations for the manufactured
+                    # adaptor function so they match the original
+                    # adapter signature argument specification.
+
+                    if annotations:
+                        adapter.__annotations__ = annotations
 
                 return AdapterWrapper(wrapped=wrapped, wrapper=wrapper,
                         enabled=enabled, adapter=adapter)
