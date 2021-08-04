@@ -6,51 +6,8 @@ on:
 
 jobs:
 
-  sdist:
-    runs-on: ubuntu-latest
-    name: Build source distribution
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    - name: Build source distribution
-      run: python setup.py sdist
-    - name: Store built wheels
-      uses: actions/upload-artifact@v2
-      with:
-        name: dist
-        path: dist/*
-
-  bdist_wheel:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v1.11.1.post1
-        with:
-          output-dir: dist
-        env:
-            WRAPT_INSTALL_EXTENSIONS: true  # Require extensions.
-            CIBW_SKIP: pp*                  # Skip wheels for PyPy.
-      - uses: actions/upload-artifact@v2
-        with:
-          name: dist
-          path: dist/*.whl
-
   test_linux:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
-    needs:
-    - sdist
-    - bdist_wheel
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -88,9 +45,6 @@ jobs:
 
   test_macos:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
-    needs:
-    - sdist
-    - bdist_wheel
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -128,9 +82,6 @@ jobs:
 
   test_windows:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
-    needs:
-    - sdist
-    - bdist_wheel
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -161,6 +112,7 @@ jobs:
       run: python -m tox
 
   coveralls:
+    name: Generate code coverage report
     if: ${{ false }}  # disable for now
     needs:
     - test_linux
@@ -188,3 +140,51 @@ jobs:
       run: python -m coverage xml
     - name: Upload coverage statistics to Coveralls
       uses: AndreMiras/coveralls-python-action@develop
+
+  sdist:
+    name: Build source distribution
+    needs:
+    - test_linux
+    - test_macos
+    - test_windows
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Build source distribution
+      run: python setup.py sdist
+    - name: Store built wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist
+        path: dist/*
+
+  bdist_wheel:
+    name: Build wheels on ${{ matrix.os }}
+    needs:
+    - test_linux
+    - test_macos
+    - test_windows
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v1.11.1.post1
+        with:
+          output-dir: dist
+        env:
+            WRAPT_INSTALL_EXTENSIONS: true  # Require extensions.
+            CIBW_SKIP: pp*                  # Skip wheels for PyPy.
+      - uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist/*.whl
