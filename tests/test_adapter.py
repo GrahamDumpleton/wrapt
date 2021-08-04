@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-import inspect
 import unittest
+import inspect
 import imp
 
 import wrapt
