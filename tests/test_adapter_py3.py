@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-import collections
-import imp
 import inspect
 import unittest
+import imp
+import collections
 from typing import Iterable
 
 import wrapt

@@ -1,9 +1,8 @@
 from __future__ import print_function
 
-import collections
-import imp
 import inspect
 import unittest
+import imp
 
 import wrapt
 
@@ -221,7 +220,6 @@ class TestDynamicAdapter(unittest.TestCase):
         argspec = inspect.getargspec(_function_1)
 
         self.assertEqual(argspec.args, ['arg0', 'arg1', 'arg2'])
-
 
 if __name__ == '__main__':
     unittest.main()
