@@ -227,7 +227,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     adapter = ns['adapter']
 
                     # Override the annotations for the manufactured
-                    # adaptor function so they match the original
+                    # adapter function so they match the original
                     # adapter signature argument specification.
 
                     if annotations:
