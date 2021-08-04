@@ -4,7 +4,7 @@ Release Notes
 Version 1.12.2
 --------------
 
-**Bus Fixed**
+**Bugs Fixed**
 
 * When a reference to a class method was taken out of a class, and then
   wrapped in a function wrapper, and called, the class type was not being

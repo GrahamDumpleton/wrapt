@@ -4,6 +4,8 @@ import unittest
 
 import wrapt
 
+from compat import PYXY
+
 @wrapt.synchronized
 def function():
     print('function')
@@ -36,12 +38,13 @@ class C3:
 
 class C4(object):
 
-    # XXX This yields undesirable results due to how class method is
-    # implemented. The classmethod doesn't bind the method to the class
-    # before calling. As a consequence, the decorator wrapper function
-    # sees the instance as None with the class being explicitly passed
-    # as the first argument. It isn't possible to detect and correct
-    # this.
+    # Prior to Python 3.9, this yields undesirable results due to how
+    # class method is implemented. The classmethod doesn't bind the
+    # method to the class before calling. As a consequence, the
+    # decorator wrapper function sees the instance as None with the
+    # class being explicitly passed as the first argument. It isn't
+    # possible to detect and correct this. For more details see:
+    # https://bugs.python.org/issue19072
 
     @classmethod
     @wrapt.synchronized
@@ -157,34 +160,41 @@ class TestSynchronized(unittest.TestCase):
         self.assertEqual(_lock3, _lock2)
 
     def test_synchronized_outer_classmethod(self):
-        # XXX If all was good, this would be detected as a class
-        # method call, but the classmethod decorator doesn't bind
-        # the wrapped function to the class before calling and
-        # just calls it direct, explicitly passing the class as
-        # first argument. This screws things up. Would be nice if
-        # Python were fixed, but that isn't likely to happen.
+        # Prior to Python 3.9 this isn't detected as a class method
+        # call, as the classmethod decorator doesn't bind the wrapped
+        # function to the class before calling and just calls it direct,
+        # explicitly passing the class as first argument. For more
+        # details see: https://bugs.python.org/issue19072
 
-        #_lock0 = getattr(C4, '_synchronized_lock', None)
-        _lock0 = getattr(C4.function2, '_synchronized_lock', None)
+        if PYXY < (3, 9):
+            _lock0 = getattr(C4.function2, '_synchronized_lock', None)
+        else:
+            _lock0 = getattr(C4, '_synchronized_lock', None)
         self.assertEqual(_lock0, None)
 
         c4.function2()
 
-        #_lock1 = getattr(C4, '_synchronized_lock', None)
-        _lock1 = getattr(C4.function2, '_synchronized_lock', None)
+        if PYXY < (3, 9):
+            _lock1 = getattr(C4.function2, '_synchronized_lock', None)
+        else:
+            _lock1 = getattr(C4, '_synchronized_lock', None)
         self.assertNotEqual(_lock1, None)
 
         C4.function2()
 
-        #_lock2 = getattr(C4, '_synchronized_lock', None)
-        _lock2 = getattr(C4.function2, '_synchronized_lock', None)
+        if PYXY < (3, 9):
+            _lock2 = getattr(C4.function2, '_synchronized_lock', None)
+        else:
+            _lock2 = getattr(C4, '_synchronized_lock', None)
         self.assertNotEqual(_lock2, None)
         self.assertEqual(_lock2, _lock1)
 
         C4.function2()
 
-        #_lock3 = getattr(C4, '_synchronized_lock', None)
-        _lock3 = getattr(C4.function2, '_synchronized_lock', None)
+        if PYXY < (3, 9):
+            _lock3 = getattr(C4.function2, '_synchronized_lock', None)
+        else:
+            _lock3 = getattr(C4, '_synchronized_lock', None)
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 

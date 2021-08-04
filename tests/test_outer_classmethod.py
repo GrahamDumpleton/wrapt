@@ -1,12 +1,13 @@
 from __future__ import print_function
 
+import sys
 import unittest
 import inspect
 import imp
 
 import wrapt
 
-from compat import PY2, PY3, exec_
+from compat import PY2, PY3, PYXY, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -121,23 +122,31 @@ class TestNamingOuterClassMethod(unittest.TestCase):
 class TestCallingOuterClassMethod(unittest.TestCase):
 
     def test_class_call_function(self):
-        # Test calling classmethod. The instance and class passed to the
-        # wrapper will both be None because our decorator is surrounded
-        # by the classmethod decorator. The classmethod decorator
-        # doesn't bind the method and treats it like a normal function,
-        # explicitly passing the class as the first argument with the
-        # actual arguments following that.
+        # Test calling classmethod. Prior to Python 3.9, the instance
+        # and class passed to the wrapper will both be None because our
+        # decorator is surrounded by the classmethod decorator. The
+        # classmethod decorator doesn't bind the method and treats it
+        # like a normal function, explicitly passing the class as the
+        # first argument with the actual arguments following that. This
+        # was only finally fixed in Python 3.9. For more details see:
+        # https://bugs.python.org/issue19072
 
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            self.assertEqual(instance, None)
-            self.assertEqual(args, (Class,)+_args)
+            if PYXY < (3, 9):
+                self.assertEqual(instance, None)
+                self.assertEqual(args, (Class,)+_args)
+            else:
+                self.assertEqual(instance, Class)
+                self.assertEqual(args, _args)
+
             self.assertEqual(kwargs, _kwargs)
             self.assertEqual(wrapped.__module__, _function.__module__)
             self.assertEqual(wrapped.__name__, _function.__name__)
+
             return wrapped(*args, **kwargs)
 
         @_decorator
@@ -155,23 +164,31 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
 
     def test_instance_call_function(self):
-        # Test calling classmethod via class instance. The instance
-        # and class passed to the wrapper will both be None because our
-        # decorator is surrounded by the classmethod decorator. The
-        # classmethod decorator doesn't bind the method and treats it
-        # like a normal function, explicitly passing the class as the
-        # first argument with the actual arguments following that.
+        # Test calling classmethod via class instance. Prior to Python
+        # 3.9, the instance and class passed to the wrapper will both be
+        # None because our decorator is surrounded by the classmethod
+        # decorator. The classmethod decorator doesn't bind the method
+        # and treats it like a normal function, explicitly passing the
+        # class as the first argument with the actual arguments
+        # following that. This was only finally fixed in Python 3.9. For
+        # more details see: https://bugs.python.org/issue19072
 
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            self.assertEqual(instance, None)
-            self.assertEqual(args, (Class,)+_args)
+            if PYXY < (3, 9):
+                self.assertEqual(instance, None)
+                self.assertEqual(args, (Class,)+_args)
+            else:
+                self.assertEqual(instance, Class)
+                self.assertEqual(args, _args)
+
             self.assertEqual(kwargs, _kwargs)
             self.assertEqual(wrapped.__module__, _function.__module__)
             self.assertEqual(wrapped.__name__, _function.__name__)
+
             return wrapped(*args, **kwargs)
 
         @_decorator
