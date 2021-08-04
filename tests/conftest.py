@@ -7,11 +7,9 @@ except ImportError:
 
 version = tuple(sys.version_info[:2])
 
-
 class DummyCollector(FileCollector):
     def collect(self):
         return []
-
 
 def construct_dummy(path, parent):
     if hasattr(DummyCollector, "from_parent"):
@@ -20,9 +18,7 @@ def construct_dummy(path, parent):
     else:
         return DummyCollector(path, parent=parent)
 
-
 def pytest_pycollect_makemodule(path, parent):
-    """Use a dummy collector to collect version-incompatible test files."""
     if '_py33' in path.basename and version < (3, 3):
         return construct_dummy(path, parent)
     if '_py37' in path.basename and version < (3, 7):
