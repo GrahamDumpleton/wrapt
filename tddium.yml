@@ -1,6 +1,0 @@
-:tddium:
-  :tests:
-    - tox
-  :python:
-    :python_version: 2.7
-    :pip_requirements_file: tests/requirements.txt

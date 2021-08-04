@@ -137,9 +137,5 @@ and unit tests, can be obtained from github.
 
 .. |Actions| image:: https://img.shields.io/github/workflow/status/GrahamDumpleton/wrapt/Test/develop?logo=github&cacheSeconds=600
    :target: https://github.com/GrahamDumpleton/wrapt/actions
-.. |Appveyor| image:: https://img.shields.io/appveyor/build/GrahamDumpleton/wrapt/develop?logo=appveyor&cacheSeconds=600
-   :target: https://ci.appveyor.com/project/GrahamDumpleton/wrapt/branch/develop
-.. |Coveralls| image:: https://img.shields.io/coveralls/GrahamDumpleton/wrapt/develop?logo=coveralls&cacheSeconds=600
-   :target: https://coveralls.io/github/GrahamDumpleton/wrapt?branch=develop
 .. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg?logo=python&cacheSeconds=3600
    :target: https://pypi.python.org/pypi/wrapt
