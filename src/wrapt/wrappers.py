@@ -86,6 +86,14 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         except AttributeError:
             pass
 
+        # Python 3.10 onwards also does not allow itself to be overridden
+        # using a properly and it must instead be set explicitly.
+
+        try:
+            object.__setattr__(self, '__annotations__', wrapped.__annotations__)
+        except AttributeError:
+            pass
+
     @property
     def __name__(self):
         return self.__wrapped__.__name__
@@ -101,14 +109,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     @__class__.setter
     def __class__(self, value):
         self.__wrapped__.__class__ = value
-
-    @property
-    def __annotations__(self):
-        return self.__wrapped__.__annotations__
-
-    @__annotations__.setter
-    def __annotations__(self, value):
-        self.__wrapped__.__annotations__ = value
 
     def __dir__(self):
         return dir(self.__wrapped__)
@@ -178,8 +178,20 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
                 object.__setattr__(self, '__qualname__', value.__qualname__)
             except AttributeError:
                 pass
+            try:
+                object.__delattr__(self, '__annotations__')
+            except AttributeError:
+                pass
+            try:
+                object.__setattr__(self, '__annotations__', value.__annotations__)
+            except AttributeError:
+                pass
 
         elif name == '__qualname__':
+            setattr(self.__wrapped__, name, value)
+            object.__setattr__(self, name, value)
+
+        elif name == '__annotations__':
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
 
