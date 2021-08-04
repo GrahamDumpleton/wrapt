@@ -12,6 +12,16 @@ Version 1.12.2
   with the instance being ``None``. The class type should have been passed
   as the instance argument.
 
+* If supplying an adapter function for a signature changing decorator
+  using input in the form of a function argument specification, name lookup
+  exceptions would occur where the adaptor function had annotations which
+  referenced non builtin Python types. Although the issues have been
+  addressed where using input data in the format usually returned by
+  ``inspect.getfullargspec()`` to pass the function argument specification,
+  you can still have problems when supplying a function signature as
+  string. In the latter case only Python builtin types can be referenced
+  in annotations.
+
 Version 1.12.1
 --------------
 
