@@ -362,7 +362,8 @@ To obtain the argument specification of a decorated function the standard
     ArgSpec(args=['arg1', 'arg2'], varargs=None, keywords=None, defaults=None)
 
 If using Python 3, the ``getfullargspec()`` or ``signature()`` functions
-from the ``inspect`` module can also be used.
+from the ``inspect`` module can also be used, and would be required to
+be used if wanting the result to include any annotations.
 
 In other words, applying a decorator created using ``@wrapt.decorator`` to
 a function is signature preserving and does not result in the loss of the
@@ -477,17 +478,22 @@ system. In the latter, the arguments required of the adapter would though
 instead appear.
 
 If you need to generate the argument specification based on the function
-being wrapped dynamically, you can instead pass a tuple of the form
-which is returned by ``inspect.getargspec()``, or a string of the form
-which is returned by ``inspect.formatargspec()``. In these two cases the
-decorator will automatically compile a stub function to use as the
-adapter. This eliminates the need for a caller to generate the stub
-function if generating the signature on the fly.
+being wrapped dynamically, you can instead pass a tuple of the form which
+is returned by ``inspect.getargspec()`` or ``inspect.getfullargspec()``,
+or a string of the form which is returned by ``inspect.formatargspec()``.
+In these two cases the decorator will automatically compile a stub function
+to use as the adapter. This eliminates the need for a caller to generate
+the stub function if generating the signature on the fly.
+
+Do note though that you should use ``inspect.getfullargspec()`` if wanting
+to have annotations preserved. In the case of providing the signature as a
+string, if there are annotations they can only reference builtin Python
+types.
 
 ::
 
     def argspec_factory(wrapped):
-        argspec = inspect.getargspec(wrapped)
+        argspec = inspect.getfullargspec(wrapped)
 
         args = argspec.args[1:]
         defaults = argspec.defaults and argspec.defaults[-len(argspec.args):]
@@ -514,7 +520,7 @@ As a convenience, instead of using such a closure, you can instead use:
 ::
 
     def argspec_factory(wrapped):
-        argspec = inspect.getargspec(wrapped)
+        argspec = inspect.getfullargspec(wrapped)
 
         args = argspec.args[1:]
         defaults = argspec.defaults and argspec.defaults[-len(argspec.args):]
