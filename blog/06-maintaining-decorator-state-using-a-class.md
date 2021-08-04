@@ -28,7 +28,7 @@ Single decorator for functions and methods
 As described in the previous post, the pattern we were trying to use so as
 to allow us to use a class as a decorator was:
 
-```
+```python
 class with_arguments(object):
 
     def __init__(self, arg):
@@ -36,7 +36,7 @@ class with_arguments(object):
 
     @decorator
     def __call__(self, wrapped, instance, args, kwargs):
-        return wrapped(*args, **kwargs) 
+        return wrapped(*args, **kwargs)
 
 @with_arguments(arg=1)
 def function():
@@ -46,30 +46,30 @@ def function():
 The intent here is that the application of the decorator, with arguments
 supplied, would result in an instance of the class being created. In the
 next phase where that is called with the wrapped function, the
-``__call__()`` method with ``@decorator`` applied will be used as a
+`__call__()` method with `@decorator` applied will be used as a
 decorator on the function to be wrapped. The end result should be that the
-``__call__()`` method of the class instance created ends up being our
+`__call__()` method of the class instance created ends up being our
 wrapper function.
 
-When the decorated function is now called, the ``__call__()`` method of the
+When the decorated function is now called, the `__call__()` method of the
 class would be called with it in turn calling the wrapped function. As the
-``__call__()`` method at that point is bound to an instance of the class, it
+`__call__()` method at that point is bound to an instance of the class, it
 would have access to the state that it contained.
 
 When we tried this though we got, at the time that the decorator was being
 applied, the error:
 
-```
+```pycon
 Traceback (most recent call last):
   File "test.py", line 483, in <module>
     @with_arguments(1)
 TypeError: _decorator() takes exactly 1 argument (2 given)
 ```
 
-The ``_decorator()`` function in this case is the inner function from our
+The `_decorator()` function in this case is the inner function from our
 decorator factory.
 
-```
+```python
 def decorator(wrapper):
     @functools.wraps(wrapper)
     def _decorator(wrapped):
@@ -87,9 +87,9 @@ post in this series and is the result of the descriptor protocol being
 applied. This binding results in the reference to the instance of the class
 being automatically passed as the first argument to the method.
 
-Now as the ``_decorator()`` function was acting as a wrapper for the method
-call, and because ``_decorator()`` was not defined so as to accept both
-``self`` and ``wrapped`` as arguments, the call would fail.
+Now as the `_decorator()` function was acting as a wrapper for the method
+call, and because `_decorator()` was not defined so as to accept both
+`self` and `wrapped` as arguments, the call would fail.
 
 We could create a special variant of the decorator factory to be used just
 on instance methods, but that goes against the specific complaint expressed
@@ -99,7 +99,7 @@ use on normal functions and instance methods.
 To resolve this issue, what we can do is use our function wrapper for the
 decorator returned by the decorator factory, instead of a function closure.
 
-```
+```python
 def decorator(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):
         def _execute(wrapped):
@@ -112,15 +112,15 @@ Explicit binding of methods required
 ------------------------------------
 
 This above change now means we do not have to worry about whether
-``@decorator`` is being applied to a normal function, instance method or
+`@decorator` is being applied to a normal function, instance method or
 even a class method. This is because in all cases, any reference to the
-instance being bound to is never passed through in ``args``. Thus any
+instance being bound to is never passed through in `args`. Thus any
 wrapper function doesn't need to worry about the distinction.
 
 Trying again with this change though, we are confronted with a further
 problem. This time at the point that the wrapped function is called.
 
-```
+```pycon
 >>> function()
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -129,8 +129,8 @@ Traceback (most recent call last):
 TypeError: __call__() takes exactly 5 arguments (4 given)
 ```
 
-The issue this time is that when ``@decorator`` is applied to the
-``__call__()`` method, the reference it is passed is that of the unbound
+The issue this time is that when `@decorator` is applied to the
+`__call__()` method, the reference it is passed is that of the unbound
 method. This is because this occurs during the processing of the class
 definition, long before any instance of the class has been created.
 
@@ -145,7 +145,7 @@ To solve this problem we need for the case where we are being bound to an
 instance, to explicitly bind the wrapper function ourselves against the
 instance.
 
-```
+```python
 def decorator(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):
         def _execute(wrapped):
@@ -165,16 +165,16 @@ its behaviour dependent upon the context it is used in.
 
 In this case we had three cases we needed to deal with.
 
-The first is where the instance was ``None``. This corresponds to a normal
+The first is where the instance was `None`. This corresponds to a normal
 function, a static method or where the decorator was applied to a class
 type.
 
-The second is where the instance was not ``None``, but where it referred to a
+The second is where the instance was not `None`, but where it referred to a
 class type. This corresponds to a class method. In this case we need to
-bind the wrapper function to the class type by calling the ``__get__()``
+bind the wrapper function to the class type by calling the `__get__()`
 method of the wrapper function explicitly.
 
-The third and final case is where the instance was not ``None``, but where
+The third and final case is where the instance was not `None`, but where
 it was not referring to a class type. This corresponds to an instance
 method. In this case we again need to bind the wrapper function, this time
 to the instance.
@@ -187,31 +187,31 @@ Do not try and reproduce this
 
 So the complete solution we now have at this point is:
 
-```
-class object_proxy(object): 
+```python
+class object_proxy(object):
 
     def __init__(self, wrapped):
         self.wrapped = wrapped
         try:
             self.__name__ = wrapped.__name__
         except AttributeError:
-            pass 
+            pass
 
     @property
     def __class__(self):
-        return self.wrapped.__class__ 
+        return self.wrapped.__class__
 
     def __getattr__(self, name):
-        return getattr(self.wrapped, name) 
+        return getattr(self.wrapped, name)
 
-class bound_function_wrapper(object_proxy):  
+class bound_function_wrapper(object_proxy):
 
     def __init__(self, wrapped, instance, wrapper, binding, parent):
         super(bound_function_wrapper, self).__init__(wrapped)
         self.instance = instance
         self.wrapper = wrapper
         self.binding = binding
-        self.parent = parent  
+        self.parent = parent
 
     def __call__(self, *args, **kwargs):
         if self.binding == 'function':
@@ -223,16 +223,16 @@ class bound_function_wrapper(object_proxy):
                 return self.wrapper(self.wrapped, self.instance, args, kwargs)
         else:
             instance = getattr(self.wrapped, '__self__', None)
-            return self.wrapper(self.wrapped, instance, args, kwargs)  
+            return self.wrapper(self.wrapped, instance, args, kwargs)
 
     def __get__(self, instance, owner):
         if self.instance is None and self.binding == 'function':
             descriptor = self.parent.wrapped.__get__(instance, owner)
             return bound_function_wrapper(descriptor, instance, self.wrapper,
                     self.binding, self.parent)
-        return self  
+        return self
 
-class function_wrapper(object_proxy):  
+class function_wrapper(object_proxy):
 
     def __init__(self, wrapped, wrapper):
         super(function_wrapper, self).__init__(wrapped)
@@ -242,15 +242,15 @@ class function_wrapper(object_proxy):
         elif isinstance(wrapped, staticmethod):
             self.binding = 'staticmethod'
         else:
-            self.binding = 'function'  
+            self.binding = 'function'
 
     def __get__(self, instance, owner):
         wrapped = self.wrapped.__get__(instance, owner)
         return bound_function_wrapper(wrapped, instance, self.wrapper,
-                self.binding, self)  
+                self.binding, self)
 
     def __call__(self, *args, **kwargs):
-        return self.wrapper(self.wrapped, None, args, kwargs) 
+        return self.wrapper(self.wrapped, None, args, kwargs)
 
 def decorator(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):
@@ -271,15 +271,15 @@ take this code and try and use it yourself as is. If you do you will find
 that some aspects of performing introspection on the wrapped function will
 not work as indicated they should.
 
-In particular, access to the function ``__doc__`` string will always yield
-``None``. Various attributes such as ``__qualname__`` in Python 3 and
-``__module__`` are not propagated either.
+In particular, access to the function `__doc__` string will always yield
+`None`. Various attributes such as `__qualname__` in Python 3 and
+`__module__` are not propagated either.
 
-Handling an attribute such as ``__doc__`` string correctly is actually a
-bit of a pain. This is because you cannot use a ``__doc__`` property in an
+Handling an attribute such as `__doc__` string correctly is actually a
+bit of a pain. This is because you cannot use a `__doc__` property in an
 object proxy base class that returns the value from the wrapped function
 and have it then work when you derive another class from it. This is
-because the separate ``__doc__`` string attribute from the derived class,
+because the separate `__doc__` string attribute from the derived class,
 even if no documentation string were specified in the derived class, will
 override that of the base class.
 
@@ -316,11 +316,11 @@ and much more.
 
 In the next post in this series I will look at one specific example of
 using a universal decorator by posing the question of if Python decorators
-are so wonderful, why does Python not provide a ``@synchronized`` decorator?
+are so wonderful, why does Python not provide a `@synchronized` decorator?
 
 Such a decorator was held up as a bit of a poster child as to what could be
 done with decorators when they were first introduced to the language, yet
 all the implementations I could find are half baked and not very practical
 in the real world. I believe that a universal decorator can help here and
-we can actually have a usable ``@synchronized`` decorator. I will therefore
+we can actually have a usable `@synchronized` decorator. I will therefore
 explore that possibility in the next post.

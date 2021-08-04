@@ -31,7 +31,7 @@ Return values and side effects
 If one is using Mock and you want to temporarily override the value
 returned by a method of a class when called, one way is to use:
 
-```
+```python
 from mock import Mock, patch
 
 class ProductionClass(object):
@@ -49,7 +49,7 @@ def test_method(mock_method):
 With what I have presented so far of the wrapt package, an equivalent way
 of doing this would be:
 
-```
+```python
 from wrapt import patch_function_wrapper
 
 class ProductionClass(object):
@@ -75,11 +75,11 @@ unit test function being run at that time. So the patch should be
 removed at the end of that test and before the next function is called.
 
 For that scenario, the wrapt package provides an alternate decorator
-'@wrapt.transient_function_wrapper'. This can be used to create a wrapper
+`@wrapt.transient_function_wrapper`. This can be used to create a wrapper
 function that will only be applied for the scope of a specific call that
 the decorated function is applied to. We can therefore write the above as:
 
-```
+```python
 from wrapt import transient_function_wrapper
 
 class ProductionClass(object):
@@ -106,7 +106,7 @@ the return value being passed back from the lower layers.
 For this blog post when I tried to work out how to do that with Mock the
 general approach I came up with was the following.
 
-```
+```python
 from mock import Mock, patch
 
 class ProductionClass(object):
@@ -127,9 +127,9 @@ def test_method(mock_method):
     result = real.method(3, 4, 5, key='value')
 ```
 
-There were two tricks here. The first is the 'autospec=True' argument to
-'@Mock.patch' to have it perform method binding, and the second being the
-need to capture the original method from the 'ProductionClass' before any
+There were two tricks here. The first is the `autospec=True` argument to
+`@mock.patch` to have it perform method binding, and the second being the
+need to capture the original method from the `ProductionClass` before any
 mock had been applied to it, so I could then in turn call it when the side
 effect function for the mock was called.
 
@@ -144,7 +144,7 @@ nothing special has to be done when wrapping methods. Further, when the
 wrapt wrapper function is called, it is always passed the original function
 which was wrapped, so no magic is needed to stash that away.
 
-```
+```python
 from wrapt import transient_function_wrapper
 
 class ProductionClass(object):
@@ -184,7 +184,7 @@ to then intercept when it is called.
 
 In the case of using Mock I would do something like:
 
-```
+```python
 from mock import Mock, patch
 
 def function():
@@ -215,7 +215,7 @@ def test_method(mock_method):
 
 And with wrapt I would instead do:
 
-```
+```python
 from wrapt import transient_function_wrapper, function_wrapper
 
 def function():
@@ -241,9 +241,9 @@ def test_method():
 ```
 
 In this example I have used a new decorator called
-'@wrapt.function_wrapper'. I could also have used '@wrapt.decorator' in
-this example. The '@wrapt.function_wrapper' decorator is actually just a
-cut down version of '@wrapt.decorator', lacking some of the bells and
+`@wrapt.function_wrapper`. I could also have used `@wrapt.decorator` in
+this example. The `@wrapt.function_wrapper` decorator is actually just a
+cut down version of `@wrapt.decorator`, lacking some of the bells and
 whistles that one doesn't generally need when doing explicit monkey
 patching, but otherwise it can be used in the same way.
 
@@ -266,7 +266,7 @@ this with wrapt.
 The first approach is to replace the method on the instance directly with a
 wrapper which encapsulates the original method.
 
-```
+```python
 from wrapt import transient_function_wrapper, function_wrapper
 
 class StorageClass(object):
@@ -323,7 +323,7 @@ We can therefore avoid needing to change the original object itself.
 
 For this example what we can therefore do is:
 
-```
+```python
 from wrapt import transient_function_wrapper, ObjectProxy
 
 class StorageClass(object):
@@ -360,7 +360,7 @@ necessary.
 With the proxy we can even intercept access to an attribute of the original
 object by adding a property to the proxy object.
 
-```
+```python
 from wrapt import transient_function_wrapper, ObjectProxy
 
 class StorageClass(object):
@@ -413,7 +413,7 @@ I therefore leave you with one final example to get you thinking about the
 ways this might be done if you are partial to the way that Mock does
 things.
 
-```
+```python
 from wrapt import transient_function_wrapper
 
 class ProductionClass(object):

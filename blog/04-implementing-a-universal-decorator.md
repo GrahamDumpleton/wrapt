@@ -43,30 +43,30 @@ Normal functions vs instance methods
 
 The pattern for our universal decorator as described so far was as follows:
 
-```
-class bound_function_wrapper(object_proxy):  
+```python
+class bound_function_wrapper(object_proxy):
 
     def __init__(self, wrapped, instance, wrapper):
         super(bound_function_wrapper, self).__init__(wrapped)
         self.instance = instance
-        self.wrapper = wrapper 
+        self.wrapper = wrapper
 
     def __call__(self, *args, **kwargs):
         if self.instance is None:
             instance, args = args[0], args[1:]
             wrapped = functools.partial(self.wrapped, instance)
             return self.wrapper(wrapped, instance, args, kwargs)
-        return self.wrapper(self.wrapped, self.instance, args, kwargs) 
+        return self.wrapper(self.wrapped, self.instance, args, kwargs)
 
-class function_wrapper(object_proxy): 
+class function_wrapper(object_proxy):
 
     def __init__(self, wrapped, wrapper):
         super(function_wrapper, self).__init__(wrapped)
-        self.wrapper = wrapper 
+        self.wrapper = wrapper
 
     def __get__(self, instance, owner):
         wrapped = self.wrapped.__get__(instance, owner)
-        return bound_function_wrapper(wrapped, instance, self.wrapper) 
+        return bound_function_wrapper(wrapped, instance, self.wrapper)
 
     def __call__(self, *args, **kwargs):
         return self.wrapper(self.wrapped, None, args, kwargs)
@@ -74,7 +74,7 @@ class function_wrapper(object_proxy):
 
 This was used in conjunction with our decorator factory:
 
-```
+```python
 def decorator(wrapper):
     @functools.wraps(wrapper)
     def _decorator(wrapped):
@@ -87,90 +87,98 @@ factory to create a decorator which would dump out the values of any
 instance the wrapped function is bound to, and the arguments passed to the
 call when executed.
 
-```
+```python
 @decorator
 def my_function_wrapper(wrapped, instance, args, kwargs):
     print('INSTANCE', instance)
     print('ARGS', args)
-    return wrapped(*args, **kwargs) 
+    return wrapped(*args, **kwargs)
 ```
 
 This gave us the desired results for when the decorator was applied to a
 normal function and instance method, including when an instance method was
 called via the class and the instance passed in explicitly.
 
-```
+```python
 @my_function_wrapper
 def function(a, b):
     pass
+```
 
+```pycon
 >>> function(1, 2)
 INSTANCE None
-ARGS (1, 2) 
+ARGS (1, 2)
+```
 
+```python
 class Class(object):
     @my_function_wrapper
     def function_im(self, a, b):
-        pass 
+        pass
+```
 
-c = Class() 
+```pycon
+>>> c = Class()
 
 >>> c.function_im(1, 2)
 INSTANCE <__main__.Class object at 0x1085ca9d0>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_im(c, 1, 2)
 INSTANCE <__main__.Class object at 0x1085ca9d0>
-ARGS (1, 2) 
+ARGS (1, 2)
 ```
 
 The change to support the latter however, broke things for the case of the
 decorator being applied to a class method. Similarly for a static method.
 
-```
+```python
 class Class(object):
 
     @my_function_wrapper
     @classmethod
     def function_cm(self, a, b):
-        pass 
+        pass
 
     @my_function_wrapper
     @staticmethod
     def function_sm(a, b):
         pass
+```
 
+```pycon
 >>> Class.function_cm(1, 2)
 INSTANCE 1
-ARGS (2,) 
+ARGS (2,)
 
 >>> Class.function_sm(1, 2)
 INSTANCE 1
-ARGS (2,) 
+ARGS (2,)
 ```
 
 Class methods and static methods
 --------------------------------
 
 The point we are at therefore, is that in the case where the instance is
-passed as ``None``, we need to be able to distinguish between the three
+passed as `None`, we need to be able to distinguish between the three
 cases of:
 
 * an instance method being called via the class
 * a class method being called
 * a static method being called
 
-One way this can be done is by looking at the ``__self__`` attribute of the
+One way this can be done is by looking at the `__self__` attribute of the
 bound function. This attribute will provide information about the type of
 object which the function was bound to at that specific point in time. Lets
 first check this out for where a method is called via the class.
 
-```
+```pycon
 >>> print(Class.function_im.__self__)
-None 
+None
 
 >>> print(Class.function_cm.__self__)
-<class '__main__.Class'> 
+<class '__main__.Class'>
 
 >>> print(Class.function_sm.__self__)
 Traceback (most recent call last):
@@ -180,25 +188,25 @@ Traceback (most recent call last):
 AttributeError: 'function' object has no attribute '__self__'
 ```
 
-So for the case of calling an instance method via the class, ``__self__``
-will be ``None``, for a class method it will be the class type and in the
-case of a static method, there will not even be a ``__self__`` attribute.
+So for the case of calling an instance method via the class, `__self__`
+will be `None`, for a class method it will be the class type and in the
+case of a static method, there will not even be a `__self__` attribute.
 This would therefore appear to give us a way of detecting the different
 cases.
 
 Before we code up a solution based on this though, lets check with Python 3
 just to be sure we are okay there and that nothing has changed.
 
-```
+```pycon
 >>> print(Class.function_im.__self__)
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "dectest.py", line 19, in __getattr__
     return getattr(self.wrapped, name)
-AttributeError: 'function' object has no attribute '__self__' 
+AttributeError: 'function' object has no attribute '__self__'
 
 >>> print(Class.function_cm.__self__)
-<class '__main__.Class'> 
+<class '__main__.Class'>
 
 >>> print(Class.function_sm.__self__)
 Traceback (most recent call last):
@@ -214,8 +222,8 @@ aren't going to be able to use this approach. Why is this case?
 The reason for this is that in Python 3 they decided to eliminate the idea
 of an unbound method and this check was relying on the fact that when
 accessing an instance method via the class, it would actually return an
-instance of an unbound method for which the ``__self__`` attribute was
-``None``. So although we can distinguish the case for a class method still,
+instance of an unbound method for which the `__self__` attribute was
+`None`. So although we can distinguish the case for a class method still,
 we can now no longer distinguish the case of calling an instance method via
 the class, from the case of calling a static method.
 
@@ -228,38 +236,38 @@ the type of the wrapped object and determine if it is an instance of a
 class method or static method. This information can then be passed through
 to the bound function wrapper and checked.
 
-```
-class bound_function_wrapper(object_proxy): 
+```python
+class bound_function_wrapper(object_proxy):
 
     def __init__(self, wrapped, instance, wrapper, binding):
         super(bound_function_wrapper, self).__init__(wrapped)
         self.instance = instance
         self.wrapper = wrapper
-        self.binding = binding 
+        self.binding = binding
 
     def __call__(self, *args, **kwargs):
         if self.binding == 'function' and self.instance is None:
             instance, args = args[0], args[1:]
             wrapped = functools.partial(self.wrapped, instance)
-            return self.wrapper(wrapped, instance, args, kwargs) 
-        return self.wrapper(self.wrapped, self.instance, args, kwargs) 
+            return self.wrapper(wrapped, instance, args, kwargs)
+        return self.wrapper(self.wrapped, self.instance, args, kwargs)
 
-class function_wrapper(object_proxy): 
+class function_wrapper(object_proxy):
 
     def __init__(self, wrapped, wrapper):
         super(function_wrapper, self).__init__(wrapped)
-        self.wrapper = wrapper 
+        self.wrapper = wrapper
         if isinstance(wrapped, classmethod):
             self.binding = 'classmethod'
         elif isinstance(wrapped, staticmethod):
             self.binding = 'staticmethod'
         else:
-            self.binding = 'function' 
+            self.binding = 'function'
 
     def __get__(self, instance, owner):
         wrapped = self.wrapped.__get__(instance, owner)
         return bound_function_wrapper(wrapped, instance, self.wrapper,
-                self.binding) 
+                self.binding)
 
     def __call__(self, *args, **kwargs):
         return self.wrapper(self.wrapped, None, args, kwargs)
@@ -274,18 +282,18 @@ decorators around them.
 
 If someone is actually implementing the descriptor protocol in their
 decorator, hopefully they would also be using an object proxy as is done
-here. Because the object proxy implements ``__class__`` as a property, it
+here. Because the object proxy implements `__class__` as a property, it
 would return the class of the wrapped object, this should mean that an
-``isinstance()`` check will still be successful as ``isinstance()`` gives
-priority to what ``__class__`` yields rather than the actual type of the
+`isinstance()` check will still be successful as `isinstance()` gives
+priority to what `__class__` yields rather than the actual type of the
 object.
 
 Anyway, trying out our tests again with this change we get:
 
-```
+```pycon
 >>> c.function_im(1,2)
 INSTANCE <__main__.Class object at 0x101f973d0>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_im(c, 1, 2)
 INSTANCE <__main__.Class object at 0x101f973d0>
@@ -297,11 +305,11 @@ ARGS (1, 2)
 
 >>> Class.function_cm(1, 2)
 INSTANCE None
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> c.function_sm(1,2)
 INSTANCE <__main__.Class object at 0x101f973d0>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_sm(1, 2)
 INSTANCE None
@@ -319,30 +327,30 @@ cases.
 
 Ideally what we want in this circumstance is that for a class method call
 we want the instance argument to always be the class type, and for the case
-of a static method call, for it to always be ``None``.
+of a static method call, for it to always be `None`.
 
 For the case of a static method, we could just check for 'staticmethod'
 from when we checked the type of object which was wrapped.
 
 For the case of a class method, if we look back at our test to see if we
-could use the ``__self__`` attribute, what we found was that for the class
-method, ``__self__`` was the class instance and for a static method the
+could use the `__self__` attribute, what we found was that for the class
+method, `__self__` was the class instance and for a static method the
 attribute didn't exist.
 
 What we can therefore do, is if the type of the wrapped object wasn't a
-function, then we can lookup up the value of ``__self__``, defaulting to
-``None`` if it doesn't exist. This one check will cater for both cases.
+function, then we can lookup up the value of `__self__`, defaulting to
+`None` if it doesn't exist. This one check will cater for both cases.
 
 What we now therefore have is:
 
-```
+```python
 class bound_function_wrapper(object_proxy):
 
     def __init__(self, wrapped, instance, wrapper, binding):
         super(bound_function_wrapper, self).__init__(wrapped)
         self.instance = instance
         self.wrapper = wrapper
-        self.binding = binding 
+        self.binding = binding
 
     def __call__(self, *args, **kwargs):
         if self.binding == 'function':
@@ -360,26 +368,26 @@ class bound_function_wrapper(object_proxy):
 and if we run our tests one more time, we finally get the result we have
 been looking for:
 
-```
+```pycon
 >>> c.function_im(1,2)
 INSTANCE <__main__.Class object at 0x10c2c43d0>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_im(c, 1, 2)
 INSTANCE <__main__.Class object at 0x10c2c43d0>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> c.function_cm(1,2)
 INSTANCE <class '__main__.Class'>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_cm(1, 2)
 INSTANCE <class '__main__.Class'>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> c.function_sm(1,2)
 INSTANCE None
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_sm(1, 2)
 INSTANCE None
@@ -400,7 +408,7 @@ an attribute of a class, or even an instance of a class, and then call it
 via the alias so created. I only encountered this one due to some bizarre
 stuff a meta class was doing.
 
-```
+```pycon
 >>> Class.function_rm = Class.function_im
 
 >>> c.function_rm(1, 2)
@@ -412,13 +420,13 @@ Traceback (most recent call last):
     return self.wrapper(wrapped, instance, args, kwargs)
   File "test.py", line 58, in my_function_wrapper
     return wrapped(*args, **kwargs)
-TypeError: unbound method function_im() must be called with Class instance as first argument (got int instance instead) 
+TypeError: unbound method function_im() must be called with Class instance as first argument (got int instance instead)
 
 >>> Class.function_rm = Class.function_cm
 
 >>> c.function_rm(1, 2)
 INSTANCE <class '__main__.Class'>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_rm = Class.function_sm
 >>> c.function_rm(1, 2)
@@ -436,12 +444,12 @@ assigned back as an attribute of the class.
 When a subsequent lookup is made via the new name, under normal
 circumstances binding would occur once more to bind it to the actual
 instance. In our implementation of the bound function wrapper, we do not
-however provide a ``__get__()`` method and thus this rebinding does not
+however provide a `__get__()` method and thus this rebinding does not
 occur. The result is that on the subsequent call, it all falls apart.
 
-The solution therefore is that we need to add a ``__get__()`` method to the
+The solution therefore is that we need to add a `__get__()` method to the
 bound function wrapper which provides the ability to perform further
-binding. We only want to do this where the instance was ``None``,
+binding. We only want to do this where the instance was `None`,
 indicating that the initial binding wasn't actually against an instance,
 and where we are dealing with an instance method and not a class method or
 static method.
@@ -451,15 +459,15 @@ function and not the bound one. The simplest way of handling that is to
 pass a reference to the original function wrapper to the bound function
 wrapper and reach back into that to get the original wrapped function.
 
-```
-class bound_function_wrapper(object_proxy): 
+```python
+class bound_function_wrapper(object_proxy):
 
     def __init__(self, wrapped, instance, wrapper, binding, parent):
         super(bound_function_wrapper, self).__init__(wrapped)
         self.instance = instance
         self.wrapper = wrapper
         self.binding = binding
-        self.parent = parent 
+        self.parent = parent
 
     def __call__(self, *args, **kwargs):
         if self.binding == 'function':
@@ -471,16 +479,16 @@ class bound_function_wrapper(object_proxy):
                 return self.wrapper(self.wrapped, self.instance, args, kwargs)
         else:
             instance = getattr(self.wrapped, '__self__', None)
-            return self.wrapper(self.wrapped, instance, args, kwargs) 
+            return self.wrapper(self.wrapped, instance, args, kwargs)
 
     def __get__(self, instance, owner):
         if self.instance is None and self.binding == 'function':
             descriptor = self.parent.wrapped.__get__(instance, owner)
             return bound_function_wrapper(descriptor, instance, self.wrapper,
                     self.binding, self.parent)
-        return self 
+        return self
 
-class function_wrapper(object_proxy): 
+class function_wrapper(object_proxy):
 
     def __init__(self, wrapped, wrapper):
         super(function_wrapper, self).__init__(wrapped)
@@ -490,12 +498,12 @@ class function_wrapper(object_proxy):
         elif isinstance(wrapped, staticmethod):
             self.binding = 'staticmethod'
         else:
-            self.binding = 'function' 
+            self.binding = 'function'
 
     def __get__(self, instance, owner):
         wrapped = self.wrapped.__get__(instance, owner)
         return bound_function_wrapper(wrapped, instance, self.wrapper,
-                self.binding, self) 
+                self.binding, self)
 
     def __call__(self, *args, **kwargs):
         return self.wrapper(self.wrapped, None, args, kwargs)
@@ -503,17 +511,17 @@ class function_wrapper(object_proxy):
 
 Rerunning our most recent test once again we now get:
 
-```
+```pycon
 >>> Class.function_rm = Class.function_im
 
 >>> c.function_rm(1, 2)
 INSTANCE <__main__.Class object at 0x105609790>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_rm = Class.function_cm
 >>> c.function_rm(1, 2)
 INSTANCE <class '__main__.Class'>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_rm = Class.function_sm
 >>> c.function_rm(1, 2)
@@ -531,32 +539,34 @@ in all cases so far our decorator has always been placed outside of the
 existing decorators marking a method as either a class method or a static
 method. What happens if we reverse the order?
 
-```
+```python
 class Class(object):
 
     @classmethod
     @my_function_wrapper
     def function_cm(self, a, b):
-        pass 
+        pass
 
     @staticmethod
     @my_function_wrapper
     def function_sm(a, b):
-        pass 
+        pass
+```
 
-c = Class() 
+```pycon
+>>> c = Class()
 
 >>> c.function_cm(1,2)
 INSTANCE None
-ARGS (<class '__main__.Class'>, 1, 2) 
+ARGS (<class '__main__.Class'>, 1, 2)
 
 >>> Class.function_cm(1, 2)
 INSTANCE None
-ARGS (<class '__main__.Class'>, 1, 2) 
+ARGS (<class '__main__.Class'>, 1, 2)
 
 >>> c.function_sm(1,2)
 INSTANCE None
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_sm(1, 2)
 INSTANCE None
@@ -594,10 +604,10 @@ good.
 I did mention though in the last post that the goal was that we could also
 distinguish when a decorator was applied to a class. So lets check that.
 
-```
+```python
 @my_function_wrapper
 class Class(object):
-    pass 
+    pass
 
 >>> c = Class()
 INSTANCE None
@@ -613,23 +623,27 @@ will be the class itself. Lets print out the value of the wrapped argument
 passed to the decorator wrapper function as well and see whether that can
 be used to distinguish this case from others.
 
-```
+```python
 @decorator
 def my_function_wrapper(wrapped, instance, args, kwargs):
     print('WRAPPED', wrapped)
     print('INSTANCE', instance)
     print('ARGS', args)
-    return wrapped(*args, **kwargs) 
+    return wrapped(*args, **kwargs)
 
 @my_function_wrapper
 def function(a, b):
-    pass 
+    pass
+```
 
+```pycon
 >>> function(1, 2)
 WRAPPED <function function at 0x10e13bb18>
 INSTANCE None
-ARGS (1, 2) 
+ARGS (1, 2)
+```
 
+```python
 class Class(object):
 
     @my_function_wrapper
@@ -644,45 +658,47 @@ class Class(object):
     @my_function_wrapper
     @staticmethod
     def function_sm(a, b):
-        pass 
+        pass
+```
 
-c = Class() 
+```pycon
+>>> c = Class()
 
 >>> c.function_im(1,2)
 WRAPPED <bound method Class.function_im of <__main__.Class object at 0x107e90950>>
 INSTANCE <__main__.Class object at 0x107e90950>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_im(c, 1, 2)
 WRAPPED <functools.partial object at 0x107df3208>
 INSTANCE <__main__.Class object at 0x107e90950>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> c.function_cm(1,2)
 WRAPPED <bound method type.function_cm of <class '__main__.Class'>>
 INSTANCE <class '__main__.Class'>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_cm(1, 2)
 WRAPPED <bound method type.function_cm of <class '__main__.Class'>>
 INSTANCE <class '__main__.Class'>
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> c.function_sm(1,2)
 WRAPPED <function function_sm at 0x107e918c0>
 INSTANCE None
-ARGS (1, 2) 
+ARGS (1, 2)
 
 >>> Class.function_sm(1, 2)
 WRAPPED <function function_sm at 0x107e918c0>
 INSTANCE None
-ARGS (1, 2) 
+ARGS (1, 2)
 
 @my_function_wrapper
 class Class(object):
-    pass 
+    pass
 
-c = Class() 
+c = Class()
 
 >>> c = Class()
 WRAPPED <class '__main__.Class'>
@@ -711,7 +727,7 @@ have been a class method to begin with.
 Anyway, after all this work, our universal decorator then would be written
 as:
 
-```
+```python
 @decorator
 def universal(wrapped, instance, args, kwargs):
     if instance is None:
