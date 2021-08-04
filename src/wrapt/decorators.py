@@ -31,7 +31,6 @@ else:
     del builtins
 
 from functools import partial
-import inspect
 from inspect import ismethod, isclass, formatargspec
 from collections import namedtuple
 from threading import Lock, RLock
