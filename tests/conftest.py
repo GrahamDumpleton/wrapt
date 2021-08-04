@@ -1,7 +1,5 @@
 import sys
 
-import pytest
-
 try:
     from pytest import File as FileCollector
 except ImportError:
