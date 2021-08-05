@@ -173,7 +173,7 @@ adapter_factory = DelegatedAdapterFactory
 # function so the wrapper is effectively indistinguishable from the
 # original wrapped function.
 
-def decorator(wrapper=None, enabled=None, adapter=None):
+def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
     # The decorator should be supplied with a single positional argument
     # which is the wrapper function to be used to implement the
     # decorator. This may be preceded by a step whereby the keyword
@@ -183,7 +183,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
     # decorator. In that case parts of the function '__code__' and
     # '__defaults__' attributes are used from the adapter function
     # rather than those of the wrapped function. This allows for the
-    # argument specification from inspect.getargspec() and similar
+    # argument specification from inspect.getfullargspec() and similar
     # functions to be overridden with a prototype for a different
     # function than what was wrapped. The 'enabled' argument provides a
     # way to enable/disable the use of the decorator. If the type of
@@ -194,6 +194,8 @@ def decorator(wrapper=None, enabled=None, adapter=None):
     # if 'enabled' is callable it will be called to obtain the value to
     # be checked. If False, the wrapper will not be called and instead
     # the original wrapped function will be called directly instead.
+    # The 'proxy' argument provides a way of passing a custom version of
+    # the FunctionWrapper class used in decorating the function.
 
     if wrapper is not None:
         # Helper function for creating wrapper of the appropriate
@@ -236,8 +238,7 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                 return AdapterWrapper(wrapped=wrapped, wrapper=wrapper,
                         enabled=enabled, adapter=adapter)
 
-            return FunctionWrapper(wrapped=wrapped, wrapper=wrapper,
-                    enabled=enabled)
+            return proxy(wrapped=wrapped, wrapper=wrapper, enabled=enabled)
 
         # The wrapper has been provided so return the final decorator.
         # The decorator is itself one of our function wrappers so we
