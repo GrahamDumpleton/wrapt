@@ -2337,11 +2337,11 @@ static PyObject *WraptFunctionWrapperBase_call(
         kwds = param_kwds;
     }
 
-    if (self->instance == Py_None && (self->binding == function_str ||
+    if ((self->instance == Py_None) && (self->binding == function_str ||
             PyObject_RichCompareBool(self->binding, function_str,
             Py_EQ) == 1) || self->binding == classmethod_str ||
-            PyObject_RichCompareBool(self->binding, classmethod_str,
-            Py_EQ) == 1) {
+            (PyObject_RichCompareBool(self->binding, classmethod_str,
+            Py_EQ) == 1)) {
 
         PyObject *instance = NULL;
 
@@ -2515,6 +2515,35 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptFunctionWrapperBase_set_name(
+        WraptFunctionWrapperObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *method = NULL;
+    PyObject *result = NULL;
+
+    if (!self->object_proxy.wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      return NULL;
+    }
+
+    method = PyObject_GetAttrString(self->object_proxy.wrapped,
+            "__set_name__");
+
+    if (!method) {
+        PyErr_Clear();
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    result = PyObject_Call(method, args, kwds);
+
+    Py_DECREF(method);
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptFunctionWrapperBase_get_self_instance(
         WraptFunctionWrapperObject *self, void *closure)
 {
@@ -2585,6 +2614,14 @@ static PyObject *WraptFunctionWrapperBase_get_self_parent(
 
 /* ------------------------------------------------------------------------- */;
 
+static PyMethodDef WraptFunctionWrapperBase_methods[] = {
+    { "__set_name__", (PyCFunction)WraptFunctionWrapperBase_set_name,
+                    METH_VARARGS | METH_KEYWORDS, 0 },
+    { NULL, NULL },
+};
+
+/* ------------------------------------------------------------------------- */;
+
 static PyGetSetDef WraptFunctionWrapperBase_getset[] = {
     { "__module__",         (getter)WraptObjectProxy_get_module,
                             (setter)WraptObjectProxy_set_module, 0 },
@@ -2638,7 +2675,7 @@ PyTypeObject WraptFunctionWrapperBase_Type = {
     offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
-    0,                      /*tp_methods*/
+    WraptFunctionWrapperBase_methods, /*tp_methods*/
     0,                      /*tp_members*/
     WraptFunctionWrapperBase_getset, /*tp_getset*/
     0,                      /*tp_base*/

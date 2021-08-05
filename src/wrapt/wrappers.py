@@ -578,6 +578,16 @@ class _FunctionWrapperBase(ObjectProxy):
         return self._self_wrapper(self.__wrapped__, self._self_instance,
                 args, kwargs)
 
+    def __set_name__(self, owner, name):
+        # This is a special method use to supply information to
+        # descriptors about what the name of variable in a class
+        # definition is. Not wanting to add this to ObjectProxy as not
+        # sure of broader implications of doing that. Thus restrict to
+        # FunctionWrapper used by decorators.
+
+        if hasattr(self.__wrapped__, "__set_name__"):
+            self.__wrapped__.__set_name__(owner, name)
+
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(self, *args, **kwargs):

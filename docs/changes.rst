@@ -22,6 +22,15 @@ Version 1.12.2
   string. In the latter case only Python builtin types can be referenced
   in annotations.
 
+* When a decorator was applied on top of a data/non-data descriptor in a
+  class definition, the call to the special method ``__set_name__()`` to
+  notify the descriptor of the variable name was not being propogated. Note
+  that this issue has been addressed in the ``FunctionWrapper`` used by
+  ``@wrapt.decorator`` but has not been applied to the generic
+  ``ObjectProxy`` class. If using ``ObjectProxy`` directly to construct a
+  custom wrapper which is applied to a descriptor, you will need to
+  propogate the ``__set_name__()`` call yourself if required.
+
 Version 1.12.1
 --------------
 
