@@ -2571,7 +2571,7 @@ static PyObject *WraptFunctionWrapperBase_subclasscheck(
 
     Py_XDECREF(object);
 
-    if (check == -1):
+    if (check == -1)
         return NULL;
 
     result = check ? Py_True : Py_False;
