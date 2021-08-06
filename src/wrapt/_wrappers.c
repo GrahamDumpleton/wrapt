@@ -1961,13 +1961,13 @@ static int WraptPartialCallableObjectProxy_init(
 
     if (!PyObject_Length(args)) {
         PyErr_SetString(PyExc_TypeError,
-		"__init__ of partial needs an argument");
+                "__init__ of partial needs an argument");
         return -1;
     }
 
     if (PyObject_Length(args) < 1) {
         PyErr_SetString(PyExc_TypeError,
-		"partial type takes at least one argument");
+                "partial type takes at least one argument");
         return -1;
     }
 
@@ -1975,7 +1975,7 @@ static int WraptPartialCallableObjectProxy_init(
 
     if (!PyCallable_Check(wrapped)) {
         PyErr_SetString(PyExc_TypeError,
-		"the first argument must be callable");
+                "the first argument must be callable");
         return -1;
     }
 
@@ -1985,7 +1985,7 @@ static int WraptPartialCallableObjectProxy_init(
         return -1;
 
     result = WraptPartialCallableObjectProxy_raw_init(self, wrapped,
-	    fnargs, kwds);
+            fnargs, kwds);
 
     Py_DECREF(fnargs);
 
