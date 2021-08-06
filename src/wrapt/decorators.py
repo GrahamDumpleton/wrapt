@@ -431,7 +431,8 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
         # decorator again wrapped in a partial using the collected
         # arguments.
 
-        return partial(decorator, enabled=enabled, adapter=adapter)
+        return partial(decorator, enabled=enabled, adapter=adapter,
+                proxy=proxy)
 
 # Decorator for implementing thread synchronization. It can be used as a
 # decorator, in which case the synchronization context is determined by
