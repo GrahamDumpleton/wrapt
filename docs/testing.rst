@@ -10,13 +10,12 @@ run the command:
 
     tox
 
-By default tests are run for Python 2.7, 3.4-3.9 and PyPy, with and
+By default tests are run for Python 2.7, 3.5-3.9 and PyPy, with and
 without the C extensions.
 
 ::
 
     py27-without-extensions
-    py34-without-extensions
     py35-without-extensions
     py36-without-extensions
     py37-without-extensions
@@ -24,7 +23,6 @@ without the C extensions.
     py39-without-extensions
 
     py27-install-extensions
-    py34-install-extensions
     py35-install-extensions
     py36-install-extensions
     py37-install-extensions
@@ -32,7 +30,6 @@ without the C extensions.
     py39-install-extensions
 
     py27-disable-extensions
-    py34-disable-extensions
     py35-disable-extensions
     py36-disable-extensions
     py37-disable-extensions
