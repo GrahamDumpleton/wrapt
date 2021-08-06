@@ -2339,8 +2339,8 @@ static PyObject *WraptFunctionWrapperBase_call(
 
     if ((self->instance == Py_None) && (self->binding == function_str ||
             PyObject_RichCompareBool(self->binding, function_str,
-            Py_EQ) == 1) || self->binding == classmethod_str ||
-            (PyObject_RichCompareBool(self->binding, classmethod_str,
+            Py_EQ) == 1 || self->binding == classmethod_str ||
+            PyObject_RichCompareBool(self->binding, classmethod_str,
             Py_EQ) == 1)) {
 
         PyObject *instance = NULL;
