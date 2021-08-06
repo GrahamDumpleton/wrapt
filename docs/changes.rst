@@ -31,6 +31,14 @@ Version 1.13.0
   custom wrapper which is applied to a descriptor, you will need to
   propogate the ``__set_name__()`` call yourself if required.
 
+* The ``issubclass()`` builtin method would give incorrect results when used
+  with a class which had a decorator applied to it. Note that this has only
+  been able to be fixed for Python 3.7+. Also, due to what is arguably a
+  bug (https://bugs.python.org/issue44847) in the Python standard library,
+  you will still have problems when the class heirarchy uses a base class
+  which has the ``abc.ABCMeta`` metaclass. In this later case an exception
+  will be raised of ``TypeError: issubclass() arg 1 must be a class``.
+
 Version 1.12.1
 --------------
 

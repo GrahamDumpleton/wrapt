@@ -79,3 +79,18 @@ to decorate the base class.
 Note that as of Python 3.7 and wrapt 1.12.0, accessing the true type of the
 base class using ``__wrapped__`` is not required. Such code though will not
 work for versions of Python older than Python 3.7.
+
+Using issubclass() on abstract classes
+--------------------------------------
+
+If a class heirarchy has a base class which uses the ``abc.ABCMeta``
+metaclass, and a decorator is applied to a class in the heirarchy, use of
+``issubclass()`` with classes where the decorator is applied will result in
+an exception of:
+
+::
+
+    TypeError: issubclass() arg 1 must be a class
+
+This is due to what can be argued as being a bug in The Python standard
+library and has been reported (https://bugs.python.org/issue44847).
