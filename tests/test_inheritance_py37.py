@@ -44,6 +44,18 @@ class TestClassInheritance(unittest.TestCase):
         self.assertTrue(issubclass(D1, (B1, C1, D1)))
 
     def test_abc_inheritance(self):
+        # XXX The checks commented out below all fail because the
+        # helpers for issubclass() via __subclasscheck__() in ABCMeta
+        # base class when C implementation is used does not support duck
+        # typing and will fail if the argument it is given is an object
+        # proxy like wrapt decorator uses. There is no known workaround
+        # for this problem.
+        #
+        #       def __subclasscheck__(cls, subclass):
+        #           """Override for issubclass(subclass, cls)."""
+        #   >       return _abc_subclasscheck(cls, subclass)
+        #   E       TypeError: issubclass() arg 1 must be a class
+
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
             return wrapped(args, kwargs)
@@ -65,18 +77,6 @@ class TestClassInheritance(unittest.TestCase):
         class D1(C1):
             def method(self):
                 pass
-
-        # XXX The checks commented out below all fail because the override
-        # for issubclass() via __subclasscheck__() in abc base class
-        # does when C implementation is used does not support duck
-        # typing and will fail if the argument it is given is an object
-        # proxy like wrapt decorator uses. There is no known workaround
-        # for this problem.
-        #
-        #       def __subclasscheck__(cls, subclass):
-        #           """Override for issubclass(subclass, cls)."""
-        #   >       return _abc_subclasscheck(cls, subclass)
-        #   E       TypeError: issubclass() arg 1 must be a class
 
         self.assertTrue(issubclass(A1, A1))
         self.assertTrue(issubclass(B1, A1))
@@ -104,6 +104,10 @@ class TestClassInheritance(unittest.TestCase):
         self.assertTrue(issubclass(D1, (A1, B1, C1, D1)))
 
     def test_py_abc_inheritance(self):
+        # In contrast to above when C implementation for ABCMeta helpers
+        # are used, these all pass as have use the Python implementation
+        # instead.
+
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
             return wrapped(args, kwargs)
