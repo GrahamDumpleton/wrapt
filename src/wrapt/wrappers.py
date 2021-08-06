@@ -588,6 +588,18 @@ class _FunctionWrapperBase(ObjectProxy):
         if hasattr(self.__wrapped__, "__set_name__"):
             self.__wrapped__.__set_name__(owner, name)
 
+    def __subclasscheck__(self, subclass):
+        # This is a special method used by issubclass() to make checks
+        # about inheritance of classes. We need to upwrap any object
+        # proxy. Not wanting to add this to ObjectProxy as not sure of
+        # broader implications of doing that. Thus restrict to
+        # FunctionWrapper used by decorators.
+
+        if hasattr(subclass, "__wrapped__"):
+            return issubclass(subclass.__wrapped__, self.__wrapped__)
+        else:
+            return issubclass(subclass, self.__wrapped__)
+
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(self, *args, **kwargs):
