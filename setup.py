@@ -22,7 +22,7 @@ if platform.python_implementation() != "CPython":
 extensions = [
     setuptools.Extension(
         "wrapt._wrappers",
-        sources=[ os.path.realpath(os.path.join(__file__, "..", "src", "wrapt", "_wrappers.c"))],
+        sources=["src/wrapt/_wrappers.c"],
         optional=not force_extensions,
     )
 ]
