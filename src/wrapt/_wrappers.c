@@ -165,6 +165,8 @@ static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
 
 static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 {
+    PyTypeObject *tp = Py_TYPE(self);
+
     PyObject_GC_UnTrack(self);
 
     if (self->weakreflist != NULL)
@@ -174,6 +176,8 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 
     freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
     free_func(self);
+
+    Py_DECREF(tp);
 }
 
 /* ------------------------------------------------------------------------- */
