@@ -2642,6 +2642,8 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     static PyObject *classmethod_str = NULL;
     static PyObject *staticmethod_str = NULL;
     static PyObject *function_str = NULL;
+    static PyObject *classmethod_type = NULL;
+    static PyObject *staticmethod_type = NULL;
 
     int result = 0;
 
@@ -2664,16 +2666,34 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
         function_str = PyUnicode_InternFromString("function");
     }
 
-/* XXX TODO
-    if (PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type)) {
+    if (!classmethod_type) {
+        PyObject *builtins = PyImport_ImportModule("builtins");
+        classmethod_type = PyObject_GetAttrString(builtins, "classmethod");
+        if (!staticmethod_type) {
+            staticmethod_type = PyObject_GetAttrString(builtins, "staticmethod");
+        }
+        Py_DECREF(builtins);
+        if ((!classmethod_type) || (!staticmethod_type)) {
+            return -1;
+        }
+    }
+
+    if (!staticmethod_type) {
+        PyObject *builtins = PyImport_ImportModule("builtins");
+        staticmethod_type = PyObject_GetAttrString(builtins, "staticmethod");
+        Py_DECREF(builtins);
+        if (!staticmethod_type) {
+            return -1;
+        }
+    }
+
+    if (PyObject_IsInstance(wrapped, classmethod_type)) {
         binding = classmethod_str;
     }
-    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type)) {
+    else if (PyObject_IsInstance(wrapped, staticmethod_type)) {
         binding = staticmethod_str;
     }
-    else
-*/
-    if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
+    else if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
         if (PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
             binding = classmethod_str;
         }
