@@ -1695,7 +1695,7 @@ static PyType_Spec WraptCallableObjectProxy_Type_spec = {
     "CallableObjectProxy",
     sizeof(WraptObjectProxyObject),
     0,
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     WraptCallableObjectProxy_Type_slots
 };
 
@@ -2449,7 +2449,7 @@ static PyType_Spec WraptFunctionWrapperBase_Type_spec = {
     sizeof(WraptFunctionWrapperObject),
     0,
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
-    WraptPartialCallableObjectProxy_Type_slots
+    WraptFunctionWrapperBase_Type_slots
 };
 
 /* ------------------------------------------------------------------------- */
@@ -2620,7 +2620,7 @@ static PyType_Spec WraptBoundFunctionWrapper_Type_spec = {
     "BoundFunctionWrapper",
     sizeof(WraptFunctionWrapperObject),
     0,
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     WraptBoundFunctionWrapper_Type_slots
 };
 
@@ -2710,7 +2710,7 @@ static PyType_Spec WraptFunctionWrapper_Type_spec = {
     "FunctionWrapper",
     sizeof(WraptFunctionWrapperObject),
     0,
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     WraptFunctionWrapper_Type_slots
 };
 
@@ -2739,19 +2739,15 @@ init_type(PyObject *module, PyType_Spec *spec, PyTypeObject *base, const char *a
             return NULL;
         }
     }
-#if 0
-    newtype = PyType_FromModuleAndSpec(
-        module, spec, bases
-    );
-#else
     newtype = PyType_FromSpecWithBases(
         spec, bases
     );
-#endif
     Py_XDECREF(bases);
     if (newtype == NULL) {
         return NULL;
     }
+    assert(((PyTypeObject *)newtype)->tp_traverse != NULL);
+
     if (PyModule_AddObject(module, attrname, newtype) < 0) {
         Py_DECREF(newtype);
         return NULL;
