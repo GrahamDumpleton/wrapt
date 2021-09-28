@@ -1682,7 +1682,6 @@ static PyGetSetDef WraptCallableObjectProxy_getset[] = {
 };
 
 static PyType_Slot WraptCallableObjectProxy_Type_slots[] = {
-    {Py_tp_base, NULL},
     {Py_tp_call, WraptCallableObjectProxy_call},
     {Py_tp_getset, WraptCallableObjectProxy_getset},
     {0, 0},
@@ -1893,7 +1892,6 @@ static PyGetSetDef WraptPartialCallableObjectProxy_getset[] = {
 };
 
 static PyType_Slot WraptPartialCallableObjectProxy_Type_slots[] = {
-    {Py_tp_base, NULL},
     {Py_tp_dealloc, WraptPartialCallableObjectProxy_dealloc},
     {Py_tp_call, WraptPartialCallableObjectProxy_call},
     {Py_tp_traverse, WraptPartialCallableObjectProxy_traverse},
@@ -2430,7 +2428,6 @@ static PyGetSetDef WraptFunctionWrapperBase_getset[] = {
 };
 
 static PyType_Slot WraptFunctionWrapperBase_Type_slots[] = {
-    {Py_tp_base, NULL},
     {Py_tp_dealloc, WraptFunctionWrapperBase_dealloc},
     {Py_tp_call, WraptFunctionWrapperBase_call},
     {Py_tp_traverse, WraptFunctionWrapperBase_traverse},
@@ -2610,7 +2607,6 @@ static PyGetSetDef WraptBoundFunctionWrapper_getset[] = {
 };
 
 static PyType_Slot WraptBoundFunctionWrapper_Type_slots[] = {
-    {Py_tp_base, NULL},
     {Py_tp_call, WraptBoundFunctionWrapper_call},
     {Py_tp_getset, WraptBoundFunctionWrapper_getset},
     {0, 0},
@@ -2701,7 +2697,6 @@ static PyGetSetDef WraptFunctionWrapper_getset[] = {
 };
 
 static PyType_Slot WraptFunctionWrapper_Type_slots[] = {
-    {Py_tp_base, NULL},
     {Py_tp_getset, WraptFunctionWrapper_getset},
     {Py_tp_init, WraptFunctionWrapper_init},
     {0, 0},
@@ -2780,7 +2775,6 @@ moduleinit(void)
     if (WraptObjectProxy_Type == NULL)
         return NULL; 
 
-    WraptCallableObjectProxy_Type_slots[0].pfunc = WraptObjectProxy_Type;
     WraptCallableObjectProxy_Type = (PyTypeObject *)init_type(
         module,
         &WraptCallableObjectProxy_Type_spec,
@@ -2790,7 +2784,6 @@ moduleinit(void)
     if (WraptCallableObjectProxy_Type == NULL)
         return NULL;
 
-    WraptPartialCallableObjectProxy_Type_slots[0].pfunc = WraptObjectProxy_Type;
     WraptPartialCallableObjectProxy_Type = (PyTypeObject *)init_type(
         module,
         &WraptPartialCallableObjectProxy_Type_spec,
@@ -2800,7 +2793,6 @@ moduleinit(void)
     if (WraptPartialCallableObjectProxy_Type == NULL)
         return NULL;
 
-    WraptFunctionWrapperBase_Type_slots[0].pfunc = WraptObjectProxy_Type;
     WraptFunctionWrapperBase_Type = (PyTypeObject *)init_type(
         module,
         &WraptFunctionWrapperBase_Type_spec,
