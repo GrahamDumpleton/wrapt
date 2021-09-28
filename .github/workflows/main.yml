@@ -12,14 +12,12 @@ jobs:
         os:
           - ubuntu-latest
         python-version:
-          - 2.7
           - 3.5
           - 3.6
           - 3.7
           - 3.8
           - 3.9
           - 3.10-dev
-          - pypy-2.7
           - pypy-3.6
           - pypy-3.7
     steps:
@@ -49,14 +47,12 @@ jobs:
         os:
           - macos-latest
         python-version:
-          - 2.7
           - 3.5
           - 3.6
           - 3.7
           - 3.8
           - 3.9
           - 3.10-dev
-          - pypy-2.7
           - pypy-3.6
           - pypy-3.7
     steps:
@@ -92,7 +88,6 @@ jobs:
           - 3.8
           - 3.9
           - 3.10-dev
-          - pypy-2.7
           - pypy-3.6
           - pypy-3.7
     steps:
