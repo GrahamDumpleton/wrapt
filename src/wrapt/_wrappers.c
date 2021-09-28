@@ -18,8 +18,8 @@ typedef struct {
     PyObject *weakreflist;
 } WraptObjectProxyObject;
 
-PyTypeObject WraptObjectProxy_Type;
-PyTypeObject WraptCallableObjectProxy_Type;
+static PyTypeObject *WraptObjectProxy_Type;
+static PyTypeObject *WraptCallableObjectProxy_Type;
 
 typedef struct {
     WraptObjectProxyObject object_proxy;
@@ -28,7 +28,7 @@ typedef struct {
     PyObject *kwargs;
 } WraptPartialCallableObjectProxyObject;
 
-PyTypeObject WraptPartialCallableObjectProxy_Type;
+static PyTypeObject *WraptPartialCallableObjectProxy_Type;
 
 typedef struct {
     WraptObjectProxyObject object_proxy;
@@ -40,9 +40,9 @@ typedef struct {
     PyObject *parent;
 } WraptFunctionWrapperObject;
 
-PyTypeObject WraptFunctionWrapperBase_Type;
-PyTypeObject WraptBoundFunctionWrapper_Type;
-PyTypeObject WraptFunctionWrapper_Type;
+static PyTypeObject *WraptFunctionWrapperBase_Type;
+static PyTypeObject *WraptBoundFunctionWrapper_Type;
+static PyTypeObject *WraptFunctionWrapper_Type;
 
 /* ------------------------------------------------------------------------- */
 
@@ -206,7 +206,7 @@ static PyObject *WraptObjectProxy_str(WraptObjectProxyObject *self)
 
 static PyObject *WraptObjectProxy_add(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -215,7 +215,7 @@ static PyObject *WraptObjectProxy_add(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -231,7 +231,7 @@ static PyObject *WraptObjectProxy_add(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_subtract(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -240,7 +240,7 @@ static PyObject *WraptObjectProxy_subtract(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -257,7 +257,7 @@ static PyObject *WraptObjectProxy_subtract(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -266,7 +266,7 @@ static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -282,7 +282,7 @@ static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_remainder(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -291,7 +291,7 @@ static PyObject *WraptObjectProxy_remainder(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -307,7 +307,7 @@ static PyObject *WraptObjectProxy_remainder(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_divmod(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -316,7 +316,7 @@ static PyObject *WraptObjectProxy_divmod(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -333,7 +333,7 @@ static PyObject *WraptObjectProxy_divmod(PyObject *o1, PyObject *o2)
 static PyObject *WraptObjectProxy_power(PyObject *o1, PyObject *o2,
         PyObject *modulo)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -342,7 +342,7 @@ static PyObject *WraptObjectProxy_power(PyObject *o1, PyObject *o2,
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -418,7 +418,7 @@ static PyObject *WraptObjectProxy_invert(WraptObjectProxyObject *self)
 
 static PyObject *WraptObjectProxy_lshift(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -427,7 +427,7 @@ static PyObject *WraptObjectProxy_lshift(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -443,7 +443,7 @@ static PyObject *WraptObjectProxy_lshift(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_rshift(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -452,7 +452,7 @@ static PyObject *WraptObjectProxy_rshift(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -468,7 +468,7 @@ static PyObject *WraptObjectProxy_rshift(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_and(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -477,7 +477,7 @@ static PyObject *WraptObjectProxy_and(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -493,7 +493,7 @@ static PyObject *WraptObjectProxy_and(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_xor(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -502,7 +502,7 @@ static PyObject *WraptObjectProxy_xor(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -518,7 +518,7 @@ static PyObject *WraptObjectProxy_xor(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_or(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -527,7 +527,7 @@ static PyObject *WraptObjectProxy_or(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -575,7 +575,7 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceAdd(self->wrapped, other);
@@ -602,7 +602,7 @@ static PyObject *WraptObjectProxy_inplace_subtract(
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceSubtract(self->wrapped, other);
@@ -629,7 +629,7 @@ static PyObject *WraptObjectProxy_inplace_multiply(
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceMultiply(self->wrapped, other);
@@ -656,7 +656,7 @@ static PyObject *WraptObjectProxy_inplace_remainder(
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceRemainder(self->wrapped, other);
@@ -683,7 +683,7 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlacePower(self->wrapped, other, modulo);
@@ -710,7 +710,7 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceLshift(self->wrapped, other);
@@ -737,7 +737,7 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceRshift(self->wrapped, other);
@@ -764,7 +764,7 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceAnd(self->wrapped, other);
@@ -791,7 +791,7 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceXor(self->wrapped, other);
@@ -818,7 +818,7 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceOr(self->wrapped, other);
@@ -837,7 +837,7 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_floor_divide(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -846,7 +846,7 @@ static PyObject *WraptObjectProxy_floor_divide(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -862,7 +862,7 @@ static PyObject *WraptObjectProxy_floor_divide(PyObject *o1, PyObject *o2)
 
 static PyObject *WraptObjectProxy_true_divide(PyObject *o1, PyObject *o2)
 {
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o1, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o1)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -871,7 +871,7 @@ static PyObject *WraptObjectProxy_true_divide(PyObject *o1, PyObject *o2)
         o1 = ((WraptObjectProxyObject *)o1)->wrapped;
     }
 
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
+    if (PyObject_IsInstance(o2, (PyObject *)WraptObjectProxy_Type)) {
         if (!((WraptObjectProxyObject *)o2)->wrapped) {
           PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
           return NULL;
@@ -895,7 +895,7 @@ static PyObject *WraptObjectProxy_inplace_floor_divide(
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceFloorDivide(self->wrapped, other);
@@ -922,7 +922,7 @@ static PyObject *WraptObjectProxy_inplace_true_divide(
       return NULL;
     }
 
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    if (PyObject_IsInstance(other, (PyObject *)WraptObjectProxy_Type))
         other = ((WraptObjectProxyObject *)other)->wrapped;
 
     object = PyNumber_InPlaceTrueDivide(self->wrapped, other);
@@ -1508,60 +1508,6 @@ static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static PyNumberMethods WraptObjectProxy_as_number = {
-    (binaryfunc)WraptObjectProxy_add, /*nb_add*/
-    (binaryfunc)WraptObjectProxy_subtract, /*nb_subtract*/
-    (binaryfunc)WraptObjectProxy_multiply, /*nb_multiply*/
-    (binaryfunc)WraptObjectProxy_remainder, /*nb_remainder*/
-    (binaryfunc)WraptObjectProxy_divmod, /*nb_divmod*/
-    (ternaryfunc)WraptObjectProxy_power, /*nb_power*/
-    (unaryfunc)WraptObjectProxy_negative, /*nb_negative*/
-    (unaryfunc)WraptObjectProxy_positive, /*nb_positive*/
-    (unaryfunc)WraptObjectProxy_absolute, /*nb_absolute*/
-    (inquiry)WraptObjectProxy_bool, /*nb_nonzero/nb_bool*/
-    (unaryfunc)WraptObjectProxy_invert, /*nb_invert*/
-    (binaryfunc)WraptObjectProxy_lshift, /*nb_lshift*/
-    (binaryfunc)WraptObjectProxy_rshift, /*nb_rshift*/
-    (binaryfunc)WraptObjectProxy_and, /*nb_and*/
-    (binaryfunc)WraptObjectProxy_xor, /*nb_xor*/
-    (binaryfunc)WraptObjectProxy_or, /*nb_or*/
-    (unaryfunc)WraptObjectProxy_long, /*nb_int*/
-    0,                      /*nb_long/nb_reserved*/
-    (unaryfunc)WraptObjectProxy_float, /*nb_float*/
-    (binaryfunc)WraptObjectProxy_inplace_add, /*nb_inplace_add*/
-    (binaryfunc)WraptObjectProxy_inplace_subtract, /*nb_inplace_subtract*/
-    (binaryfunc)WraptObjectProxy_inplace_multiply, /*nb_inplace_multiply*/
-    (binaryfunc)WraptObjectProxy_inplace_remainder, /*nb_inplace_remainder*/
-    (ternaryfunc)WraptObjectProxy_inplace_power, /*nb_inplace_power*/
-    (binaryfunc)WraptObjectProxy_inplace_lshift, /*nb_inplace_lshift*/
-    (binaryfunc)WraptObjectProxy_inplace_rshift, /*nb_inplace_rshift*/
-    (binaryfunc)WraptObjectProxy_inplace_and, /*nb_inplace_and*/
-    (binaryfunc)WraptObjectProxy_inplace_xor, /*nb_inplace_xor*/
-    (binaryfunc)WraptObjectProxy_inplace_or, /*nb_inplace_or*/
-    (binaryfunc)WraptObjectProxy_floor_divide, /*nb_floor_divide*/
-    (binaryfunc)WraptObjectProxy_true_divide, /*nb_true_divide*/
-    (binaryfunc)WraptObjectProxy_inplace_floor_divide, /*nb_inplace_floor_divide*/
-    (binaryfunc)WraptObjectProxy_inplace_true_divide, /*nb_inplace_true_divide*/
-    (unaryfunc)WraptObjectProxy_index, /*nb_index*/
-};
-
-static PySequenceMethods WraptObjectProxy_as_sequence = {
-    (lenfunc)WraptObjectProxy_length, /*sq_length*/
-    0,                          /*sq_concat*/
-    0,                          /*sq_repeat*/
-    0,                          /*sq_item*/
-    0,                          /*sq_slice*/
-    0,                          /*sq_ass_item*/
-    0,                          /*sq_ass_slice*/
-    (objobjproc)WraptObjectProxy_contains, /* sq_contains */
-};
-
-static PyMappingMethods WraptObjectProxy_as_mapping = {
-    (lenfunc)WraptObjectProxy_length, /*mp_length*/
-    (binaryfunc)WraptObjectProxy_getitem, /*mp_subscript*/
-    (objobjargproc)WraptObjectProxy_setitem, /*mp_ass_subscript*/
-};
-
 static PyMethodDef WraptObjectProxy_methods[] = {
     { "__dir__",    (PyCFunction)WraptObjectProxy_dir, METH_NOARGS, 0 },
     { "__enter__",  (PyCFunction)WraptObjectProxy_enter,
@@ -1607,49 +1553,80 @@ static PyGetSetDef WraptObjectProxy_getset[] = {
     { NULL },
 };
 
-PyTypeObject WraptObjectProxy_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "ObjectProxy",          /*tp_name*/
-    sizeof(WraptObjectProxyObject), /*tp_basicsize*/
-    0,                      /*tp_itemsize*/
-    /* methods */
-    (destructor)WraptObjectProxy_dealloc, /*tp_dealloc*/
-    0,                      /*tp_print*/
-    0,                      /*tp_getattr*/
-    0,                      /*tp_setattr*/
-    0,                      /*tp_compare*/
-    (unaryfunc)WraptObjectProxy_repr, /*tp_repr*/
-    &WraptObjectProxy_as_number, /*tp_as_number*/
-    &WraptObjectProxy_as_sequence, /*tp_as_sequence*/
-    &WraptObjectProxy_as_mapping, /*tp_as_mapping*/
-    (hashfunc)WraptObjectProxy_hash, /*tp_hash*/
-    0,                      /*tp_call*/
-    (unaryfunc)WraptObjectProxy_str, /*tp_str*/
-    (getattrofunc)WraptObjectProxy_getattro, /*tp_getattro*/
-    (setattrofunc)WraptObjectProxy_setattro, /*tp_setattro*/
-    0,                      /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-    0,                      /*tp_doc*/
-    (traverseproc)WraptObjectProxy_traverse, /*tp_traverse*/
-    (inquiry)WraptObjectProxy_clear, /*tp_clear*/
-    (richcmpfunc)WraptObjectProxy_richcompare, /*tp_richcompare*/
-    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
-    (getiterfunc)WraptObjectProxy_iter, /*tp_iter*/
-    0,                      /*tp_iternext*/
-    WraptObjectProxy_methods, /*tp_methods*/
-    0,                      /*tp_members*/
-    WraptObjectProxy_getset, /*tp_getset*/
-    0,                      /*tp_base*/
-    0,                      /*tp_dict*/
-    0,                      /*tp_descr_get*/
-    0,                      /*tp_descr_set*/
-    offsetof(WraptObjectProxyObject, dict), /*tp_dictoffset*/
-    (initproc)WraptObjectProxy_init, /*tp_init*/
-    PyType_GenericAlloc,    /*tp_alloc*/
-    WraptObjectProxy_new,   /*tp_new*/
-    PyObject_GC_Del,        /*tp_free*/
-    0,                      /*tp_is_gc*/
+static struct PyMemberDef WraptObjectProxy_Type_members[] = {
+    {"__weaklistoffset__", T_PYSSIZET, offsetof(WraptObjectProxyObject, weakreflist), READONLY},
+    {"__dictoffset__", T_PYSSIZET, offsetof(WraptObjectProxyObject, dict), READONLY},
+    {NULL},
+};
+
+static PyType_Slot WraptObjectProxy_Type_slots[] = {
+    {Py_tp_dealloc, WraptObjectProxy_dealloc},
+    {Py_tp_repr, WraptObjectProxy_repr},
+    {Py_tp_hash, WraptObjectProxy_hash},
+    {Py_tp_str, WraptObjectProxy_str},
+    {Py_tp_getattro, WraptObjectProxy_getattro},
+    {Py_tp_setattro, WraptObjectProxy_setattro},
+    {Py_tp_traverse, WraptObjectProxy_traverse},
+    {Py_tp_clear, WraptObjectProxy_clear},
+    {Py_tp_richcompare, WraptObjectProxy_richcompare},
+    {Py_tp_iter, WraptObjectProxy_iter},
+    {Py_tp_methods, WraptObjectProxy_methods},
+    {Py_tp_members, WraptObjectProxy_Type_members},
+    {Py_tp_getset, WraptObjectProxy_getset},
+    {Py_tp_init,  WraptObjectProxy_init},
+    {Py_tp_alloc, PyType_GenericAlloc},
+    {Py_tp_new, WraptObjectProxy_new},
+    {Py_tp_free, PyObject_GC_Del},
+    /* as_number */
+    {Py_nb_add, WraptObjectProxy_add},
+    {Py_nb_subtract, WraptObjectProxy_subtract},
+    {Py_nb_multiply, WraptObjectProxy_multiply},
+    {Py_nb_remainder, WraptObjectProxy_remainder},
+    {Py_nb_divmod, WraptObjectProxy_divmod},
+    {Py_nb_power, WraptObjectProxy_power},
+    {Py_nb_negative, WraptObjectProxy_negative},
+    {Py_nb_positive, WraptObjectProxy_positive},
+    {Py_nb_absolute, WraptObjectProxy_absolute},
+    {Py_nb_bool, WraptObjectProxy_bool},
+    {Py_nb_invert, WraptObjectProxy_invert},
+    {Py_nb_lshift, WraptObjectProxy_lshift},
+    {Py_nb_rshift, WraptObjectProxy_rshift},
+    {Py_nb_and, WraptObjectProxy_and},
+    {Py_nb_xor, WraptObjectProxy_xor},
+    {Py_nb_or, WraptObjectProxy_or},
+    {Py_nb_int, WraptObjectProxy_long},
+    {Py_nb_float, WraptObjectProxy_float},
+    {Py_nb_inplace_add, WraptObjectProxy_inplace_add},
+    {Py_nb_inplace_subtract, WraptObjectProxy_inplace_subtract},
+    {Py_nb_inplace_multiply, WraptObjectProxy_inplace_multiply},
+    {Py_nb_inplace_remainder, WraptObjectProxy_inplace_remainder},
+    {Py_nb_inplace_power, WraptObjectProxy_inplace_power},
+    {Py_nb_inplace_lshift, WraptObjectProxy_inplace_lshift},
+    {Py_nb_inplace_rshift, WraptObjectProxy_inplace_rshift},
+    {Py_nb_inplace_and, WraptObjectProxy_inplace_and},
+    {Py_nb_inplace_xor, WraptObjectProxy_inplace_xor},
+    {Py_nb_inplace_or, WraptObjectProxy_inplace_or},
+    {Py_nb_floor_divide, WraptObjectProxy_floor_divide},
+    {Py_nb_true_divide, WraptObjectProxy_true_divide},
+    {Py_nb_inplace_floor_divide, WraptObjectProxy_inplace_floor_divide},
+    {Py_nb_inplace_true_divide, WraptObjectProxy_inplace_true_divide},
+    {Py_nb_index, WraptObjectProxy_index},
+    /* as_sequence */
+    {Py_sq_length, WraptObjectProxy_length},
+    {Py_sq_contains, WraptObjectProxy_contains},
+    /* as_mapping */
+    {Py_mp_length, WraptObjectProxy_length},
+    {Py_mp_subscript, WraptObjectProxy_getitem},
+    {Py_mp_ass_subscript, WraptObjectProxy_setitem},
+    {0, 0},
+};
+
+static PyType_Spec WraptObjectProxy_Type_spec = {
+    "ObjectProxy",
+    sizeof(WraptObjectProxyObject),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    WraptObjectProxy_Type_slots
 };
 
 /* ------------------------------------------------------------------------- */
@@ -1675,48 +1652,19 @@ static PyGetSetDef WraptCallableObjectProxy_getset[] = {
     { NULL },
 };
 
-PyTypeObject WraptCallableObjectProxy_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "CallableObjectProxy",   /*tp_name*/
-    sizeof(WraptObjectProxyObject), /*tp_basicsize*/
-    0,                      /*tp_itemsize*/
-    /* methods */
-    0,                      /*tp_dealloc*/
-    0,                      /*tp_print*/
-    0,                      /*tp_getattr*/
-    0,                      /*tp_setattr*/
-    0,                      /*tp_compare*/
-    0,                      /*tp_repr*/
-    0,                      /*tp_as_number*/
-    0,                      /*tp_as_sequence*/
-    0,                      /*tp_as_mapping*/
-    0,                      /*tp_hash*/
-    (ternaryfunc)WraptCallableObjectProxy_call, /*tp_call*/
-    0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
-    0,                      /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    0,                      /*tp_doc*/
-    0,                      /*tp_traverse*/
-    0,                      /*tp_clear*/
-    0,                      /*tp_richcompare*/
-    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
-    0,                      /*tp_iter*/
-    0,                      /*tp_iternext*/
-    0,                      /*tp_methods*/
-    0,                      /*tp_members*/
-    WraptCallableObjectProxy_getset, /*tp_getset*/
-    0,                      /*tp_base*/
-    0,                      /*tp_dict*/
-    0,                      /*tp_descr_get*/
-    0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
-    (initproc)WraptObjectProxy_init, /*tp_init*/
-    0,                      /*tp_alloc*/
-    0,                      /*tp_new*/
-    0,                      /*tp_free*/
-    0,                      /*tp_is_gc*/
+static PyType_Slot WraptCallableObjectProxy_Type_slots[] = {
+    {Py_tp_base, NULL},
+    {Py_tp_call, WraptCallableObjectProxy_call},
+    {Py_tp_getset, WraptCallableObjectProxy_getset},
+    {0, 0},
+};
+
+static PyType_Spec WraptCallableObjectProxy_Type_spec = {
+    "CallableObjectProxy",
+    sizeof(WraptObjectProxyObject),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    WraptCallableObjectProxy_Type_slots
 };
 
 /* ------------------------------------------------------------------------- */
@@ -1915,49 +1863,24 @@ static PyGetSetDef WraptPartialCallableObjectProxy_getset[] = {
     { NULL },
 };
 
-PyTypeObject WraptPartialCallableObjectProxy_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "PartialCallableObjectProxy",   /*tp_name*/
-    sizeof(WraptPartialCallableObjectProxyObject), /*tp_basicsize*/
-    0,                      /*tp_itemsize*/
-    /* methods */
-    (destructor)WraptPartialCallableObjectProxy_dealloc, /*tp_dealloc*/
-    0,                      /*tp_print*/
-    0,                      /*tp_getattr*/
-    0,                      /*tp_setattr*/
-    0,                      /*tp_compare*/
-    0,                      /*tp_repr*/
-    0,                      /*tp_as_number*/
-    0,                      /*tp_as_sequence*/
-    0,                      /*tp_as_mapping*/
-    0,                      /*tp_hash*/
-    (ternaryfunc)WraptPartialCallableObjectProxy_call, /*tp_call*/
-    0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
-    0,                      /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-    0,                      /*tp_doc*/
-    (traverseproc)WraptPartialCallableObjectProxy_traverse, /*tp_traverse*/
-    (inquiry)WraptPartialCallableObjectProxy_clear, /*tp_clear*/
-    0,                      /*tp_richcompare*/
-    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
-    0,                      /*tp_iter*/
-    0,                      /*tp_iternext*/
-    0,                      /*tp_methods*/
-    0,                      /*tp_members*/
-    WraptPartialCallableObjectProxy_getset, /*tp_getset*/
-    0,                      /*tp_base*/
-    0,                      /*tp_dict*/
-    0,                      /*tp_descr_get*/
-    0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
-    (initproc)WraptPartialCallableObjectProxy_init, /*tp_init*/
-    0,                      /*tp_alloc*/
-    WraptPartialCallableObjectProxy_new, /*tp_new*/
-    0,                      /*tp_free*/
-    0,                      /*tp_is_gc*/
+static PyType_Slot WraptPartialCallableObjectProxy_Type_slots[] = {
+    {Py_tp_base, NULL},
+    {Py_tp_dealloc, WraptPartialCallableObjectProxy_dealloc},
+    {Py_tp_call, WraptPartialCallableObjectProxy_call},
+    {Py_tp_traverse, WraptPartialCallableObjectProxy_traverse},
+    {Py_tp_clear, WraptPartialCallableObjectProxy_clear},
+    {Py_tp_getset, WraptPartialCallableObjectProxy_getset},
+    {Py_tp_init, WraptPartialCallableObjectProxy_init},
+    {Py_tp_new, WraptPartialCallableObjectProxy_new},
+    {0, 0},
+};
+
+static PyType_Spec WraptPartialCallableObjectProxy_Type_spec = {
+    "CallableObjectProxy",
+    sizeof(WraptPartialCallableObjectProxyObject),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    WraptPartialCallableObjectProxy_Type_slots
 };
 
 /* ------------------------------------------------------------------------- */
@@ -2211,7 +2134,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         if (!descriptor)
             return NULL;
 
-        if (Py_TYPE(self) != &WraptFunctionWrapper_Type) {
+        if (Py_TYPE(self) != WraptFunctionWrapper_Type) {
             bound_type = PyObject_GenericGetAttr((PyObject *)self,
                     bound_type_str);
 
@@ -2223,7 +2146,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             obj = Py_None;
 
         result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
-                (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
+                (PyObject *)WraptBoundFunctionWrapper_Type, descriptor,
                 obj, self->wrapper, self->enabled, self->binding,
                 self, NULL);
 
@@ -2265,7 +2188,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         if (!descriptor)
             return NULL;
 
-        if (Py_TYPE(self->parent) != &WraptFunctionWrapper_Type) {
+        if (Py_TYPE(self->parent) != WraptFunctionWrapper_Type) {
             bound_type = PyObject_GenericGetAttr((PyObject *)self->parent,
                     bound_type_str);
 
@@ -2277,7 +2200,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             obj = Py_None;
 
         result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
-                (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
+                (PyObject *)WraptBoundFunctionWrapper_Type, descriptor,
                 obj, self->wrapper, self->enabled, self->binding,
                 self->parent, NULL);
 
@@ -2459,49 +2382,26 @@ static PyGetSetDef WraptFunctionWrapperBase_getset[] = {
     { NULL },
 };
 
-PyTypeObject WraptFunctionWrapperBase_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "_FunctionWrapperBase",      /*tp_name*/
-    sizeof(WraptFunctionWrapperObject), /*tp_basicsize*/
-    0,                      /*tp_itemsize*/
-    /* methods */
-    (destructor)WraptFunctionWrapperBase_dealloc, /*tp_dealloc*/
-    0,                      /*tp_print*/
-    0,                      /*tp_getattr*/
-    0,                      /*tp_setattr*/
-    0,                      /*tp_compare*/
-    0,                      /*tp_repr*/
-    0,                      /*tp_as_number*/
-    0,                      /*tp_as_sequence*/
-    0,                      /*tp_as_mapping*/
-    0,                      /*tp_hash*/
-    (ternaryfunc)WraptFunctionWrapperBase_call, /*tp_call*/
-    0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
-    0,                      /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-    0,                      /*tp_doc*/
-    (traverseproc)WraptFunctionWrapperBase_traverse, /*tp_traverse*/
-    (inquiry)WraptFunctionWrapperBase_clear, /*tp_clear*/
-    0,                      /*tp_richcompare*/
-    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
-    0,                      /*tp_iter*/
-    0,                      /*tp_iternext*/
-    WraptFunctionWrapperBase_methods, /*tp_methods*/
-    0,                      /*tp_members*/
-    WraptFunctionWrapperBase_getset, /*tp_getset*/
-    0,                      /*tp_base*/
-    0,                      /*tp_dict*/
-    (descrgetfunc)WraptFunctionWrapperBase_descr_get, /*tp_descr_get*/
-    0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
-    (initproc)WraptFunctionWrapperBase_init, /*tp_init*/
-    0,                      /*tp_alloc*/
-    WraptFunctionWrapperBase_new,  /*tp_new*/
-    0,                      /*tp_free*/
-    0,                      /*tp_is_gc*/
+static PyType_Slot WraptFunctionWrapperBase_Type_slots[] = {
+    {Py_tp_base, NULL},
+    {Py_tp_dealloc, WraptFunctionWrapperBase_dealloc},
+    {Py_tp_call, WraptFunctionWrapperBase_call},
+    {Py_tp_traverse, WraptFunctionWrapperBase_traverse},
+    {Py_tp_clear, WraptFunctionWrapperBase_clear},
+    {Py_tp_methods, WraptFunctionWrapperBase_methods},
+    {Py_tp_getset, WraptFunctionWrapperBase_getset},
+    {Py_tp_descr_get, WraptFunctionWrapperBase_descr_get},
+    {Py_tp_init, WraptFunctionWrapperBase_init},
+    {Py_tp_new, WraptFunctionWrapperBase_new},
+    {0, 0},
+};
+
+static PyType_Spec WraptFunctionWrapperBase_Type_spec = {
+    "_FunctionWrapperBase",
+    sizeof(WraptFunctionWrapperObject),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    WraptPartialCallableObjectProxy_Type_slots
 };
 
 /* ------------------------------------------------------------------------- */
@@ -2574,7 +2474,7 @@ static PyObject *WraptBoundFunctionWrapper_call(
                 return NULL;
 
             wrapped = PyObject_CallFunctionObjArgs(
-                    (PyObject *)&WraptPartialCallableObjectProxy_Type,
+                    (PyObject *)WraptPartialCallableObjectProxy_Type,
                     self->object_proxy.wrapped, instance, NULL);
 
             if (!wrapped)
@@ -2662,48 +2562,19 @@ static PyGetSetDef WraptBoundFunctionWrapper_getset[] = {
     { NULL },
 };
 
-PyTypeObject WraptBoundFunctionWrapper_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "BoundFunctionWrapper", /*tp_name*/
-    sizeof(WraptFunctionWrapperObject), /*tp_basicsize*/
-    0,                      /*tp_itemsize*/
-    /* methods */
-    0,                      /*tp_dealloc*/
-    0,                      /*tp_print*/
-    0,                      /*tp_getattr*/
-    0,                      /*tp_setattr*/
-    0,                      /*tp_compare*/
-    0,                      /*tp_repr*/
-    0,                      /*tp_as_number*/
-    0,                      /*tp_as_sequence*/
-    0,                      /*tp_as_mapping*/
-    0,                      /*tp_hash*/
-    (ternaryfunc)WraptBoundFunctionWrapper_call, /*tp_call*/
-    0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
-    0,                      /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    0,                      /*tp_doc*/
-    0,                      /*tp_traverse*/
-    0,                      /*tp_clear*/
-    0,                      /*tp_richcompare*/
-    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
-    0,                      /*tp_iter*/
-    0,                      /*tp_iternext*/
-    0,                      /*tp_methods*/
-    0,                      /*tp_members*/
-    WraptBoundFunctionWrapper_getset, /*tp_getset*/
-    0,                      /*tp_base*/
-    0,                      /*tp_dict*/
-    0,                      /*tp_descr_get*/
-    0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
-    0,                      /*tp_init*/
-    0,                      /*tp_alloc*/
-    0,                      /*tp_new*/
-    0,                      /*tp_free*/
-    0,                      /*tp_is_gc*/
+static PyType_Slot WraptBoundFunctionWrapper_Type_slots[] = {
+    {Py_tp_base, NULL},
+    {Py_tp_call, WraptBoundFunctionWrapper_call},
+    {Py_tp_getset, WraptBoundFunctionWrapper_getset},
+    {0, 0},
+};
+
+static PyType_Spec WraptBoundFunctionWrapper_Type_spec = {
+    "BoundFunctionWrapper",
+    sizeof(WraptFunctionWrapperObject),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    WraptBoundFunctionWrapper_Type_slots
 };
 
 /* ------------------------------------------------------------------------- */
@@ -2779,48 +2650,19 @@ static PyGetSetDef WraptFunctionWrapper_getset[] = {
     { NULL },
 };
 
-PyTypeObject WraptFunctionWrapper_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "FunctionWrapper",      /*tp_name*/
-    sizeof(WraptFunctionWrapperObject), /*tp_basicsize*/
-    0,                      /*tp_itemsize*/
-    /* methods */
-    0,                      /*tp_dealloc*/
-    0,                      /*tp_print*/
-    0,                      /*tp_getattr*/
-    0,                      /*tp_setattr*/
-    0,                      /*tp_compare*/
-    0,                      /*tp_repr*/
-    0,                      /*tp_as_number*/
-    0,                      /*tp_as_sequence*/
-    0,                      /*tp_as_mapping*/
-    0,                      /*tp_hash*/
-    0,                      /*tp_call*/
-    0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
-    0,                      /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    0,                      /*tp_doc*/
-    0,                      /*tp_traverse*/
-    0,                      /*tp_clear*/
-    0,                      /*tp_richcompare*/
-    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
-    0,                      /*tp_iter*/
-    0,                      /*tp_iternext*/
-    0,                      /*tp_methods*/
-    0,                      /*tp_members*/
-    WraptFunctionWrapper_getset, /*tp_getset*/
-    0,                      /*tp_base*/
-    0,                      /*tp_dict*/
-    0,                      /*tp_descr_get*/
-    0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
-    (initproc)WraptFunctionWrapper_init, /*tp_init*/
-    0,                      /*tp_alloc*/
-    0,                      /*tp_new*/
-    0,                      /*tp_free*/
-    0,                      /*tp_is_gc*/
+static PyType_Slot WraptFunctionWrapper_Type_slots[] = {
+    {Py_tp_base, NULL},
+    {Py_tp_getset, WraptFunctionWrapper_getset},
+    {Py_tp_init, WraptFunctionWrapper_init},
+    {0, 0},
+};
+
+static PyType_Spec WraptFunctionWrapper_Type_spec = {
+    "FunctionWrapper",
+    sizeof(WraptFunctionWrapperObject),
+    0,
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC,
+    WraptFunctionWrapper_Type_slots
 };
 
 /* ------------------------------------------------------------------------- */
@@ -2837,6 +2679,38 @@ static struct PyModuleDef moduledef = {
     NULL,                /* m_free */
 };
 
+static PyTypeObject *
+init_type(PyObject *module, PyType_Spec *spec, PyTypeObject *base, const char *attrname)
+{
+    PyObject *newtype = NULL;
+    PyObject *bases = NULL;
+    if (base != NULL) {
+        bases = PyTuple_Pack(1, (PyObject *)base);
+        if (bases == NULL) {
+            return NULL;
+        }
+    }
+#if PY_VERSION_HEX >= 0x03090000
+    newtype = PyType_FromModuleAndSpec(
+        module, spec, bases
+    );
+#else
+    newtype = PyType_FromSpecWithBases(
+        spec, bases
+    );
+#endif
+    Py_XDECREF(bases);
+    if (newtype == NULL) {
+        return NULL;
+    }
+    if (PyModule_AddObject(module, attrname, newtype) < 0) {
+        Py_DECREF(newtype);
+        return NULL;
+    }
+    Py_INCREF(newtype);
+    return (PyTypeObject *)newtype;
+}
+
 static PyObject *
 moduleinit(void)
 {
@@ -2847,46 +2721,62 @@ moduleinit(void)
     if (module == NULL)
         return NULL;
 
-    if (PyType_Ready(&WraptObjectProxy_Type) < 0)
+    WraptObjectProxy_Type = (PyTypeObject *)init_type(
+        module,
+        &WraptObjectProxy_Type_spec,
+        NULL,
+        "ObjectProxy"
+    );
+    if (WraptObjectProxy_Type == NULL)
+        return NULL; 
+
+    WraptCallableObjectProxy_Type_slots[0].pfunc = WraptObjectProxy_Type;
+    WraptCallableObjectProxy_Type = (PyTypeObject *)init_type(
+        module,
+        &WraptCallableObjectProxy_Type_spec,
+        WraptObjectProxy_Type,
+        "CallableObjectProxy"
+    );
+    if (WraptCallableObjectProxy_Type == NULL)
         return NULL;
 
-    /* Ensure that inheritance relationships specified. */
-
-    WraptCallableObjectProxy_Type.tp_base = &WraptObjectProxy_Type;
-    WraptPartialCallableObjectProxy_Type.tp_base = &WraptObjectProxy_Type;
-    WraptFunctionWrapperBase_Type.tp_base = &WraptObjectProxy_Type;
-    WraptBoundFunctionWrapper_Type.tp_base = &WraptFunctionWrapperBase_Type;
-    WraptFunctionWrapper_Type.tp_base = &WraptFunctionWrapperBase_Type;
-
-    if (PyType_Ready(&WraptCallableObjectProxy_Type) < 0)
-        return NULL;
-    if (PyType_Ready(&WraptPartialCallableObjectProxy_Type) < 0)
-        return NULL;
-    if (PyType_Ready(&WraptFunctionWrapperBase_Type) < 0)
-        return NULL;
-    if (PyType_Ready(&WraptBoundFunctionWrapper_Type) < 0)
-        return NULL;
-    if (PyType_Ready(&WraptFunctionWrapper_Type) < 0)
+    WraptPartialCallableObjectProxy_Type_slots[0].pfunc = WraptObjectProxy_Type;
+    WraptPartialCallableObjectProxy_Type = (PyTypeObject *)init_type(
+        module,
+        &WraptPartialCallableObjectProxy_Type_spec,
+        WraptObjectProxy_Type,
+        "PartialCallableObjectProxy"
+    );
+    if (WraptPartialCallableObjectProxy_Type == NULL)
         return NULL;
 
-    Py_INCREF(&WraptObjectProxy_Type);
-    PyModule_AddObject(module, "ObjectProxy",
-            (PyObject *)&WraptObjectProxy_Type);
-    Py_INCREF(&WraptCallableObjectProxy_Type);
-    PyModule_AddObject(module, "CallableObjectProxy",
-            (PyObject *)&WraptCallableObjectProxy_Type);
-    PyModule_AddObject(module, "PartialCallableObjectProxy",
-            (PyObject *)&WraptPartialCallableObjectProxy_Type);
-    Py_INCREF(&WraptFunctionWrapper_Type);
-    PyModule_AddObject(module, "FunctionWrapper",
-            (PyObject *)&WraptFunctionWrapper_Type);
+    WraptFunctionWrapperBase_Type_slots[0].pfunc = WraptObjectProxy_Type;
+    WraptFunctionWrapperBase_Type = (PyTypeObject *)init_type(
+        module,
+        &WraptFunctionWrapperBase_Type_spec,
+        WraptObjectProxy_Type,
+        "_FunctionWrapperBase"
+    );
+    if (WraptFunctionWrapperBase_Type == NULL)
+        return NULL;
 
-    Py_INCREF(&WraptFunctionWrapperBase_Type);
-    PyModule_AddObject(module, "_FunctionWrapperBase",
-            (PyObject *)&WraptFunctionWrapperBase_Type);
-    Py_INCREF(&WraptBoundFunctionWrapper_Type);
-    PyModule_AddObject(module, "BoundFunctionWrapper",
-            (PyObject *)&WraptBoundFunctionWrapper_Type);
+    WraptBoundFunctionWrapper_Type = (PyTypeObject *)init_type(
+        module,
+        &WraptBoundFunctionWrapper_Type_spec,
+        WraptFunctionWrapperBase_Type,
+        "BoundFunctionWrapper"
+    );
+    if (WraptBoundFunctionWrapper_Type == NULL)
+        return NULL;
+
+    WraptFunctionWrapper_Type = (PyTypeObject *)init_type(
+        module,
+        &WraptFunctionWrapper_Type_spec,
+        WraptFunctionWrapperBase_Type,
+        "FunctionWrapper"
+    );
+    if (WraptFunctionWrapper_Type == NULL)
+        return NULL;
 
     return module;
 }
