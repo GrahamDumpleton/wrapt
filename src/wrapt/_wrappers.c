@@ -1,5 +1,8 @@
 /* ------------------------------------------------------------------------- */
 
+/* stable ABI Python >= 3.5 */
+#define Py_LIMITED_API 0x03050000
+
 #include "Python.h"
 
 #include "structmember.h"
@@ -44,14 +47,22 @@ static PyTypeObject *WraptFunctionWrapperBase_Type;
 static PyTypeObject *WraptBoundFunctionWrapper_Type;
 static PyTypeObject *WraptFunctionWrapper_Type;
 
+static PyObject *
+type_getname(PyTypeObject *type)
+{
+    return PyObject_GetAttrString((PyObject *)type, "__name__");
+}
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_new(PyTypeObject *type,
         PyObject *args, PyObject *kwds)
 {
     WraptObjectProxyObject *self;
+    allocfunc tp_alloc;
 
-    self = (WraptObjectProxyObject *)type->tp_alloc(type, 0);
+    tp_alloc = (allocfunc)PyType_GetSlot(type, Py_tp_alloc);
+    self = (WraptObjectProxyObject *)tp_alloc(type, 0);
 
     if (!self)
         return NULL;
@@ -161,21 +172,39 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 
     WraptObjectProxy_clear(self);
 
-    Py_TYPE(self)->tp_free(self);
+    freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
+    free_func(self);
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_repr(WraptObjectProxyObject *self)
 {
+    PyObject *repr = NULL;
+    PyObject *sname = NULL;
+    PyObject *wname = NULL;
+
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
       return NULL;
     }
 
-    return PyUnicode_FromFormat("<%s at %p for %s at %p>",
-            Py_TYPE(self)->tp_name, self,
-            Py_TYPE(self->wrapped)->tp_name, self->wrapped);
+    sname = type_getname(Py_TYPE(self));
+    if (sname == NULL) {
+        return NULL;
+    }
+
+    wname = type_getname(Py_TYPE(self->wrapped));
+    if (wname == NULL) {
+        Py_DECREF(sname);
+        return NULL;
+    }
+
+    repr = PyUnicode_FromFormat("<%U at %p for %U at %p>",
+        sname, self, wname, self->wrapped);
+    Py_DECREF(sname);
+    Py_DECREF(wname);
+    return repr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2115,20 +2144,28 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     }
 
     if (self->parent == Py_None) {
+        descrgetfunc descr_get;
         if (PyObject_IsInstance(self->object_proxy.wrapped,
                 (PyObject *)&PyType_Type)) {
             Py_INCREF(self);
             return (PyObject *)self;
         }
 
-        if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL) {
+        descr_get = (descrgetfunc)PyType_GetSlot(
+            Py_TYPE(self->object_proxy.wrapped), Py_tp_descr_get);
+        if (descr_get == NULL) {
+            PyObject *name = type_getname(Py_TYPE(self->object_proxy.wrapped));
+            if (name == NULL) {
+                return NULL;
+            }
             PyErr_Format(PyExc_AttributeError,
-                    "'%s' object has no attribute '__get__'",
-                    Py_TYPE(self->object_proxy.wrapped)->tp_name);
+                    "'%U' object has no attribute '__get__'",
+                    name);
+            Py_DECREF(name);
             return NULL;
         }
 
-        descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
+        descriptor = descr_get(
                 self->object_proxy.wrapped, obj, type);
 
         if (!descriptor)
@@ -2163,6 +2200,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         PyObject *wrapped = NULL;
 
         static PyObject *wrapped_str = NULL;
+        descrgetfunc descr_get;
 
         if (!wrapped_str) {
             wrapped_str = PyUnicode_InternFromString("__wrapped__");
@@ -2173,15 +2211,24 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         if (!wrapped)
             return NULL;
 
-        if (Py_TYPE(wrapped)->tp_descr_get == NULL) {
+        descr_get = (descrgetfunc)PyType_GetSlot(
+            Py_TYPE(wrapped), Py_tp_descr_get);
+
+        if (descr_get == NULL) {
+            PyObject *name = type_getname(Py_TYPE(wrapped));
+            if (name == NULL) {
+                Py_DECREF(wrapped);
+                return NULL;
+            }
             PyErr_Format(PyExc_AttributeError,
-                    "'%s' object has no attribute '__get__'",
-                    Py_TYPE(wrapped)->tp_name);
+                    "'%U' object has no attribute '__get__'",
+                    name);
             Py_DECREF(wrapped);
+            Py_DECREF(name);
             return NULL;
         }
 
-        descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
+        descriptor = descr_get(wrapped, obj, type);
 
         Py_DECREF(wrapped);
 
@@ -2613,13 +2660,16 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
         function_str = PyUnicode_InternFromString("function");
     }
 
+/* XXX TODO
     if (PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type)) {
         binding = classmethod_str;
     }
     else if (PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type)) {
         binding = staticmethod_str;
     }
-    else if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
+    else
+*/
+    if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
         if (PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
             binding = classmethod_str;
         }
@@ -2690,7 +2740,7 @@ init_type(PyObject *module, PyType_Spec *spec, PyTypeObject *base, const char *a
             return NULL;
         }
     }
-#if PY_VERSION_HEX >= 0x03090000
+#if 0
     newtype = PyType_FromModuleAndSpec(
         module, spec, bases
     );
