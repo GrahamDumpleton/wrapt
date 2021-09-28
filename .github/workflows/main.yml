@@ -12,7 +12,6 @@ jobs:
         os:
           - ubuntu-latest
         python-version:
-          - 3.5
           - 3.6
           - 3.7
           - 3.8
@@ -47,7 +46,6 @@ jobs:
         os:
           - macos-latest
         python-version:
-          - 3.5
           - 3.6
           - 3.7
           - 3.8
@@ -82,7 +80,6 @@ jobs:
         os:
           - windows-latest
         python-version:
-          - 3.5
           - 3.6
           - 3.7
           - 3.8
@@ -147,6 +144,7 @@ jobs:
         env:
             WRAPT_INSTALL_EXTENSIONS: true  # Require extensions.
             CIBW_SKIP: pp*                  # Skip wheels for PyPy.
+            CIBW_BUILD: cp36-*              # only build on 3.6 for stable cp36-abi3
       - uses: actions/upload-artifact@v2
         with:
           name: dist

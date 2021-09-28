@@ -24,6 +24,7 @@ extensions = [
         "wrapt._wrappers",
         sources=["src/wrapt/_wrappers.c"],
         optional=not force_extensions,
+        py_limited_api=True,
     )
 ]
 

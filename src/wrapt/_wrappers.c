@@ -1,7 +1,9 @@
 /* ------------------------------------------------------------------------- */
 
-/* stable ABI Python >= 3.5 */
-#define Py_LIMITED_API 0x03050000
+#ifndef Py_LIMITED_API
+/* stable ABI Python >= 3.6, keep in sync with setup.cfg py_limited_api */
+#define Py_LIMITED_API 0x03060000
+#endif
 
 #include "Python.h"
 
