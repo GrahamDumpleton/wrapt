@@ -2146,15 +2146,17 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     }
 
     if (self->parent == Py_None) {
-        descrgetfunc descr_get;
+        PyObject *descr_get;
         if (PyObject_IsInstance(self->object_proxy.wrapped,
                 (PyObject *)&PyType_Type)) {
             Py_INCREF(self);
             return (PyObject *)self;
         }
 
-        descr_get = (descrgetfunc)PyType_GetSlot(
-            Py_TYPE(self->object_proxy.wrapped), Py_tp_descr_get);
+        /* Cannot use Py_tp_descr_get with non-heap types */
+        descr_get = PyObject_GetAttrString(
+            (PyObject *)Py_TYPE(self->object_proxy.wrapped), "__get__"
+        );
         if (descr_get == NULL) {
             PyObject *name = type_getname(Py_TYPE(self->object_proxy.wrapped));
             if (name == NULL) {
@@ -2167,9 +2169,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             return NULL;
         }
 
-        descriptor = descr_get(
-                self->object_proxy.wrapped, obj, type);
-
+        descriptor = PyObject_CallFunctionObjArgs(
+            descr_get, self->object_proxy.wrapped, obj, type, NULL);
+        Py_DECREF(descr_get);
         if (!descriptor)
             return NULL;
 
@@ -2202,7 +2204,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         PyObject *wrapped = NULL;
 
         static PyObject *wrapped_str = NULL;
-        descrgetfunc descr_get;
+        PyObject *descr_get;
 
         if (!wrapped_str) {
             wrapped_str = PyUnicode_InternFromString("__wrapped__");
@@ -2213,9 +2215,10 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         if (!wrapped)
             return NULL;
 
-        descr_get = (descrgetfunc)PyType_GetSlot(
-            Py_TYPE(wrapped), Py_tp_descr_get);
-
+        /* Cannot use Py_tp_descr_get with non-heap types */
+        descr_get = PyObject_GetAttrString(
+            (PyObject *)Py_TYPE(self->object_proxy.wrapped), "__get__"
+        );
         if (descr_get == NULL) {
             PyObject *name = type_getname(Py_TYPE(wrapped));
             if (name == NULL) {
@@ -2230,8 +2233,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             return NULL;
         }
 
-        descriptor = descr_get(wrapped, obj, type);
-
+        descriptor = PyObject_CallFunctionObjArgs(
+            descr_get, wrapped, obj, type, NULL);
+        Py_DECREF(descr_get);
         Py_DECREF(wrapped);
 
         if (!descriptor)
