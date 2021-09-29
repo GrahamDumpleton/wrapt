@@ -22,6 +22,12 @@
 #define WRAPT_HEAPTYPE_STRONG_TYPEREF 1
 #endif
 
+/* Python 3.10 needs extra __annotations__ entries in PyGetSetDef of
+ * subclasses. */
+#if PY_VERSION_HEX >= 0x030a0000
+#define WRAPT_ANNOTATIONS_GETSET_WORKAROUND 1
+#endif
+
 /* ------------------------------------------------------------------------- */
 
 typedef struct {
@@ -1701,6 +1707,10 @@ static PyGetSetDef WraptCallableObjectProxy_getset[] = {
                             (setter)WraptObjectProxy_set_module, 0 },
     { "__doc__",            (getter)WraptObjectProxy_get_doc,
                             (setter)WraptObjectProxy_set_doc, 0 },
+#ifdef WRAPT_ANNOTATIONS_GETSET_WORKAROUND
+    { "__annotations__",    (getter)WraptObjectProxy_get_annotations,
+                            (setter)WraptObjectProxy_set_annotations, 0 },
+#endif
     { NULL },
 };
 
@@ -1912,6 +1922,10 @@ static PyGetSetDef WraptPartialCallableObjectProxy_getset[] = {
                             (setter)WraptObjectProxy_set_module, 0 },
     { "__doc__",            (getter)WraptObjectProxy_get_doc,
                             (setter)WraptObjectProxy_set_doc, 0 },
+#ifdef WRAPT_ANNOTATIONS_GETSET_WORKAROUND
+    { "__annotations__",    (getter)WraptObjectProxy_get_annotations,
+                            (setter)WraptObjectProxy_set_annotations, 0 },
+#endif
     { NULL },
 };
 
@@ -2448,6 +2462,10 @@ static PyGetSetDef WraptFunctionWrapperBase_getset[] = {
                             (setter)WraptObjectProxy_set_module, 0 },
     { "__doc__",            (getter)WraptObjectProxy_get_doc,
                             (setter)WraptObjectProxy_set_doc, 0 },
+#ifdef WRAPT_ANNOTATIONS_GETSET_WORKAROUND
+    { "__annotations__",    (getter)WraptObjectProxy_get_annotations,
+                            (setter)WraptObjectProxy_set_annotations, 0 },
+#endif
     { "_self_instance",     (getter)WraptFunctionWrapperBase_get_self_instance,
                             NULL, 0 },
     { "_self_wrapper",      (getter)WraptFunctionWrapperBase_get_self_wrapper,
@@ -2637,6 +2655,10 @@ static PyGetSetDef WraptBoundFunctionWrapper_getset[] = {
                             (setter)WraptObjectProxy_set_module, 0 },
     { "__doc__",            (getter)WraptObjectProxy_get_doc,
                             (setter)WraptObjectProxy_set_doc, 0 },
+#ifdef WRAPT_ANNOTATIONS_GETSET_WORKAROUND
+    { "__annotations__",    (getter)WraptObjectProxy_get_annotations,
+                            (setter)WraptObjectProxy_set_annotations, 0 },
+#endif
     { NULL },
 };
 
@@ -2747,6 +2769,10 @@ static PyGetSetDef WraptFunctionWrapper_getset[] = {
                             (setter)WraptObjectProxy_set_module, 0 },
     { "__doc__",            (getter)WraptObjectProxy_get_doc,
                             (setter)WraptObjectProxy_set_doc, 0 },
+#ifdef WRAPT_ANNOTATIONS_GETSET_WORKAROUND
+    { "__annotations__",    (getter)WraptObjectProxy_get_annotations,
+                            (setter)WraptObjectProxy_set_annotations, 0 },
+#endif
     { NULL },
 };
 
