@@ -2760,36 +2760,35 @@ static struct PyModuleDef moduledef = {
     NULL,                /* m_free */
 };
 
-static PyTypeObject *
-init_type(PyObject *module, PyType_Spec *spec, PyTypeObject *base, const char *attrname)
+static int
+init_type(PyObject *module, PyObject **newtype, PyType_Spec *spec,
+          PyTypeObject *base, const char *attrname)
 {
-    PyObject *newtype = NULL;
-    PyObject *bases = NULL;
-    if (base != NULL) {
-        bases = PyTuple_Pack(1, (PyObject *)base);
-        if (bases == NULL) {
-            return NULL;
+    if (*newtype == NULL) {
+        PyObject *bases = NULL;
+        if (base != NULL) {
+            bases = PyTuple_Pack(1, (PyObject *)base);
+            if (bases == NULL) {
+                return -1;
+            }
         }
+        *newtype = PyType_FromSpecWithBases(spec, bases);
+        Py_XDECREF(bases);
+        if (*newtype == NULL) {
+            return -1;
+        }
+        assert(((PyTypeObject *)*newtype)->tp_traverse != NULL);
     }
-    newtype = PyType_FromSpecWithBases(
-        spec, bases
-    );
-    Py_XDECREF(bases);
-    if (newtype == NULL) {
-        return NULL;
-    }
-    assert(((PyTypeObject *)newtype)->tp_traverse != NULL);
 
-    if (PyModule_AddObject(module, attrname, newtype) < 0) {
-        Py_DECREF(newtype);
-        return NULL;
+    if (PyModule_AddObject(module, attrname, *newtype) < 0) {
+        Py_DECREF(*newtype);
+        return -1;
     }
-    Py_INCREF(newtype);
-    return (PyTypeObject *)newtype;
+    Py_INCREF(*newtype);
+    return 0;
 }
 
-static PyObject *
-moduleinit(void)
+PyMODINIT_FUNC PyInit__wrappers(void)
 {
     PyObject *module;
 
@@ -2798,66 +2797,67 @@ moduleinit(void)
     if (module == NULL)
         return NULL;
 
-    WraptObjectProxy_Type = (PyTypeObject *)init_type(
-        module,
-        &WraptObjectProxy_Type_spec,
-        NULL,
-        "ObjectProxy"
-    );
-    if (WraptObjectProxy_Type == NULL)
-        return NULL; 
-
-    WraptCallableObjectProxy_Type = (PyTypeObject *)init_type(
-        module,
-        &WraptCallableObjectProxy_Type_spec,
-        WraptObjectProxy_Type,
-        "CallableObjectProxy"
-    );
-    if (WraptCallableObjectProxy_Type == NULL)
+    if (init_type(
+            module,
+            (PyObject **)&WraptObjectProxy_Type,
+            &WraptObjectProxy_Type_spec,
+            NULL,
+            "ObjectProxy") < 0) {
+        Py_DECREF(module);
         return NULL;
+    }
 
-    WraptPartialCallableObjectProxy_Type = (PyTypeObject *)init_type(
-        module,
-        &WraptPartialCallableObjectProxy_Type_spec,
-        WraptObjectProxy_Type,
-        "PartialCallableObjectProxy"
-    );
-    if (WraptPartialCallableObjectProxy_Type == NULL)
+    if (init_type(
+            module,
+            (PyObject **)&WraptCallableObjectProxy_Type,
+            &WraptCallableObjectProxy_Type_spec,
+            WraptObjectProxy_Type,
+            "CallableObjectProxy") < 0) {
+        Py_DECREF(module);
         return NULL;
+    }
 
-    WraptFunctionWrapperBase_Type = (PyTypeObject *)init_type(
-        module,
-        &WraptFunctionWrapperBase_Type_spec,
-        WraptObjectProxy_Type,
-        "_FunctionWrapperBase"
-    );
-    if (WraptFunctionWrapperBase_Type == NULL)
+    if (init_type(
+            module,
+            (PyObject **)&WraptPartialCallableObjectProxy_Type,
+            &WraptPartialCallableObjectProxy_Type_spec,
+            WraptObjectProxy_Type,
+            "PartialCallableObjectProxy") < 0) {
+        Py_DECREF(module);
         return NULL;
+    }
 
-    WraptBoundFunctionWrapper_Type = (PyTypeObject *)init_type(
-        module,
-        &WraptBoundFunctionWrapper_Type_spec,
-        WraptFunctionWrapperBase_Type,
-        "BoundFunctionWrapper"
-    );
-    if (WraptBoundFunctionWrapper_Type == NULL)
+    if (init_type(
+            module,
+            (PyObject **)&WraptFunctionWrapperBase_Type,
+            &WraptFunctionWrapperBase_Type_spec,
+            WraptObjectProxy_Type,
+            "_FunctionWrapperBase") < 0) {
+        Py_DECREF(module);
         return NULL;
+    }
 
-    WraptFunctionWrapper_Type = (PyTypeObject *)init_type(
-        module,
-        &WraptFunctionWrapper_Type_spec,
-        WraptFunctionWrapperBase_Type,
-        "FunctionWrapper"
-    );
-    if (WraptFunctionWrapper_Type == NULL)
+    if (init_type(
+            module,
+            (PyObject **)&WraptBoundFunctionWrapper_Type,
+            &WraptBoundFunctionWrapper_Type_spec,
+            WraptFunctionWrapperBase_Type,
+            "BoundFunctionWrapper") < 0) {
+        Py_DECREF(module);
         return NULL;
+    }
+
+    if (init_type(
+            module,
+            (PyObject **)&WraptFunctionWrapper_Type,
+            &WraptFunctionWrapper_Type_spec,
+            WraptFunctionWrapperBase_Type,
+            "FunctionWrapper") < 0) {
+        Py_DECREF(module);
+        return NULL;
+    }
 
     return module;
-}
-
-PyMODINIT_FUNC PyInit__wrappers(void)
-{
-    return moduleinit();
 }
 
 /* ------------------------------------------------------------------------- */
