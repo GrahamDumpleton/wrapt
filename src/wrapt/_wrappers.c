@@ -2137,6 +2137,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
 
     static PyObject *bound_type_str = NULL;
     static PyObject *function_str = NULL;
+    static PyObject *dunder_get_str = NULL;
 
     if (!bound_type_str) {
         bound_type_str = PyUnicode_InternFromString(
@@ -2147,8 +2148,13 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         function_str = PyUnicode_InternFromString("function");
     }
 
+    if (!dunder_get_str) {
+        dunder_get_str = PyUnicode_InternFromString("__get__");
+    }
+
     if (self->parent == Py_None) {
         PyObject *descr_get;
+
         if (PyObject_IsInstance(self->object_proxy.wrapped,
                 (PyObject *)&PyType_Type)) {
             Py_INCREF(self);
@@ -2156,8 +2162,8 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         }
 
         /* Cannot use Py_tp_descr_get with non-heap types */
-        descr_get = PyObject_GetAttrString(
-            (PyObject *)Py_TYPE(self->object_proxy.wrapped), "__get__"
+        descr_get = PyObject_GetAttr(
+            (PyObject *)Py_TYPE(self->object_proxy.wrapped), dunder_get_str
         );
         if (descr_get == NULL) {
             PyObject *name = type_getname(Py_TYPE(self->object_proxy.wrapped));
@@ -2170,6 +2176,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             Py_DECREF(name);
             return NULL;
         }
+
+        if (obj == NULL)
+            obj = Py_None;
 
         descriptor = PyObject_CallFunctionObjArgs(
             descr_get, self->object_proxy.wrapped, obj, type, NULL);
@@ -2184,9 +2193,6 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             if (!bound_type)
                 PyErr_Clear();
         }
-
-        if (obj == NULL)
-            obj = Py_None;
 
         result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
                 (PyObject *)WraptBoundFunctionWrapper_Type, descriptor,
@@ -2218,8 +2224,8 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             return NULL;
 
         /* Cannot use Py_tp_descr_get with non-heap types */
-        descr_get = PyObject_GetAttrString(
-            (PyObject *)Py_TYPE(self->object_proxy.wrapped), "__get__"
+        descr_get = PyObject_GetAttr(
+            (PyObject *)Py_TYPE(self->object_proxy.wrapped), dunder_get_str
         );
         if (descr_get == NULL) {
             PyObject *name = type_getname(Py_TYPE(wrapped));
@@ -2234,6 +2240,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             Py_DECREF(name);
             return NULL;
         }
+
+        if (obj == NULL)
+            obj = Py_None;
 
         descriptor = PyObject_CallFunctionObjArgs(
             descr_get, wrapped, obj, type, NULL);
@@ -2250,9 +2259,6 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
             if (!bound_type)
                 PyErr_Clear();
         }
-
-        if (obj == NULL)
-            obj = Py_None;
 
         result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
                 (PyObject *)WraptBoundFunctionWrapper_Type, descriptor,
