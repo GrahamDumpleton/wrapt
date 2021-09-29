@@ -1,16 +1,25 @@
 /* ------------------------------------------------------------------------- */
 
-#ifndef Py_LIMITED_API
-/* stable ABI Python >= 3.6, keep in sync with setup.cfg py_limited_api */
-#define Py_LIMITED_API 0x03060000
-#endif
-
 #include "Python.h"
 
 #include "structmember.h"
 
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+/* Heap types in Python < 3.9 don't support __weaklistoffset__ and
+ * __dictoffset__ in PyMemberDef.
+ */
+#if PY_VERSION_HEX >= 0x03090000
+#define WRAPT_HEAPTYPE_SUPPORT_OFFSET 1
+#endif
+
+/* Instanes of heap types in Python < 3.8 don't hold strong ref to their
+ * type object.
+ */
+#if PY_VERSION_HEX >= 0x03080000
+#define WRAPT_HEAPTYPE_STRONG_TYPEREF 1
 #endif
 
 /* ------------------------------------------------------------------------- */
@@ -147,6 +156,7 @@ static int WraptObjectProxy_init(WraptObjectProxyObject *self,
 static int WraptObjectProxy_traverse(WraptObjectProxyObject *self,
         visitproc visit, void *arg)
 {
+    Py_VISIT(Py_TYPE(self));
     Py_VISIT(self->dict);
     Py_VISIT(self->wrapped);
 
@@ -167,7 +177,10 @@ static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
 
 static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 {
+#ifdef WRAPT_HEAPTYPE_STRONG_TYPEREF
+    /* Type decref causes segfaults in <= 3.7 */
     PyTypeObject *tp = Py_TYPE(self);
+#endif
 
     PyObject_GC_UnTrack(self);
 
@@ -179,7 +192,9 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
     freefunc free_func = PyType_GetSlot(Py_TYPE(self), Py_tp_free);
     free_func(self);
 
+#ifdef WRAPT_HEAPTYPE_STRONG_TYPEREF
     Py_DECREF(tp);
+#endif
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1589,8 +1604,10 @@ static PyGetSetDef WraptObjectProxy_getset[] = {
 };
 
 static struct PyMemberDef WraptObjectProxy_Type_members[] = {
+#ifdef WRAPT_HEAPTYPE_SUPPORT_OFFSET
     {"__weaklistoffset__", T_PYSSIZET, offsetof(WraptObjectProxyObject, weakreflist), READONLY},
     {"__dictoffset__", T_PYSSIZET, offsetof(WraptObjectProxyObject, dict), READONLY},
+#endif
     {NULL},
 };
 
@@ -1697,6 +1714,7 @@ static PyType_Spec WraptCallableObjectProxy_Type_spec = {
     "CallableObjectProxy",
     sizeof(WraptObjectProxyObject),
     0,
+    /* Only define HAVE_GC if the object defines custom traverse and clear */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     WraptCallableObjectProxy_Type_slots
 };
@@ -2778,6 +2796,11 @@ init_type(PyObject *module, PyObject **newtype, PyType_Spec *spec,
             return -1;
         }
         assert(((PyTypeObject *)*newtype)->tp_traverse != NULL);
+#ifndef WRAPT_HEAPTYPE_SUPPORT_OFFSET
+        /* hack for Python <= 3.8 */
+        ((PyTypeObject *)*newtype)->tp_weaklistoffset = offsetof(WraptObjectProxyObject, weakreflist);
+        ((PyTypeObject *)*newtype)->tp_dictoffset = offsetof(WraptObjectProxyObject, dict);
+#endif
     }
 
     if (PyModule_AddObject(module, attrname, *newtype) < 0) {

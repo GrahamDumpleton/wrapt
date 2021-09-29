@@ -147,7 +147,8 @@ jobs:
         env:
             WRAPT_INSTALL_EXTENSIONS: true  # Require extensions.
             CIBW_SKIP: pp*                  # Skip wheels for PyPy.
-            CIBW_BUILD: cp36-*              # only build on 3.6 for stable cp36-abi3
+            # build on 3.6 to 3.9. cp39 provides stable abi cp39-abi3
+            CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
       - uses: actions/upload-artifact@v2
         with:
           name: dist
