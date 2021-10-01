@@ -8,18 +8,16 @@ jobs:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
         python-version:
-          - 2.7
-          - 3.5
           - 3.6
           - 3.7
           - 3.8
           - 3.9
           - 3.10-dev
-          - pypy-2.7
           - pypy-3.6
           - pypy-3.7
     steps:
@@ -45,18 +43,16 @@ jobs:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - macos-latest
         python-version:
-          - 2.7
-          - 3.5
           - 3.6
           - 3.7
           - 3.8
           - 3.9
           - 3.10-dev
-          - pypy-2.7
           - pypy-3.6
           - pypy-3.7
     steps:
@@ -82,17 +78,16 @@ jobs:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - windows-latest
         python-version:
-          - 3.5
           - 3.6
           - 3.7
           - 3.8
           - 3.9
           - 3.10-dev
-          - pypy-2.7
           - pypy-3.6
           - pypy-3.7
     steps:
@@ -152,6 +147,8 @@ jobs:
         env:
             WRAPT_INSTALL_EXTENSIONS: true  # Require extensions.
             CIBW_SKIP: pp*                  # Skip wheels for PyPy.
+            # build on 3.6 to 3.9. cp39 provides stable abi cp39-abi3
+            CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
       - uses: actions/upload-artifact@v2
         with:
           name: dist
