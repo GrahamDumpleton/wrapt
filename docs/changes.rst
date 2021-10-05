@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 1.13.1
+--------------
+
+**Bugs Fixed**
+
+* Fix Python version constraint so PyPi classifier for ``pip`` requires
+  Python 2.7 or Python 3.5+.
+
 Version 1.13.0
 --------------
 
