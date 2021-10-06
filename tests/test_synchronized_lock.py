@@ -1,10 +1,7 @@
-from __future__ import print_function
-
+import sys
 import unittest
 
 import wrapt
-
-from compat import PYXY
 
 @wrapt.synchronized
 def function():
@@ -166,7 +163,7 @@ class TestSynchronized(unittest.TestCase):
         # explicitly passing the class as first argument. For more
         # details see: https://bugs.python.org/issue19072
 
-        if PYXY < (3, 9):
+        if sys.version_info < (3, 9):
             _lock0 = getattr(C4.function2, '_synchronized_lock', None)
         else:
             _lock0 = getattr(C4, '_synchronized_lock', None)
@@ -174,7 +171,7 @@ class TestSynchronized(unittest.TestCase):
 
         c4.function2()
 
-        if PYXY < (3, 9):
+        if sys.version_info < (3, 9):
             _lock1 = getattr(C4.function2, '_synchronized_lock', None)
         else:
             _lock1 = getattr(C4, '_synchronized_lock', None)
@@ -182,7 +179,7 @@ class TestSynchronized(unittest.TestCase):
 
         C4.function2()
 
-        if PYXY < (3, 9):
+        if sys.version_info < (3, 9):
             _lock2 = getattr(C4.function2, '_synchronized_lock', None)
         else:
             _lock2 = getattr(C4, '_synchronized_lock', None)
@@ -191,7 +188,7 @@ class TestSynchronized(unittest.TestCase):
 
         C4.function2()
 
-        if PYXY < (3, 9):
+        if sys.version_info < (3, 9):
             _lock3 = getattr(C4.function2, '_synchronized_lock', None)
         else:
             _lock3 = getattr(C4, '_synchronized_lock', None)

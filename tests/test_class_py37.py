@@ -1,12 +1,8 @@
-from __future__ import print_function
-
 import unittest
 import inspect
 import imp
 
 import wrapt
-
-from compat import PY2, PY3, exec_
 
 class TestInheritance(unittest.TestCase):
 

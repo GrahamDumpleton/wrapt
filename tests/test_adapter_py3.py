@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import inspect
 import unittest
 import imp
@@ -8,8 +6,6 @@ import collections
 from typing import Iterable
 
 import wrapt
-
-from compat import PY2, PY3, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -29,7 +25,7 @@ def adapter2(wrapped, instance, args, kwargs):
 """
 
 decorators = imp.new_module('decorators')
-exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 def function1(arg1, arg2) -> Iterable:
     '''documentation'''
@@ -88,9 +84,6 @@ class TestArgumentSpecificationWithAnnotations(unittest.TestCase):
         # Test preservation of function argument specification. It
         # actually needs to match that of the adapter function the
         # prototype of which was supplied via the dummy function.
-
-        if PY2:
-            return
 
         def _adapter(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable: pass
 
