@@ -3,16 +3,9 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 
 """
 
+import importlib
 import sys
 import threading
-
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    string_types = basestring,
-else:
-    import importlib
-    string_types = str,
 
 from .decorators import synchronized
 
@@ -49,7 +42,7 @@ def register_post_import_hook(hook, name):
     # Create a deferred import hook if hook is a string name rather than
     # a callable function.
 
-    if isinstance(hook, string_types):
+    if isinstance(hook, str):
         hook = _create_import_hook_from_string(hook)
 
     # Automatically install the import hook finder if it has not already
@@ -187,35 +180,20 @@ class ImportHookFinder:
         # Now call back into the import system again.
 
         try:
-            if PY2:
-                # For Python 2 we don't have much choice but to
-                # call back in to __import__(). This will
-                # actually cause the module to be imported. If no
-                # module could be found then ImportError will be
-                # raised. Otherwise we return a loader which
-                # returns the already loaded module and invokes
-                # the post import hooks.
-
-                __import__(fullname)
-
-                return _ImportHookLoader()
-
-            else:
-                # For Python 3 we need to use find_spec().loader
-                # from the importlib.util module. It doesn't actually
-                # import the target module and only finds the
-                # loader. If a loader is found, we need to return
-                # our own loader which will then in turn call the
-                # real loader to import the module and invoke the
-                # post import hooks.
-                try:
-                    import importlib.util
-                    loader = importlib.util.find_spec(fullname).loader
-                except (ImportError, AttributeError):
-                    loader = importlib.find_loader(fullname, path)
-                if loader:
-                    return _ImportHookChainedLoader(loader)
-
+            # For Python 3 we need to use find_spec().loader
+            # from the importlib.util module. It doesn't actually
+            # import the target module and only finds the
+            # loader. If a loader is found, we need to return
+            # our own loader which will then in turn call the
+            # real loader to import the module and invoke the
+            # post import hooks.
+            try:
+                import importlib.util
+                loader = importlib.util.find_spec(fullname).loader
+            except (ImportError, AttributeError):
+                loader = importlib.find_loader(fullname, path)
+            if loader:
+                return _ImportHookChainedLoader(loader)
 
         finally:
             del self.in_progress[fullname]

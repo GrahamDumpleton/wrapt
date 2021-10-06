@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 1.14.0
+--------------
+
+**Bugs Fixed**
+
+* Drop support for Python 2.7 and 3.5, which are past their end of lifetime.
+
+
 Version 1.13.1
 --------------
 

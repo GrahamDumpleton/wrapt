@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys
 import unittest
 import inspect
@@ -7,7 +5,6 @@ import imp
 
 import wrapt
 
-from compat import PY2, PY3, PYXY, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -18,7 +15,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 """
 
 decorators = imp.new_module('decorators')
-exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class Class(object):
     @classmethod
@@ -136,7 +133,7 @@ class TestCallingOuterClassMethod(unittest.TestCase):
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            if PYXY < (3, 9):
+            if sys.version_info < (3, 9):
                 self.assertEqual(instance, None)
                 self.assertEqual(args, (Class,)+_args)
             else:
@@ -178,7 +175,7 @@ class TestCallingOuterClassMethod(unittest.TestCase):
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            if PYXY < (3, 9):
+            if sys.version_info < (3, 9):
                 self.assertEqual(instance, None)
                 self.assertEqual(args, (Class,)+_args)
             else:

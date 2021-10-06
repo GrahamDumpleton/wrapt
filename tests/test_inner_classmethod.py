@@ -1,12 +1,8 @@
-from __future__ import print_function
-
 import unittest
 import inspect
 import imp
 
 import wrapt
-
-from compat import PY2, PY3, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -17,7 +13,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 """
 
 decorators = imp.new_module('decorators')
-exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class Class(object):
     @classmethod

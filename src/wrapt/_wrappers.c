@@ -78,19 +78,11 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
     self->wrapped = wrapped;
 
     if (!module_str) {
-#if PY_MAJOR_VERSION >= 3
         module_str = PyUnicode_InternFromString("__module__");
-#else
-        module_str = PyString_InternFromString("__module__");
-#endif
     }
 
     if (!doc_str) {
-#if PY_MAJOR_VERSION >= 3
         doc_str = PyUnicode_InternFromString("__doc__");
-#else
-        doc_str = PyString_InternFromString("__doc__");
-#endif
     }
 
     object = PyObject_GetAttr(wrapped, module_str);
@@ -181,22 +173,12 @@ static PyObject *WraptObjectProxy_repr(WraptObjectProxyObject *self)
       return NULL;
     }
 
-#if PY_MAJOR_VERSION >= 3
     return PyUnicode_FromFormat("<%s at %p for %s at %p>",
             Py_TYPE(self)->tp_name, self,
             Py_TYPE(self->wrapped)->tp_name, self->wrapped);
-#else
-    return PyString_FromFormat("<%s at %p for %s at %p>",
-            Py_TYPE(self)->tp_name, self,
-            Py_TYPE(self->wrapped)->tp_name, self->wrapped);
-#endif
 }
 
 /* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 3)
-typedef long Py_hash_t;
-#endif
 
 static Py_hash_t WraptObjectProxy_hash(WraptObjectProxyObject *self)
 {
@@ -295,33 +277,6 @@ static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2)
 
     return PyNumber_Multiply(o1, o2);
 }
-
-/* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_divide(PyObject *o1, PyObject *o2)
-{
-    if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
-        if (!((WraptObjectProxyObject *)o1)->wrapped) {
-          PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-          return NULL;
-        }
-
-        o1 = ((WraptObjectProxyObject *)o1)->wrapped;
-    }
-
-    if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
-        if (!((WraptObjectProxyObject *)o2)->wrapped) {
-          PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-          return NULL;
-        }
-
-        o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-    }
-
-    return PyNumber_Divide(o1, o2);
-}
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -586,20 +541,6 @@ static PyObject *WraptObjectProxy_or(PyObject *o1, PyObject *o2)
 
 /* ------------------------------------------------------------------------- */
 
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_int(WraptObjectProxyObject *self)
-{
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-      return NULL;
-    }
-
-    return PyNumber_Int(self->wrapped);
-}
-#endif
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *WraptObjectProxy_long(WraptObjectProxyObject *self)
 {
     if (!self->wrapped) {
@@ -621,52 +562,6 @@ static PyObject *WraptObjectProxy_float(WraptObjectProxyObject *self)
 
     return PyNumber_Float(self->wrapped);
 }
-
-/* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_oct(WraptObjectProxyObject *self)
-{
-    PyNumberMethods *nb;
-
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-      return NULL;
-    }
-
-    if ((nb = self->wrapped->ob_type->tp_as_number) == NULL ||
-        nb->nb_oct == NULL) {
-        PyErr_SetString(PyExc_TypeError,
-                   "oct() argument can't be converted to oct");
-        return NULL;
-    }
-
-    return (*nb->nb_oct)(self->wrapped);
-}
-#endif
-
-/* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_hex(WraptObjectProxyObject *self)
-{
-    PyNumberMethods *nb;
-
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-      return NULL;
-    }
-
-    if ((nb = self->wrapped->ob_type->tp_as_number) == NULL ||
-        nb->nb_hex == NULL) {
-        PyErr_SetString(PyExc_TypeError,
-                   "hex() argument can't be converted to hex");
-        return NULL;
-    }
-
-    return (*nb->nb_hex)(self->wrapped);
-}
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -748,35 +643,6 @@ static PyObject *WraptObjectProxy_inplace_multiply(
     Py_INCREF(self);
     return (PyObject *)self;
 }
-
-/* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_inplace_divide(
-        WraptObjectProxyObject *self, PyObject *other)
-{
-    PyObject *object = NULL;
-
-    if (!self->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-      return NULL;
-    }
-
-    if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
-        other = ((WraptObjectProxyObject *)other)->wrapped;
-
-    object = PyNumber_InPlaceDivide(self->wrapped, other);
-
-    if (!object)
-        return NULL;
-
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
-
-    Py_INCREF(self);
-    return (PyObject *)self;
-}
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -1273,7 +1139,6 @@ static PyObject *WraptObjectProxy_reversed(
 
 /* ------------------------------------------------------------------------- */
 
-#if PY_MAJOR_VERSION >= 3
 static PyObject *WraptObjectProxy_round(
         WraptObjectProxyObject *self, PyObject *args)
 {
@@ -1310,7 +1175,6 @@ static PyObject *WraptObjectProxy_round(
 
     return result;
 }
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -1538,11 +1402,7 @@ static PyObject *WraptObjectProxy_getattro(
     PyErr_Clear();
 
     if (!getattr_str) {
-#if PY_MAJOR_VERSION >= 3
         getattr_str = PyUnicode_InternFromString("__getattr__");
-#else
-        getattr_str = PyString_InternFromString("__getattr__");
-#endif
     }
 
     object = PyObject_GenericGetAttr((PyObject *)self, getattr_str);
@@ -1564,13 +1424,8 @@ static PyObject *WraptObjectProxy_getattr(
 {
     PyObject *name = NULL;
 
-#if PY_MAJOR_VERSION >= 3
     if (!PyArg_ParseTuple(args, "U:__getattr__", &name))
         return NULL;
-#else
-    if (!PyArg_ParseTuple(args, "S:__getattr__", &name))
-        return NULL;
-#endif
 
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
@@ -1592,19 +1447,11 @@ static int WraptObjectProxy_setattro(
     PyObject *match = NULL;
 
     if (!startswith_str) {
-#if PY_MAJOR_VERSION >= 3
         startswith_str = PyUnicode_InternFromString("startswith");
-#else
-        startswith_str = PyString_InternFromString("startswith");
-#endif
     }
 
     if (!self_str) {
-#if PY_MAJOR_VERSION >= 3
         self_str = PyUnicode_InternFromString("_self_");
-#else
-        self_str = PyString_InternFromString("_self_");
-#endif
     }
 
     match = PyObject_CallMethodObjArgs(name, startswith_str, self_str, NULL);
@@ -1620,11 +1467,7 @@ static int WraptObjectProxy_setattro(
     Py_XDECREF(match);
 
     if (!wrapped_str) {
-#if PY_MAJOR_VERSION >= 3
         wrapped_str = PyUnicode_InternFromString("__wrapped__");
-#else
-        wrapped_str = PyString_InternFromString("__wrapped__");
-#endif
     }
 
     if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
@@ -1669,9 +1512,7 @@ static PyNumberMethods WraptObjectProxy_as_number = {
     (binaryfunc)WraptObjectProxy_add, /*nb_add*/
     (binaryfunc)WraptObjectProxy_subtract, /*nb_subtract*/
     (binaryfunc)WraptObjectProxy_multiply, /*nb_multiply*/
-#if PY_MAJOR_VERSION < 3
-    (binaryfunc)WraptObjectProxy_divide, /*nb_divide*/
-#endif
+
     (binaryfunc)WraptObjectProxy_remainder, /*nb_remainder*/
     (binaryfunc)WraptObjectProxy_divmod, /*nb_divmod*/
     (ternaryfunc)WraptObjectProxy_power, /*nb_power*/
@@ -1685,27 +1526,12 @@ static PyNumberMethods WraptObjectProxy_as_number = {
     (binaryfunc)WraptObjectProxy_and, /*nb_and*/
     (binaryfunc)WraptObjectProxy_xor, /*nb_xor*/
     (binaryfunc)WraptObjectProxy_or, /*nb_or*/
-#if PY_MAJOR_VERSION < 3
-    0,                      /*nb_coerce*/
-#endif
-#if PY_MAJOR_VERSION < 3
-    (unaryfunc)WraptObjectProxy_int, /*nb_int*/
-    (unaryfunc)WraptObjectProxy_long, /*nb_long*/
-#else
     (unaryfunc)WraptObjectProxy_long, /*nb_int*/
     0,                      /*nb_long/nb_reserved*/
-#endif
     (unaryfunc)WraptObjectProxy_float, /*nb_float*/
-#if PY_MAJOR_VERSION < 3
-    (unaryfunc)WraptObjectProxy_oct, /*nb_oct*/
-    (unaryfunc)WraptObjectProxy_hex, /*nb_hex*/
-#endif
     (binaryfunc)WraptObjectProxy_inplace_add, /*nb_inplace_add*/
     (binaryfunc)WraptObjectProxy_inplace_subtract, /*nb_inplace_subtract*/
     (binaryfunc)WraptObjectProxy_inplace_multiply, /*nb_inplace_multiply*/
-#if PY_MAJOR_VERSION < 3
-    (binaryfunc)WraptObjectProxy_inplace_divide, /*nb_inplace_divide*/
-#endif
     (binaryfunc)WraptObjectProxy_inplace_remainder, /*nb_inplace_remainder*/
     (ternaryfunc)WraptObjectProxy_inplace_power, /*nb_inplace_power*/
     (binaryfunc)WraptObjectProxy_inplace_lshift, /*nb_inplace_lshift*/
@@ -1755,9 +1581,7 @@ static PyMethodDef WraptObjectProxy_methods[] = {
                     METH_VARARGS , 0 },
     { "__bytes__",  (PyCFunction)WraptObjectProxy_bytes, METH_NOARGS, 0 },
     { "__reversed__", (PyCFunction)WraptObjectProxy_reversed, METH_NOARGS, 0 },
-#if PY_MAJOR_VERSION >= 3
     { "__round__",  (PyCFunction)WraptObjectProxy_round, METH_NOARGS, 0 },
-#endif
     { "__complex__",  (PyCFunction)WraptObjectProxy_complex, METH_NOARGS, 0 },
 #if PY_MAJOR_VERSION > 3 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 7)
     { "__mro_entries__", (PyCFunction)WraptObjectProxy_mro_entries,
@@ -1805,13 +1629,8 @@ PyTypeObject WraptObjectProxy_Type = {
     (getattrofunc)WraptObjectProxy_getattro, /*tp_getattro*/
     (setattrofunc)WraptObjectProxy_setattro, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
         Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-#endif
     0,                      /*tp_doc*/
     (traverseproc)WraptObjectProxy_traverse, /*tp_traverse*/
     (inquiry)WraptObjectProxy_clear, /*tp_clear*/
@@ -1878,11 +1697,7 @@ PyTypeObject WraptCallableObjectProxy_Type = {
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-#endif
     0,                      /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
@@ -2122,13 +1937,8 @@ PyTypeObject WraptPartialCallableObjectProxy_Type = {
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
         Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-#endif
     0,                      /*tp_doc*/
     (traverseproc)WraptPartialCallableObjectProxy_traverse, /*tp_traverse*/
     (inquiry)WraptPartialCallableObjectProxy_clear, /*tp_clear*/
@@ -2227,11 +2037,7 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
             "enabled", "binding", "parent", NULL };
 
     if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
         function_str = PyUnicode_InternFromString("function");
-#else
-        function_str = PyString_InternFromString("function");
-#endif
     }
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
@@ -2302,13 +2108,8 @@ static PyObject *WraptFunctionWrapperBase_call(
     static PyObject *classmethod_str = NULL;
 
     if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
         function_str = PyUnicode_InternFromString("function");
         classmethod_str = PyUnicode_InternFromString("classmethod");
-#else
-        function_str = PyString_InternFromString("function");
-        classmethod_str = PyString_InternFromString("classmethod");
-#endif
     }
 
     if (self->enabled != Py_None) {
@@ -2383,38 +2184,20 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     static PyObject *function_str = NULL;
 
     if (!bound_type_str) {
-#if PY_MAJOR_VERSION >= 3
         bound_type_str = PyUnicode_InternFromString(
                 "__bound_function_wrapper__");
-#else
-        bound_type_str = PyString_InternFromString(
-                "__bound_function_wrapper__");
-#endif
     }
 
     if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
         function_str = PyUnicode_InternFromString("function");
-#else
-        function_str = PyString_InternFromString("function");
-#endif
     }
 
     if (self->parent == Py_None) {
-#if PY_MAJOR_VERSION < 3
-        if (PyObject_IsInstance(self->object_proxy.wrapped,
-                (PyObject *)&PyClass_Type) || PyObject_IsInstance(
-                self->object_proxy.wrapped, (PyObject *)&PyType_Type)) {
-            Py_INCREF(self);
-            return (PyObject *)self;
-        }
-#else
         if (PyObject_IsInstance(self->object_proxy.wrapped,
                 (PyObject *)&PyType_Type)) {
             Py_INCREF(self);
             return (PyObject *)self;
         }
-#endif
 
         if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL) {
             PyErr_Format(PyExc_AttributeError,
@@ -2460,11 +2243,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         static PyObject *wrapped_str = NULL;
 
         if (!wrapped_str) {
-#if PY_MAJOR_VERSION >= 3
             wrapped_str = PyUnicode_InternFromString("__wrapped__");
-#else
-            wrapped_str = PyString_InternFromString("__wrapped__");
-#endif
         }
 
         wrapped = PyObject_GetAttr(self->parent, wrapped_str);
@@ -2702,13 +2481,8 @@ PyTypeObject WraptFunctionWrapperBase_Type = {
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
         Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-#endif
     0,                      /*tp_doc*/
     (traverseproc)WraptFunctionWrapperBase_traverse, /*tp_traverse*/
     (inquiry)WraptFunctionWrapperBase_clear, /*tp_clear*/
@@ -2768,11 +2542,7 @@ static PyObject *WraptBoundFunctionWrapper_call(
     }
 
     if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
         function_str = PyUnicode_InternFromString("function");
-#else
-        function_str = PyString_InternFromString("function");
-#endif
     }
 
     /* 
@@ -2914,11 +2684,7 @@ PyTypeObject WraptBoundFunctionWrapper_Type = {
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-#endif
     0,                      /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
@@ -2966,27 +2732,15 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     }
 
     if (!classmethod_str) {
-#if PY_MAJOR_VERSION >= 3
         classmethod_str = PyUnicode_InternFromString("classmethod");
-#else
-        classmethod_str = PyString_InternFromString("classmethod");
-#endif
     }
 
     if (!staticmethod_str) {
-#if PY_MAJOR_VERSION >= 3
         staticmethod_str = PyUnicode_InternFromString("staticmethod");
-#else
-        staticmethod_str = PyString_InternFromString("staticmethod");
-#endif
     }
 
     if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
         function_str = PyUnicode_InternFromString("function");
-#else
-        function_str = PyString_InternFromString("function");
-#endif
     }
 
     if (PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type)) {
@@ -2996,16 +2750,9 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
         binding = staticmethod_str;
     }
     else if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
-#if PY_MAJOR_VERSION < 3
-        if (PyObject_IsInstance(instance, (PyObject *)&PyClass_Type) ||
-                PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
-            binding = classmethod_str;
-        }
-#else
         if (PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
             binding = classmethod_str;
         }
-#endif
         else
             binding = function_str;
 
@@ -3054,11 +2801,7 @@ PyTypeObject WraptFunctionWrapper_Type = {
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-#endif
     0,                      /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/
@@ -3083,7 +2826,6 @@ PyTypeObject WraptFunctionWrapper_Type = {
 
 /* ------------------------------------------------------------------------- */
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     "_wrappers",         /* m_name */
@@ -3095,18 +2837,13 @@ static struct PyModuleDef moduledef = {
     NULL,                /* m_clear */
     NULL,                /* m_free */
 };
-#endif
 
-static PyObject *
-moduleinit(void)
+PyMODINIT_FUNC
+PyInit__wrappers(void)
 {
     PyObject *module;
 
-#if PY_MAJOR_VERSION >= 3
     module = PyModule_Create(&moduledef);
-#else
-    module = Py_InitModule3("_wrappers", NULL, NULL);
-#endif
 
     if (module == NULL)
         return NULL;
@@ -3154,17 +2891,5 @@ moduleinit(void)
 
     return module;
 }
-
-#if PY_MAJOR_VERSION < 3
-PyMODINIT_FUNC init_wrappers(void)
-{
-    moduleinit();
-}
-#else
-PyMODINIT_FUNC PyInit__wrappers(void)
-{
-    return moduleinit();
-}
-#endif
 
 /* ------------------------------------------------------------------------- */
