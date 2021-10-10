@@ -86,6 +86,7 @@ jobs:
         os:
           - windows-latest
         python-version:
+          - 2.7
           - 3.5
           - 3.6
           - 3.7
@@ -151,7 +152,7 @@ jobs:
           output-dir: dist
         env:
             WRAPT_INSTALL_EXTENSIONS: true  # Require extensions.
-            CIBW_SKIP: pp*                  # Skip wheels for PyPy.
+            CIBW_SKIP: pp* cp27-win*        # Skip wheels for PyPy and Python 2.7 on Windows.
       - uses: actions/upload-artifact@v2
         with:
           name: dist
