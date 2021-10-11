@@ -1,6 +1,35 @@
 Release Notes
 =============
 
+Version 1.13.2
+--------------
+
+**Features Changed**
+
+* On the Windows platform when using Python 2.7, by default the C extension
+  will not be installed and the pure Python implementation will be used.
+  This is because too often on Windows when using Python 2.7, there is no
+  working compiler available. Prior to version 1.13.0, when installing the
+  package it would fallback to using the pure Python implementation
+  automatically but that relied on a workaround to do it when there was
+  no working compiler. With the changes in 1.13.0 to use the builtin
+  mechanism of Python to not fail when a C extension cannot be compiled,
+  this fallback doesn't work when the compiler doesn't exist, as the
+  builtin mechanism in Python regards lack of a compiler as fatal and not
+  a condition for which it is okay to ignore the fact that the extension
+  could not be compiled.
+
+  If you are using Python 2.7 on Windows, have a working compiler, and
+  still want to attempt to install the C extension, you can do so by
+  setting the `WRAPT_INSTALL_EXTENSIONS` environment variable to `true`
+  when installing the `wrapt` package.
+
+  Note that the next signficant release of `wrapt` will drop support for
+  Python 2.7 and Python 3.5. The change described here is to ensure that
+  `wrapt` can be used with Python 2.7 on Windows for just a little bit
+  longer. If using Python 2.7 on non Windows platforms, it will still
+  attempt to install the C extension.
+
 Version 1.13.1
 --------------
 
