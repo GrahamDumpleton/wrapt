@@ -160,7 +160,7 @@ jobs:
         path: dist/*
 
   bdist_wheel_group_1:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels (<Python 3.10) on ${{ matrix.os }}
     needs:
     - test_linux
     - test_macos
@@ -178,14 +178,14 @@ jobs:
           output-dir: dist
         env:
             WRAPT_INSTALL_EXTENSIONS: true
-            CIBW_SKIP: pp* cp27-win* cp31[0-9]*
+            CIBW_SKIP: pp* cp27-win* cp31[0-9]
       - uses: actions/upload-artifact@v2
         with:
           name: dist
           path: dist/*.whl
 
   bdist_wheel_group_2:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels (>=Python 3.10) on ${{ matrix.os }}
     needs:
     - test_linux
     - test_macos
@@ -203,7 +203,7 @@ jobs:
           output-dir: dist
         env:
             WRAPT_INSTALL_EXTENSIONS: true
-            CIBW_BUKLD: cp31[0-9]*
+            CIBW_BUILD: cp31[0-9]
       - uses: actions/upload-artifact@v2
         with:
           name: dist
