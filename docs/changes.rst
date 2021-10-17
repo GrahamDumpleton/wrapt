@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 1.13.3
+--------------
+
+**New Features**
+
+* Adds wheels for Python 3.10 on PyPi.
+
 Version 1.13.2
 --------------
 
