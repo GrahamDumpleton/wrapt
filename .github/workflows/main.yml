@@ -180,6 +180,7 @@ jobs:
             WRAPT_INSTALL_EXTENSIONS: true
             CIBW_BUILD: cp27* cp35*
             CIBW_SKIP: cp27-win*
+            CIBW_BUILD_VERBOSITY: 1
       - uses: actions/upload-artifact@v2
         with:
           name: dist
@@ -204,6 +205,8 @@ jobs:
           output-dir: dist
         env:
             WRAPT_INSTALL_EXTENSIONS: true
+            CIBW_SKIP: pp*
+            CIBW_BUILD_VERBOSITY: 1
       - uses: actions/upload-artifact@v2
         with:
           name: dist
