@@ -6,7 +6,8 @@ Version 1.13.3
 
 **New Features**
 
-* Adds wheels for Python 3.10 on PyPi.
+* Adds wheels for Python 3.10 on PyPi and where possible also now
+  generating binary wheels for ``musllinux``.
 
 Version 1.13.2
 --------------
