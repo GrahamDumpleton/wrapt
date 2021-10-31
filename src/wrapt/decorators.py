@@ -31,10 +31,52 @@ else:
     del builtins
 
 from functools import partial
-from inspect import ismethod, isclass, formatargspec
-from collections import namedtuple
+from inspect import isclass
 from threading import Lock, RLock
 
+try:
+    from inspect import formatargspec
+except ImportError:  #  > py3.10
+    from inspect import formatannotation
+    def formatargspec(args, varargs=None, varkw=None, defaults=None,
+                      kwonlyargs=(), kwonlydefaults={}, annotations={},
+                      formatarg=str,
+                      formatvarargs=lambda name: '*' + name,
+                      formatvarkw=lambda name: '**' + name,
+                      formatvalue=lambda value: '=' + repr(value),
+                      formatreturns=lambda text: ' -> ' + text,
+                      formatannotation=formatannotation):
+
+        def formatargandannotation(arg):
+            result = formatarg(arg)
+            if arg in annotations:
+                result += ': ' + formatannotation(annotations[arg])
+            return result
+        specs = []
+        if defaults:
+            firstdefault = len(args) - len(defaults)
+        for i, arg in enumerate(args):
+            spec = formatargandannotation(arg)
+            if defaults and i >= firstdefault:
+                spec = spec + formatvalue(defaults[i - firstdefault])
+            specs.append(spec)
+        if varargs is not None:
+            specs.append(formatvarargs(formatargandannotation(varargs)))
+        else:
+            if kwonlyargs:
+                specs.append('*')
+        if kwonlyargs:
+            for kwonlyarg in kwonlyargs:
+                spec = formatargandannotation(kwonlyarg)
+                if kwonlydefaults and kwonlyarg in kwonlydefaults:
+                    spec += formatvalue(kwonlydefaults[kwonlyarg])
+                specs.append(spec)
+        if varkw is not None:
+            specs.append(formatvarkw(formatargandannotation(varkw)))
+        result = '(' + ', '.join(specs) + ')'
+        if 'return' in annotations:
+            result += formatreturns(formatannotation(annotations['return']))
+        return result
 try:
     from inspect import signature
 except ImportError:

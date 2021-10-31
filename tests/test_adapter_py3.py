@@ -3,13 +3,12 @@ from __future__ import print_function
 import inspect
 import unittest
 import imp
-import collections
 
 from typing import Iterable
 
 import wrapt
 
-from compat import PY2, PY3, exec_
+from compat import PY2, exec_
 
 DECORATORS_CODE = """
 import wrapt
@@ -128,7 +127,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
-        args = inspect.formatargspec(*argspec2)
+        args = '(arg1, arg2, arg3=None, *args, **kwargs) -> int'
 
         @wrapt.decorator(adapter=args)
         def _wrapper_2(wrapped, instance, args, kwargs):
@@ -166,7 +165,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
-        args = inspect.formatargspec(*argspec2)
+        args = '(self, arg1, arg2, arg3=None, *args, **kwargs) -> int'
 
         @wrapt.decorator(adapter=args)
         def _wrapper_2(wrapped, instance, args, kwargs):
@@ -209,7 +208,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
-        args = inspect.formatargspec(*argspec2)
+        args = '(cls, arg1, arg2, arg3=None, *args, **kwargs) -> int'
 
         @wrapt.decorator(adapter=args)
         def _wrapper_2(wrapped, instance, args, kwargs):

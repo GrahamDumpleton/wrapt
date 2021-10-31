@@ -26,3 +26,8 @@ else:
     exec_("""def reraise(tp, value, tb=None):
     raise tp, value, tb
 """)
+
+try:
+    from inspect import getfullargspec
+except ImportError:
+    from inspect import getargspec as getfullargspec
