@@ -52,9 +52,9 @@ Before we jump into monkey patching of arbitrary code we first need to
 recap how the wrapt package could be used to create a decorator. The
 primary pattern for this was:
 
-```
+```python
 import wrapt
-import inspect 
+import inspect
 
 @wrapt.decorator
 def universal(wrapped, instance, args, kwargs):
@@ -96,7 +96,7 @@ one in each scenario.
 Using this decorator is then no different to any other way that decorators
 would be used.
 
-```
+```python
 class Example(object):
 
     @universal
@@ -110,12 +110,12 @@ Before the '@' syntax was allowed you could still create and use
 decorators, but you had to be more explicit in applying them. That is, you
 had to write:
 
-```
+```python
 class Example(object):
 
     def name(self):
         return 'name'
-    name = universal(name) 
+    name = universal(name)
 ```
 
 This can still be done and when written this way it makes it clearer how
@@ -135,7 +135,7 @@ the function wrapper at that point.
 
 In effect you are doing:
 
-```
+```python
 class Example(object):
     def name(self):
         return 'name'
@@ -152,7 +152,7 @@ the body of the class when it is defined. In particular the access of
 'Example.name' actually invokes the descriptor protocol and so is returning
 an instance method. We can see this by running the code:
 
-```
+```python
 class Example(object):
     def name(self):
         return 'name'
@@ -186,7 +186,7 @@ function to apply it to the target function.
 The prototype for the wrapper function is the same as before, but we simply
 do not apply the '@wrapt.decorator' to it.
 
-```
+```python
 def wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 ```
@@ -194,7 +194,7 @@ def wrapper(wrapped, instance, args, kwargs):
 To add the wrapper function to a target function we now use the
 'wrapt.wrap_function_wrapper()' function.
 
-```
+```python
 class Example(object):
     def name(self):
         return 'name'
@@ -207,7 +207,7 @@ wrapt.wrap_function_wrapper(Example, 'name', wrapper)
 In this case we had the class in the same code file, but we could also have
 done:
 
-```
+```python
 import example
 
 import wrapt
@@ -222,7 +222,7 @@ to apply the wrapper to.
 We could also skip importing the module altogether and just used the name
 of the module.
 
-```
+```python
 import wrapt
 
 wrapt.wrap_function_wrapper('example', 'Example.name', wrapper)
@@ -231,7 +231,7 @@ wrapt.wrap_function_wrapper('example', 'Example.name', wrapper)
 Just to prove that just about anything can be simplified by the user of a
 decorator, we finally could write the whole thing as:
 
-```
+```python
 import wrapt
 
 @wrapt.patch_function_wrapper('example', 'Example.name')
@@ -260,13 +260,13 @@ In particular, it the target function you were trying to monkey patch was a
 normal global function of the module, some other code could have grabbed a
 direct reference to it by doing:
 
-```
+```python
 from example import function
 ```
 
 If you come along later and have:
 
-```
+```python
 import wrapt
 
 @wrapt.patch_function_wrapper('example', 'function')

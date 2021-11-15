@@ -477,8 +477,8 @@ Custom Function Wrappers
 If it is necessary to implement a custom function wrapper in order to
 override the behaviour of a wrapped function, it is possible to still
 derive from the ``wrapt.FunctionWrapper`` class. That binding of functions
-can occur, does however complicate this. This is because the bound function
-is a separate object implemented as a different type.
+can occur does however complicate things. This is because the bound
+function is a separate object implemented as a different type.
 
 The type of the separate bound function wrapper is
 ``wrapt.BoundFunctionWrapper``. If the behaviour for the bound function
@@ -490,58 +490,102 @@ function wrapper, rather than the default. This is done via the
 
 ::
 
-    class CustomBoundFunctionWrapper(wrapt.BoundFunctionWrapper):
+    def custom_function_wrapper(attribute):
 
-        def __init__(self, *args, **kwargs):
-            self._self_attribute = self._self_parent._self_attribute
-            super(CustomBoundFunctionWrapper, self).__init__(*args, **kwargs)
+        class CustomBoundFunctionWrapper(wrapt.BoundFunctionWrapper):
 
-        def __call__(self, *args, **kwargs):
-            if self._self_attribute:
-                ...
-            return super(CustomBoundFunctionWrapper, self).__call__(*args, **kwargs)
+            def __call__(self, *args, **kwargs):
+                if attribute:
+                    ...
+                return super(CustomBoundFunctionWrapper, self).__call__(*args, **kwargs)
 
-    class CustomFunctionWrapper(wrapt.FunctionWrapper):
+        class CustomFunctionWrapper(wrapt.FunctionWrapper):
 
-        __bound_function_wrapper__ = CustomBoundFunctionWrapper
+            __bound_function_wrapper__ = CustomBoundFunctionWrapper
 
-        def __init__(self, wrapped, wrapper, attribute):
-            super(CustomFunctionWrapper, self).__init__(wrapped, wrapper)
-            self._self_attribute = attribute
+            def __call__(self, *args, **kwargs):
+                if attribute:
+                    ...
+                return super(CustomFunctionWrapper, self).__call__(*args, **kwargs)
 
-The set of arguments used to initialize an instance of a bound function
-wrapper object should be treated as a private implementation detail. This
-means that if a custom bound function wrapper needs to implement an
-``__init__()`` method, it should pass through all arguments as ``*args``
-and ``**kwargs``. It should not use specific named parameters.
+        return CustomFunctionWrapper
 
-If the instance of the custom bound function wrapper needs to access any
-special attributes originally supplied to the custom function wrapper when
-created, it should use ``self._self_parent`` to access the parent object
-to retrieve them.
-
-Alternatively, it would be necessary to define the custom bound function
-wrapper type in a function closure and assign ``__bound_function_wrapper__``
-dynamically against the instance of the custom bound function wrapper.
+Note that to preserve the existing convention as to what arguments are
+accepted by the constructors of both ``wrapt.FunctionWrapper`` and
+``wrapt.BoundFunctionWrapper`` a function closure is used in this example,
+with the classes defined within the closure. The benefit of this approach
+is that the custom function wrapper can then be used with
+``@wrapt.decorator``, with the default use of ``FunctionWrapper`` being
+replaced with the custom function wrapper.
 
 ::
 
-    def custom_bound_function_wrapper(attribute):
+    @wrapt.decorator(proxy=custom_function_wrapper("attribute"))
+    def wrapper(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+If it is necessary to set up instance variables on the function wrappers
+because the value needs to change over the lifetime of that instance of
+the function wrapper, constructors can be defined to add the attributes on
+the instance, but these should just pass all positional and keyword
+parameters as is through to the base class.
+
+::
+
+    def custom_function_wrapper(attribute):
 
         class CustomBoundFunctionWrapper(wrapt.BoundFunctionWrapper):
 
             def __init__(self, *args, **kwargs):
+                super(CustomBoundFunctionWrapper, self).__init(*args, **kwargs)
                 self._self_attribute = attribute
-                super(CustomBoundFunctionWrapper, self).__init__(*args, **kwargs)
 
             def __call__(self, *args, **kwargs):
                 if self._self_attribute:
                     ...
                 return super(CustomBoundFunctionWrapper, self).__call__(*args, **kwargs)
 
-    class CustomFunctionWrapper(wrapt.FunctionWrapper):
+        class CustomFunctionWrapper(wrapt.FunctionWrapper):
 
-        def __init__(self, wrapped, wrapper, attribute):
-            super(CustomFunctionWrapper, self).__init__(wrapped, wrapper)
-            self._self_attribute = attribute
-            self.__bound_function_wrapper__ = custom_bound_function_wrapper(attribute)
+            __bound_function_wrapper__ = CustomBoundFunctionWrapper
+
+            def __init__(self, *args, **kwargs):
+                super(CustomFunctionWrapper, self).__init(*args, **kwargs)
+                self._self_attribute = attribute
+
+            def __call__(self, *args, **kwargs):
+                if self._self_attribute:
+                    ...
+                return super(CustomFunctionWrapper, self).__call__(*args, **kwargs)
+
+        return CustomFunctionWrapper
+
+If the bound function wrapper needs to be able to access back to the parent
+function wrapper it was created from, it can use ``self._self_parent``.
+
+::
+
+    def custom_function_wrapper(attribute):
+
+        class CustomBoundFunctionWrapper(wrapt.BoundFunctionWrapper):
+
+            def __call__(self, *args, **kwargs):
+                if self._self_parent._self_attribute:
+                    ...
+                return super(CustomBoundFunctionWrapper, self).__call__(*args, **kwargs)
+
+        class CustomFunctionWrapper(wrapt.FunctionWrapper):
+
+            __bound_function_wrapper__ = CustomBoundFunctionWrapper
+
+            def __init__(self, *args, **kwargs):
+                super(CustomFunctionWrapper, self).__init(*args, **kwargs)
+                self._self_attribute = attribute
+
+            def __call__(self, *args, **kwargs):
+                if self._self_attribute:
+                    ...
+                return super(CustomFunctionWrapper, self).__call__(*args, **kwargs)
+
+        return CustomFunctionWrapper
+

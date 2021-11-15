@@ -72,17 +72,17 @@ Basics of a Python decorator
 
 Everyone should know what the Python decorator syntax is.
 
-```
+```python
 @function_wrapper
 def function():
     pass
 ```
 
-The ``@`` annotation to denote the application of a decorator was only
+The `@` annotation to denote the application of a decorator was only
 added in Python 2.4. It is actually though only fancy syntactic sugar. It
 is actually equivalent to writing:
 
-```
+```python
 def function():
     pass
 
@@ -108,7 +108,7 @@ Although I mentioned using function closures to implement a decorator, to
 understand how the more generic case of a function wrapper works it is more
 illustrative to show how to implement it using a class.
 
-```
+```python
 class function_wrapper(object):
     def __init__(self, wrapped):
         self.wrapped = wrapped
@@ -122,14 +122,14 @@ def function():
 
 The class instance in this example is initialised with and records the
 original function object. When the now wrapped function is called, it is
-actually the ``__call__()`` method of the wrapper object which is invoked.
+actually the `__call__()` method of the wrapper object which is invoked.
 This in turn would then call the original wrapped function.
 
 Simply passing through the call to the wrapper alone isn't particularly
 useful, so normally you would actually want to do some work either before
 or after the wrapped function is called. Or you may want to modify the
 input arguments or the result as they pass through the wrapper. This is
-just a matter of modifying the ``__call__()`` method appropriately to do
+just a matter of modifying the `__call__()` method appropriately to do
 what you want.
 
 Using a class to implement the wrapper for a decorator isn't actually that
@@ -139,11 +139,11 @@ the decorator function. When the now wrapped function is called, the nested
 function is actually being called. This in turn would again then call the
 original wrapped function.
 
-```
+```python
 def function_wrapper(wrapped):
     def _wrapper(*args, **kwargs):
         return wrapped(*args, **kwargs)
-    return _wrapper 
+    return _wrapper
 
 @function_wrapper
 def function():
@@ -161,39 +161,43 @@ Introspecting a function
 
 Now when we talk about functions, we expect them to specify properties
 which describe them as well as document what they do. These include the
-``__name__`` and ``__doc__`` attributes. When we use a wrapper though, this
+`__name__` and `__doc__` attributes. When we use a wrapper though, this
 no longer works as we expect as in the case of using a function closure,
 the details of the nested function are returned.
 
-```
+```python
 def function_wrapper(wrapped):
     def _wrapper(*args, **kwargs):
         return wrapped(*args, **kwargs)
-    return _wrapper 
+    return _wrapper
 
 @function_wrapper
 def function():
-    pass 
+    pass
+```
 
+```pycon
 >>> print(function.__name__)
 _wrapper
 ```
 
 If we use a class to implement the wrapper, as class instances do not
-normally have a ``__name__`` attribute, attempting to access the name of
+normally have a `__name__` attribute, attempting to access the name of
 the function will actually result in an AttributeError exception.
 
-```
+```python
 class function_wrapper(object):
     def __init__(self, wrapped):
         self.wrapped = wrapped
     def __call__(self, *args, **kwargs):
-        return self.wrapped(*args, **kwargs) 
+        return self.wrapped(*args, **kwargs)
 
 @function_wrapper
 def function():
-    pass 
+    pass
+```
 
+```pycon
 >>> print(function.__name__)
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -205,17 +209,17 @@ of interest from the wrapped function to the nested wrapper function. This
 will then result in the function name and documentation strings being
 correct.
 
-```
+```python
 def function_wrapper(wrapped):
     def _wrapper(*args, **kwargs):
         return wrapped(*args, **kwargs)
     _wrapper.__name__ = wrapped.__name__
     _wrapper.__doc__ = wrapped.__doc__
-    return _wrapper 
+    return _wrapper
 
 @function_wrapper
 def function():
-    pass 
+    pass
 
 >>> print(function.__name__)
 function
@@ -223,34 +227,36 @@ function
 
 Needing to manually copy the attributes is laborious, and would need to be
 updated if any further special attributes were added which needed to be
-copied. For example, we should also copy the ``__module__`` attribute, and
-in Python 3 the ``__qualname__`` and ``__annotations__`` attributes were
+copied. For example, we should also copy the `__module__` attribute, and
+in Python 3 the `__qualname__` and `__annotations__` attributes were
 added. To aid in getting this right, the Python standard library provides
-the ``functools.wraps()`` decorator which does this task for you.
+the `functools.wraps()` decorator which does this task for you.s
 
-```
-import functools 
+```python
+import functools
 
 def function_wrapper(wrapped):
     @functools.wraps(wrapped)
     def _wrapper(*args, **kwargs):
         return wrapped(*args, **kwargs)
-    return _wrapper 
+    return _wrapper
 
 @function_wrapper
 def function():
-    pass 
+    pass
+```
 
+```pycon
 >>> print(function.__name__)
 function
 ```
 
 If using a class to implement the wrapper, instead of the
-``functools.wraps()`` decorator, we would use the
-``functools.update_wrapper()`` function.
+`functools.wraps()` decorator, we would use the
+`functools.update_wrapper()` function.
 
-```
-import functools 
+```python
+import functools
 
 class function_wrapper(object):
     def __init__(self, wrapped):
@@ -261,7 +267,7 @@ class function_wrapper(object):
 ```
 
 So we might have a solution to ensuring the function name and any
-documentation string is correct in the form of ``functools.wraps()``, but
+documentation string is correct in the form of `functools.wraps()`, but
 actually we don't and this will not always work as I will show below.
 
 Now what if we want to query the argument specification for a function.
@@ -270,14 +276,16 @@ wrapped function, it returns that of the wrapper. In the case of using a
 function closure, this is the nested function. The decorator is therefore
 not signature preserving.
 
-```
-import inspect 
+```python
+import inspect
 
 def function_wrapper(wrapped): ...
 
 @function_wrapper
-def function(arg1, arg2): pass 
+def function(arg1, arg2): pass
+```
 
+```pycon
 >>> print(inspect.getargspec(function))
 ArgSpec(args=[], varargs='args', keywords='kwargs', defaults=None)
 ```
@@ -287,12 +295,14 @@ get an exception complaining that the wrapped function isn't actually a
 function. As a result it isn't possible to derive an argument specification
 at all, even though the wrapped function is actually still callable.
 
-```
-class function_wrapper(object): ... 
+```python
+class function_wrapper(object): ...
 
 @function_wrapper
-def function(arg1, arg2): pass 
+def function(arg1, arg2): pass
+```
 
+```pycon
 >>> print(inspect.getargspec(function))
 Traceback (most recent call last):
   File "...", line XXX, in <module>
@@ -303,7 +313,7 @@ TypeError: <__main__.function_wrapper object at 0x107e0ac90> is not a Python fun
 ```
 
 Another example of introspection one can do is to use
-``inspect.getsource()`` to get back the source code related to a function.
+`inspect.getsource()` to get back the source code related to a function.
 This also will fail, with it giving the source code for the nested wrapper
 function in the case of a function closure and again failing outright with
 an exception in the case of the class based wrapper.
@@ -313,39 +323,41 @@ Wrapping class methods
 
 Now, as well as normal functions, decorators can also be applied to methods
 of classes. Python even includes a couple of special decorators called
-``@classmethod`` and ``@staticmethod`` for converting normal instance
+`@classmethod` and `@staticmethod` for converting normal instance
 methods into these special method types. Methods of classes do provide a
 number of potential problems though.
 
-```
-class Class(object): 
+```python
+class Class(object):
 
     @function_wrapper
     def method(self):
-        pass 
+        pass
 
     @classmethod
     def cmethod(cls):
-        pass 
+        pass
 
     @staticmethod
     def smethod():
         pass
 ```
 
-The first is that even if using ``functools.wraps()`` or
-``functools.update_wrapper()`` in your decorator, when the decorator is
-applied around ``@classmethod`` or ``@staticmethod``, it can fail with an
+The first is that even if using `functools.wraps()` or
+`functools.update_wrapper()` in your decorator, when the decorator is
+applied around ``@classmethod` or `@staticmethod`, it can fail with an
 exception. This is because the wrappers created by these, do not have some
 of the attributes being copied.
 
-```
+```python
 class Class(object):
     @function_wrapper
     @classmethod
     def cmethod(cls):
-        pass 
+        pass
+```
 
+```
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "<stdin>", line 3, in Class
@@ -364,14 +376,14 @@ callable. This need not actually be the case. A wrapped function can
 actually be what is called a descriptor, meaning that in order to get back
 a callable, the descriptor has to be correctly bound to the instance first.
 
-```
+```python
 class Class(object):
     @function_wrapper
     @classmethod
     def cmethod(cls):
-        pass 
+        pass
 
->>> Class.cmethod() 
+>>> Class.cmethod()
 Traceback (most recent call last):
   File "classmethod.py", line 15, in <module>
     Class.cmethod()
@@ -388,12 +400,12 @@ doesn't mean they are necessarily correct and will always work.
 
 The issues highlighted so far are:
 
-* Preservation of function ``__name__`` and ``__doc__``.
+* Preservation of function `__name__` and `__doc__`.
 * Preservation of function argument specification.
 * Preservation of ability to get function source code.
 * Ability to apply decorators on top of other decorators that are implemented as descriptors.
 
-The ``functools.wraps()`` function is given as a solution to the first but
+The `functools.wraps()` function is given as a solution to the first but
 doesn't always work, at least in Python 2. It doesn't help at all though
 with preserving the introspection of a functions argument specification and
 ability to get the source code for a function.

@@ -15,8 +15,8 @@ Coincidentally, Ned Batchelder recently [posted](
 http://nedbatchelder.com//blog/201503/finding_temp_file_creators.html)
 about using monkey patching to debug an issue where temporary directories
 were not being cleaned up properly. Ned described this exact issue in
-relation to wanting to monkey patch the 'mkdtemp()' function from the
-'tempfile' module. In that case he was able to find an alternate place
+relation to wanting to monkey patch the `mkdtemp()` function from the
+`tempfile` module. In that case he was able to find an alternate place
 within the private implementation for the module to patch so as to avoid
 the problem. Using some internal function like this may not always be
 possible however.
@@ -37,7 +37,7 @@ Post import hook mechanism
 
 In PEP 369, a primary use case presented was illustrated by the example:
 
-```
+```python
 import imp
 
 @imp.when_imported('decimal')
@@ -57,7 +57,7 @@ Instead of using the decorator '@imp.when_imported' decorator, one could
 also explicitly use the 'imp.register_post_import_hook()' function to
 register a post import hook.
 
-```
+```python
 import imp
 
 def register(decimal):
@@ -68,7 +68,7 @@ imp.register_post_import_hook(register, 'decimal')
 
 Although PEP 369 was never incorporated into Python, the wrapt module
 provides implementations for both the decorator and the function, but
-within the 'wrapt' module rather than 'imp'.
+within the `wrapt` module rather than `imp`.
 
 Now what neither the decorator or the function really solved alone was the
 ordering issue. That is, you still had the problem that these could be
@@ -95,7 +95,7 @@ than import the monkey patching code, you can setup a registration which
 would only lazily load the monkey patching code itself if the module to be
 patched was imported, and then execute it.
 
-```
+```python
 import sys
 
 from wrapt import register_post_import_hook
@@ -110,9 +110,9 @@ def load_and_execute(name):
 register_post_import_hook(load_and_execute('patch_tempfile'), 'tempfile')
 ```
 
-In the module file 'patch_tempfile.py' we would now have:
+In the module file `patch_tempfile.py` we would now have:
 
-```
+```python
 from wrapt import wrap_function_wrapper
 
 def _mkdtemp_wrapper(wrapped, instance, args, kwargs):
@@ -128,8 +128,11 @@ Running the first script with the interactive interpreter so as to leave us
 in the interpreter, we can then show what happens when we import the
 'tempfile' module and execute the 'mkdtemp()' function.
 
-```
+```sh
 $ python -i lazyloader.py
+```
+
+```pycon
 >>> import tempfile
 patching tempfile
 >>> tempfile.mkdtemp()
@@ -179,9 +182,9 @@ src/__init__.py
 src/tempfile_debugging.py
 ```
 
-The 'setup.py' file for this package will be:
+The `setup.py` file for this package will be:
 
-```
+```python
 from setuptools import setup
 
 NAME = 'wrapt_patches.tempfile_debugging'
@@ -219,9 +222,9 @@ The key part of the 'setup.py' file is the definition of the
 to a list of definitions listing what Python modules this package contains
 monkey patches for.
 
-The 'src/__init__.py' file will then contain:
+The `src/__init__.py` file will then contain:
 
-```
+```python
 import pkgutil
 __path__ = pkgutil.extend_path(__path__, __name__)
 ```
@@ -231,7 +234,7 @@ as is required when creating a namespace package.
 Finally, the monkey patches will actually be contained in
 'src/tempfile_debugging.py' and for now is much like what we had before.
 
-```
+```python
 from wrapt import wrap_function_wrapper
 
 def _mkdtemp_wrapper(wrapped, instance, args, kwargs):
@@ -250,7 +253,7 @@ In place now of the explicit registrations which we previously added at the
 very start of the Python application main script file, we would instead
 add:
 
-```
+```python
 import os
 
 from wrapt import discover_post_import_hooks
@@ -269,8 +272,10 @@ If we were to run the application with no specific configuration to enable
 the monkey patches then nothing would happen. If however they were enabled,
 then they would be automatically discovered and applied as necessary.
 
-```
+```sh
 $ WRAPT_PATCHES=wrapt_patches.tempfile_debugging python -i entrypoints.py
+```
+```pycon
 discover wrapt_patches.tempfile_debugging
 >>> import tempfile
 patching tempfile

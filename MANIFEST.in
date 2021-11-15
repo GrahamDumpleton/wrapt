@@ -1,2 +1,5 @@
 include README.rst
 include LICENSE
+
+recursive-include src *.c
+recursive-include tests *.py requirements.txt

@@ -69,11 +69,11 @@ In this case the execution of an instance method.
 First lets check again what we would get for a decorator implemented as a
 function closure.
 
-```
+```python
 def my_function_wrapper(wrapped):
     def _my_function_wrapper(*args, **kwargs):
         return wrapped(*args, **kwargs)
-    return _my_function_wrapper 
+    return _my_function_wrapper
 
 class Class(object):
     @my_function_wrapper
@@ -108,7 +108,7 @@ different when we perform actual timing tests.
 Now for when using our decorator factory. To provide context this time we
 need to present the complete recipe for the implementation.
 
-```
+```python
 class object_proxy(object):
 
     def __init__(self, wrapped):
@@ -151,7 +151,7 @@ class bound_function_wrapper(object_proxy):
             descriptor = self.parent.wrapped.__get__(instance, owner)
             return bound_function_wrapper(descriptor, instance, self.wrapper,
                     self.binding, self.parent)
-        return self 
+        return self
 
 class function_wrapper(object_proxy):
 
@@ -163,15 +163,15 @@ class function_wrapper(object_proxy):
         elif isinstance(wrapped, staticmethod):
             self.binding = 'staticmethod'
         else:
-            self.binding = 'function' 
+            self.binding = 'function'
 
     def __get__(self, instance, owner):
         wrapped = self.wrapped.__get__(instance, owner)
         return bound_function_wrapper(wrapped, instance, self.wrapper,
-                self.binding, self) 
+                self.binding, self)
 
     def __call__(self, *args, **kwargs):
-        return self.wrapper(self.wrapped, None, args, kwargs) 
+        return self.wrapper(self.wrapped, None, args, kwargs)
 
 def decorator(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):
@@ -190,7 +190,7 @@ def decorator(wrapper):
 
 With our decorator implementation now being:
 
-```
+```python
 @decorator
 def my_function_wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
@@ -216,7 +216,7 @@ is:
 ```
 
 As can be seen, due to the binding of the method to the instance of the
-class which occurs in ``__get__()``, a lot more is now happening. The
+class which occurs in `__get__()`, a lot more is now happening. The
 overhead can therefore be expected to be significantly more also.
 
 Timing execution of the method call
@@ -227,7 +227,7 @@ implementation from the wrapt library will again be used.
 
 This time our test is run as:
 
-```
+```sh
 $ python -m timeit -s 'import benchmarks; c=benchmarks.Class()' 'c.method()'
 ```
 
@@ -322,5 +322,5 @@ In the next post I will touch once again on issues of performance overhead,
 but also a bit on alternative ways of implementing a decorator so as to try
 and address the problems raised in my very first post. This will be as a
 part of a comparison between the approach described in this series of posts
-and the way in which the ``decorator`` module available from PyPi implements
+and the way in which the `decorator` module available from PyPi implements
 its variant of a decorator factory.

@@ -25,8 +25,8 @@ function with the decorator mechanism which has been described. The
 relevant part of the decorator mechanism which comes into play in this case
 is:
 
-```
-class function_wrapper(object_proxy):  
+```python
+class function_wrapper(object_proxy):
 
     def __init__(self, wrapped, wrapper):
         super(function_wrapper, self).__init__(wrapped)
@@ -37,7 +37,7 @@ class function_wrapper(object_proxy):
         ...
 
     def __call__(self, *args, **kwargs):
-        return self.wrapper(self.wrapped, None, args, kwargs)  
+        return self.wrapper(self.wrapped, None, args, kwargs)
 
 def decorator(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):
@@ -59,10 +59,10 @@ full.
 With our decorator factory, when creating a decorator and then decorating a
 normal function with it we would use:
 
-```
+```python
 @decorator
 def my_function_wrapper(wrapped, instance, args, kwargs):
-    return wrapped(*args, **kwargs)  
+    return wrapped(*args, **kwargs)
 
 @my_function_wrapper
 def function():
@@ -72,11 +72,11 @@ def function():
 This is in contrast to the same decorator created in the more traditional
 way using a function closure.
 
-```
+```python
 def my_function_wrapper(wrapped):
     def _my_function_wrapper(*args, **kwargs):
         return wrapped(*args, **kwargs)
-    return _my_function_wrapper 
+    return _my_function_wrapper
 
 @my_function_wrapper
 def function():
@@ -85,7 +85,7 @@ def function():
 
 Now what actually occurs in these two different cases when we make the call:
 
-```
+```python
 function()
 ```
 
@@ -95,12 +95,12 @@ Tracing the execution of the function
 In order to trace the execution of our code we can use Python's profile
 hooks mechanism.
 
-```
-import sys 
+```python
+import sys
 def tracer(frame, event, arg):
-    print(frame.f_code.co_name, event) 
+    print(frame.f_code.co_name, event)
 
-sys.setprofile(tracer) 
+sys.setprofile(tracer)
 
 function()
 ```
@@ -120,7 +120,7 @@ _my_function_wrapper return
 
 So what we see here is that the nested function of our function closure is
 called. This is because the decorator in the case of a using a function
-closure is replacing ``function`` with a reference to that nested function.
+closure is replacing `function` with a reference to that nested function.
 When that nested function is called, it then in turn calls the original
 wrapped function.
 
@@ -136,17 +136,17 @@ __call__ call
 __call__ return
 ```
 
-The difference here is that our decorator replaces ``function`` with an
+The difference here is that our decorator replaces `function` with an
 instance of our function wrapper class. Being a class, when it is called as
-if it was a function, the ``__call__()`` method is invoked on the instance
-of the class. The ``__call__()`` method is then invoking the user supplied
+if it was a function, the `__call__()` method is invoked on the instance
+of the class. The `__call__()` method is then invoking the user supplied
 wrapper function, which in turn calls the original wrapped function.
 
 The result therefore is that we have introduced an extra level of
 indirection, or in other words an extra function call into the execution
 path.
 
-Keep in mind though that ``__call__()`` is actually a method though and not
+Keep in mind though that `__call__()` is actually a method though and not
 just a normal function. Being a method that means there is actually a lot
 more work going on behind the scenes than a normal function call. In
 particular, the unbound method needs to be bound to the instance of our
@@ -162,22 +162,22 @@ additional method call overhead. How much actual extra overhead is this
 resulting in though?
 
 To try and measure the increase in overhead in each solution we can use the
-``timeit`` module to time the execution of our function call. As a baseline,
+`timeit` module to time the execution of our function call. As a baseline,
 we first want to time the call of a function without any decorator applied.
 
-```
-# benchmarks.py 
+```python
+# benchmarks.py
 def function():
-    pass 
+    pass
 ```
 
 To time this we use the command:
 
-```
+```sh
 $ python -m timeit -s 'import benchmarks' 'benchmarks.function()'
 ```
 
-The ``timeit`` module when used in this way will perform a suitable large
+The `timeit` module when used in this way will perform a suitable large
 number of iterations of calling the function, divide the resulting total
 time for all calls with the count of the number and end up with a time
 value for a single call.
@@ -202,7 +202,7 @@ And finally with our decorator factory:
 ```
 
 In this final case, rather than use the exact code as has been presented so
-far in this series of blog posts, I have used the ``wrapt`` module
+far in this series of blog posts, I have used the `wrapt` module
 implementation of what has been described. This implementation works
 slightly differently as it has a few extra capabilities over what has been
 described and the design is also a little bit different. The overhead will

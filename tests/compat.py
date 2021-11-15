@@ -3,6 +3,8 @@ import sys
 PY2 = sys.version_info[0] < 3
 PY3 = sys.version_info[0] >= 3
 
+PYXY = tuple(sys.version_info[:2])
+
 if PY3:
     import builtins
     exec_ = getattr(builtins, "exec")

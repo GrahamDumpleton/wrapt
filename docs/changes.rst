@@ -1,16 +1,88 @@
 Release Notes
 =============
 
-Version 1.12.2
+Version 1.13.3
 --------------
 
-**Bus Fixed**
+**New Features**
+
+* Adds wheels for Python 3.10 on PyPi and where possible also now
+  generating binary wheels for ``musllinux``.
+
+Version 1.13.2
+--------------
+
+**Features Changed**
+
+* On the Windows platform when using Python 2.7, by default the C extension
+  will not be installed and the pure Python implementation will be used.
+  This is because too often on Windows when using Python 2.7, there is no
+  working compiler available. Prior to version 1.13.0, when installing the
+  package it would fallback to using the pure Python implementation
+  automatically but that relied on a workaround to do it when there was
+  no working compiler. With the changes in 1.13.0 to use the builtin
+  mechanism of Python to not fail when a C extension cannot be compiled,
+  this fallback doesn't work when the compiler doesn't exist, as the
+  builtin mechanism in Python regards lack of a compiler as fatal and not
+  a condition for which it is okay to ignore the fact that the extension
+  could not be compiled.
+
+  If you are using Python 2.7 on Windows, have a working compiler, and
+  still want to attempt to install the C extension, you can do so by
+  setting the `WRAPT_INSTALL_EXTENSIONS` environment variable to `true`
+  when installing the `wrapt` package.
+
+  Note that the next signficant release of `wrapt` will drop support for
+  Python 2.7 and Python 3.5. The change described here is to ensure that
+  `wrapt` can be used with Python 2.7 on Windows for just a little bit
+  longer. If using Python 2.7 on non Windows platforms, it will still
+  attempt to install the C extension.
+
+Version 1.13.1
+--------------
+
+**Bugs Fixed**
+
+* Fix Python version constraint so PyPi classifier for ``pip`` requires
+  Python 2.7 or Python 3.5+.
+
+Version 1.13.0
+--------------
+
+**Bugs Fixed**
 
 * When a reference to a class method was taken out of a class, and then
   wrapped in a function wrapper, and called, the class type was not being
   passed as the instance argument, but as the first argument in args,
   with the instance being ``None``. The class type should have been passed
   as the instance argument.
+
+* If supplying an adapter function for a signature changing decorator
+  using input in the form of a function argument specification, name lookup
+  exceptions would occur where the adaptor function had annotations which
+  referenced non builtin Python types. Although the issues have been
+  addressed where using input data in the format usually returned by
+  ``inspect.getfullargspec()`` to pass the function argument specification,
+  you can still have problems when supplying a function signature as
+  string. In the latter case only Python builtin types can be referenced
+  in annotations.
+
+* When a decorator was applied on top of a data/non-data descriptor in a
+  class definition, the call to the special method ``__set_name__()`` to
+  notify the descriptor of the variable name was not being propogated. Note
+  that this issue has been addressed in the ``FunctionWrapper`` used by
+  ``@wrapt.decorator`` but has not been applied to the generic
+  ``ObjectProxy`` class. If using ``ObjectProxy`` directly to construct a
+  custom wrapper which is applied to a descriptor, you will need to
+  propogate the ``__set_name__()`` call yourself if required.
+
+* The ``issubclass()`` builtin method would give incorrect results when used
+  with a class which had a decorator applied to it. Note that this has only
+  been able to be fixed for Python 3.7+. Also, due to what is arguably a
+  bug (https://bugs.python.org/issue44847) in the Python standard library,
+  you will still have problems when the class heirarchy uses a base class
+  which has the ``abc.ABCMeta`` metaclass. In this later case an exception
+  will be raised of ``TypeError: issubclass() arg 1 must be a class``.
 
 Version 1.12.1
 --------------
