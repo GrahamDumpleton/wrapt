@@ -12,7 +12,7 @@ class TestClassInheritance(unittest.TestCase):
     def test_basic_inheritance(self):
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
-            return wrapped(args, kwargs)
+            return wrapped(*args, **kwargs)
 
         class B1:
             def method(self):
@@ -43,6 +43,18 @@ class TestClassInheritance(unittest.TestCase):
         self.assertTrue(issubclass(C1, (B1, C1, D1)))
         self.assertTrue(issubclass(D1, (B1, C1, D1)))
 
+        self.assertTrue(isinstance(C1(), B1))
+        self.assertTrue(isinstance(C1(), C1))
+        self.assertTrue(isinstance(D1(), B1))
+        self.assertTrue(isinstance(D1(), C1))
+
+        def function():
+            pass
+        class F(wrapt.FunctionWrapper):
+            pass
+        instance = F(function, wrapper)
+        self.assertTrue(isinstance(instance, wrapt.FunctionWrapper))
+
     def test_abc_inheritance(self):
         # XXX The checks commented out below all fail because the
         # helpers for issubclass() via __subclasscheck__() in ABCMeta
@@ -58,7 +70,7 @@ class TestClassInheritance(unittest.TestCase):
 
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
-            return wrapped(args, kwargs)
+            return wrapped(*args, **kwargs)
 
         class A1(metaclass=abc.ABCMeta):
             @abc.abstractmethod
@@ -103,6 +115,11 @@ class TestClassInheritance(unittest.TestCase):
         # self.assertTrue(issubclass(C1, (A1, B1, C1, D1)))
         self.assertTrue(issubclass(D1, (A1, B1, C1, D1)))
 
+        self.assertTrue(isinstance(C1(), B1))
+        self.assertTrue(isinstance(C1(), C1))
+        self.assertTrue(isinstance(D1(), B1))
+        self.assertTrue(isinstance(D1(), C1))
+
     def test_py_abc_inheritance(self):
         # In contrast to above when C implementation for ABCMeta helpers
         # are used, these all pass as have use the Python implementation
@@ -110,7 +127,7 @@ class TestClassInheritance(unittest.TestCase):
 
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
-            return wrapped(args, kwargs)
+            return wrapped(*args, **kwargs)
 
         class A1(metaclass=_py_abc.ABCMeta):
             @abc.abstractmethod
@@ -154,6 +171,11 @@ class TestClassInheritance(unittest.TestCase):
         self.assertTrue(issubclass(B1, (A1, B1, C1, D1)))
         self.assertTrue(issubclass(C1, (A1, B1, C1, D1)))
         self.assertTrue(issubclass(D1, (A1, B1, C1, D1)))
+
+        self.assertTrue(isinstance(C1(), B1))
+        self.assertTrue(isinstance(C1(), C1))
+        self.assertTrue(isinstance(D1(), B1))
+        self.assertTrue(isinstance(D1(), C1))
 
 if __name__ == '__main__':
     unittest.main()

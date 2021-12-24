@@ -588,6 +588,11 @@ class _FunctionWrapperBase(ObjectProxy):
         if hasattr(self.__wrapped__, "__set_name__"):
             self.__wrapped__.__set_name__(owner, name)
 
+    def __instancecheck__(self, instance):
+        # This is a special method used by isinstance() to make checks
+        # instance of the `__wrapped__`.
+        return isinstance(instance, self.__wrapped__)
+
     def __subclasscheck__(self, subclass):
         # This is a special method used by issubclass() to make checks
         # about inheritance of classes. We need to upwrap any object
