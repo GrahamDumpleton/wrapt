@@ -31,7 +31,7 @@ else:
     del builtins
 
 from functools import partial
-from inspect import ismethod, isclass, formatargspec
+from inspect import ismethod, isclass, Signature, Parameter
 from collections import namedtuple
 from threading import Lock, RLock
 
@@ -166,6 +166,23 @@ class DelegatedAdapterFactory(AdapterFactory):
 
 adapter_factory = DelegatedAdapterFactory
 
+def _formatargspec(spec):
+    params = []
+    for arg in spec.args:
+        params.append(Parameter(arg, Parameter.POSITIONAL_OR_KEYWORD))
+    if spec.defaults:
+        for i, d in enumerate(reversed(spec.defaults)):
+            idx = len(params) - 1 - i
+            params[idx] = params[idx].replace(default=d)
+    if spec.varargs:
+        params.append(Parameter(spec.varargs, Parameter.VAR_POSITIONAL))
+    if hasattr(spec, 'keywords') and spec.keywords:
+        params.append(Parameter(spec.keywords, Parameter.VAR_KEYWORD))
+    if hasattr(spec, 'varkw') and spec.varkw:
+        params.append(Parameter(spec.varkw, Parameter.VAR_KEYWORD))
+
+    return str(Signature(params))
+
 # Decorator for creating other decorators. This decorator and the
 # wrappers which they use are designed to properly preserve any name
 # attributes, function signatures etc, in addition to the wrappers
@@ -211,8 +228,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
 
                     # Check if the signature argument specification has
                     # annotations. If it does then we need to remember
-                    # it but also drop it when attempting to manufacture
-                    # a standin adapter function. This is necessary else
+                    # it. This is necessary else
                     # it will try and look up any types referenced in
                     # the annotations in the empty namespace we use,
                     # which will fail.
@@ -222,8 +238,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                     if not isinstance(adapter, string_types):
                         if len(adapter) == 7:
                             annotations = adapter[-1]
-                            adapter = adapter[:-1]
-                        adapter = formatargspec(*adapter)
+                        adapter = _formatargspec(adapter)
 
                     exec_('def adapter{}: pass'.format(adapter), ns, ns)
                     adapter = ns['adapter']

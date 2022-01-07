@@ -3,6 +3,11 @@ from __future__ import print_function
 import unittest
 import inspect
 import imp
+import sys
+try:
+    from inspect import getargspec as getspec
+except ImportError:  # python 3.11 and above
+    from inspect import getfullargspec as getspec
 
 import wrapt
 
@@ -72,15 +77,15 @@ class TestArgumentSpecification(unittest.TestCase):
 
         def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
 
-        function1a_argspec = inspect.getargspec(_adapter)
-        function1d_argspec = inspect.getargspec(function1d)
+        function1a_argspec = getspec(_adapter)
+        function1d_argspec = getspec(function1d)
         self.assertEqual(function1a_argspec, function1d_argspec)
 
         # Now bind the function to an instance. The argspec should
         # still match.
 
         bound_function1d = function1d.__get__(object(), object)
-        bound_function1d_argspec = inspect.getargspec(bound_function1d)
+        bound_function1d_argspec = getspec(bound_function1d)
         self.assertEqual(function1a_argspec, bound_function1d_argspec)
 
     def test_signature(self):
@@ -107,7 +112,7 @@ class TestDynamicAdapter(unittest.TestCase):
     def test_dynamic_adapter_function(self):
         def _adapter(arg1, arg2, arg3=None, *args, **kwargs): pass
 
-        argspec = inspect.getargspec(_adapter)
+        argspec = getspec(_adapter)
 
         @wrapt.decorator(adapter=argspec)
         def _wrapper_1(wrapped, instance, args, kwargs):
@@ -117,24 +122,25 @@ class TestDynamicAdapter(unittest.TestCase):
         def _function_1():
             pass
 
-        self.assertEqual(inspect.getargspec(_function_1), argspec)
+        self.assertEqual(getspec(_function_1), argspec)
 
-        args = inspect.formatargspec(*argspec)
+        if sys.version_info < (3, 11):
+            args = inspect.formatargspec(*argspec)
 
-        @wrapt.decorator(adapter=args)
-        def _wrapper_2(wrapped, instance, args, kwargs):
-            return wrapped(*args, **kwargs)
+            @wrapt.decorator(adapter=args)
+            def _wrapper_2(wrapped, instance, args, kwargs):
+                return wrapped(*args, **kwargs)
 
-        @_wrapper_2
-        def _function_2():
-            pass
+            @_wrapper_2
+            def _function_2():
+                pass
 
-        self.assertEqual(inspect.getargspec(_function_2), argspec)
+            self.assertEqual(getspec(_function_2), argspec)
 
     def test_dynamic_adapter_instancemethod(self):
         def _adapter(self, arg1, arg2, arg3=None, *args, **kwargs): pass
 
-        argspec = inspect.getargspec(_adapter)
+        argspec = getspec(_adapter)
 
         @wrapt.decorator(adapter=argspec)
         def _wrapper_1(wrapped, instance, args, kwargs):
@@ -147,29 +153,30 @@ class TestDynamicAdapter(unittest.TestCase):
 
         instance1 = Class1()
 
-        self.assertEqual(inspect.getargspec(Class1.function), argspec)
-        self.assertEqual(inspect.getargspec(instance1.function), argspec)
+        self.assertEqual(getspec(Class1.function), argspec)
+        self.assertEqual(getspec(instance1.function), argspec)
 
-        args = inspect.formatargspec(*argspec)
+        if sys.version_info < (3, 11):
+            args = inspect.formatargspec(*argspec)
 
-        @wrapt.decorator(adapter=args)
-        def _wrapper_2(wrapped, instance, args, kwargs):
-            return wrapped(*args, **kwargs)
+            @wrapt.decorator(adapter=args)
+            def _wrapper_2(wrapped, instance, args, kwargs):
+                return wrapped(*args, **kwargs)
 
-        class Class2(object):
-            @_wrapper_2
-            def function(self):
-                pass
+            class Class2(object):
+                @_wrapper_2
+                def function(self):
+                    pass
 
-        instance2 = Class2()
+            instance2 = Class2()
 
-        self.assertEqual(inspect.getargspec(Class2.function), argspec)
-        self.assertEqual(inspect.getargspec(instance2.function), argspec)
+            self.assertEqual(getspec(Class2.function), argspec)
+            self.assertEqual(getspec(instance2.function), argspec)
 
     def test_dynamic_adapter_classmethod(self):
         def _adapter(cls, arg1, arg2, arg3=None, *args, **kwargs): pass
 
-        argspec = inspect.getargspec(_adapter)
+        argspec = getspec(_adapter)
 
         @wrapt.decorator(adapter=argspec)
         def _wrapper_1(wrapped, instance, args, kwargs):
@@ -183,29 +190,30 @@ class TestDynamicAdapter(unittest.TestCase):
 
         instance1 = Class1()
 
-        self.assertEqual(inspect.getargspec(Class1.function), argspec)
-        self.assertEqual(inspect.getargspec(instance1.function), argspec)
+        self.assertEqual(getspec(Class1.function), argspec)
+        self.assertEqual(getspec(instance1.function), argspec)
 
-        args = inspect.formatargspec(*argspec)
+        if sys.version_info < (3, 11):
+            args = inspect.formatargspec(*argspec)
 
-        @wrapt.decorator(adapter=args)
-        def _wrapper_2(wrapped, instance, args, kwargs):
-            return wrapped(*args, **kwargs)
+            @wrapt.decorator(adapter=args)
+            def _wrapper_2(wrapped, instance, args, kwargs):
+                return wrapped(*args, **kwargs)
 
-        class Class2(object):
-            @_wrapper_2
-            @classmethod
-            def function(self):
-                pass
+            class Class2(object):
+                @_wrapper_2
+                @classmethod
+                def function(self):
+                    pass
 
-        instance2 = Class2()
+            instance2 = Class2()
 
-        self.assertEqual(inspect.getargspec(Class2.function), argspec)
-        self.assertEqual(inspect.getargspec(instance2.function), argspec)
+            self.assertEqual(getspec(Class2.function), argspec)
+            self.assertEqual(getspec(instance2.function), argspec)
 
     def test_adapter_factory(self):
         def factory(wrapped):
-            argspec = inspect.getargspec(wrapped)
+            argspec = getspec(wrapped)
             argspec.args.insert(0, 'arg0')
             return argspec
 
@@ -217,7 +225,7 @@ class TestDynamicAdapter(unittest.TestCase):
         def _function_1(arg1, arg2):
             pass
 
-        argspec = inspect.getargspec(_function_1)
+        argspec = getspec(_function_1)
 
         self.assertEqual(argspec.args, ['arg0', 'arg1', 'arg2'])
 
