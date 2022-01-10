@@ -31,14 +31,14 @@ else:
     del builtins
 
 from functools import partial
-from inspect import ismethod, isclass, Signature, Parameter
+from inspect import ismethod, isclass
 from collections import namedtuple
 from threading import Lock, RLock
 
 try:
-    from inspect import signature
+    from inspect import signature, Signature, Parameter
 except ImportError:
-    pass
+    from inspect import formatargspec
 
 from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
     CallableObjectProxy)
@@ -166,22 +166,26 @@ class DelegatedAdapterFactory(AdapterFactory):
 
 adapter_factory = DelegatedAdapterFactory
 
-def _formatargspec(spec):
-    params = []
-    for arg in spec.args:
-        params.append(Parameter(arg, Parameter.POSITIONAL_OR_KEYWORD))
-    if spec.defaults:
-        for i, d in enumerate(reversed(spec.defaults)):
-            idx = len(params) - 1 - i
-            params[idx] = params[idx].replace(default=d)
-    if spec.varargs:
-        params.append(Parameter(spec.varargs, Parameter.VAR_POSITIONAL))
-    if hasattr(spec, 'keywords') and spec.keywords:
-        params.append(Parameter(spec.keywords, Parameter.VAR_KEYWORD))
-    if hasattr(spec, 'varkw') and spec.varkw:
-        params.append(Parameter(spec.varkw, Parameter.VAR_KEYWORD))
+if PY2:
+    def _formatargspec(spec):
+        return formatargspec(*spec)
+else:
+    def _formatargspec(spec):
+        params = []
+        for arg in spec.args:
+            params.append(Parameter(arg, Parameter.POSITIONAL_OR_KEYWORD))
+        if spec.defaults:
+            for i, d in enumerate(reversed(spec.defaults)):
+                idx = len(params) - 1 - i
+                params[idx] = params[idx].replace(default=d)
+        if spec.varargs:
+            params.append(Parameter(spec.varargs, Parameter.VAR_POSITIONAL))
+        if hasattr(spec, 'keywords') and spec.keywords:
+            params.append(Parameter(spec.keywords, Parameter.VAR_KEYWORD))
+        if hasattr(spec, 'varkw') and spec.varkw:
+            params.append(Parameter(spec.varkw, Parameter.VAR_KEYWORD))
 
-    return str(Signature(params))
+        return str(Signature(params))
 
 # Decorator for creating other decorators. This decorator and the
 # wrappers which they use are designed to properly preserve any name
