@@ -207,6 +207,7 @@ jobs:
             WRAPT_INSTALL_EXTENSIONS: true
             CIBW_SKIP: pp*
             CIBW_BUILD_VERBOSITY: 1
+            CIBW_ARCHS_MACOS: "x86_64 universal2"
       - uses: actions/upload-artifact@v2
         with:
           name: dist
