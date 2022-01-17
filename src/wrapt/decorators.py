@@ -35,48 +35,37 @@ from inspect import isclass
 from threading import Lock, RLock
 
 try:
+    from inspect import Parameter, Signature
+except ImportError:  #  < py3.5
     from inspect import formatargspec
-except ImportError:  #  > py3.10
-    from inspect import formatannotation
+else:
     def formatargspec(args, varargs=None, varkw=None, defaults=None,
-                      kwonlyargs=(), kwonlydefaults={}, annotations={},
-                      formatarg=str,
-                      formatvarargs=lambda name: '*' + name,
-                      formatvarkw=lambda name: '**' + name,
-                      formatvalue=lambda value: '=' + repr(value),
-                      formatreturns=lambda text: ' -> ' + text,
-                      formatannotation=formatannotation):
-
-        def formatargandannotation(arg):
-            result = formatarg(arg)
-            if arg in annotations:
-                result += ': ' + formatannotation(annotations[arg])
-            return result
-        specs = []
-        if defaults:
-            firstdefault = len(args) - len(defaults)
-        for i, arg in enumerate(args):
-            spec = formatargandannotation(arg)
-            if defaults and i >= firstdefault:
-                spec = spec + formatvalue(defaults[i - firstdefault])
-            specs.append(spec)
-        if varargs is not None:
-            specs.append(formatvarargs(formatargandannotation(varargs)))
-        else:
-            if kwonlyargs:
-                specs.append('*')
-        if kwonlyargs:
-            for kwonlyarg in kwonlyargs:
-                spec = formatargandannotation(kwonlyarg)
-                if kwonlydefaults and kwonlyarg in kwonlydefaults:
-                    spec += formatvalue(kwonlydefaults[kwonlyarg])
-                specs.append(spec)
-        if varkw is not None:
-            specs.append(formatvarkw(formatargandannotation(varkw)))
-        result = '(' + ', '.join(specs) + ')'
-        if 'return' in annotations:
-            result += formatreturns(formatannotation(annotations['return']))
-        return result
+                      kwonlyargs=(), kwonlydefaults={}, annotations={}):
+        if kwonlydefaults is None:
+            kwonlydefaults = {}
+        ndefaults = len(defaults) if defaults else 0
+        parameters = [
+            Parameter(
+                arg,
+                Parameter.POSITIONAL_OR_KEYWORD,
+                default=defaults[i] if i >= 0 else Parameter.empty,
+                annotation=annotations.get(arg, Parameter.empty),
+            ) for i, arg in enumerate(args, ndefaults - len(args))
+        ]
+        if varargs:
+            parameters.append(Parameter(varargs, Parameter.VAR_POSITIONAL))
+        parameters.extend(
+            Parameter(
+                kwonlyarg,
+                Parameter.KEYWORD_ONLY,
+                default=kwonlydefaults.get(kwonlyarg, Parameter.empty),
+                annotation=annotations.get(kwonlyarg, Parameter.empty),
+            ) for kwonlyarg in kwonlyargs
+        )
+        if varkw:
+            parameters.append(Parameter(varkw, Parameter.VAR_KEYWORD))
+        return_annotation = annotations.get('return', Signature.empty)
+        return str(Signature(parameters, return_annotation=return_annotation))
 try:
     from inspect import signature
 except ImportError:
