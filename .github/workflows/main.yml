@@ -42,6 +42,41 @@ jobs:
         name: coverage
         path: .coverage.*
 
+  test_aarch64_linux:
+    name: Test (${{ matrix.python.os }}, ${{ matrix.python.python-version }}, aarch64)
+    runs-on: ${{ matrix.python.os }}
+    strategy:
+      matrix:
+        python:
+          - {os: ubuntu-latest,  python-version: 3.6, pyver: py36}
+          - {os: ubuntu-latest,  python-version: 3.7, pyver: py37}
+          - {os: ubuntu-latest,  python-version: 3.8, pyver: py38}
+          - {os: ubuntu-latest,  python-version: 3.9, pyver: py39}
+          - {os: ubuntu-latest,  python-version: "3.10", pyver: py310}
+    env:
+      py: python${{ matrix.python.python-version }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      id: qemu
+      uses: docker/setup-qemu-action@v1
+    - name: Test with tox
+      run: |
+            docker run --rm -v ${{ github.workspace }}:/io:rw --workdir=/io \
+            arm64v8/ubuntu \
+            bash -exc 'apt-get update && \
+            apt install software-properties-common -y && \
+            add-apt-repository ppa:deadsnakes/ppa -y && \
+            apt install -y ${{ env.py }} && \
+            apt install -y ${{ env.py }}-venv && \
+            ${{ env.py }} -m venv .env && \
+            source .env/bin/activate && \
+            pip install -U pip wheel setuptools && \
+            pip install tox tox-gh-actions && \
+            tox -e ${{ matrix.python.pyver }} && \
+            deactivate'
+
   test_macos:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
@@ -187,9 +222,10 @@ jobs:
           path: dist/*.whl
 
   bdist_wheel:
-    name: Build wheels (3.6+) on ${{ matrix.os }}
+    name: Build wheels (3.6+) on ${{ matrix.os }} for ${{ matrix.arch }}
     needs:
     - test_linux
+    - test_aarch64_linux
     - test_macos
     - test_windows_py27
     - test_windows
@@ -197,8 +233,17 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [auto]
+        include:
+          - os: ubuntu-latest
+            arch: aarch64
+          - os: macos-latest
+            arch: arm64
     steps:
       - uses: actions/checkout@v2
+      - name: Set up QEMU
+        if: ${{ matrix.arch == 'aarch64' }}
+        uses: docker/setup-qemu-action@v1
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.2.0
         with:
@@ -207,6 +252,7 @@ jobs:
             WRAPT_INSTALL_EXTENSIONS: true
             CIBW_SKIP: pp*
             CIBW_BUILD_VERBOSITY: 1
+            CIBW_ARCHS: ${{ matrix.arch }}
       - uses: actions/upload-artifact@v2
         with:
           name: dist
