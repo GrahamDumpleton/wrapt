@@ -2551,21 +2551,18 @@ static PyObject *WraptFunctionWrapperBase_instancecheck(
     PyObject *result = NULL;
 
     int check = 0;
+
     if (!self->object_proxy.wrapped) {
         PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
         return NULL;
     }
 
-    object = PyObject_GetAttrString(self, "__wrapped__");
-    if (!object) {
-        PyErr_Clear();
-    }
+    check = PyObject_IsInstance(instance, self->object_proxy.wrapped);
 
-    check = PyObject_IsInstance(instance, object);
-    Py_XDECREF(object);
     if (check < 0) {
         return NULL;
     }
+
     result = check ? Py_True : Py_False;
 
     Py_INCREF(result);

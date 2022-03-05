@@ -12,6 +12,12 @@ Version 1.14.0
   The replacement function is exposed as `wrapt.formatargspec()` if need it
   for your own code.
 
+* When using a decorator on a class, `isinstance()` checks wouldn't previously
+  work as expected and you had to manually use `Type.__wrapped__` to access
+  the real type when doing instance checks. The `__instancecheck__` hook is now
+  implemented such that you don't have to use `Type.__wrapped__` instead of
+  `Type` as last argument to `isinstance()`.
+
 **New Features**
 
 * Binary wheels provided on PyPi for `aarch64` Linux systems and macOS
