@@ -2,7 +2,7 @@ import unittest
 import sys
 from inspect import getfullargspec
 
-from wrapt.decorators import formatargspec
+from wrapt import formatargspec
 
 class TestFormatargspec35(unittest.TestCase):
 

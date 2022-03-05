@@ -1,6 +1,22 @@
 Release Notes
 =============
 
+Version 1.14.0
+--------------
+
+**Bugs Fixed**
+
+* Python 3.11 dropped `inspect.formatargspec()` which was used in creating
+  signature changing decorators. Now bundling a version of this function
+  which uses `Parameter` and `Signature` from `inspect` module when available.
+  The replacement function is exposed as `wrapt.formatargspec()` if need it
+  for your own code.
+
+**New Features**
+
+* Binary wheels provided on PyPi for `aarch64` Linux systems and macOS
+  native silicon where supported by Python when using `pypa/cibuildwheel`.
+
 Version 1.13.3
 --------------
 
