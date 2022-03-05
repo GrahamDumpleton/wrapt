@@ -87,7 +87,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
             pass
 
         # Python 3.10 onwards also does not allow itself to be overridden
-        # using a properly and it must instead be set explicitly.
+        # using a property and it must instead be set explicitly.
 
         try:
             object.__setattr__(self, '__annotations__', wrapped.__annotations__)
