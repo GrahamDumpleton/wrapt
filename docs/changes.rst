@@ -18,6 +18,10 @@ Version 1.14.0
   implemented such that you don't have to use `Type.__wrapped__` instead of
   `Type` as last argument to `isinstance()`.
 
+* Eliminated deprecation warnings related to Python module import system, which
+  would have turned into broken code in Python 3.12. This was used by the post
+  import hook mechanism.
+
 **New Features**
 
 * Binary wheels provided on PyPi for `aarch64` Linux systems and macOS
