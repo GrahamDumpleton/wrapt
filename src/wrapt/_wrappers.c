@@ -2544,6 +2544,33 @@ static PyObject *WraptFunctionWrapperBase_set_name(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptFunctionWrapperBase_instancecheck(
+        WraptFunctionWrapperObject *self, PyObject *instance)
+{
+    PyObject *object = NULL;
+    PyObject *result = NULL;
+
+    int check = 0;
+
+    if (!self->object_proxy.wrapped) {
+        PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+        return NULL;
+    }
+
+    check = PyObject_IsInstance(instance, self->object_proxy.wrapped);
+
+    if (check < 0) {
+        return NULL;
+    }
+
+    result = check ? Py_True : Py_False;
+
+    Py_INCREF(result);
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptFunctionWrapperBase_subclasscheck(
         WraptFunctionWrapperObject *self, PyObject *args)
 {
@@ -2656,6 +2683,8 @@ static PyObject *WraptFunctionWrapperBase_get_self_parent(
 static PyMethodDef WraptFunctionWrapperBase_methods[] = {
     { "__set_name__", (PyCFunction)WraptFunctionWrapperBase_set_name,
                     METH_VARARGS | METH_KEYWORDS, 0 },
+    { "__instancecheck__", (PyCFunction)WraptFunctionWrapperBase_instancecheck,
+                    METH_O, 0},
     { "__subclasscheck__", (PyCFunction)WraptFunctionWrapperBase_subclasscheck,
                     METH_VARARGS, 0 },
     { NULL, NULL },

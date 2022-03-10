@@ -35,6 +35,8 @@ def pytest_pycollect_makemodule(path, parent):
         return construct_dummy(path, parent)
     if '_py310' in path.basename and version < (3, 10):
         return construct_dummy(path, parent)
+    if '_py311' in path.basename and version < (3, 11):
+        return construct_dummy(path, parent)
     if '_py3' in path.basename and version < (3, 0):
         return construct_dummy(path, parent)
     if '_py2' in path.basename and version >= (3, 0):

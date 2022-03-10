@@ -31,9 +31,10 @@ else:
     del builtins
 
 from functools import partial
-from inspect import ismethod, isclass, formatargspec
-from collections import namedtuple
+from inspect import isclass
 from threading import Lock, RLock
+
+from .arguments import formatargspec
 
 try:
     from inspect import signature
@@ -383,7 +384,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                     # This one is a bit strange because binding was actually
                     # performed on the wrapper created by our decorator
                     # factory. We need to apply that binding to the decorator
-                    # wrapper function which which the decorator factory
+                    # wrapper function that the decorator factory
                     # was applied to.
 
                     target_wrapper = wrapper.__get__(None, instance)
@@ -407,7 +408,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                     # This one is a bit strange because binding was actually
                     # performed on the wrapper created by our decorator
                     # factory. We need to apply that binding to the decorator
-                    # wrapper function which which the decorator factory
+                    # wrapper function that the decorator factory
                     # was applied to.
 
                     target_wrapper = wrapper.__get__(instance, type(instance))

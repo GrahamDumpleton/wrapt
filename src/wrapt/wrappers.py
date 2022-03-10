@@ -87,7 +87,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
             pass
 
         # Python 3.10 onwards also does not allow itself to be overridden
-        # using a properly and it must instead be set explicitly.
+        # using a property and it must instead be set explicitly.
 
         try:
             object.__setattr__(self, '__annotations__', wrapped.__annotations__)
@@ -587,6 +587,11 @@ class _FunctionWrapperBase(ObjectProxy):
 
         if hasattr(self.__wrapped__, "__set_name__"):
             self.__wrapped__.__set_name__(owner, name)
+
+    def __instancecheck__(self, instance):
+        # This is a special method used by isinstance() to make checks
+        # instance of the `__wrapped__`.
+        return isinstance(instance, self.__wrapped__)
 
     def __subclasscheck__(self, subclass):
         # This is a special method used by issubclass() to make checks
