@@ -153,7 +153,14 @@ class _ImportHookChainedLoader:
     def __init__(self, loader):
         self.loader = loader
 
-    def load_module(self, fullname):
+        if hasattr(loader, "load_module"):
+          self.load_module = self._load_module
+        if hasattr(loader, "create_module"):
+          self.create_module = self._create_module
+        if hasattr(loader, "exec_module"):
+          self.exec_module = self._exec_module
+
+    def _load_module(self, fullname):
         module = self.loader.load_module(fullname)
         notify_module_loaded(module)
 
@@ -162,10 +169,10 @@ class _ImportHookChainedLoader:
     # Python 3.4 introduced create_module() and exec_module() instead of
     # load_module() alone. Splitting the two steps.
 
-    def create_module(self, spec):
+    def _create_module(self, spec):
         return self.loader.create_module(spec)
 
-    def exec_module(self, module):
+    def _exec_module(self, module):
         self.loader.exec_module(module)
         notify_module_loaded(module)
 
