@@ -48,7 +48,6 @@ jobs:
     strategy:
       matrix:
         python:
-          - {os: ubuntu-latest,  python-version: 3.6, pyver: py36}
           - {os: ubuntu-latest,  python-version: 3.7, pyver: py37}
           - {os: ubuntu-latest,  python-version: 3.8, pyver: py38}
           - {os: ubuntu-latest,  python-version: 3.9, pyver: py39}
