@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 1.14.1
+--------------
+
+**Bugs Fixed**
+
+* When the post import hooks mechanism was being used, and a Python package with
+  its own custom module importer was used, importing modules could fail if the
+  custom module importer didn't use the latest Python import hook finder/loader
+  APIs and instead used the deprecated API. This was actually occurring with the
+  `zipimporter` in Python itself, which was not updated to use the newer Python
+  APIs until Python 3.10.
+
 Version 1.14.0
 --------------
 
