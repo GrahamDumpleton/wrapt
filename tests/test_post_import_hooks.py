@@ -72,5 +72,20 @@ class TestPostImportHooks(unittest.TestCase):
         self.assertEqual(len(invoked_one), 1)
         self.assertEqual(len(invoked_two), 1)
 
+    def test_loader(self):
+        try:
+            from importlib.machinery import SourceFileLoader
+        except ImportError:
+            return
+
+        @wrapt.when_imported('this')
+        def hook_this(module):
+            pass
+
+        import this
+
+        self.assertIsInstance(this.__loader__, SourceFileLoader)
+        self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
+
 if __name__ == '__main__':
     unittest.main()
