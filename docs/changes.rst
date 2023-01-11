@@ -30,6 +30,11 @@ Version 1.15.0
   loader wasn't preserved could interfere with code which needed access to the
   original loader.
 
+* Address issues where a thread deadlock could occur within the wrapt module
+  import handler, when code executed from a post import hook created a new
+  thread and code executed in the context of the new thread itself tried to
+  register a post import hook, or imported a new module.
+
 Version 1.14.1
 --------------
 
