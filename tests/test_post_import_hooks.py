@@ -85,7 +85,7 @@ class TestPostImportHooks(unittest.TestCase):
             self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
 
         else:
-            self.assertIsInstance(this.__loader__, None)
+            self.assertEqual(hasattr(this, "__loader__"), False)
 
 if __name__ == '__main__':
     unittest.main()
