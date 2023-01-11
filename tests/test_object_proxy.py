@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import unittest
-import imp
+import types
 import operator
 import sys
 
@@ -23,7 +23,7 @@ def target():
     pass
 """
 
-objects = imp.new_module('objects')
+objects = types.ModuleType('objects')
 exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
 class TestAttributeAccess(unittest.TestCase):
@@ -142,6 +142,58 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertFalse(hasattr(function2, 'variable'))
 
         self.assertEqual(getattr(function2, 'variable', None), None)
+
+    def test_attribute_lookup_modified(self):
+        class Object:
+            @property
+            def value(self):
+                return "value"
+
+        class WrappedObject(wrapt.ObjectProxy):
+            @property
+            def value(self):
+                return 2 * self.__wrapped__.value
+
+        WrappedObject(Object()).value == "valuevalue"
+
+    def test_attribute_lookup_value_exception(self):
+        class Object:
+            @property
+            def value(self):
+                return "value"
+
+        class WrappedObject(wrapt.ObjectProxy):
+            @property
+            def value(self):
+                raise ValueError("value-error")
+
+        try:
+            WrappedObject(Object()).value == "value"
+
+        except ValueError as e:
+            pass
+
+        else:
+            raise RuntimeError("should not fail here")
+
+    def test_attribute_lookup_attribute_exception(self):
+        class Object:
+            @property
+            def value(self):
+                return "value"
+
+        class WrappedObject(wrapt.ObjectProxy):
+            @property
+            def value(self):
+                raise AttributeError("attribute-error")
+
+        # Raising of an AttributeError in this case is a sort of odd situation
+        # because the exception results in it being determined there was no
+        # wrapper for the value attribute and so it returns the original value
+        # instead and robs the wrapper of the chance to return an alternate
+        # value.
+
+        WrappedObject(Object()).value == "value"
 
 class TestNamingObjectProxy(unittest.TestCase):
 

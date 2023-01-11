@@ -121,5 +121,20 @@ class TestPostImportHooks(unittest.TestCase):
         wrapt.register_post_import_hook(hook_this, 'this')
         thread.join()
 
+    def test_loader(self):
+        @wrapt.when_imported('this')
+        def hook_this(module):
+            pass
+
+        import this
+
+        if sys.version_info[:2] >= (3, 3):
+            from importlib.machinery import SourceFileLoader
+            self.assertIsInstance(this.__loader__, SourceFileLoader)
+            self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
+
+        else:
+            self.assertEqual(hasattr(this, "__loader__"), False)
+
 if __name__ == '__main__':
     unittest.main()
