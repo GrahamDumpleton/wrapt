@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import unittest
-import imp
+import types
 import operator
 import sys
 
@@ -23,7 +23,7 @@ def target():
     pass
 """
 
-objects = imp.new_module('objects')
+objects = types.ModuleType('objects')
 exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
 class TestAttributeAccess(unittest.TestCase):

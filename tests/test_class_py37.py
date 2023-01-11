@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import unittest
 import inspect
-import imp
+import types
 
 import wrapt
 
