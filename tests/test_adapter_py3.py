@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import inspect
 import unittest
-import imp
+import types
 
 from typing import Iterable
 
@@ -27,7 +27,7 @@ def adapter2(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 """
 
-decorators = imp.new_module('decorators')
+decorators = types.ModuleType('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 def function1(arg1, arg2) -> Iterable:

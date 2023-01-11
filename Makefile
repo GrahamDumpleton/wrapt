@@ -11,7 +11,10 @@ package :
 release : clean package
 	twine upload dist/*
 
-clean :
+mostlyclean:
+	rm -rf .coverage.*
+
+clean: mostlyclean
 	rm -rf build dist wrapt.egg-info
 
 test :

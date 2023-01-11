@@ -1,6 +1,29 @@
 Release Notes
 =============
 
+Version 1.15.0
+--------------
+
+**Bugs Fixed**
+
+* When the C extension for wrapt was being used, and a property was used on an
+  object proxy wrapping another object to intercept access to an attribute of
+  the same name on the wrapped object, if the function implementing the property
+  raised an exception, then the exception was ignored and not propagated back to
+  the caller. What happened instead was that the original value of the attribute
+  from the wrapped object was returned, thus silently suppressing that an
+  exception had occurred in the wrapper. This behaviour was not happening when
+  the pure Python version of wrapt was being used, with it raising the
+  exception. The pure Python and C extension implementations thus did not behave
+  the same.
+
+  Note that in the specific case that the exception raised is AttributeError it
+  still wouldn't be raised. This is the case for both Python and C extension
+  implementations. If a wrapper for an attribute internally raises an
+  AttributeError for some reason, the wrapper should if necessary catch the
+  exception and deal with it, or propagate it as a different exception type if
+  it is important that an exception still be passed back.
+
 Version 1.14.1
 --------------
 
@@ -10,8 +33,8 @@ Version 1.14.1
   its own custom module importer was used, importing modules could fail if the
   custom module importer didn't use the latest Python import hook finder/loader
   APIs and instead used the deprecated API. This was actually occurring with the
-  `zipimporter` in Python itself, which was not updated to use the newer Python
-  APIs until Python 3.10.
+  ``zipimporter`` in Python itself, which was not updated to use the newer
+  Python APIs until Python 3.10.
 
 Version 1.14.0
 --------------
