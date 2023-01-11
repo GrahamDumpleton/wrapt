@@ -15,6 +15,7 @@ class TestPostImportHooks(unittest.TestCase):
         # So we can import 'this' and test post-import hooks multiple times
         # below in the context of a single Python process, remove 'this' from
         # sys.modules and post import hooks.
+
         sys.modules.pop('this', None)
         _post_import_hooks.pop('this', None)
 
@@ -85,41 +86,83 @@ class TestPostImportHooks(unittest.TestCase):
         del sys.modules['this']
         wrapt.register_post_import_hook(hook_this, 'this')
         import this
+
         self.assertEqual(len(invoked), 2)
 
-    def test_import_deadlock(self):
+    def test_import_deadlock_1(self):
+        # This tries to verify that we haven't created a deadlock situation when
+        # code executed from a post module import, for a module that has already
+        # been imported, creates a thread which in turn attempts to register
+        # another import hook.
+
+        import this
+
         @wrapt.when_imported('this')
         def hook_this(module):
-            ev.set()
-            # The hook used to be called under _post_import_hooks_lock. Then
-            # the import tried to acquire the import lock. If the other thread
-            # already held it and was waiting for _post_import_hooks_lock, we
-            # deadlocked.
-            for _ in range(5):
-                import module1
-                del sys.modules['module1']
+            def worker():
+                @wrapt.when_imported('xxx')
+                def hook_xxx(module):
+                    pass
 
-        def worker():
-            ev.wait()
-            # The import tries to acquire the import lock. ImportHookFinder
-            # then tries to acquire _post_import_hooks_lock under it.
-            for _ in range(5):
-                import module2
-                del sys.modules['module2']
+            thread = threading.Thread(target=worker)
+            thread.start()
+            thread.join(timeout=10)
 
-        # A deadlock between notify_module_loaded and ImportHookFinder.
-        ev = threading.Event()
-        thread = threading.Thread(target=worker)
-        thread.start()
+            self.assertFalse(thread.is_alive())
+
+        del sys.modules['this']
+
+    def test_import_deadlock_2(self):
+        # This tries to verify that we haven't created a deadlock situation when
+        # code executed from a post module import, for a module that has not yet
+        # been imported, creates a thread which in turn attempts to register
+        # another import hook.
+
+        @wrapt.when_imported('this')
+        def hook_this(module):
+            def worker():
+                @wrapt.when_imported('xxx')
+                def hook_xxx(module):
+                    pass
+
+            thread = threading.Thread(target=worker)
+            thread.start()
+            thread.join(timeout=10)
+
+            self.assertFalse(thread.is_alive())
+
         import this
-        thread.join()
+        del sys.modules['this']
 
-        # A deadlock between register_post_import_hook and ImportHookFinder.
-        ev = threading.Event()
-        thread = threading.Thread(target=worker)
-        thread.start()
-        wrapt.register_post_import_hook(hook_this, 'this')
-        thread.join()
+    def test_import_deadlock_3(self):
+        # This tries to verify that we haven't created a deadlock situation when
+        # code executed from a post module import hook imports another module.
+
+        hooks_called = []
+
+        @wrapt.when_imported('this')
+        def hook_this(module):
+            hooks_called.append('this')
+
+            self.assertFalse('wsgiref' in sys.modules)
+    
+            @wrapt.when_imported('wsgiref')
+            def hook_wsgiref(module):
+                hooks_called.append('wsgiref')
+
+            def worker():
+                import wsgiref
+
+            thread = threading.Thread(target=worker)
+            thread.start()
+            thread.join(timeout=10)
+
+            self.assertFalse(thread.is_alive())
+
+        import this
+        del sys.modules['this']
+
+        self.assertEqual(hooks_called, ['this', 'wsgiref'])
 
     def test_loader(self):
         @wrapt.when_imported('this')
