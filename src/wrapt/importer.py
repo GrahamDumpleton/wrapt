@@ -64,11 +64,15 @@ def register_post_import_hook(hook, name):
         # to be called after import.
 
         module = sys.modules.get(name, None)
+
         if module is None:
             _post_import_hooks.setdefault(name, []).append(hook)
 
-    # If the module is already imported, fire the hook right away.
-    # NOTE: Call the hook outside of the lock to avoid deadlocks.
+    # If the module is already imported, we fire the hook right away. Note that
+    # the hook is called outside of the lock to avoid deadlocks if code run as a
+    # consequence of calling the module import hook in turn triggers a separate
+    # thread which tries to register an import hook.
+
     if module is not None:
         hook(module)
 
@@ -100,10 +104,14 @@ def discover_post_import_hooks(group):
 
 def notify_module_loaded(module):
     name = getattr(module, '__name__', None)
+
     with _post_import_hooks_lock:
         hooks = _post_import_hooks.pop(name, ())
 
-    # NOTE: Call hooks outside of the lock to avoid deadlocks.
+    # Note that the hook is called outside of the lock to avoid deadlocks if
+    # code run as a consequence of calling the module import hook in turn
+    # triggers a separate thread which tries to register an import hook.
+
     for hook in hooks:
         hook(module)
 
