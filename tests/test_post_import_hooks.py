@@ -7,6 +7,8 @@ import threading
 import wrapt
 from wrapt.importer import _post_import_hooks
 
+from compat import PY2, PY3
+
 class TestPostImportHooks(unittest.TestCase):
 
     def setUp(self):
@@ -137,6 +139,17 @@ class TestPostImportHooks(unittest.TestCase):
     def test_import_deadlock_3(self):
         # This tries to verify that we haven't created a deadlock situation when
         # code executed from a post module import hook imports another module.
+
+        # Note that we cannot run this test on Python 2.X as it has a single
+        # global module import lock which means that if a thread runs during
+        # module import and it in turns does an import that it will then block
+        # on the parent thread which holds the global module import lock. This
+        # is a fundamental behaviour of Python and not wrapt. In Python 3.X
+        # there is a module import lock per named module and so we do not have
+        # this problem.
+
+        if PY2:
+          return
 
         hooks_called = []
 
