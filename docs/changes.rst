@@ -24,6 +24,12 @@ Version 1.15.0
   exception and deal with it, or propagate it as a different exception type if
   it is important that an exception still be passed back.
 
+* Address issue where the post import hook mechanism of wrapt wasn't transparent
+  and left the ``__loader__`` and ``__spec__.loader`` attributes of a module as
+  the wrapt import hook loader and not the original loader. That the original
+  loader wasn't preserved could interfere with code which needed access to the
+  original loader.
+
 Version 1.14.1
 --------------
 
