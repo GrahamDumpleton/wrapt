@@ -73,19 +73,19 @@ class TestPostImportHooks(unittest.TestCase):
         self.assertEqual(len(invoked_two), 1)
 
     def test_loader(self):
-        try:
-            from importlib.machinery import SourceFileLoader
-        except ImportError:
-            return
-
         @wrapt.when_imported('this')
         def hook_this(module):
             pass
 
         import this
 
-        self.assertIsInstance(this.__loader__, SourceFileLoader)
-        self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
+        if sys.version_info[:2] >= (3, 3):
+            from importlib.machinery import SourceFileLoader
+            self.assertIsInstance(this.__loader__, SourceFileLoader)
+            self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
+
+        else:
+            self.assertIsInstance(this.__loader__, None)
 
 if __name__ == '__main__':
     unittest.main()
