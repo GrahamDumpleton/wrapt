@@ -35,6 +35,17 @@ Version 1.15.0
   thread and code executed in the context of the new thread itself tried to
   register a post import hook, or imported a new module.
 
+* When using `CallableObjectProxy` as a wrapper for a type or function and
+  calling the wrapped object, it was not possible to pass a keyword argument
+  named ``self``. This only occurred when using the pure Python version of
+  wrapt and did not occur when using the C extension based implementation.
+
+* When using `PartialCallableObjectProxy` as a wrapper for a type or function,
+  when constructing the partial object and when calling the partial object, it
+  was not possible to pass a keyword argument named ``self``. This only occurred
+  when using the pure Python version of wrapt and did not occur when using the C
+  extension based implementation.
+
 Version 1.14.1
 --------------
 

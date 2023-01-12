@@ -445,12 +445,22 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
 class CallableObjectProxy(ObjectProxy):
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         return self.__wrapped__(*args, **kwargs)
 
 class PartialCallableObjectProxy(ObjectProxy):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         if len(args) < 1:
             raise TypeError('partial type takes at least one argument')
 
@@ -464,7 +474,12 @@ class PartialCallableObjectProxy(ObjectProxy):
         self._self_args = args
         self._self_kwargs = kwargs
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+    
         _args = self._self_args + args
 
         _kwargs = dict(self._self_kwargs)

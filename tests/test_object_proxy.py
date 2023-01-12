@@ -1843,5 +1843,361 @@ class SpecialMethods(unittest.TestCase):
 
         self.assertEqual(round(instance), round(proxy))
 
+class TestArgumentUnpacking(unittest.TestCase):
+
+    def test_self_keyword_argument_on_dict(self):
+        # A dict when given self as keyword argument uses it to create item in
+        # the dict and no attempt is made to use a positional argument.
+
+        d = wrapt.wrappers.CallableObjectProxy(dict)(self='self')
+
+        self.assertEqual(d, dict(self='self'))
+
+    def test_self_positional_argument_on_class_init(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        o = Object('arg1')
+
+        self.assertEqual(o._args, ('arg1',))
+        self.assertEqual(o._kwargs, {})
+
+        o = wrapt.wrappers.CallableObjectProxy(Object)('arg1')
+
+        self.assertEqual(o._args, ('arg1',))
+        self.assertEqual(o._kwargs, {})
+
+    def test_self_keyword_argument_on_class_init_1(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+        with self.assertRaises(TypeError) as e:
+            wrapt.wrappers.CallableObjectProxy(Object)(self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+    def test_self_keyword_argument_on_class_init_2(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(arg1='arg1', self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+        with self.assertRaises(TypeError) as e:
+            wrapt.wrappers.CallableObjectProxy(Object)(arg1='arg1', self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+    def test_self_keyword_argument_on_class_init_renamed(self):
+        class Object:
+            def __init__(_self, *args, **kwargs):
+                _self._args = args
+                _self._kwargs = kwargs
+
+        o = Object(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, dict(self="self"))
+
+        o = wrapt.wrappers.CallableObjectProxy(Object)(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, dict(self="self"))
+
+    def test_self_keyword_argument_on_class_init_overloaded_1(self):
+        class Object:
+            def __init__(_self, self, *args, **kwargs):
+                _self._self = self
+                _self._args = args
+                _self._kwargs = kwargs
+
+        o = Object(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, {})
+        self.assertEqual(o._self, 'self')
+
+        o = wrapt.wrappers.CallableObjectProxy(Object)(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, {})
+        self.assertEqual(o._self, 'self')
+
+    def test_self_keyword_argument_on_class_init_overloaded_2(self):
+        class Object:
+            def __init__(_self, self, *args, **kwargs):
+                _self._self = self
+                _self._args = args
+                _self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(_self='self')
+
+        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+
+        with self.assertRaises(TypeError) as e:
+            wrapt.wrappers.CallableObjectProxy(Object)(_self='self')
+
+        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+
+class TestArgumentUnpackingPartial(unittest.TestCase):
+
+    def test_self_keyword_argument_on_dict_1(self):
+        # A dict when given self as keyword argument uses it to create item in
+        # the dict and no attempt is made to use a positional argument.
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(dict, arg1='arg1')
+
+        d = wrapper(self='self')
+
+        self.assertEqual(d, dict(self='self', arg1='arg1'))
+
+    def test_self_keyword_argument_on_dict_2(self):
+        # A dict when given self as keyword argument uses it to create item in
+        # the dict and no attempt is made to use a positional argument.
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(dict, self='self')
+
+        d = wrapper(arg1='arg1')
+
+        self.assertEqual(d, dict(self='self', arg1='arg1'))
+
+    def test_self_positional_argument_on_class_init_1(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        o = Object('arg1')
+
+        self.assertEqual(o._args, ('arg1',))
+        self.assertEqual(o._kwargs, {})
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, 'arg1')
+
+        o = wrapper()
+
+        self.assertEqual(o._args, ('arg1',))
+        self.assertEqual(o._kwargs, {})
+
+    def test_self_positional_argument_on_class_init_2(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        o = Object('arg1')
+
+        self.assertEqual(o._args, ('arg1',))
+        self.assertEqual(o._kwargs, {})
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+
+        o = wrapper('arg1')
+
+        self.assertEqual(o._args, ('arg1',))
+        self.assertEqual(o._kwargs, {})
+
+    def test_self_keyword_argument_on_class_init_1a(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, self='self')
+
+        with self.assertRaises(TypeError) as e:
+            o = wrapper()
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+    def test_self_keyword_argument_on_class_init_1b(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+
+        with self.assertRaises(TypeError) as e:
+            o = wrapper(self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+    def test_self_keyword_argument_on_class_init_2a(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(arg1='arg1', self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, arg1='arg1', self='self')
+
+        with self.assertRaises(TypeError) as e:
+            o = wrapper()
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+    def test_self_keyword_argument_on_class_init_2b(self):
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(arg1='arg1', self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+
+        with self.assertRaises(TypeError) as e:
+            o = wrapper(arg1='arg1', self='self')
+
+        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+
+    def test_self_keyword_argument_on_class_init_renamed_1(self):
+        class Object:
+            def __init__(_self, *args, **kwargs):
+                _self._args = args
+                _self._kwargs = kwargs
+
+        o = Object(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, dict(self="self"))
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, self='self')
+
+        o = wrapper()
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, dict(self="self"))
+
+    def test_self_keyword_argument_on_class_init_renamed_2(self):
+        class Object:
+            def __init__(_self, *args, **kwargs):
+                _self._args = args
+                _self._kwargs = kwargs
+
+        o = Object(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, dict(self="self"))
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+
+        o = wrapper(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, dict(self="self"))
+
+    def test_self_keyword_argument_on_class_init_overloaded_1a(self):
+        class Object:
+            def __init__(_self, self, *args, **kwargs):
+                _self._self = self
+                _self._args = args
+                _self._kwargs = kwargs
+
+        o = Object(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, {})
+        self.assertEqual(o._self, 'self')
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, self='self')
+
+        o = wrapper()
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, {})
+        self.assertEqual(o._self, 'self')
+
+    def test_self_keyword_argument_on_class_init_overloaded_1b(self):
+        class Object:
+            def __init__(_self, self, *args, **kwargs):
+                _self._self = self
+                _self._args = args
+                _self._kwargs = kwargs
+
+        o = Object(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, {})
+        self.assertEqual(o._self, 'self')
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+
+        o = wrapper(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, {})
+        self.assertEqual(o._self, 'self')
+
+    def test_self_keyword_argument_on_class_init_overloaded_2a(self):
+        class Object:
+            def __init__(_self, self, *args, **kwargs):
+                _self._self = self
+                _self._args = args
+                _self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(_self='self')
+
+        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, _self='self')
+
+        with self.assertRaises(TypeError) as e:
+            o = wrapper()
+
+        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+
+    def test_self_keyword_argument_on_class_init_overloaded_2b(self):
+        class Object:
+            def __init__(_self, self, *args, **kwargs):
+                _self._self = self
+                _self._args = args
+                _self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(_self='self')
+
+        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+
+        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+
+        with self.assertRaises(TypeError) as e:
+            o = wrapper(_self='self')
+
+        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+
 if __name__ == '__main__':
     unittest.main()
