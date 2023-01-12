@@ -15,7 +15,7 @@ mostlyclean:
 	rm -rf .coverage.*
 
 clean: mostlyclean
-	rm -rf build dist wrapt.egg-info
+	rm -rf build dist wrapt.egg-info .tox
 
 test :
 	tox --skip-missing-interpreters
