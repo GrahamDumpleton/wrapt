@@ -1946,12 +1946,12 @@ class TestArgumentUnpacking(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(_self='self')
 
-        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
             wrapt.wrappers.CallableObjectProxy(Object)(_self='self')
 
-        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
 class TestArgumentUnpackingPartial(unittest.TestCase):
 
@@ -2171,14 +2171,14 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(_self='self')
 
-        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
         wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, _self='self')
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
 
-        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
     def test_self_keyword_argument_on_class_init_overloaded_2b(self):
         class Object:
@@ -2190,14 +2190,14 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(_self='self')
 
-        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
         wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(_self='self')
 
-        self.assertTrue("got multiple values for argument '_self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
 if __name__ == '__main__':
     unittest.main()
