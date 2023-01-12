@@ -559,7 +559,12 @@ class _FunctionWrapperBase(ObjectProxy):
 
         return self
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         # If enabled has been specified, then evaluate it at this point
         # and if the wrapper is not to be executed, then simply return
         # the bound function rather than a bound wrapper for the bound
@@ -622,7 +627,12 @@ class _FunctionWrapperBase(ObjectProxy):
 
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         # If enabled has been specified, then evaluate it at this point
         # and if the wrapper is not to be executed, then simply return
         # the bound function rather than a bound wrapper for the bound

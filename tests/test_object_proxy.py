@@ -2199,5 +2199,223 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
+class TestArgumentUnpackingWrapperBase(unittest.TestCase):
+
+    def test_self_keyword_argument_on_dict(self):
+        # A dict when given self as keyword argument uses it to create item in
+        # the dict and no attempt is made to use a positional argument.
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        d = wrapt.wrappers.FunctionWrapper(dict, wrapper)(self='self')
+
+        self.assertEqual(d, dict(self='self'))
+
+    def test_self_positional_argument_on_class_init(self):
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        o = Object('arg1')
+
+        self.assertEqual(o._args, ('arg1',))
+        self.assertEqual(o._kwargs, {})
+
+        o = wrapt.wrappers.FunctionWrapper(Object, wrapper)('arg1')
+
+        self.assertEqual(o._args, ('arg1',))
+        self.assertEqual(o._kwargs, {})
+
+    def test_self_keyword_argument_on_class_init_1(self):
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(self='self')
+
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+
+        with self.assertRaises(TypeError) as e:
+            wrapt.wrappers.FunctionWrapper(Object, wrapper)(self='self')
+
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+
+    def test_self_keyword_argument_on_class_init_2(self):
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            def __init__(self, *args, **kwargs):
+                self._args = args
+                self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(arg1='arg1', self='self')
+
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+
+        with self.assertRaises(TypeError) as e:
+            wrapt.wrappers.FunctionWrapper(Object, wrapper)(arg1='arg1', self='self')
+
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+
+    def test_self_keyword_argument_on_class_init_renamed(self):
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            def __init__(_self, *args, **kwargs):
+                _self._args = args
+                _self._kwargs = kwargs
+
+        o = Object(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, dict(self="self"))
+
+        o = wrapt.wrappers.FunctionWrapper(Object, wrapper)(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, dict(self="self"))
+
+    def test_self_keyword_argument_on_class_init_overloaded_1(self):
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            def __init__(_self, self, *args, **kwargs):
+                _self._self = self
+                _self._args = args
+                _self._kwargs = kwargs
+
+        o = Object(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, {})
+        self.assertEqual(o._self, 'self')
+
+        o = wrapt.wrappers.FunctionWrapper(Object, wrapper)(self='self')
+
+        self.assertEqual(o._args, ())
+        self.assertEqual(o._kwargs, {})
+        self.assertEqual(o._self, 'self')
+
+    def test_self_keyword_argument_on_class_init_overloaded_2(self):
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            def __init__(_self, self, *args, **kwargs):
+                _self._self = self
+                _self._args = args
+                _self._kwargs = kwargs
+
+        with self.assertRaises(TypeError) as e:
+            Object(_self='self')
+
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+
+        with self.assertRaises(TypeError) as e:
+            wrapt.wrappers.FunctionWrapper(Object, wrapper)(_self='self')
+
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+
+class TestArgumentUnpackingBoundFunctionWrapper(unittest.TestCase):
+
+    def test_self_keyword_argument_on_classmethod(self):
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            @classmethod
+            def function(cls, self, *args, **kwargs):
+                return self, args, kwargs
+
+            function = wrapt.wrappers.FunctionWrapper(function, wrapper)
+
+        result = Object().function(self='self')
+
+        self.assertEqual(result, ('self', (), {}))
+
+    def test_self_keyword_argument_on_instancemethod(self):
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            def function(_self, self, *args, **kwargs):
+                return self, args, kwargs
+
+            function = wrapt.wrappers.FunctionWrapper(function, wrapper)
+
+        result = Object().function(self='self')
+
+        self.assertEqual(result, ('self', (), {}))
+
+class TestArgumentUnpackingDecorator(unittest.TestCase):
+
+    def test_self_keyword_argument_on_function(self):
+        @wrapt.decorator
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @wrapper
+        def function(self, *args, **kwargs):
+            return self, args, kwargs
+
+        result = function(self='self')
+
+        self.assertEqual(result, ('self', (), {}))
+
+        result = function('self')
+
+        self.assertEqual(result, ('self', (), {}))
+
+    def test_self_keyword_argument_on_classmethod(self):
+        @wrapt.decorator
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            @wrapper
+            @classmethod
+            def function(cls, self, *args, **kwargs):
+                return self, args, kwargs
+
+        result = Object().function(self='self')
+
+        self.assertEqual(result, ('self', (), {}))
+
+        result = Object().function('self', arg1='arg1')
+
+        self.assertEqual(result, ('self', (), dict(arg1='arg1')))
+
+    def test_self_keyword_argument_on_instancemethod(self):
+        @wrapt.decorator
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Object:
+            @wrapper
+            def function(_self, self, *args, **kwargs):
+                return self, args, kwargs
+
+        result = Object().function(self='self', arg1='arg1')
+
+        self.assertEqual(result, ('self', (), dict(arg1='arg1')))
+
+        result = Object().function('self', arg1='arg1')
+
+        self.assertEqual(result, ('self', (), dict(arg1='arg1')))
+
 if __name__ == '__main__':
     unittest.main()
