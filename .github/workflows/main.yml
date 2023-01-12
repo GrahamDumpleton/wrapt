@@ -188,6 +188,8 @@ jobs:
         python-version: 3.9
     - name: Build full source distribution as tar.gz
       run: python setup.py sdist
+    - name: Install the wheel package
+      run: pip install wheel
     - name: Build pure Python source wheel
       run: WRAPT_INSTALL_EXTENSIONS=false python setup.py bdist_wheel
     - name: Store built wheels
