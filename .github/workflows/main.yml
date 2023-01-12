@@ -186,8 +186,10 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: 3.9
-    - name: Build source distribution
+    - name: Build full source distribution as tar.gz
       run: python setup.py sdist
+    - name: Build pure Python source wheel
+      run: WRAPT_INSTALL_EXTENSIONS=false python setup.py bdist_wheel
     - name: Store built wheels
       uses: actions/upload-artifact@v3
       with:
