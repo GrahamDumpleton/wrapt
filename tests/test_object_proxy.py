@@ -2,8 +2,8 @@ from __future__ import print_function
 
 import unittest
 import types
-import operator
 import sys
+import re
 
 is_pypy = '__pypy__' in sys.builtin_module_names
 
@@ -1878,12 +1878,12 @@ class TestArgumentUnpacking(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
             wrapt.wrappers.CallableObjectProxy(Object)(self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
     def test_self_keyword_argument_on_class_init_2(self):
         class Object:
@@ -1894,12 +1894,12 @@ class TestArgumentUnpacking(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(arg1='arg1', self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
             wrapt.wrappers.CallableObjectProxy(Object)(arg1='arg1', self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
     def test_self_keyword_argument_on_class_init_renamed(self):
         class Object:
@@ -2020,14 +2020,14 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, self='self')
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
     def test_self_keyword_argument_on_class_init_1b(self):
         class Object:
@@ -2038,14 +2038,14 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
     def test_self_keyword_argument_on_class_init_2a(self):
         class Object:
@@ -2056,14 +2056,14 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(arg1='arg1', self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, arg1='arg1', self='self')
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
     def test_self_keyword_argument_on_class_init_2b(self):
         class Object:
@@ -2074,14 +2074,14 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(arg1='arg1', self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(arg1='arg1', self='self')
 
-        self.assertTrue("got multiple values for argument 'self'" in str(e.exception))
+        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
     def test_self_keyword_argument_on_class_init_renamed_1(self):
         class Object:
