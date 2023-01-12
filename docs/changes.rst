@@ -56,6 +56,10 @@ Version 1.15.0
   Python version of wrapt and did not occur when using the C extension based
   implementation.
 
+* When using ``WeakFunctionProxy`` as a wrapper for a function, when calling the
+  function via the proxy object, it was not possible to pass a keyword argument
+  named ``self``.
+
 Version 1.14.1
 --------------
 

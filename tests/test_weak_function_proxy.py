@@ -190,5 +190,15 @@ class TestWeakFunctionProxy(unittest.TestCase):
 
         self.assertEqual(method(), 'bark')
 
+class TestArgumentUnpackingWeakFunctionProxy(unittest.TestCase):
+
+    def test_self_keyword_argument(self):
+        def function(self, *args, **kwargs):
+            return self, args, kwargs
+
+        proxy = wrapt.wrappers.WeakFunctionProxy(function)
+
+        self.assertEqual(proxy(self='self', arg1='arg1'), ('self', (), dict(arg1='arg1')))
+
 if __name__ == '__main__':
     unittest.main()

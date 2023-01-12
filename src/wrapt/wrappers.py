@@ -992,7 +992,12 @@ class WeakFunctionProxy(ObjectProxy):
             super(WeakFunctionProxy, self).__init__(
                     weakref.proxy(wrapped, _callback))
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         # We perform a boolean check here on the instance and wrapped
         # function as that will trigger the reference error prior to
         # calling if the reference had expired.
