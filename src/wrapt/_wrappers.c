@@ -1535,6 +1535,9 @@ static PyObject *WraptObjectProxy_getattro(
     if (object)
         return object;
 
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        return NULL;
+
     PyErr_Clear();
 
     if (!getattr_str) {

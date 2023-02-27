@@ -1,6 +1,65 @@
 Release Notes
 =============
 
+Version 1.15.0
+--------------
+
+**Bugs Fixed**
+
+* When the C extension for wrapt was being used, and a property was used on an
+  object proxy wrapping another object to intercept access to an attribute of
+  the same name on the wrapped object, if the function implementing the property
+  raised an exception, then the exception was ignored and not propagated back to
+  the caller. What happened instead was that the original value of the attribute
+  from the wrapped object was returned, thus silently suppressing that an
+  exception had occurred in the wrapper. This behaviour was not happening when
+  the pure Python version of wrapt was being used, with it raising the
+  exception. The pure Python and C extension implementations thus did not behave
+  the same.
+
+  Note that in the specific case that the exception raised is AttributeError it
+  still wouldn't be raised. This is the case for both Python and C extension
+  implementations. If a wrapper for an attribute internally raises an
+  AttributeError for some reason, the wrapper should if necessary catch the
+  exception and deal with it, or propagate it as a different exception type if
+  it is important that an exception still be passed back.
+
+* Address issue where the post import hook mechanism of wrapt wasn't transparent
+  and left the ``__loader__`` and ``__spec__.loader`` attributes of a module as
+  the wrapt import hook loader and not the original loader. That the original
+  loader wasn't preserved could interfere with code which needed access to the
+  original loader.
+
+* Address issues where a thread deadlock could occur within the wrapt module
+  import handler, when code executed from a post import hook created a new
+  thread and code executed in the context of the new thread itself tried to
+  register a post import hook, or imported a new module.
+
+* When using ``CallableObjectProxy`` as a wrapper for a type or function and
+  calling the wrapped object, it was not possible to pass a keyword argument
+  named ``self``. This only occurred when using the pure Python version of wrapt
+  and did not occur when using the C extension based implementation.
+
+* When using ``PartialCallableObjectProxy`` as a wrapper for a type or function,
+  when constructing the partial object and when calling the partial object, it
+  was not possible to pass a keyword argument named ``self``. This only occurred
+  when using the pure Python version of wrapt and did not occur when using the C
+  extension based implementation.
+
+* When using ``FunctionWrapper`` as a wrapper for a type or function and calling
+  the wrapped object, it was not possible to pass a keyword argument named
+  ``self``. Because ``FunctionWrapper`` is also used by decorators, this also
+  affected decorators on functions and class types. A similar issue also arose
+  when these were applied to class and instance methods where binding occurred
+  when the method was accessed. In that case it was in ``BoundFunctionWrapper``
+  that the problem could arise. These all only occurred when using the pure
+  Python version of wrapt and did not occur when using the C extension based
+  implementation.
+
+* When using ``WeakFunctionProxy`` as a wrapper for a function, when calling the
+  function via the proxy object, it was not possible to pass a keyword argument
+  named ``self``.
+
 Version 1.14.1
 --------------
 
@@ -10,8 +69,8 @@ Version 1.14.1
   its own custom module importer was used, importing modules could fail if the
   custom module importer didn't use the latest Python import hook finder/loader
   APIs and instead used the deprecated API. This was actually occurring with the
-  `zipimporter` in Python itself, which was not updated to use the newer Python
-  APIs until Python 3.10.
+  ``zipimporter`` in Python itself, which was not updated to use the newer
+  Python APIs until Python 3.10.
 
 Version 1.14.0
 --------------

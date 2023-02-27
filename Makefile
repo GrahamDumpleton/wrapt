@@ -11,8 +11,11 @@ package :
 release : clean package
 	twine upload dist/*
 
-clean :
-	rm -rf build dist wrapt.egg-info
+mostlyclean:
+	rm -rf .coverage.*
+
+clean: mostlyclean
+	rm -rf build dist src/wrapt.egg-info .tox
 
 test :
 	tox --skip-missing-interpreters

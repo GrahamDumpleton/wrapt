@@ -445,12 +445,22 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
 class CallableObjectProxy(ObjectProxy):
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         return self.__wrapped__(*args, **kwargs)
 
 class PartialCallableObjectProxy(ObjectProxy):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         if len(args) < 1:
             raise TypeError('partial type takes at least one argument')
 
@@ -464,7 +474,12 @@ class PartialCallableObjectProxy(ObjectProxy):
         self._self_args = args
         self._self_kwargs = kwargs
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+    
         _args = self._self_args + args
 
         _kwargs = dict(self._self_kwargs)
@@ -544,7 +559,12 @@ class _FunctionWrapperBase(ObjectProxy):
 
         return self
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         # If enabled has been specified, then evaluate it at this point
         # and if the wrapper is not to be executed, then simply return
         # the bound function rather than a bound wrapper for the bound
@@ -607,7 +627,12 @@ class _FunctionWrapperBase(ObjectProxy):
 
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         # If enabled has been specified, then evaluate it at this point
         # and if the wrapper is not to be executed, then simply return
         # the bound function rather than a bound wrapper for the bound
@@ -967,7 +992,12 @@ class WeakFunctionProxy(ObjectProxy):
             super(WeakFunctionProxy, self).__init__(
                     weakref.proxy(wrapped, _callback))
 
-    def __call__(self, *args, **kwargs):
+    def __call__(*args, **kwargs):
+        def _unpack_self(self, *args):
+            return self, args
+
+        self, args = _unpack_self(*args)
+
         # We perform a boolean check here on the instance and wrapped
         # function as that will trigger the reference error prior to
         # calling if the reference had expired.
