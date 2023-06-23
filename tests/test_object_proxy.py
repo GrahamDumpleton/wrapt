@@ -1089,10 +1089,13 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(pow(three, 2), pow(3, 2))
 
         # Only PyPy implements __rpow__ for ternary pow().
+        # Note: No longer test for this as pypy 3.9+ seems
+        # to have been updated to not support ternary pow()
+        # in same way.
 
-        if is_pypy:
-            self.assertEqual(pow(three, two, 2), pow(3, 2, 2))
-            self.assertEqual(pow(3, two, 2), pow(3, 2, 2))
+        # if is_pypy:
+        #     self.assertEqual(pow(three, two, 2), pow(3, 2, 2))
+        #     self.assertEqual(pow(3, two, 2), pow(3, 2, 2))
 
         self.assertEqual(pow(three, 2, 2), pow(3, 2, 2))
 
