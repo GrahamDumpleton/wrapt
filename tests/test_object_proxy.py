@@ -2417,5 +2417,23 @@ class TestArgumentUnpackingDecorator(unittest.TestCase):
 
         self.assertEqual(result, ('self', (), dict(arg1='arg1')))
 
+class TestOverridingSpecialAttributes(unittest.TestCase):
+
+    def test_overriding_class_attribute(self):
+        class Object1: pass
+        class Object2(Object1): pass
+
+        o1 = Object1()
+
+        self.assertEqual(o1.__class__, type(o1))
+
+        o2 = Object2()
+
+        self.assertEqual(o2.__class__, type(o2))
+
+        o2.__class__ = type(o1)
+
+        self.assertEqual(o2.__class__, type(o1))
+
 if __name__ == '__main__':
     unittest.main()
