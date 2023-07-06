@@ -1146,10 +1146,10 @@ static PyObject *WraptObjectProxy_self_setattr(
     PyObject *value = NULL;
 
 #if PY_MAJOR_VERSION >= 3
-    if (!PyArg_ParseTuple(args, "UO:__self_gsetattr__", &name, &value))
+    if (!PyArg_ParseTuple(args, "UO:__self_setattr__", &name, &value))
         return NULL;
 #else
-    if (!PyArg_ParseTuple(args, "SO:___self_setattr__", &name, &value))
+    if (!PyArg_ParseTuple(args, "SO:__self_setattr__", &name, &value))
         return NULL;
 #endif
 
