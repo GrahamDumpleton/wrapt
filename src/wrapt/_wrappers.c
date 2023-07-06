@@ -1139,6 +1139,30 @@ static int WraptObjectProxy_setitem(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_self_setattr(
+        WraptObjectProxyObject *self, PyObject *args)
+{
+    PyObject *name = NULL;
+    PyObject *value = NULL;
+
+#if PY_MAJOR_VERSION >= 3
+    if (!PyArg_ParseTuple(args, "UO:__self_gsetattr__", &name, &value))
+        return NULL;
+#else
+    if (!PyArg_ParseTuple(args, "SO:___self_setattr__", &name, &value))
+        return NULL;
+#endif
+
+    if (PyObject_GenericSetAttr((PyObject *)self, name, value) != 0) {
+        return NULL;
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_dir(
         WraptObjectProxyObject *self, PyObject *args)
 {
@@ -1754,6 +1778,8 @@ static PyMappingMethods WraptObjectProxy_as_mapping = {
 };
 
 static PyMethodDef WraptObjectProxy_methods[] = {
+    { "__self_setattr__", (PyCFunction)WraptObjectProxy_self_setattr,
+                    METH_VARARGS , 0 },
     { "__dir__",    (PyCFunction)WraptObjectProxy_dir, METH_NOARGS, 0 },
     { "__enter__",  (PyCFunction)WraptObjectProxy_enter,
                     METH_VARARGS | METH_KEYWORDS, 0 },
@@ -2563,7 +2589,6 @@ static PyObject *WraptFunctionWrapperBase_set_name(
 static PyObject *WraptFunctionWrapperBase_instancecheck(
         WraptFunctionWrapperObject *self, PyObject *instance)
 {
-    PyObject *object = NULL;
     PyObject *result = NULL;
 
     int check = 0;

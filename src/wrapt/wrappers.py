@@ -94,6 +94,9 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         except AttributeError:
             pass
 
+    def __self_setattr__(self, name, value):
+        object.__setattr__(self, name, value)
+
     @property
     def __name__(self):
         return self.__wrapped__.__name__
