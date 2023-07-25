@@ -902,7 +902,7 @@ def patch_function_wrapper(module, name, enabled=None):
         return wrap_object(module, name, FunctionWrapper, (wrapper, enabled))
     return _wrapper
 
-def transient_function_wrapper(module, name, enabled=None):
+def transient_function_wrapper(module, name):
     def _decorator(wrapper):
         def _wrapper(wrapped, instance, args, kwargs):
             target_wrapped = args[0]
@@ -914,14 +914,14 @@ def transient_function_wrapper(module, name, enabled=None):
                 target_wrapper = wrapper.__get__(instance, type(instance))
             def _execute(wrapped, instance, args, kwargs):
                 (parent, attribute, original) = resolve_path(module, name)
-                replacement = FunctionWrapper(original, target_wrapper, enabled)
+                replacement = FunctionWrapper(original, target_wrapper)
                 setattr(parent, attribute, replacement)
                 try:
                     return wrapped(*args, **kwargs)
                 finally:
                     setattr(parent, attribute, original)
-            return FunctionWrapper(target_wrapped, _execute, enabled)
-        return FunctionWrapper(wrapper, _wrapper, enabled)
+            return FunctionWrapper(target_wrapped, _execute)
+        return FunctionWrapper(wrapper, _wrapper)
     return _decorator
 
 # A weak function proxy. This will work on instance methods, class
