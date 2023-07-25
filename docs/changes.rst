@@ -16,6 +16,17 @@ Note that version 1.16.0 drops support for Python 2.7 and 3.5. Python version
   be left until the point of the call. In the other cases, the wrapper will not
   be applied if the value evaluates false at the point of applying the wrapper.
 
+**Features Changed**
+
+* The import hook loader and finder objects are now implemented as transparent
+  object proxies so they properly proxy pass access to attributes/functions of
+  the wrapped loader or finder.
+
+**Bugs Fixed**
+
+* It was not possible to update the ``__class__`` attribute through the
+  transparent object proxy when relying on the C implementation.
+
 Version 1.15.0
 --------------
 
