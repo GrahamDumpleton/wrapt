@@ -11,7 +11,25 @@ def global_function_1(*args, **kwargs):
 def global_function_2(*args, **kwargs):
     return args, kwargs
 
+def global_function_2_enabled_literal_false(*args, **kwargs):
+    return args, kwargs
+
+def global_function_2_enabled_literal_true(*args, **kwargs):
+    return args, kwargs
+
+def global_function_2_enabled_callable(*args, **kwargs):
+    return args, kwargs
+
 def global_function_3(*args, **kwargs):
+    return args, kwargs
+
+def global_function_3_enabled_literal_false(*args, **kwargs):
+    return args, kwargs
+
+def global_function_3_enabled_literal_true(*args, **kwargs):
+    return args, kwargs
+
+def global_function_3_enabled_callable(*args, **kwargs):
     return args, kwargs
 
 def global_function_4(*args, **kwargs):
@@ -162,6 +180,87 @@ class TestMonkeyPatching(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
+    def test_wrap_function_module_enabled_literal_false(self):
+
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        called = []
+
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        module = sys.modules[__name__]
+
+        wrapt.wrap_function_wrapper(module, 'global_function_2_enabled_literal_false', wrapper, enabled=False)
+
+        result = global_function_2_enabled_literal_false(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called, [])
+
+    def test_wrap_function_module_enabled_literal_true(self):
+
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        called = []
+
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        module = sys.modules[__name__]
+
+        wrapt.wrap_function_wrapper(module, 'global_function_2_enabled_literal_true', wrapper, enabled=True)
+
+        result = global_function_2_enabled_literal_true(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_wrap_function_module_enabled_callable(self):
+
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        called = []
+
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        module = sys.modules[__name__]
+
+        enable = False
+
+        def enabled():
+            return enable
+
+        wrapt.wrap_function_wrapper(module, 'global_function_2_enabled_callable', wrapper, enabled=enabled)
+
+        result = global_function_2_enabled_callable(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called, [])
+
+        enable = True
+
+        result = global_function_2_enabled_callable(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
     def test_wrap_instance_method_module_name(self):
 
         _args = (1, 2)
@@ -271,6 +370,78 @@ class TestMonkeyPatching(unittest.TestCase):
             return wrapped(*args, **kwargs)
 
         result = global_function_3(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_patch_function_module_name_enabled_literal_false(self):
+
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        called = []
+
+        @wrapt.patch_function_wrapper(__name__, 'global_function_3_enabled_literal_false', enabled=False)
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        result = global_function_3_enabled_literal_false(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called, [])
+
+    def test_patch_function_module_name_enabled_literal_true(self):
+
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        called = []
+
+        @wrapt.patch_function_wrapper(__name__, 'global_function_3_enabled_literal_true', enabled=True)
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        result = global_function_3_enabled_literal_true(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_patch_function_module_name_enabled_callable(self):
+
+        _args = (1, 2)
+        _kwargs = {'one': 1, 'two': 2}
+
+        called = []
+
+        enable = False
+
+        def enabled():
+            return enable
+
+        @wrapt.patch_function_wrapper(__name__, 'global_function_3_enabled_callable', enabled=enabled)
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            self.assertEqual(instance, None)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return wrapped(*args, **kwargs)
+
+        result = global_function_3_enabled_callable(*_args, **_kwargs)
+
+        enable = True
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called, [])
+
+        result = global_function_3_enabled_callable(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
