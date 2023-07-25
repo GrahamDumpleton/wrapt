@@ -9,12 +9,12 @@ Note that version 1.16.0 drops support for Python 2.7 and 3.5. Python version
 
 **New Features**
 
-* The ``wrap_function_wrapper()`` and ``patch_function_wrapper()`` functions now
-  accept an ``enabled`` argument, which can be a literal boolean value, object
-  that evaluates as boolean, or a callable object which returns a boolean. In
-  the case of a callable, determination of whether the wrapper is invoked will
-  be left until the point of the call. In the other cases, the wrapper will not
-  be applied if the value evaluates false at the point of applying the wrapper.
+* The ``patch_function_wrapper()`` decorator now accepts an ``enabled``
+  argument, which can be a literal boolean value, object that evaluates as
+  boolean, or a callable object which returns a boolean. In the case of a
+  callable, determination of whether the wrapper is invoked will be left until
+  the point of the call. In the other cases, the wrapper will not be applied if
+  the value evaluates false at the point of applying the wrapper.
 
 **Features Changed**
 

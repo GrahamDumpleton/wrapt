@@ -894,8 +894,8 @@ def function_wrapper(wrapper):
         return FunctionWrapper(target_wrapped, target_wrapper)
     return FunctionWrapper(wrapper, _wrapper)
 
-def wrap_function_wrapper(module, name, wrapper, enabled=None):
-    return wrap_object(module, name, FunctionWrapper, (wrapper, enabled))
+def wrap_function_wrapper(module, name, wrapper):
+    return wrap_object(module, name, FunctionWrapper, (wrapper,))
 
 def patch_function_wrapper(module, name, enabled=None):
     def _wrapper(wrapper):
