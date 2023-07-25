@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 1.16.0
+--------------
+
+Note that version 1.16.0 drops support for Python 2.7 and 3.5. Python version
+3.6 or later is required.
+
 Version 1.15.0
 --------------
 
