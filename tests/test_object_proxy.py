@@ -1852,7 +1852,7 @@ class TestArgumentUnpacking(unittest.TestCase):
         # A dict when given self as keyword argument uses it to create item in
         # the dict and no attempt is made to use a positional argument.
 
-        d = wrapt.wrappers.CallableObjectProxy(dict)(self='self')
+        d = wrapt.CallableObjectProxy(dict)(self='self')
 
         self.assertEqual(d, dict(self='self'))
 
@@ -1867,7 +1867,7 @@ class TestArgumentUnpacking(unittest.TestCase):
         self.assertEqual(o._args, ('arg1',))
         self.assertEqual(o._kwargs, {})
 
-        o = wrapt.wrappers.CallableObjectProxy(Object)('arg1')
+        o = wrapt.CallableObjectProxy(Object)('arg1')
 
         self.assertEqual(o._args, ('arg1',))
         self.assertEqual(o._kwargs, {})
@@ -1884,7 +1884,7 @@ class TestArgumentUnpacking(unittest.TestCase):
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
-            wrapt.wrappers.CallableObjectProxy(Object)(self='self')
+            wrapt.CallableObjectProxy(Object)(self='self')
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
@@ -1900,7 +1900,7 @@ class TestArgumentUnpacking(unittest.TestCase):
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
-            wrapt.wrappers.CallableObjectProxy(Object)(arg1='arg1', self='self')
+            wrapt.CallableObjectProxy(Object)(arg1='arg1', self='self')
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
@@ -1915,7 +1915,7 @@ class TestArgumentUnpacking(unittest.TestCase):
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, dict(self="self"))
 
-        o = wrapt.wrappers.CallableObjectProxy(Object)(self='self')
+        o = wrapt.CallableObjectProxy(Object)(self='self')
 
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, dict(self="self"))
@@ -1933,7 +1933,7 @@ class TestArgumentUnpacking(unittest.TestCase):
         self.assertEqual(o._kwargs, {})
         self.assertEqual(o._self, 'self')
 
-        o = wrapt.wrappers.CallableObjectProxy(Object)(self='self')
+        o = wrapt.CallableObjectProxy(Object)(self='self')
 
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, {})
@@ -1952,7 +1952,7 @@ class TestArgumentUnpacking(unittest.TestCase):
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
-            wrapt.wrappers.CallableObjectProxy(Object)(_self='self')
+            wrapt.CallableObjectProxy(Object)(_self='self')
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
@@ -1962,7 +1962,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         # A dict when given self as keyword argument uses it to create item in
         # the dict and no attempt is made to use a positional argument.
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(dict, arg1='arg1')
+        wrapper = wrapt.PartialCallableObjectProxy(dict, arg1='arg1')
 
         d = wrapper(self='self')
 
@@ -1972,7 +1972,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         # A dict when given self as keyword argument uses it to create item in
         # the dict and no attempt is made to use a positional argument.
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(dict, self='self')
+        wrapper = wrapt.PartialCallableObjectProxy(dict, self='self')
 
         d = wrapper(arg1='arg1')
 
@@ -1989,7 +1989,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._args, ('arg1',))
         self.assertEqual(o._kwargs, {})
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, 'arg1')
+        wrapper = wrapt.PartialCallableObjectProxy(Object, 'arg1')
 
         o = wrapper()
 
@@ -2007,7 +2007,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._args, ('arg1',))
         self.assertEqual(o._kwargs, {})
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         o = wrapper('arg1')
 
@@ -2025,7 +2025,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, self='self')
+        wrapper = wrapt.PartialCallableObjectProxy(Object, self='self')
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
@@ -2043,7 +2043,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(self='self')
@@ -2061,7 +2061,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, arg1='arg1', self='self')
+        wrapper = wrapt.PartialCallableObjectProxy(Object, arg1='arg1', self='self')
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
@@ -2079,7 +2079,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(arg1='arg1', self='self')
@@ -2097,7 +2097,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, dict(self="self"))
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, self='self')
+        wrapper = wrapt.PartialCallableObjectProxy(Object, self='self')
 
         o = wrapper()
 
@@ -2115,7 +2115,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, dict(self="self"))
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         o = wrapper(self='self')
 
@@ -2135,7 +2135,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._kwargs, {})
         self.assertEqual(o._self, 'self')
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, self='self')
+        wrapper = wrapt.PartialCallableObjectProxy(Object, self='self')
 
         o = wrapper()
 
@@ -2156,7 +2156,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._kwargs, {})
         self.assertEqual(o._self, 'self')
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         o = wrapper(self='self')
 
@@ -2176,7 +2176,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object, _self='self')
+        wrapper = wrapt.PartialCallableObjectProxy(Object, _self='self')
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
@@ -2195,7 +2195,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
-        wrapper = wrapt.wrappers.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(_self='self')
@@ -2211,7 +2211,7 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         def wrapper(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        d = wrapt.wrappers.FunctionWrapper(dict, wrapper)(self='self')
+        d = wrapt.FunctionWrapper(dict, wrapper)(self='self')
 
         self.assertEqual(d, dict(self='self'))
 
@@ -2229,7 +2229,7 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         self.assertEqual(o._args, ('arg1',))
         self.assertEqual(o._kwargs, {})
 
-        o = wrapt.wrappers.FunctionWrapper(Object, wrapper)('arg1')
+        o = wrapt.FunctionWrapper(Object, wrapper)('arg1')
 
         self.assertEqual(o._args, ('arg1',))
         self.assertEqual(o._kwargs, {})
@@ -2249,7 +2249,7 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
-            wrapt.wrappers.FunctionWrapper(Object, wrapper)(self='self')
+            wrapt.FunctionWrapper(Object, wrapper)(self='self')
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
@@ -2268,7 +2268,7 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
-            wrapt.wrappers.FunctionWrapper(Object, wrapper)(arg1='arg1', self='self')
+            wrapt.FunctionWrapper(Object, wrapper)(arg1='arg1', self='self')
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
 
@@ -2286,7 +2286,7 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, dict(self="self"))
 
-        o = wrapt.wrappers.FunctionWrapper(Object, wrapper)(self='self')
+        o = wrapt.FunctionWrapper(Object, wrapper)(self='self')
 
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, dict(self="self"))
@@ -2307,7 +2307,7 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         self.assertEqual(o._kwargs, {})
         self.assertEqual(o._self, 'self')
 
-        o = wrapt.wrappers.FunctionWrapper(Object, wrapper)(self='self')
+        o = wrapt.FunctionWrapper(Object, wrapper)(self='self')
 
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, {})
@@ -2329,7 +2329,7 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
         with self.assertRaises(TypeError) as e:
-            wrapt.wrappers.FunctionWrapper(Object, wrapper)(_self='self')
+            wrapt.FunctionWrapper(Object, wrapper)(_self='self')
 
         self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
 
@@ -2344,7 +2344,7 @@ class TestArgumentUnpackingBoundFunctionWrapper(unittest.TestCase):
             def function(cls, self, *args, **kwargs):
                 return self, args, kwargs
 
-            function = wrapt.wrappers.FunctionWrapper(function, wrapper)
+            function = wrapt.FunctionWrapper(function, wrapper)
 
         result = Object().function(self='self')
 
@@ -2358,7 +2358,7 @@ class TestArgumentUnpackingBoundFunctionWrapper(unittest.TestCase):
             def function(_self, self, *args, **kwargs):
                 return self, args, kwargs
 
-            function = wrapt.wrappers.FunctionWrapper(function, wrapper)
+            function = wrapt.FunctionWrapper(function, wrapper)
 
         result = Object().function(self='self')
 

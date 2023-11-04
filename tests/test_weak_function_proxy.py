@@ -196,7 +196,7 @@ class TestArgumentUnpackingWeakFunctionProxy(unittest.TestCase):
         def function(self, *args, **kwargs):
             return self, args, kwargs
 
-        proxy = wrapt.wrappers.WeakFunctionProxy(function)
+        proxy = wrapt.WeakFunctionProxy(function)
 
         self.assertEqual(proxy(self='self', arg1='arg1'), ('self', (), dict(arg1='arg1')))
 
