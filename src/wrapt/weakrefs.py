@@ -1,7 +1,7 @@
 import functools
 import weakref
 
-from .variants import ObjectProxy, _FunctionWrapperBase
+from .__wrapt__ import ObjectProxy, _FunctionWrapperBase
 
 # A weak function proxy. This will work on instance methods, class
 # methods, static methods and regular functions. Special treatment is

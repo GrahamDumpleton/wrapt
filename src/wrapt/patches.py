@@ -8,7 +8,7 @@ if PY2:
 else:
     string_types = str,
 
-from .variants import FunctionWrapper
+from .__wrapt__ import FunctionWrapper
 
 # Helper functions for applying wrappers to existing functions.
 

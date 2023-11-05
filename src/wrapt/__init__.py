@@ -1,7 +1,7 @@
 __version_info__ = ('1', '16', '0rc2')
 __version__ = '.'.join(__version_info__)
 
-from .variants import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
+from .__wrapt__ import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
         BoundFunctionWrapper, PartialCallableObjectProxy)
 
 from .patches import (resolve_path, apply_patch, wrap_object, wrap_object_attribute,

@@ -15,7 +15,7 @@ else:
     string_types = str,
     from importlib.util import find_spec
 
-from .variants import ObjectProxy
+from .__wrapt__ import ObjectProxy
 
 # The dictionary registering any post import hooks to be triggered once
 # the target module has been imported. Once a module has been imported
