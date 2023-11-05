@@ -22,6 +22,21 @@ Note that version 1.16.0 drops support for Python 2.7 and 3.5. Python version
   object proxies so they properly proxy pass access to attributes/functions of
   the wrapped loader or finder.
 
+* Code files in the implementation have been reorganized such that the pure
+  Python version of the ``ObjectProxy`` class is directly available even if the
+  C extension variant is being used. This is to allow the pure Python variant to
+  be used in exceptional cases where the C extension variant is not fully
+  compatible with the pure Python implementation and the behaviour of the pure
+  Python variant is what is required. This should only be relied upon if have
+  absolutely no choice. The pure Python variant is not as performant as the C
+  extension.
+
+  To access the pure Python variant use ``from wrapt.wrappers import
+  ObjectProxy`` instead of just ``from wrapt import ObjectProxy``. Note that
+  prior to this version if you had used ``from wrapt.wrappers import
+  ObjectProxy`` you would have got the C extension variant of the class rather
+  than the pure Python version if the C extension variant was available.
+
 **Bugs Fixed**
 
 * It was not possible to update the ``__class__`` attribute through the
