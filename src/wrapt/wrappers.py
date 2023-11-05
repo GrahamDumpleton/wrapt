@@ -1,8 +1,5 @@
-import os
 import sys
-import functools
 import operator
-import weakref
 import inspect
 
 PY2 = sys.version_info[0] == 2
