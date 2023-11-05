@@ -31,11 +31,11 @@ Note that version 1.16.0 drops support for Python 2.7 and 3.5. Python version
   absolutely no choice. The pure Python variant is not as performant as the C
   extension.
 
-  To access the pure Python variant use ``from wrapt.wrappers import
-  ObjectProxy`` instead of just ``from wrapt import ObjectProxy``. Note that
-  prior to this version if you had used ``from wrapt.wrappers import
-  ObjectProxy`` you would have got the C extension variant of the class rather
-  than the pure Python version if the C extension variant was available.
+  To access the pure Python variant use ``from wrapt.wrappers import ObjectProxy``
+  instead of just ``from wrapt import ObjectProxy``. Note that prior to this
+  version if you had used ``from wrapt.wrappers import ObjectProxy`` you would
+  have got the C extension variant of the class rather than the pure Python
+  version if the C extension variant was available.
 
 **Bugs Fixed**
 
