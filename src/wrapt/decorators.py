@@ -41,7 +41,7 @@ try:
 except ImportError:
     pass
 
-from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
+from .__wrapt__ import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
     CallableObjectProxy)
 
 # Adapter wrapper for the wrapped function which will overlay certain

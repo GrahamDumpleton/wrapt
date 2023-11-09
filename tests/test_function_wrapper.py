@@ -3,7 +3,6 @@ from __future__ import print_function
 import unittest
 
 import wrapt
-import wrapt.wrappers
 
 from compat import PY2, PY3, exec_
 

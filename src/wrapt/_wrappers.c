@@ -1139,6 +1139,30 @@ static int WraptObjectProxy_setitem(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_self_setattr(
+        WraptObjectProxyObject *self, PyObject *args)
+{
+    PyObject *name = NULL;
+    PyObject *value = NULL;
+
+#if PY_MAJOR_VERSION >= 3
+    if (!PyArg_ParseTuple(args, "UO:__self_setattr__", &name, &value))
+        return NULL;
+#else
+    if (!PyArg_ParseTuple(args, "SO:__self_setattr__", &name, &value))
+        return NULL;
+#endif
+
+    if (PyObject_GenericSetAttr((PyObject *)self, name, value) != 0) {
+        return NULL;
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_dir(
         WraptObjectProxyObject *self, PyObject *args)
 {
@@ -1464,6 +1488,19 @@ static PyObject *WraptObjectProxy_get_class(
 
 /* ------------------------------------------------------------------------- */
 
+static int WraptObjectProxy_set_class(WraptObjectProxyObject *self,
+        PyObject *value)
+{
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      return -1;
+    }
+
+    return PyObject_SetAttrString(self->wrapped, "__class__", value);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_annotations(
         WraptObjectProxyObject *self)
 {
@@ -1741,6 +1778,8 @@ static PyMappingMethods WraptObjectProxy_as_mapping = {
 };
 
 static PyMethodDef WraptObjectProxy_methods[] = {
+    { "__self_setattr__", (PyCFunction)WraptObjectProxy_self_setattr,
+                    METH_VARARGS , 0 },
     { "__dir__",    (PyCFunction)WraptObjectProxy_dir, METH_NOARGS, 0 },
     { "__enter__",  (PyCFunction)WraptObjectProxy_enter,
                     METH_VARARGS | METH_KEYWORDS, 0 },
@@ -1779,7 +1818,7 @@ static PyGetSetDef WraptObjectProxy_getset[] = {
     { "__doc__",            (getter)WraptObjectProxy_get_doc,
                             (setter)WraptObjectProxy_set_doc, 0 },
     { "__class__",          (getter)WraptObjectProxy_get_class,
-                            NULL, 0 },
+                            (setter)WraptObjectProxy_set_class, 0 },
     { "__annotations__",    (getter)WraptObjectProxy_get_annotations,
                             (setter)WraptObjectProxy_set_annotations, 0 },
     { "__wrapped__",        (getter)WraptObjectProxy_get_wrapped,
@@ -2550,7 +2589,6 @@ static PyObject *WraptFunctionWrapperBase_set_name(
 static PyObject *WraptFunctionWrapperBase_instancecheck(
         WraptFunctionWrapperObject *self, PyObject *instance)
 {
-    PyObject *object = NULL;
     PyObject *result = NULL;
 
     int check = 0;

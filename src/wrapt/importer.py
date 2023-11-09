@@ -15,6 +15,8 @@ else:
     string_types = str,
     from importlib.util import find_spec
 
+from .__wrapt__ import ObjectProxy
+
 # The dictionary registering any post import hooks to be triggered once
 # the target module has been imported. Once a module has been imported
 # and the hooks fired, the list of hooks recorded against the target
@@ -128,20 +130,20 @@ class _ImportHookLoader:
 
         return module
 
-class _ImportHookChainedLoader:
+class _ImportHookChainedLoader(ObjectProxy):
 
     def __init__(self, loader):
-        self.loader = loader
+        super(_ImportHookChainedLoader, self).__init__(loader)
 
         if hasattr(loader, "load_module"):
-          self.load_module = self._load_module
+          self.__self_setattr__('load_module', self._self_load_module)
         if hasattr(loader, "create_module"):
-          self.create_module = self._create_module
+          self.__self_setattr__('create_module', self._self_create_module)
         if hasattr(loader, "exec_module"):
-          self.exec_module = self._exec_module
+          self.__self_setattr__('exec_module', self._self_exec_module)
 
-    def _set_loader(self, module):
-        # Set module's loader to self.loader unless it's already set to
+    def _self_set_loader(self, module):
+        # Set module's loader to self.__wrapped__ unless it's already set to
         # something else. Import machinery will set it to spec.loader if it is
         # None, so handle None as well. The module may not support attribute
         # assignment, in which case we simply skip it. Note that we also deal
@@ -156,17 +158,17 @@ class _ImportHookChainedLoader:
 
         if getattr(module, "__loader__", UNDEFINED) in (None, self):
             try:
-                module.__loader__ = self.loader
+                module.__loader__ = self.__wrapped__
             except AttributeError:
                 pass
 
         if (getattr(module, "__spec__", None) is not None
                 and getattr(module.__spec__, "loader", None) is self):
-            module.__spec__.loader = self.loader
+            module.__spec__.loader = self.__wrapped__
 
-    def _load_module(self, fullname):
-        module = self.loader.load_module(fullname)
-        self._set_loader(module)
+    def _self_load_module(self, fullname):
+        module = self.__wrapped__.load_module(fullname)
+        self._self_set_loader(module)
         notify_module_loaded(module)
 
         return module
@@ -174,12 +176,12 @@ class _ImportHookChainedLoader:
     # Python 3.4 introduced create_module() and exec_module() instead of
     # load_module() alone. Splitting the two steps.
 
-    def _create_module(self, spec):
-        return self.loader.create_module(spec)
+    def _self_create_module(self, spec):
+        return self.__wrapped__.create_module(spec)
 
-    def _exec_module(self, module):
-        self._set_loader(module)
-        self.loader.exec_module(module)
+    def _self_exec_module(self, module):
+        self._self_set_loader(module)
+        self.__wrapped__.exec_module(module)
         notify_module_loaded(module)
 
 class ImportHookFinder:
