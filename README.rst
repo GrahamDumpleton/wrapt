@@ -135,10 +135,9 @@ and unit tests, can be obtained from github.
 
 * https://github.com/GrahamDumpleton/wrapt
 
-.. |Actions| image:: https://img.shields.io/github/workflow/status/GrahamDumpleton/wrapt/Test/develop?logo=github&cacheSeconds=600
-   :target: https://github.com/GrahamDumpleton/wrapt/actions
 .. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg?logo=python&cacheSeconds=3600
    :target: https://pypi.python.org/pypi/wrapt
+
 .. |Docs| image:: https://readthedocs.org/projects/docs/badge/?version=latest
    :alt: Documentation Status
    :scale: 100%
