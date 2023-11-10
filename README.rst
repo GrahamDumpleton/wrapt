@@ -1,7 +1,7 @@
 wrapt
 =====
 
-|docs| |PyPI|
+|Docs| |PyPI|
 
 The aim of the **wrapt** module is to provide a transparent object proxy
 for Python, which can be used as the basis for the construction of function
@@ -139,3 +139,7 @@ and unit tests, can be obtained from github.
    :target: https://github.com/GrahamDumpleton/wrapt/actions
 .. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg?logo=python&cacheSeconds=3600
    :target: https://pypi.python.org/pypi/wrapt
+.. |Docs| image:: https://readthedocs.org/projects/docs/badge/?version=latest
+   :alt: Documentation Status
+   :scale: 100%
+   :target: https://wrapt.readthedocs.io/en/latest/?badge=latest
