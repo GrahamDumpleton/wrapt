@@ -62,7 +62,8 @@ Presentations
 
 Conference presentations related to the **wrapt** module:
 
-* http://lanyrd.com/2013/kiwipycon/scpkbk
+* Advanced methods for creating decorators - https://www.youtube.com/watch?v=7jGtDGxgwEY
+* Hear no evil, see no evil, patch no evil: Or, how to monkey-patch safely. - https://www.youtube.com/watch?v=GCZmGgtWi3M
 
 Blog Posts
 ----------
