@@ -165,36 +165,38 @@ class TestSynchronized(unittest.TestCase):
         # function to the class before calling and just calls it direct,
         # explicitly passing the class as first argument. For more
         # details see: https://bugs.python.org/issue19072
+        # Starting with Python 3.13 the old behavior is back.
+        # For more details see https://github.com/python/cpython/issues/89519
 
-        if PYXY < (3, 9):
-            _lock0 = getattr(C4.function2, '_synchronized_lock', None)
-        else:
+        if (3, 9) <= PYXY < (3, 13):
             _lock0 = getattr(C4, '_synchronized_lock', None)
+        else:
+            _lock0 = getattr(C4.function2, '_synchronized_lock', None)
         self.assertEqual(_lock0, None)
 
         c4.function2()
 
-        if PYXY < (3, 9):
-            _lock1 = getattr(C4.function2, '_synchronized_lock', None)
-        else:
+        if (3, 9) <= PYXY < (3, 13):
             _lock1 = getattr(C4, '_synchronized_lock', None)
+        else:
+            _lock1 = getattr(C4.function2, '_synchronized_lock', None)
         self.assertNotEqual(_lock1, None)
 
         C4.function2()
 
-        if PYXY < (3, 9):
-            _lock2 = getattr(C4.function2, '_synchronized_lock', None)
-        else:
+        if (3, 9) <= PYXY < (3, 13):
             _lock2 = getattr(C4, '_synchronized_lock', None)
+        else:
+            _lock2 = getattr(C4.function2, '_synchronized_lock', None)
         self.assertNotEqual(_lock2, None)
         self.assertEqual(_lock2, _lock1)
 
         C4.function2()
 
-        if PYXY < (3, 9):
-            _lock3 = getattr(C4.function2, '_synchronized_lock', None)
-        else:
+        if (3, 9) <= PYXY < (3, 13):
             _lock3 = getattr(C4, '_synchronized_lock', None)
+        else:
+            _lock3 = getattr(C4.function2, '_synchronized_lock', None)
         self.assertNotEqual(_lock3, None)
         self.assertEqual(_lock3, _lock2)
 
