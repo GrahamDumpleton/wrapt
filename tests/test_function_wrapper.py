@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 
 import wrapt
@@ -25,7 +23,7 @@ class TestClassInheritence(unittest.TestCase):
         def _decorator(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             @_decorator
             def function(self, args, **kwargs):
                 return args, kwargs
@@ -43,7 +41,7 @@ class TestClassInheritence(unittest.TestCase):
         def _decorator(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             @_decorator
             @classmethod
             def function(cls, *args, **kwargs):
@@ -62,7 +60,7 @@ class TestClassInheritence(unittest.TestCase):
         def _decorator(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             @_decorator
             @staticmethod
             def function(*args, **kwargs):
@@ -96,7 +94,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             def function1(self, *args, **kwargs):
                 return args, kwargs
             function2 = decorator2(function1)
@@ -116,7 +114,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             @classmethod
             def function1(cls, *args, **kwargs):
                 return args, kwargs
@@ -137,7 +135,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function1(*args, **kwargs):
                 return args, kwargs
@@ -152,7 +150,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             def function1(self, *args, **kwargs):
                 return args, kwargs
 
@@ -171,7 +169,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             @classmethod
             def function1(cls, *args, **kwargs):
                 return args, kwargs
@@ -186,7 +184,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function1(*args, **kwargs):
                 return args, kwargs
@@ -205,7 +203,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             def function1(self, *args, **kwargs):
                 return args, kwargs
 
@@ -225,7 +223,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             @classmethod
             def function1(cls, *args, **kwargs):
                 return args, kwargs
@@ -240,7 +238,7 @@ class TestAttributeAccess(unittest.TestCase):
             return wrapped(*args, **kwargs)
         decorator2 = wrapt.decorator(decorator1)
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function1(*args, **kwargs):
                 return args, kwargs
@@ -356,7 +354,7 @@ class TestGuardArgument(unittest.TestCase):
         self.assertTrue(isinstance(function, wrapt.FunctionWrapper))
 
     def test_boolean_dynamic_guard_on_decorator(self):
-        class Guard(object):
+        class Guard:
             value = True
             def __nonzero__(self):
                 return self.value
@@ -429,7 +427,7 @@ class TestGuardArgument(unittest.TestCase):
             result.append(1)
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             @_decorator
             def function(self):
                 pass
@@ -564,7 +562,7 @@ class TestInvalidCalling(unittest.TestCase):
         def _decorator(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             @_decorator
             def method(self):
                 pass

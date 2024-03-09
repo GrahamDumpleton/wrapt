@@ -133,7 +133,7 @@ class _ImportHookLoader:
 class _ImportHookChainedLoader(ObjectProxy):
 
     def __init__(self, loader):
-        super(_ImportHookChainedLoader, self).__init__(loader)
+        super().__init__(loader)
 
         if hasattr(loader, "load_module"):
           self.__self_setattr__('load_module', self._self_load_module)

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 import types
 import sys
@@ -428,7 +426,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -442,7 +440,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -456,7 +454,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -470,7 +468,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -484,7 +482,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -498,7 +496,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -512,7 +510,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -526,7 +524,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -540,7 +538,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, *args, **kwargs):
                 return args, kwargs
@@ -555,7 +553,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, *args, **kwargs):
                 return args, kwargs
@@ -570,7 +568,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, *args, **kwargs):
                 return args, kwargs
@@ -585,7 +583,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, *args, **kwargs):
                 return args, kwargs
@@ -600,7 +598,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, *args, **kwargs):
                 return args, kwargs
@@ -615,7 +613,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, *args, **kwargs):
                 return args, kwargs
@@ -630,7 +628,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, *args, **kwargs):
                 return args, kwargs
@@ -645,7 +643,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, *args, **kwargs):
                 return args, kwargs
@@ -660,7 +658,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function(*args, **kwargs):
                 return args, kwargs
@@ -675,7 +673,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function(*args, **kwargs):
                 return args, kwargs
@@ -690,7 +688,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function(*args, **kwargs):
                 return args, kwargs
@@ -705,7 +703,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function(*args, **kwargs):
                 return args, kwargs
@@ -720,7 +718,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function(*args, **kwargs):
                 return args, kwargs
@@ -735,7 +733,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {}
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function(*args, **kwargs):
                 return args, kwargs
@@ -750,7 +748,7 @@ class TestCallingObject(unittest.TestCase):
         _args = ()
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function(*args, **kwargs):
                 return args, kwargs
@@ -765,7 +763,7 @@ class TestCallingObject(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {"one": 1, "two": 2}
 
-        class Class(object):
+        class Class:
             @staticmethod
             def function(*args, **kwargs):
                 return args, kwargs
@@ -790,7 +788,7 @@ class TestIterObjectProxy(unittest.TestCase):
 class TestContextManagerObjectProxy(unittest.TestCase):
 
     def test_context_manager(self):
-        class Class(object):
+        class Class:
             def __enter__(self):
                 return self
             def __exit__(*args, **kwargs):
@@ -1463,7 +1461,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         self.assertEqual(hex(value), hex(20))
 
     def test_index(self):
-        class Class(object):
+        class Class:
             def __index__(self):
                 return 1
         value = wrapt.ObjectProxy(Class())
@@ -1590,11 +1588,11 @@ class TestDerivedClassCreation(unittest.TestCase):
         class DerivedObjectProxy(wrapt.ObjectProxy):
 
             def __new__(cls, wrapped):
-                instance = super(DerivedObjectProxy, cls).__new__(cls)
+                instance = super().__new__(cls)
                 instance.__init__(wrapped)
 
             def __init__(self, wrapped):
-                super(DerivedObjectProxy, self).__init__(wrapped)
+                super().__init__(wrapped)
 
         def function():
             pass
@@ -1607,7 +1605,7 @@ class TestDerivedClassCreation(unittest.TestCase):
 
             def __init__(self, wrapped):
                 self._self_attribute = True
-                super(DerivedObjectProxy, self).__init__(wrapped)
+                super().__init__(wrapped)
 
         def function():
             pass
@@ -1685,7 +1683,7 @@ class DerivedClassAttributes(unittest.TestCase):
 
         class DerivedObjectProxy(wrapt.ObjectProxy):
             def __init__(self, wrapped):
-                super(DerivedObjectProxy, self).__init__(wrapped)
+                super().__init__(wrapped)
                 self._self_attribute = 1
             @property
             def ATTRIBUTE(self):
@@ -1749,7 +1747,7 @@ class OverrideAttributeAccess(unittest.TestCase):
             def __getattr__(self, name):
                 accessed.append(name)
                 try:
-                    __getattr__ = super(DerivedObjectProxy, self).__getattr__
+                    __getattr__ = super().__getattr__
                 except AttributeError as e:
                     raise RuntimeError(str(e))
                 return __getattr__(name)
@@ -1798,7 +1796,7 @@ class SpecialMethods(unittest.TestCase):
 
     def test_class_bytes(self):
         if PY3:
-            class Class(object):
+            class Class:
                 def __bytes__(self):
                     return b'BYTES'
             instance = Class()

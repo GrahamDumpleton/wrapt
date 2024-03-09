@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 import inspect
 import types
@@ -19,7 +17,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = types.ModuleType('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
-class class1(object):
+class class1:
     pass
 
 class1o = class1
@@ -40,13 +38,13 @@ class TestInheritance(unittest.TestCase):
             return wrapped(*args, **kwargs)
 
         @passthru
-        class BaseClass(object):
+        class BaseClass:
             def __init__(self):
                 self.value = 1
 
         class DerivedClass(BaseClass.__wrapped__):
             def __init__(self):
-                super(DerivedClass, self).__init__()
+                super().__init__()
                 self.value = 2
 
         base = BaseClass()

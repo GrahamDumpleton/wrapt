@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 import threading
 import inspect
@@ -34,7 +32,7 @@ def memoize(wrapped, instance, args, kwargs):
 def function1(count, text):
     return count * text
 
-class C1(object):
+class C1:
 
     @memoize
     def function1(self, count, text):

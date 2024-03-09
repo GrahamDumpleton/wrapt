@@ -53,11 +53,11 @@ class WeakFunctionProxy(ObjectProxy):
                     _callback)
 
             if wrapped._self_parent is not None:
-                super(WeakFunctionProxy, self).__init__(
+                super().__init__(
                         weakref.proxy(wrapped._self_parent, _callback))
 
             else:
-                super(WeakFunctionProxy, self).__init__(
+                super().__init__(
                         weakref.proxy(wrapped, _callback))
 
             return
@@ -65,13 +65,13 @@ class WeakFunctionProxy(ObjectProxy):
         try:
             self._self_instance = weakref.ref(wrapped.__self__, _callback)
 
-            super(WeakFunctionProxy, self).__init__(
+            super().__init__(
                     weakref.proxy(wrapped.__func__, _callback))
 
         except AttributeError:
             self._self_instance = None
 
-            super(WeakFunctionProxy, self).__init__(
+            super().__init__(
                     weakref.proxy(wrapped, _callback))
 
     def __call__(*args, **kwargs):

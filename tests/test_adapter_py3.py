@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import inspect
 import unittest
 import types
@@ -148,7 +146,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         def _wrapper_1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class Class1(object):
+        class Class1:
             @_wrapper_1
             def function(self):
                 pass
@@ -171,7 +169,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         def _wrapper_2(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class Class2(object):
+        class Class2:
             @_wrapper_2
             def function(self):
                 pass
@@ -190,7 +188,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         def _wrapper_1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class Class1(object):
+        class Class1:
             @_wrapper_1
             @classmethod
             def function(cls):
@@ -214,7 +212,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         def _wrapper_2(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class Class2(object):
+        class Class2:
             @_wrapper_2
             @classmethod
             def function(self):

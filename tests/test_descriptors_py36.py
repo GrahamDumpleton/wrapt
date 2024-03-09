@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 
 import wrapt
@@ -23,7 +21,7 @@ class TestObjectDescriptors(unittest.TestCase):
             def __get__(self, instance, owner=None):
                 return self.__wrapped__.__get__(instance, owner)
 
-        class Instance(object):
+        class Instance:
             @_decorator
             @_descriptor_wrapper
             def method(self):

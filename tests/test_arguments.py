@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 
 import wrapt
@@ -26,5 +24,5 @@ class TestArguments(unittest.TestCase):
         def function(a=2):
             pass
 
-        kwargs = { u'b': 40 }
+        kwargs = { 'b': 40 }
         self.assertRaises(TypeError, wrapt.getcallargs, function, **kwargs)

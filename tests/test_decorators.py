@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 
 import wrapt
@@ -26,7 +24,7 @@ class TestDecorator(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
-        class Instance(object):
+        class Instance:
             def __init__(self):
                 self.count = 0
             @wrapt.decorator
@@ -54,7 +52,7 @@ class TestDecorator(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
-        class Instance(object):
+        class Instance:
             count = 0
             @wrapt.decorator
             @classmethod
@@ -81,7 +79,7 @@ class TestDecorator(unittest.TestCase):
         _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
-        class ClassDecorator(object):
+        class ClassDecorator:
             def __call__(self, wrapped, instance, args, kwargs):
                 return wrapped(*args, **kwargs)
 
@@ -98,7 +96,7 @@ class TestDecorator(unittest.TestCase):
         _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
-        class ClassDecorator(object):
+        class ClassDecorator:
             def __init__(self, arg):
                 assert arg == 1
             def __call__(self, wrapped, instance, args, kwargs):
