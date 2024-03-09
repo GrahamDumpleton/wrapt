@@ -1,10 +1,8 @@
-from __future__ import print_function
-
 import unittest
 
 import wrapt
 
-class Class(object):
+class Class:
     def __init__(self, value):
         self.value = value
 

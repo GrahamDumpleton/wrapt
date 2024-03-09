@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 
 import wrapt
@@ -10,7 +8,7 @@ from compat import PYXY
 def function():
     print('function')
 
-class C1(object):
+class C1:
 
     @wrapt.synchronized
     def function1(self):
@@ -29,14 +27,14 @@ class C1(object):
 c1 = C1()
 
 @wrapt.synchronized
-class C2(object):
+class C2:
     pass
 
 @wrapt.synchronized
 class C3:
     pass
 
-class C4(object):
+class C4:
 
     # Prior to Python 3.9, this yields undesirable results due to how
     # class method is implemented. The classmethod doesn't bind the
@@ -58,7 +56,7 @@ class C4(object):
 
 c4 = C4()
 
-class C5(object):
+class C5:
 
     def __bool__(self):
         return False

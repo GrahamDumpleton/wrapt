@@ -17,16 +17,11 @@ jobs:
         os:
           - ubuntu-20.04
         python-version:
-          # - 2.7
-          # - 3.5
-          - 3.6
-          - 3.7
           - 3.8
           - 3.9
           - "3.10"
           - 3.11
           - 3.12
-          # - pypy-2.7
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -55,7 +50,6 @@ jobs:
   #   strategy:
   #     matrix:
   #       python:
-  #         #- {os: ubuntu-20.04,  python-version: 3.7, pyver: py37}
   #         #- {os: ubuntu-20.04,  python-version: 3.8, pyver: py38}
   #         #- {os: ubuntu-20.04,  python-version: 3.9, pyver: py39}
   #         - {os: ubuntu-20.04,  python-version: "3.10", pyver: py310}
@@ -91,16 +85,11 @@ jobs:
         os:
           - macos-latest
         python-version:
-          # - 2.7
-          # - 3.5
-          - 3.6
-          - 3.7
           - 3.8
           - 3.9
           - "3.10"
           - 3.11
           - 3.12
-          # - pypy-2.7
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -123,29 +112,6 @@ jobs:
         name: coverage
         path: .coverage.*
 
-  # test_windows_py27:
-  #   name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os:
-  #         - windows-latest
-  #       python-version:
-  #         - 2.7
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v3
-  #   - name: Setup Python ${{ matrix.python-version }}
-  #     uses: actions/setup-python@v4
-  #     with:
-  #       python-version: ${{ matrix.python-version }}
-  #   - name: Update pip
-  #     run: python -m pip install -U pip wheel setuptools
-  #   - name: Install tox
-  #     run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
-  #   - name: Test with tox
-  #     run: python -m tox -e py27,py27-without-extensions
-
   test_windows:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
@@ -154,15 +120,11 @@ jobs:
         os:
           - windows-latest
         python-version:
-          # - 3.5
-          - 3.6
-          - 3.7
           - 3.8
           - 3.9
           - "3.10"
           - 3.11
           - 3.12
-          # - pypy-2.7
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -278,7 +240,6 @@ jobs:
     needs:
     - test_linux
     - test_macos
-    # - test_windows_py27
     - test_windows
     runs-on: ubuntu-20.04
     steps:

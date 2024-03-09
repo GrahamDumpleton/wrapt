@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 import sys
 
@@ -26,11 +24,11 @@ def global_function_3_enabled_callable(*args, **kwargs):
 def global_function_4(*args, **kwargs):
     return args, kwargs
 
-class Class_1(object):
+class Class_1:
     def method(self, *args, **kwargs):
         return args, kwargs
 
-class Class_2(object):
+class Class_2:
     @classmethod
     def method(cls, *args, **kwargs):
         return cls, args, kwargs
@@ -41,7 +39,7 @@ class Class_2_1(Class_2):
 class Class_2_2(Class_2_1):
     pass
 
-class Class_3(object):
+class Class_3:
     @staticmethod
     def method(*args, **kwargs):
         return args, kwargs
@@ -81,7 +79,7 @@ class TestMonkeyPatching(unittest.TestCase):
 
         _self = self
 
-        class wrapper(object):
+        class wrapper:
             @wrapt.function_wrapper
             def __call__(self, wrapped, instance, args, kwargs):
                 _self.assertEqual(type(self), wrapper)
@@ -107,7 +105,7 @@ class TestMonkeyPatching(unittest.TestCase):
 
         called = []
 
-        class wrapper(object):
+        class wrapper:
             @wrapt.function_wrapper
             @classmethod
             def __call__(cls, wrapped, instance, args, kwargs):
@@ -416,7 +414,7 @@ class TestMonkeyPatching(unittest.TestCase):
 
         _self = self
 
-        class wrapper(object):
+        class wrapper:
             @wrapt.transient_function_wrapper(__name__,
                     'TestMonkeyPatching._test_transient_function_wrapper')
             def __call__(self, wrapped, instance, args, kwargs):
@@ -453,7 +451,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -481,7 +479,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -509,7 +507,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 
@@ -537,7 +535,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             def function(self, *args, **kwargs):
                 return args, kwargs
 

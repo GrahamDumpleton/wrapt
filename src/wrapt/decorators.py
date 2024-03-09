@@ -53,7 +53,7 @@ from .__wrapt__ import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
 class _AdapterFunctionCode(CallableObjectProxy):
 
     def __init__(self, wrapped_code, adapter_code):
-        super(_AdapterFunctionCode, self).__init__(wrapped_code)
+        super().__init__(wrapped_code)
         self._self_adapter_code = adapter_code
 
     @property
@@ -79,7 +79,7 @@ class _AdapterFunctionCode(CallableObjectProxy):
 class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     def __init__(self, wrapped, adapter):
-        super(_AdapterFunctionSurrogate, self).__init__(wrapped)
+        super().__init__(wrapped)
         self._self_adapter = adapter
 
     @property
@@ -129,7 +129,7 @@ class AdapterWrapper(FunctionWrapper):
 
     def __init__(self, *args, **kwargs):
         adapter = kwargs.pop('adapter')
-        super(AdapterWrapper, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._self_surrogate = _AdapterFunctionSurrogate(
                 self.__wrapped__, adapter)
         self._self_adapter = adapter
@@ -154,13 +154,13 @@ class AdapterWrapper(FunctionWrapper):
     def __signature__(self):
         return self._self_surrogate.__signature__
 
-class AdapterFactory(object):
+class AdapterFactory:
     def __call__(self, wrapped):
         raise NotImplementedError()
 
 class DelegatedAdapterFactory(AdapterFactory):
     def __init__(self, factory):
-        super(DelegatedAdapterFactory, self).__init__()
+        super().__init__()
         self.factory = factory
     def __call__(self, wrapped):
         return self.factory(wrapped)
@@ -226,7 +226,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                             adapter = adapter[:-1]
                         adapter = formatargspec(*adapter)
 
-                    exec_('def adapter{}: pass'.format(adapter), ns, ns)
+                    exec_(f'def adapter{adapter}: pass', ns, ns)
                     adapter = ns['adapter']
 
                     # Override the annotations for the manufactured

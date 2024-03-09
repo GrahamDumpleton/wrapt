@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 import sys
 import threading
@@ -12,7 +10,7 @@ from compat import PY2, PY3
 class TestPostImportHooks(unittest.TestCase):
 
     def setUp(self):
-        super(TestPostImportHooks, self).setUp()
+        super().setUp()
 
         # So we can import 'this' and test post-import hooks multiple times
         # below in the context of a single Python process, remove 'this' from

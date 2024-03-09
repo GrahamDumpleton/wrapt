@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 import types
 
@@ -18,7 +16,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = types.ModuleType('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
-class Class(object):
+class Class:
     @classmethod
     def function(self, arg):
         '''documentation'''
@@ -26,7 +24,7 @@ class Class(object):
 
 Original = Class
 
-class Class(object):
+class Class:
     @classmethod
     @decorators.passthru_decorator
     def function(self, arg):
@@ -151,7 +149,7 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @classmethod
             @_decorator
             def _function(cls, *args, **kwargs):
@@ -193,7 +191,7 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @classmethod
             @_decorator
             def _function(cls, *args, **kwargs):

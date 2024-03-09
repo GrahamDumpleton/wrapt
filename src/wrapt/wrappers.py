@@ -13,7 +13,7 @@ def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     return meta("NewBase", bases, {})
 
-class _ObjectProxyMethods(object):
+class _ObjectProxyMethods:
 
     # We use properties to override the values of __module__ and
     # __doc__. If we add these in ObjectProxy, the derived class
@@ -495,7 +495,7 @@ class _FunctionWrapperBase(ObjectProxy):
     def __init__(self, wrapped, instance, wrapper, enabled=None,
             binding='function', parent=None):
 
-        super(_FunctionWrapperBase, self).__init__(wrapped)
+        super().__init__(wrapped)
 
         object.__setattr__(self, '_self_instance', instance)
         object.__setattr__(self, '_self_wrapper', wrapper)
@@ -780,5 +780,5 @@ class FunctionWrapper(_FunctionWrapperBase):
         else:
             binding = 'function'
 
-        super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
+        super().__init__(wrapped, None, wrapper,
                 enabled, binding)

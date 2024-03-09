@@ -29,7 +29,7 @@ def wrapper4(wrapped, *args, **kwargs):
 def function4():
     pass
 
-class Class(object):
+class Class:
 
     def function1(self):
         pass

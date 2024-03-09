@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import unittest
 import types
 
@@ -18,7 +16,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = types.ModuleType('decorators')
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
-class Class(object):
+class Class:
     @classmethod
     def function(self, arg):
         '''documentation'''
@@ -26,7 +24,7 @@ class Class(object):
 
 Original = Class
 
-class Class(object):
+class Class:
     @decorators.passthru_decorator
     @classmethod
     def function(self, arg):
@@ -136,7 +134,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @classmethod
             def _function(cls, *args, **kwargs):
@@ -163,7 +161,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @classmethod
             def _function(cls, *args, **kwargs):
@@ -190,7 +188,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @_decorator
             @classmethod
@@ -218,7 +216,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @_decorator
             @classmethod
@@ -237,7 +235,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
-        class Class(object):
+        class Class:
             @classmethod
             def _function(cls, *args, **kwargs):
                 return (args, kwargs)
@@ -262,7 +260,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
-        class Class(object):
+        class Class:
             @classmethod
             def _function(cls, *args, **kwargs):
                 return (args, kwargs)
@@ -287,7 +285,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
-        class Class(object):
+        class Class:
             @classmethod
             def _function(cls, *args, **kwargs):
                 return (args, kwargs)
@@ -313,7 +311,7 @@ class TestCallingInnerClassMethod(unittest.TestCase):
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
-        class Class(object):
+        class Class:
             @classmethod
             def _function(cls, *args, **kwargs):
                 return (args, kwargs)
