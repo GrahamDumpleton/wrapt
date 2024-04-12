@@ -218,7 +218,7 @@ class TestAttributeAccess(unittest.TestCase):
         # for Python 2. This has flow on effect of not working
         # in the case of an instance either.
 
-        self.assertEqual(function2._self_binding, 'function')
+        self.assertEqual(function2._self_binding, 'callable')
 
     def test_classmethod_attributes_external_instance(self):
         def decorator1(wrapped, instance, args, kwargs):
