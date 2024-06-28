@@ -6,6 +6,7 @@ as well as some commonly used decorators.
 from functools import partial
 from inspect import isclass, signature
 from threading import Lock, RLock
+from typing import Any, Callable, Optional, Type, TypeVar, Union, overload
 
 from .arguments import formatargspec
 
@@ -14,6 +15,10 @@ from .__wrapt__ import (
     BoundFunctionWrapper,
     CallableObjectProxy,
 )
+
+F = TypeVar('F', bound=Callable[..., Any])
+A = TypeVar('A', bound=Callable[..., Any])
+T = TypeVar('T', bound=Any)
 
 # Adapter wrapper for the wrapped function which will overlay certain
 # properties from the adapter function onto the wrapped function so that
@@ -141,7 +146,30 @@ adapter_factory = DelegatedAdapterFactory
 # original wrapped function.
 
 
-def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
+@overload
+def decorator(
+    wrapper: None = None,
+    enabled: Optional[bool] = None,
+    adapter: Optional[A] = None,
+    proxy: Type[FunctionWrapper] = FunctionWrapper,
+) -> 'partial[F]': ...
+
+
+@overload
+def decorator(
+    wrapper: F,
+    enabled: Optional[bool] = None,
+    adapter: Optional[A] = None,
+    proxy: Type[FunctionWrapper] = FunctionWrapper,
+) -> F: ...
+
+
+def decorator(
+    wrapper: Optional[F] = None,
+    enabled: Optional[bool] = None,
+    adapter: Optional[A] = None,
+    proxy: Type[FunctionWrapper] = FunctionWrapper,
+) -> Union[F, 'partial[F]']:
     # The decorator should be supplied with a single positional argument
     # which is the wrapper function to be used to implement the
     # decorator. This may be preceded by a step whereby the keyword

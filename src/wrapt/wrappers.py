@@ -1,6 +1,10 @@
-import sys
-import operator
 import inspect
+import operator
+import sys
+from typing import Any, Generic, TypeVar
+
+
+T = TypeVar("T", bound=Any)
 
 
 class _ObjectProxyMethods(object):
@@ -61,10 +65,11 @@ class _ObjectProxyMetaType(type):
 class _ObjectProxyBase(metaclass=_ObjectProxyMetaType): ...
 
 
-class ObjectProxy(_ObjectProxyBase):
+class ObjectProxy(_ObjectProxyBase, Generic[T]):
     __slots__ = '__wrapped__'
+    __wrapped__: T
 
-    def __init__(self, wrapped):
+    def __init__(self, wrapped: T):
         object.__setattr__(self, '__wrapped__', wrapped)
 
         # Python 3.2+ has the __qualname__ attribute, but it does not
