@@ -1,0 +1,15 @@
+---
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: ['--fix', 'lf']
+        exclude: '.*\.(svg)$'
+      - id: check-byte-order-marker
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: check-yaml
+        files: .*\.(yaml|yml)$

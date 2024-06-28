@@ -49,7 +49,7 @@ other functions.
 .. code-block:: python
 
     import wrapt
-    
+
     @wrapt.decorator
     def pass_through(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
@@ -98,7 +98,7 @@ The above rules can be summarised with the following example.
 .. code-block:: python
 
     import inspect
-    
+
     @wrapt.decorator
     def universal(wrapped, instance, args, kwargs):
         if instance is None:

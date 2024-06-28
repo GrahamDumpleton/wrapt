@@ -468,7 +468,7 @@ class PartialCallableObjectProxy(ObjectProxy):
             return self, args
 
         self, args = _unpack_self(*args)
-    
+
         _args = self._self_args + args
 
         _kwargs = dict(self._self_kwargs)

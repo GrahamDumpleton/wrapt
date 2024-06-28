@@ -152,7 +152,7 @@ class TestPostImportHooks(unittest.TestCase):
             hooks_called.append('this')
 
             self.assertFalse('wsgiref' in sys.modules)
-    
+
             @wrapt.when_imported('wsgiref')
             def hook_wsgiref(module):
                 hooks_called.append('wsgiref')
