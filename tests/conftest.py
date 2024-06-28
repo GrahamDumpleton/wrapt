@@ -1,9 +1,6 @@
 import sys
 
-try:
-    from pytest import File as FileCollector
-except ImportError:
-    from pytest.collect import File as FileCollector
+from pytest import File as FileCollector
 
 version = tuple(sys.version_info[:2])
 
