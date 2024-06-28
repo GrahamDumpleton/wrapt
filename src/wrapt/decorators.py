@@ -7,11 +7,6 @@ import sys
 
 PY2 = sys.version_info[0] == 2
 
-if PY2:
-    string_types = basestring,
-else:
-    string_types = str,
-
 from functools import partial
 from inspect import isclass
 from threading import Lock, RLock
@@ -202,7 +197,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
 
                     annotations = {}
 
-                    if not isinstance(adapter, string_types):
+                    if not isinstance(adapter, str):
                         if len(adapter) == 7:
                             annotations = adapter[-1]
                             adapter = adapter[:-1]
