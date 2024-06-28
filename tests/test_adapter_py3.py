@@ -1,8 +1,8 @@
 from __future__ import print_function
 
 import inspect
-import unittest
 import types
+import unittest
 
 from typing import Iterable
 

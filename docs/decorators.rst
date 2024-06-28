@@ -361,9 +361,9 @@ To obtain the argument specification of a decorated function the standard
     >>> print(inspect.getargspec(function))
     ArgSpec(args=['arg1', 'arg2'], varargs=None, keywords=None, defaults=None)
 
-If using Python 3, the ``getfullargspec()`` or ``signature()`` functions
-from the ``inspect`` module can also be used, and would be required to
-be used if wanting the result to include any annotations.
+The ``getfullargspec()`` or ``signature()`` functions from the ``inspect``
+module can also be used, and would be required to be used if wanting the result
+to include any annotations.
 
 In other words, applying a decorator created using ``@wrapt.decorator`` to
 a function is signature preserving and does not result in the loss of the
@@ -479,11 +479,11 @@ instead appear.
 
 If you need to generate the argument specification based on the function
 being wrapped dynamically, you can instead pass a tuple of the form which
-is returned by ``inspect.getargspec()`` or ``inspect.getfullargspec()``,
-or a string of the form which is returned by ``inspect.formatargspec()``.
-In these two cases the decorator will automatically compile a stub function
-to use as the adapter. This eliminates the need for a caller to generate
-the stub function if generating the signature on the fly.
+is returned by ``inspect.getfullargspec()``, or a string of the form which is
+returned by ``inspect.formatargspec()``. In these two cases the decorator will
+automatically compile a stub function to use as the adapter. This eliminates
+the need for a caller to generate the stub function if generating the signature
+on the fly.
 
 Do note though that you should use ``inspect.getfullargspec()`` if wanting
 to have annotations preserved. In the case of providing the signature as a

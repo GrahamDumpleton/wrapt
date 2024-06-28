@@ -1,12 +1,10 @@
 from __future__ import print_function
 
-import unittest
 import inspect
 import types
+import unittest
 
 import wrapt
-
-from compat import getfullargspec
 
 DECORATORS_CODE = """
 import wrapt
@@ -57,8 +55,8 @@ class TestNamingFunction(unittest.TestCase):
     def test_argspec(self):
         # Test preservation of function argument specification.
 
-        function1o_argspec = getfullargspec(function1o)
-        function1d_argspec = getfullargspec(function1d)
+        function1o_argspec = inspect.getfullargspec(function1o)
+        function1d_argspec = inspect.getfullargspec(function1d)
         self.assertEqual(function1o_argspec, function1d_argspec)
 
     def test_getmembers(self):

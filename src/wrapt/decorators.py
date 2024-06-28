@@ -21,9 +21,8 @@ from .__wrapt__ import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
 
 # Adapter wrapper for the wrapped function which will overlay certain
 # properties from the adapter function onto the wrapped function so that
-# functions such as inspect.getargspec(), inspect.getfullargspec(),
-# inspect.signature() and inspect.getsource() return the correct results
-# one would expect.
+# functions such as inspect.getfullargspec(), inspect.signature() and
+# inspect.getsource() return the correct results one would expect.
 
 class _AdapterFunctionCode(CallableObjectProxy):
 

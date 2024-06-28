@@ -1,11 +1,12 @@
 from __future__ import print_function
 
-import unittest
+import inspect
 import types
+import unittest
 
 import wrapt
 
-from compat import PYXY, getfullargspec
+from compat import PYXY
 
 DECORATORS_CODE = """
 import wrapt
@@ -94,15 +95,15 @@ class TestNamingOuterClassMethod(unittest.TestCase):
     def test_class_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(Original.function)
-        function_argspec = getfullargspec(Class.function)
+        original_argspec = inspect.getfullargspec(Original.function)
+        function_argspec = inspect.getfullargspec(Class.function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_instance_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(Original().function)
-        function_argspec = getfullargspec(Class().function)
+        original_argspec = inspect.getfullargspec(Original().function)
+        function_argspec = inspect.getfullargspec(Class().function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_class_isinstance(self):

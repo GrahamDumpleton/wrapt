@@ -1,12 +1,10 @@
 from __future__ import print_function
 
-import unittest
 import inspect
 import types
+import unittest
 
 import wrapt
-
-from compat import getfullargspec
 
 DECORATORS_CODE = """
 import wrapt
@@ -95,15 +93,15 @@ class TestNamingInstanceMethodOldStyle(unittest.TestCase):
     def test_class_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(OldClass1o.function)
-        function_argspec = getfullargspec(OldClass1d.function)
+        original_argspec = inspect.getfullargspec(OldClass1o.function)
+        function_argspec = inspect.getfullargspec(OldClass1d.function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_instance_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(OldClass1o().function)
-        function_argspec = getfullargspec(OldClass1d().function)
+        original_argspec = inspect.getfullargspec(OldClass1o().function)
+        function_argspec = inspect.getfullargspec(OldClass1d().function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_getmembers(self):
@@ -198,15 +196,15 @@ class TestNamingInstanceMethodNewStyle(unittest.TestCase):
     def test_class_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(NewClass1o.function)
-        function_argspec = getfullargspec(NewClass1d.function)
+        original_argspec = inspect.getfullargspec(NewClass1o.function)
+        function_argspec = inspect.getfullargspec(NewClass1d.function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_instance_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(NewClass1o().function)
-        function_argspec = getfullargspec(NewClass1d().function)
+        original_argspec = inspect.getfullargspec(NewClass1o().function)
+        function_argspec = inspect.getfullargspec(NewClass1d().function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_class_isinstance(self):
