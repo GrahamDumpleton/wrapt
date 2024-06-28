@@ -7,7 +7,6 @@ import threading
 import wrapt
 from wrapt.importer import _post_import_hooks
 
-from compat import PY3
 
 class TestPostImportHooks(unittest.TestCase):
 

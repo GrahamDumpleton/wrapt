@@ -6,8 +6,6 @@ import types
 
 import wrapt
 
-from compat import PY3
-
 DECORATORS_CODE = """
 import wrapt
 

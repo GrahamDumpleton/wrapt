@@ -4,8 +4,6 @@ import unittest
 
 import wrapt
 
-from compat import PY3
-
 
 class TestClassInheritence(unittest.TestCase):
 

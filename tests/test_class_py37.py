@@ -6,7 +6,6 @@ import types
 
 import wrapt
 
-from compat import PY3
 
 class TestInheritance(unittest.TestCase):
 

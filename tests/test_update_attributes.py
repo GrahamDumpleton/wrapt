@@ -4,7 +4,6 @@ import unittest
 
 import wrapt
 
-from compat import PY3
 
 @wrapt.decorator
 def passthru_decorator(wrapped, instance, args, kwargs):
@@ -45,10 +44,9 @@ class TestUpdateAttributes(unittest.TestCase):
         def function():
             pass
 
-        if PY3:
-            method = self.test_update_qualname
-            self.assertEqual(function.__qualname__,
-                    (method.__qualname__ + '.<locals>.function'))
+        method = self.test_update_qualname
+        self.assertEqual(function.__qualname__,
+                (method.__qualname__ + '.<locals>.function'))
 
         function.__qualname__ = 'override_qualname'
 
@@ -63,10 +61,9 @@ class TestUpdateAttributes(unittest.TestCase):
 
         instance = wrapt.FunctionWrapper(function, wrapper)
 
-        if PY3:
-            method = self.test_update_qualname_modified_on_original
-            self.assertEqual(instance.__qualname__,
-                    (method.__qualname__ + '.<locals>.function'))
+        method = self.test_update_qualname_modified_on_original
+        self.assertEqual(instance.__qualname__,
+                (method.__qualname__ + '.<locals>.function'))
 
         instance.__qualname__ = 'override_qualname'
 
@@ -134,18 +131,10 @@ class TestUpdateAttributes(unittest.TestCase):
         def function():
             pass
 
-        if PY3:
-            self.assertEqual(function.__annotations__, {})
-
-        else:
-            def run(*args):
-                function.__annotations__
-
-            self.assertRaises(AttributeError, run, ())
+        self.assertEqual(function.__annotations__, {})
 
         override_annotations = {'override_annotations': ''}
         function.__annotations__ = override_annotations
-
         self.assertEqual(function.__wrapped__.__annotations__, override_annotations)
         self.assertEqual(function.__annotations__, override_annotations)
 
@@ -157,19 +146,10 @@ class TestUpdateAttributes(unittest.TestCase):
             return wrapped(*args, **kwargs)
 
         instance = wrapt.FunctionWrapper(function, wrapper)
-
-        if PY3:
-            self.assertEqual(instance.__annotations__, {})
-
-        else:
-            def run(*args):
-                instance.__annotations__
-
-            self.assertRaises(AttributeError, run, ())
+        self.assertEqual(instance.__annotations__, {})
 
         override_annotations = {'override_annotations': ''}
         instance.__annotations__ = override_annotations
-
         self.assertEqual(function.__annotations__, override_annotations)
         self.assertEqual(instance.__annotations__, override_annotations)
 
