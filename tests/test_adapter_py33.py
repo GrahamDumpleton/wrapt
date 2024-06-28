@@ -2,7 +2,6 @@ import inspect
 import types
 import unittest
 
-import wrapt
 
 DECORATORS_CODE = """
 import wrapt

@@ -113,8 +113,8 @@ class TestNamingInstanceMethodOldStyle(unittest.TestCase):
         self.assertEqual(original_argspec, function_argspec)
 
     def test_getmembers(self):
-        original_members = inspect.getmembers(OldClass1o().function)
-        function_members = inspect.getmembers(OldClass1d().function)
+        inspect.getmembers(OldClass1o().function)
+        inspect.getmembers(OldClass1d().function)
 
     def test_class_isinstance(self):
         # Test preservation of isinstance() checks.

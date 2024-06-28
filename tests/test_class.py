@@ -27,8 +27,8 @@ class1d = decorators.passthru_decorator(class1)
 
 class TestIntrospection(unittest.TestCase):
     def test_getmembers(self):
-        class1o_members = inspect.getmembers(class1o)
-        class1d_members = inspect.getmembers(class1d)
+        inspect.getmembers(class1o)
+        inspect.getmembers(class1d)
 
 
 class TestInheritance(unittest.TestCase):

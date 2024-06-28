@@ -3,9 +3,9 @@ import sys
 import types
 import unittest
 
-is_pypy = '__pypy__' in sys.builtin_module_names
-
 import wrapt
+
+is_pypy = '__pypy__' in sys.builtin_module_names
 
 OBJECTS_CODE = """
 class TargetBaseClass(object):
@@ -166,7 +166,7 @@ class TestAttributeAccess(unittest.TestCase):
         try:
             WrappedObject(Object()).value == "value"
 
-        except ValueError as e:
+        except ValueError:
             pass
 
         else:
@@ -1594,7 +1594,7 @@ class TestDerivedClassCreation(unittest.TestCase):
         def function():
             pass
 
-        obj = DerivedObjectProxy(function)
+        DerivedObjectProxy(function)
 
     def test_derived_setattr(self):
         class DerivedObjectProxy(wrapt.ObjectProxy):
@@ -1605,7 +1605,7 @@ class TestDerivedClassCreation(unittest.TestCase):
         def function():
             pass
 
-        obj = DerivedObjectProxy(function)
+        DerivedObjectProxy(function)
 
     def test_derived_missing_init(self):
         class DerivedObjectProxy(wrapt.ObjectProxy):
@@ -2059,7 +2059,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         wrapper = wrapt.PartialCallableObjectProxy(Object, self='self')
 
         with self.assertRaises(TypeError) as e:
-            o = wrapper()
+            wrapper()
 
         self.assertNotEqual(
             re.match(
@@ -2089,7 +2089,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
-            o = wrapper(self='self')
+            wrapper(self='self')
 
         self.assertNotEqual(
             re.match(
@@ -2121,7 +2121,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         )
 
         with self.assertRaises(TypeError) as e:
-            o = wrapper()
+            wrapper()
 
         self.assertNotEqual(
             re.match(
@@ -2151,7 +2151,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
-            o = wrapper(arg1='arg1', self='self')
+            wrapper(arg1='arg1', self='self')
 
         self.assertNotEqual(
             re.match(
@@ -2260,7 +2260,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         wrapper = wrapt.PartialCallableObjectProxy(Object, _self='self')
 
         with self.assertRaises(TypeError) as e:
-            o = wrapper()
+            wrapper()
 
         self.assertNotEqual(
             re.match(
@@ -2291,7 +2291,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
-            o = wrapper(_self='self')
+            wrapper(_self='self')
 
         self.assertNotEqual(
             re.match(

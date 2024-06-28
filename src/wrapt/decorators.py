@@ -3,8 +3,6 @@ as well as some commonly used decorators.
 
 """
 
-import sys
-
 from functools import partial
 from inspect import isclass, signature
 from threading import Lock, RLock
@@ -14,7 +12,6 @@ from .arguments import formatargspec
 from .__wrapt__ import (
     FunctionWrapper,
     BoundFunctionWrapper,
-    ObjectProxy,
     CallableObjectProxy,
 )
 

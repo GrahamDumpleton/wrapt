@@ -14,7 +14,7 @@ class TestObjectPickle(unittest.TestCase):
         proxy = wrapt.ObjectProxy([1])
 
         with self.assertRaises(NotImplementedError) as context:
-            data = pickle.dumps(proxy)
+            pickle.dumps(proxy)
 
         self.assertTrue(
             str(context.exception)

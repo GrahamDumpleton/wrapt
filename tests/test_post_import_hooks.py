@@ -27,14 +27,14 @@ class TestPostImportHooks(unittest.TestCase):
 
         self.assertEqual(len(invoked), 0)
 
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked), 1)
 
     def test_after_import(self):
         invoked = []
 
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked), 0)
 
@@ -57,7 +57,7 @@ class TestPostImportHooks(unittest.TestCase):
         self.assertEqual(len(invoked_one), 0)
         self.assertEqual(len(invoked_two), 0)
 
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked_one), 1)
         self.assertEqual(len(invoked_two), 0)
@@ -78,13 +78,13 @@ class TestPostImportHooks(unittest.TestCase):
             self.assertEqual(module.__name__, 'this')
             invoked.append(1)
 
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked), 1)
 
         del sys.modules['this']
         wrapt.register_post_import_hook(hook_this, 'this')
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked), 2)
 
@@ -94,7 +94,7 @@ class TestPostImportHooks(unittest.TestCase):
         # been imported, creates a thread which in turn attempts to register
         # another import hook.
 
-        import this
+        import this  # noqa
 
         @wrapt.when_imported('this')
         def hook_this(module):
@@ -130,7 +130,7 @@ class TestPostImportHooks(unittest.TestCase):
 
             self.assertFalse(thread.is_alive())
 
-        import this
+        import this  # noqa
 
         del sys.modules['this']
 
@@ -159,7 +159,7 @@ class TestPostImportHooks(unittest.TestCase):
                 hooks_called.append('wsgiref')
 
             def worker():
-                import wsgiref
+                import wsgiref  # noqa
 
             thread = threading.Thread(target=worker)
             thread.start()
@@ -167,7 +167,7 @@ class TestPostImportHooks(unittest.TestCase):
 
             self.assertFalse(thread.is_alive())
 
-        import this
+        import this  # noqa
 
         del sys.modules['this']
 
@@ -178,7 +178,7 @@ class TestPostImportHooks(unittest.TestCase):
         def hook_this(module):
             pass
 
-        import this
+        import this  # noqa
 
         from importlib.machinery import SourceFileLoader
 

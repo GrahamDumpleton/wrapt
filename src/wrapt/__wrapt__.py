@@ -6,3 +6,12 @@ from .wrappers import (
     BoundFunctionWrapper,
     _FunctionWrapperBase,
 )
+
+__all__ = [
+    'ObjectProxy',
+    'CallableObjectProxy',
+    'PartialCallableObjectProxy',
+    'FunctionWrapper',
+    'BoundFunctionWrapper',
+    '_FunctionWrapperBase',
+]

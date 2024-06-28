@@ -247,18 +247,18 @@ class TestSynchronized(unittest.TestCase):
         _lock0 = getattr(C2, '_synchronized_lock', None)
         self.assertEqual(_lock0, None)
 
-        c2 = C2()
+        C2()
 
         _lock1 = getattr(C2, '_synchronized_lock', None)
         self.assertNotEqual(_lock1, None)
 
-        c2 = C2()
+        C2()
 
         _lock2 = getattr(C2, '_synchronized_lock', None)
         self.assertNotEqual(_lock2, None)
         self.assertEqual(_lock2, _lock1)
 
-        c2 = C2()
+        C2()
 
         _lock3 = getattr(C2, '_synchronized_lock', None)
         self.assertNotEqual(_lock3, None)
@@ -271,18 +271,18 @@ class TestSynchronized(unittest.TestCase):
         _lock0 = getattr(C3, '_synchronized_lock', None)
         self.assertEqual(_lock0, None)
 
-        c2 = C3()
+        C3()
 
         _lock1 = getattr(C3, '_synchronized_lock', None)
         self.assertNotEqual(_lock1, None)
 
-        c2 = C3()
+        C3()
 
         _lock2 = getattr(C3, '_synchronized_lock', None)
         self.assertNotEqual(_lock2, None)
         self.assertEqual(_lock2, _lock1)
 
-        c2 = C3()
+        C3()
 
         _lock3 = getattr(C3, '_synchronized_lock', None)
         self.assertNotEqual(_lock3, None)

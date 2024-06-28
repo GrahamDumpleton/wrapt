@@ -17,7 +17,7 @@ class TestObjectCopy(unittest.TestCase):
         proxy1 = wrapt.ObjectProxy([1])
 
         with self.assertRaises(NotImplementedError) as context:
-            proxy2 = copy.copy(proxy1)
+            copy.copy(proxy1)
 
         self.assertTrue(
             str(context.exception) == 'object proxy must define __copy__()'
@@ -27,7 +27,7 @@ class TestObjectCopy(unittest.TestCase):
         proxy1 = wrapt.ObjectProxy([1])
 
         with self.assertRaises(NotImplementedError) as context:
-            proxy2 = copy.deepcopy(proxy1)
+            copy.deepcopy(proxy1)
 
         self.assertTrue(
             str(context.exception) == 'object proxy must define __deepcopy__()'

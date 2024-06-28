@@ -1,5 +1,4 @@
 import unittest
-import sys
 from inspect import getfullargspec
 
 from wrapt import formatargspec
