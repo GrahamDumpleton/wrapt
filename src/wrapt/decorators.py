@@ -5,8 +5,6 @@ as well as some commonly used decorators.
 
 import sys
 
-PY2 = sys.version_info[0] == 2
-
 from functools import partial
 from inspect import isclass
 from threading import Lock, RLock
@@ -79,9 +77,6 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
         else:
             return signature(self._self_adapter)
 
-    if PY2:
-        func_code = __code__
-        func_defaults = __defaults__
 
 class _BoundAdapterWrapper(BoundFunctionWrapper):
 
@@ -97,8 +92,6 @@ class _BoundAdapterWrapper(BoundFunctionWrapper):
         else:
             return signature(self._self_parent._self_adapter)
 
-    if PY2:
-        im_func = __func__
 
 class AdapterWrapper(FunctionWrapper):
 
@@ -122,10 +115,6 @@ class AdapterWrapper(FunctionWrapper):
     @property
     def __kwdefaults__(self):
         return self._self_surrogate.__kwdefaults__
-
-    if PY2:
-        func_code = __code__
-        func_defaults = __defaults__
 
     @property
     def __signature__(self):

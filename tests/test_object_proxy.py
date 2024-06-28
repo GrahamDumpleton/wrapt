@@ -9,7 +9,7 @@ is_pypy = '__pypy__' in sys.builtin_module_names
 
 import wrapt
 
-from compat import PY2, PY3
+from compat import PY3
 
 OBJECTS_CODE = """
 class TargetBaseClass(object):

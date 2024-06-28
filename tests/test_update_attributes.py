@@ -4,7 +4,7 @@ import unittest
 
 import wrapt
 
-from compat import PY2, PY3
+from compat import PY3
 
 @wrapt.decorator
 def passthru_decorator(wrapped, instance, args, kwargs):
