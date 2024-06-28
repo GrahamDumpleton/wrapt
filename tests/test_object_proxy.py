@@ -22,8 +22,8 @@ def target():
 objects = types.ModuleType('objects')
 exec(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
-class TestAttributeAccess(unittest.TestCase):
 
+class TestAttributeAccess(unittest.TestCase):
     def test_init_not_called(self):
         a = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
         b = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy)
@@ -41,6 +41,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_attributes(self):
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = wrapt.ObjectProxy(function1)
 
         self.assertEqual(function2.__wrapped__, function1)
@@ -48,6 +49,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_get_wrapped(self):
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = wrapt.ObjectProxy(function1)
 
         self.assertEqual(function2.__wrapped__, function1)
@@ -59,6 +61,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_set_wrapped(self):
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = wrapt.ObjectProxy(function1)
 
         self.assertEqual(function2, function1)
@@ -88,6 +91,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_delete_wrapped(self):
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = wrapt.ObjectProxy(function1)
 
         def run(*args):
@@ -98,6 +102,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_proxy_attribute(self):
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = wrapt.ObjectProxy(function1)
 
         function2._self_variable = True
@@ -117,6 +122,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_wrapped_attribute(self):
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = wrapt.ObjectProxy(function1)
 
         function2.variable = True
@@ -185,8 +191,8 @@ class TestAttributeAccess(unittest.TestCase):
 
         WrappedObject(Object()).value == "value"
 
-class TestNamingObjectProxy(unittest.TestCase):
 
+class TestNamingObjectProxy(unittest.TestCase):
     def test_class_object_name(self):
         # Test preservation of class __name__ attribute.
 
@@ -277,8 +283,8 @@ class TestNamingObjectProxy(unittest.TestCase):
 
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
-class TestTypeObjectProxy(unittest.TestCase):
 
+class TestTypeObjectProxy(unittest.TestCase):
     def test_class_of_class(self):
         # Test preservation of class __class__ attribute.
 
@@ -310,8 +316,8 @@ class TestTypeObjectProxy(unittest.TestCase):
 
         self.assertTrue(isinstance(wrapper, type(target)))
 
-class TestDirObjectProxy(unittest.TestCase):
 
+class TestDirObjectProxy(unittest.TestCase):
     def test_dir_of_class(self):
         # Test preservation of class __dir__ attribute.
 
@@ -360,8 +366,8 @@ class TestDirObjectProxy(unittest.TestCase):
 
         self.assertEqual(vars(wrapper), vars(target))
 
-class TestCallingObject(unittest.TestCase):
 
+class TestCallingObject(unittest.TestCase):
     def test_function_no_args(self):
         _args = ()
         _kwargs = {}
@@ -766,8 +772,8 @@ class TestCallingObject(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
-class TestIterObjectProxy(unittest.TestCase):
 
+class TestIterObjectProxy(unittest.TestCase):
     def test_iteration(self):
         items = [1, 2]
 
@@ -777,12 +783,13 @@ class TestIterObjectProxy(unittest.TestCase):
 
         self.assertEqual(result, items)
 
-class TestContextManagerObjectProxy(unittest.TestCase):
 
+class TestContextManagerObjectProxy(unittest.TestCase):
     def test_context_manager(self):
         class Class(object):
             def __enter__(self):
                 return self
+
             def __exit__(*args, **kwargs):
                 return
 
@@ -793,11 +800,12 @@ class TestContextManagerObjectProxy(unittest.TestCase):
         with wrapper:
             pass
 
-class TestEqualityObjectProxy(unittest.TestCase):
 
+class TestEqualityObjectProxy(unittest.TestCase):
     def test_object_hash(self):
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = wrapt.ObjectProxy(function1)
 
         self.assertEqual(hash(function2), hash(function1))
@@ -805,6 +813,7 @@ class TestEqualityObjectProxy(unittest.TestCase):
     def test_mapping_key(self):
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = wrapt.ObjectProxy(function1)
 
         table = dict()
@@ -846,8 +855,8 @@ class TestEqualityObjectProxy(unittest.TestCase):
         self.assertTrue(two == two)
         self.assertTrue(two != three)
 
-class TestAsNumberObjectProxy(unittest.TestCase):
 
+class TestAsNumberObjectProxy(unittest.TestCase):
     def test_nonzero(self):
         true = wrapt.ObjectProxy(True)
         false = wrapt.ObjectProxy(False)
@@ -875,9 +884,9 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         one = wrapt.ObjectProxy(1)
         two = wrapt.ObjectProxy(2)
 
-        self.assertEqual(one+two, 1+2)
-        self.assertEqual(1+two, 1+2)
-        self.assertEqual(one+2, 1+2)
+        self.assertEqual(one + two, 1 + 2)
+        self.assertEqual(1 + two, 1 + 2)
+        self.assertEqual(one + 2, 1 + 2)
 
     def test_add_uninitialized_args(self):
         result = object()
@@ -902,9 +911,9 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         one = wrapt.ObjectProxy(1)
         two = wrapt.ObjectProxy(2)
 
-        self.assertEqual(one-two, 1-2)
-        self.assertEqual(1-two, 1-2)
-        self.assertEqual(one-2, 1-2)
+        self.assertEqual(one - two, 1 - 2)
+        self.assertEqual(1 - two, 1 - 2)
+        self.assertEqual(one - 2, 1 - 2)
 
     def test_sub_uninitialized_args(self):
         result = object()
@@ -929,9 +938,9 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
 
-        self.assertEqual(two*three, 2*3)
-        self.assertEqual(2*three, 2*3)
-        self.assertEqual(two*3, 2*3)
+        self.assertEqual(two * three, 2 * 3)
+        self.assertEqual(2 * three, 2 * 3)
+        self.assertEqual(two * 3, 2 * 3)
 
     def test_mul_uninitialized_args(self):
         result = object()
@@ -959,9 +968,9 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
         three = wrapt.ObjectProxy(3)
 
-        self.assertEqual(two/three, 2/3)
-        self.assertEqual(2/three, 2/3)
-        self.assertEqual(two/3, 2/3)
+        self.assertEqual(two / three, 2 / 3)
+        self.assertEqual(2 / three, 2 / 3)
+        self.assertEqual(two / 3, 2 / 3)
 
     def test_div_uninitialized_args(self):
         result = object()
@@ -986,9 +995,9 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
         four = wrapt.ObjectProxy(4)
 
-        self.assertEqual(four//two, 4//2)
-        self.assertEqual(4//two, 4//2)
-        self.assertEqual(four//2, 4//2)
+        self.assertEqual(four // two, 4 // 2)
+        self.assertEqual(4 // two, 4 // 2)
+        self.assertEqual(four // 2, 4 // 2)
 
     def test_floordiv_uninitialized_args(self):
         result = object()
@@ -1290,12 +1299,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
 
         value /= 2
-        self.assertEqual(value, 2/2)
+        self.assertEqual(value, 2 / 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
         value /= two
-        self.assertEqual(value, 2/2/2)
+        self.assertEqual(value, 2 / 2 / 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
@@ -1304,12 +1313,12 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         two = wrapt.ObjectProxy(2)
 
         value //= 2
-        self.assertEqual(value, 2//2)
+        self.assertEqual(value, 2 // 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
         value //= two
-        self.assertEqual(value, 2//2//2)
+        self.assertEqual(value, 2 // 2 // 2)
 
         self.assertEqual(type(value), wrapt.ObjectProxy)
 
@@ -1453,13 +1462,14 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         class Class(object):
             def __index__(self):
                 return 1
+
         value = wrapt.ObjectProxy(Class())
         items = [0, 1, 2]
 
         self.assertEqual(items[value], items[1])
 
-class TestAsSequenceObjectProxy(unittest.TestCase):
 
+class TestAsSequenceObjectProxy(unittest.TestCase):
     def test_length(self):
         value = wrapt.ObjectProxy(list(range(3)))
 
@@ -1512,8 +1522,8 @@ class TestAsSequenceObjectProxy(unittest.TestCase):
         self.assertEqual(len(value), 2)
         self.assertEqual(value, [0, 4])
 
-class TestAsMappingObjectProxy(unittest.TestCase):
 
+class TestAsMappingObjectProxy(unittest.TestCase):
     def test_length(self):
         value = wrapt.ObjectProxy(dict.fromkeys(range(3), False))
 
@@ -1545,8 +1555,8 @@ class TestAsMappingObjectProxy(unittest.TestCase):
 
         self.assertEqual(len(value), 2)
 
-class TestObjectRepresentationObjectProxy(unittest.TestCase):
 
+class TestObjectRepresentationObjectProxy(unittest.TestCase):
     def test_str(self):
         value = wrapt.ObjectProxy(10)
 
@@ -1570,12 +1580,10 @@ class TestObjectRepresentationObjectProxy(unittest.TestCase):
 
         self.assertNotEqual(repr(value).find('ObjectProxy at'), -1)
 
+
 class TestDerivedClassCreation(unittest.TestCase):
-
     def test_derived_new(self):
-
         class DerivedObjectProxy(wrapt.ObjectProxy):
-
             def __new__(cls, wrapped):
                 instance = super(DerivedObjectProxy, cls).__new__(cls)
                 instance.__init__(wrapped)
@@ -1589,9 +1597,7 @@ class TestDerivedClassCreation(unittest.TestCase):
         obj = DerivedObjectProxy(function)
 
     def test_derived_setattr(self):
-
         class DerivedObjectProxy(wrapt.ObjectProxy):
-
             def __init__(self, wrapped):
                 self._self_attribute = True
                 super(DerivedObjectProxy, self).__init__(wrapped)
@@ -1602,9 +1608,7 @@ class TestDerivedClassCreation(unittest.TestCase):
         obj = DerivedObjectProxy(function)
 
     def test_derived_missing_init(self):
-
         class DerivedObjectProxy(wrapt.ObjectProxy):
-
             def __init__(self, wrapped):
                 self.__wrapped__ = wrapped
 
@@ -1616,10 +1620,9 @@ class TestDerivedClassCreation(unittest.TestCase):
         self.assertEqual(function, obj)
         self.assertEqual(function, obj.__wrapped__)
 
+
 class DerivedClassAttributes(unittest.TestCase):
-
     def test_setup_class_attributes(self):
-
         def function():
             pass
 
@@ -1640,7 +1643,6 @@ class DerivedClassAttributes(unittest.TestCase):
         self.assertFalse(hasattr(function, 'ATTRIBUTE'))
 
     def test_override_class_attributes(self):
-
         def function():
             pass
 
@@ -1666,7 +1668,6 @@ class DerivedClassAttributes(unittest.TestCase):
         self.assertFalse(hasattr(function, 'ATTRIBUTE'))
 
     def test_class_properties(self):
-
         def function():
             pass
 
@@ -1674,12 +1675,15 @@ class DerivedClassAttributes(unittest.TestCase):
             def __init__(self, wrapped):
                 super(DerivedObjectProxy, self).__init__(wrapped)
                 self._self_attribute = 1
+
             @property
             def ATTRIBUTE(self):
                 return self._self_attribute
+
             @ATTRIBUTE.setter
             def ATTRIBUTE(self, value):
                 self._self_attribute = value
+
             @ATTRIBUTE.deleter
             def ATTRIBUTE(self):
                 del self._self_attribute
@@ -1712,10 +1716,9 @@ class DerivedClassAttributes(unittest.TestCase):
         self.assertFalse(hasattr(obj, 'ATTRIBUTE'))
         self.assertFalse(hasattr(function, 'ATTRIBUTE'))
 
+
 class OverrideAttributeAccess(unittest.TestCase):
-
     def test_attr_functions(self):
-
         def function():
             pass
 
@@ -1726,7 +1729,6 @@ class OverrideAttributeAccess(unittest.TestCase):
         self.assertTrue(hasattr(proxy, '__delattr__'))
 
     def test_override_getattr(self):
-
         def function():
             pass
 
@@ -1749,8 +1751,8 @@ class OverrideAttributeAccess(unittest.TestCase):
 
         self.assertTrue('attribute' in accessed)
 
-class CallableFunction(unittest.TestCase):
 
+class CallableFunction(unittest.TestCase):
     def test_proxy_hasattr_call(self):
         proxy = wrapt.ObjectProxy(None)
 
@@ -1781,12 +1783,13 @@ class CallableFunction(unittest.TestCase):
 
         self.assertTrue(callable(proxy))
 
-class SpecialMethods(unittest.TestCase):
 
+class SpecialMethods(unittest.TestCase):
     def test_class_bytes(self):
         class Class(object):
             def __bytes__(self):
                 return b'BYTES'
+
         instance = Class()
 
         proxy = wrapt.ObjectProxy(instance)
@@ -1808,7 +1811,7 @@ class SpecialMethods(unittest.TestCase):
         self.assertEqual(list(reversed(instance)), list(reversed(proxy)))
 
     def test_complex(self):
-        instance = 1.0+2j
+        instance = 1.0 + 2j
 
         proxy = wrapt.ObjectProxy(instance)
 
@@ -1832,8 +1835,8 @@ class SpecialMethods(unittest.TestCase):
 
         self.assertEqual(round(instance), round(proxy))
 
-class TestArgumentUnpacking(unittest.TestCase):
 
+class TestArgumentUnpacking(unittest.TestCase):
     def test_self_keyword_argument_on_dict(self):
         # A dict when given self as keyword argument uses it to create item in
         # the dict and no attempt is made to use a positional argument.
@@ -1867,12 +1870,24 @@ class TestArgumentUnpacking(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         with self.assertRaises(TypeError) as e:
             wrapt.CallableObjectProxy(Object)(self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_2(self):
         class Object:
@@ -1883,12 +1898,24 @@ class TestArgumentUnpacking(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(arg1='arg1', self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         with self.assertRaises(TypeError) as e:
             wrapt.CallableObjectProxy(Object)(arg1='arg1', self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_renamed(self):
         class Object:
@@ -1935,15 +1962,27 @@ class TestArgumentUnpacking(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(_self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument '_self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         with self.assertRaises(TypeError) as e:
             wrapt.CallableObjectProxy(Object)(_self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument '_self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
+
 
 class TestArgumentUnpackingPartial(unittest.TestCase):
-
     def test_self_keyword_argument_on_dict_1(self):
         # A dict when given self as keyword argument uses it to create item in
         # the dict and no attempt is made to use a positional argument.
@@ -2009,14 +2048,26 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         wrapper = wrapt.PartialCallableObjectProxy(Object, self='self')
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_1b(self):
         class Object:
@@ -2027,14 +2078,26 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_2a(self):
         class Object:
@@ -2045,14 +2108,28 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(arg1='arg1', self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object, arg1='arg1', self='self')
+        wrapper = wrapt.PartialCallableObjectProxy(
+            Object, arg1='arg1', self='self'
+        )
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_2b(self):
         class Object:
@@ -2063,14 +2140,26 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(arg1='arg1', self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(arg1='arg1', self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_renamed_1(self):
         class Object:
@@ -2160,14 +2249,26 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(_self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument '_self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         wrapper = wrapt.PartialCallableObjectProxy(Object, _self='self')
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument '_self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_overloaded_2b(self):
         class Object:
@@ -2179,17 +2280,29 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(_self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument '_self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         wrapper = wrapt.PartialCallableObjectProxy(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(_self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument '_self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
+
 
 class TestArgumentUnpackingWrapperBase(unittest.TestCase):
-
     def test_self_keyword_argument_on_dict(self):
         # A dict when given self as keyword argument uses it to create item in
         # the dict and no attempt is made to use a positional argument.
@@ -2232,12 +2345,24 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         with self.assertRaises(TypeError) as e:
             wrapt.FunctionWrapper(Object, wrapper)(self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_2(self):
         def wrapper(wrapped, instance, args, kwargs):
@@ -2251,12 +2376,24 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(arg1='arg1', self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         with self.assertRaises(TypeError) as e:
             wrapt.FunctionWrapper(Object, wrapper)(arg1='arg1', self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument 'self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument 'self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
     def test_self_keyword_argument_on_class_init_renamed(self):
         def wrapper(wrapped, instance, args, kwargs):
@@ -2312,15 +2449,27 @@ class TestArgumentUnpackingWrapperBase(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             Object(_self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument '_self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
 
         with self.assertRaises(TypeError) as e:
             wrapt.FunctionWrapper(Object, wrapper)(_self='self')
 
-        self.assertNotEqual(re.match(".*got multiple values for (keyword )?argument '_self'.*", str(e.exception)), None)
+        self.assertNotEqual(
+            re.match(
+                ".*got multiple values for (keyword )?argument '_self'.*",
+                str(e.exception),
+            ),
+            None,
+        )
+
 
 class TestArgumentUnpackingBoundFunctionWrapper(unittest.TestCase):
-
     def test_self_keyword_argument_on_classmethod(self):
         def wrapper(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
@@ -2350,8 +2499,8 @@ class TestArgumentUnpackingBoundFunctionWrapper(unittest.TestCase):
 
         self.assertEqual(result, ('self', (), {}))
 
-class TestArgumentUnpackingDecorator(unittest.TestCase):
 
+class TestArgumentUnpackingDecorator(unittest.TestCase):
     def test_self_keyword_argument_on_function(self):
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
@@ -2406,11 +2555,14 @@ class TestArgumentUnpackingDecorator(unittest.TestCase):
 
         self.assertEqual(result, ('self', (), dict(arg1='arg1')))
 
-class TestOverridingSpecialAttributes(unittest.TestCase):
 
+class TestOverridingSpecialAttributes(unittest.TestCase):
     def test_overriding_class_attribute(self):
-        class Object1: pass
-        class Object2(Object1): pass
+        class Object1:
+            pass
+
+        class Object2(Object1):
+            pass
 
         o1 = Object1()
 
@@ -2423,6 +2575,7 @@ class TestOverridingSpecialAttributes(unittest.TestCase):
         o2.__class__ = type(o1)
 
         self.assertEqual(o2.__class__, type(o1))
+
 
 if __name__ == '__main__':
     unittest.main()

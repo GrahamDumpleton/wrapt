@@ -7,7 +7,6 @@ from wrapt.importer import _post_import_hooks
 
 
 class TestPostImportHooks(unittest.TestCase):
-
     def setUp(self):
         super(TestPostImportHooks, self).setUp()
 
@@ -80,6 +79,7 @@ class TestPostImportHooks(unittest.TestCase):
             invoked.append(1)
 
         import this
+
         self.assertEqual(len(invoked), 1)
 
         del sys.modules['this']
@@ -131,6 +131,7 @@ class TestPostImportHooks(unittest.TestCase):
             self.assertFalse(thread.is_alive())
 
         import this
+
         del sys.modules['this']
 
     def test_import_deadlock_3(self):
@@ -167,6 +168,7 @@ class TestPostImportHooks(unittest.TestCase):
             self.assertFalse(thread.is_alive())
 
         import this
+
         del sys.modules['this']
 
         self.assertEqual(hooks_called, ['this', 'wsgiref'])
@@ -179,8 +181,10 @@ class TestPostImportHooks(unittest.TestCase):
         import this
 
         from importlib.machinery import SourceFileLoader
+
         self.assertIsInstance(this.__loader__, SourceFileLoader)
         self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
+
 
 if __name__ == '__main__':
     unittest.main()

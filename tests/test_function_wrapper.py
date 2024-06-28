@@ -4,7 +4,6 @@ import wrapt
 
 
 class TestClassInheritence(unittest.TestCase):
-
     def test_function_type_inheritence(self):
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -73,15 +72,17 @@ class TestClassInheritence(unittest.TestCase):
         self.assertFalse(isinstance(instance.function, wrapt.FunctionWrapper))
         self.assertTrue(isinstance(instance.function, wrapt.ObjectProxy))
 
-class TestAttributeAccess(unittest.TestCase):
 
+class TestAttributeAccess(unittest.TestCase):
     def test_function_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         def function1(*args, **kwargs):
             return args, kwargs
+
         function2 = decorator2(function1)
 
         self.assertEqual(function2.__wrapped__, function1)
@@ -91,11 +92,13 @@ class TestAttributeAccess(unittest.TestCase):
     def test_instancemethod_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
             def function1(self, *args, **kwargs):
                 return args, kwargs
+
             function2 = decorator2(function1)
 
             self.assertEqual(function2.__wrapped__, function1)
@@ -111,12 +114,14 @@ class TestAttributeAccess(unittest.TestCase):
     def test_classmethod_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
             @classmethod
             def function1(cls, *args, **kwargs):
                 return args, kwargs
+
             function2 = decorator2(function1)
 
             self.assertEqual(function2.__wrapped__, function1)
@@ -132,12 +137,14 @@ class TestAttributeAccess(unittest.TestCase):
     def test_staticmethod_attributes(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
             @staticmethod
             def function1(*args, **kwargs):
                 return args, kwargs
+
             function2 = decorator2(function1)
 
             self.assertEqual(function2.__wrapped__, function1)
@@ -147,6 +154,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_instancemethod_attributes_external_class(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
@@ -166,6 +174,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_classmethod_attributes_external_class(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
@@ -181,6 +190,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_staticmethod_attributes_external_class(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
@@ -200,6 +210,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_instancemethod_attributes_external_instance(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
@@ -220,6 +231,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_classmethod_attributes_external_instance(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
@@ -235,6 +247,7 @@ class TestAttributeAccess(unittest.TestCase):
     def test_staticmethod_attributes_external_instance(self):
         def decorator1(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
+
         decorator2 = wrapt.decorator(decorator1)
 
         class Class(object):
@@ -251,8 +264,8 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2._self_binding, 'function')
 
-class TestParentReference(unittest.TestCase):
 
+class TestParentReference(unittest.TestCase):
     def test_function_decorator(self):
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -328,8 +341,8 @@ class TestParentReference(unittest.TestCase):
 
         self.assertNotEqual(Class.function_sm_inner._self_parent, None)
 
-class TestGuardArgument(unittest.TestCase):
 
+class TestGuardArgument(unittest.TestCase):
     def test_boolean_false_guard_on_decorator(self):
         @wrapt.decorator(enabled=False)
         def _decorator(wrapped, instance, args, kwargs):
@@ -355,8 +368,10 @@ class TestGuardArgument(unittest.TestCase):
     def test_boolean_dynamic_guard_on_decorator(self):
         class Guard(object):
             value = True
+
             def __nonzero__(self):
                 return self.value
+
             __bool__ = __nonzero__
 
         guard = Guard()
@@ -387,6 +402,7 @@ class TestGuardArgument(unittest.TestCase):
 
     def test_function_guard_on_decorator(self):
         value = True
+
         def guard():
             return value
 
@@ -416,6 +432,7 @@ class TestGuardArgument(unittest.TestCase):
 
     def test_guard_on_instancemethod(self):
         value = True
+
         def guard():
             return value
 
@@ -448,10 +465,9 @@ class TestGuardArgument(unittest.TestCase):
 
         self.assertEqual(len(result), 0)
 
+
 class TestDerivedFunctionWrapper(unittest.TestCase):
-
     def test_override_bound_type(self):
-
         class _BoundFunctionWrapper(wrapt.BoundFunctionWrapper):
             ATTRIBUTE = 1
 
@@ -475,10 +491,9 @@ class TestDerivedFunctionWrapper(unittest.TestCase):
         self.assertTrue(isinstance(_bound_wrapper, _BoundFunctionWrapper))
         self.assertEqual(_bound_wrapper.ATTRIBUTE, 1)
 
+
 class TestFunctionBinding(unittest.TestCase):
-
     def test_double_binding(self):
-
         def function():
             pass
 
@@ -495,23 +510,25 @@ class TestFunctionBinding(unittest.TestCase):
 
         self.assertTrue(_bound_wrapper_1._self_parent is _wrapper)
 
-        self.assertTrue(isinstance(_bound_wrapper_1,
-                wrapt.BoundFunctionWrapper))
+        self.assertTrue(
+            isinstance(_bound_wrapper_1, wrapt.BoundFunctionWrapper)
+        )
         self.assertEqual(_bound_wrapper_1._self_instance, instance)
 
         _bound_wrapper_2 = _bound_wrapper_1.__get__(instance, type(instance))
 
         self.assertTrue(_bound_wrapper_2._self_parent is _wrapper)
 
-        self.assertTrue(isinstance(_bound_wrapper_2,
-                wrapt.BoundFunctionWrapper))
-        self.assertEqual(_bound_wrapper_2._self_instance,
-                _bound_wrapper_1._self_instance)
+        self.assertTrue(
+            isinstance(_bound_wrapper_2, wrapt.BoundFunctionWrapper)
+        )
+        self.assertEqual(
+            _bound_wrapper_2._self_instance, _bound_wrapper_1._self_instance
+        )
 
         self.assertTrue(_bound_wrapper_1 is _bound_wrapper_2)
 
     def test_re_bind_after_none(self):
-
         def function():
             pass
 
@@ -528,34 +545,36 @@ class TestFunctionBinding(unittest.TestCase):
 
         self.assertTrue(_bound_wrapper_1._self_parent is _wrapper)
 
-        self.assertTrue(isinstance(_bound_wrapper_1,
-                wrapt.BoundFunctionWrapper))
+        self.assertTrue(
+            isinstance(_bound_wrapper_1, wrapt.BoundFunctionWrapper)
+        )
         self.assertEqual(_bound_wrapper_1._self_instance, None)
 
         _bound_wrapper_2 = _bound_wrapper_1.__get__(instance, type(instance))
 
         self.assertTrue(_bound_wrapper_2._self_parent is _wrapper)
 
-        self.assertTrue(isinstance(_bound_wrapper_2,
-                wrapt.BoundFunctionWrapper))
+        self.assertTrue(
+            isinstance(_bound_wrapper_2, wrapt.BoundFunctionWrapper)
+        )
         self.assertEqual(_bound_wrapper_2._self_instance, instance)
 
         self.assertTrue(_bound_wrapper_1 is not _bound_wrapper_2)
 
+
 class TestInvalidWrapper(unittest.TestCase):
-
     def test_none_for_wrapped(self):
-
         def run(*args):
             def _wrapper(wrapped, instance, args, kwargs):
                 return wrapped(*args, **kwargs)
+
             wrapper = wrapt.FunctionWrapper(None, _wrapper)
             wrapper.__get__(list(), list)()
 
         self.assertRaises(AttributeError, run, ())
 
-class TestInvalidCalling(unittest.TestCase):
 
+class TestInvalidCalling(unittest.TestCase):
     def test_missing_self_via_class(self):
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -570,6 +589,7 @@ class TestInvalidCalling(unittest.TestCase):
             Class.method()
 
         self.assertRaises(TypeError, run, ())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,8 +4,8 @@ import unittest
 
 import wrapt
 
-class TestClassInheritance(unittest.TestCase):
 
+class TestClassInheritance(unittest.TestCase):
     def test_basic_inheritance(self):
         @wrapt.decorator
         def wrapper(wrapped, instance, args, kwargs):
@@ -47,8 +47,10 @@ class TestClassInheritance(unittest.TestCase):
 
         def function():
             pass
+
         class F(wrapt.FunctionWrapper):
             pass
+
         instance = F(function, wrapper)
         self.assertTrue(isinstance(instance, wrapt.FunctionWrapper))
 
@@ -173,6 +175,7 @@ class TestClassInheritance(unittest.TestCase):
         self.assertTrue(isinstance(C1(), C1))
         self.assertTrue(isinstance(D1(), B1))
         self.assertTrue(isinstance(D1(), C1))
+
 
 if __name__ == '__main__':
     unittest.main()

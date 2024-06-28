@@ -3,6 +3,7 @@ import unittest
 
 import wrapt
 
+
 @wrapt.decorator
 def memoize(wrapped, instance, args, kwargs):
     if instance is None and inspect.isclass(wrapped):
@@ -27,12 +28,13 @@ def memoize(wrapped, instance, args, kwargs):
         result = cache[key] = wrapped(*args, **kwargs)
         return result
 
+
 @memoize
 def function1(count, text):
     return count * text
 
-class C1(object):
 
+class C1(object):
     @memoize
     def function1(self, count, text):
         return count * text
@@ -47,10 +49,11 @@ class C1(object):
     def function3(count, text):
         return count * text
 
+
 c1 = C1()
 
-class TestSynchronized(unittest.TestCase):
 
+class TestSynchronized(unittest.TestCase):
     def test_function(self):
         value1 = function1(10, '0123456789')
         value2 = function1(10, '0123456789')
@@ -86,6 +89,7 @@ class TestSynchronized(unittest.TestCase):
         self.assertEqual(id(value1), id(value2))
 
         self.assertTrue(hasattr(C1.function3, '_memoize_cache'))
+
 
 if __name__ == '__main__':
     unittest.main()

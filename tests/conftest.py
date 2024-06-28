@@ -4,9 +4,11 @@ from pytest import File as FileCollector
 
 version = tuple(sys.version_info[:2])
 
+
 class DummyCollector(FileCollector):
     def collect(self):
         return []
+
 
 def construct_dummy(path, parent):
     if hasattr(DummyCollector, "from_parent"):
@@ -14,6 +16,7 @@ def construct_dummy(path, parent):
         return item
     else:
         return DummyCollector(path, parent=parent)
+
 
 def pytest_pycollect_makemodule(path, parent):
     if '_py39' in path.basename and version < (3, 9):

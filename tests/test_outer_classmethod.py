@@ -17,13 +17,16 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = types.ModuleType('decorators')
 exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 class Class(object):
     @classmethod
     def function(self, arg):
         '''documentation'''
         return arg
 
+
 Original = Class
+
 
 class Class(object):
     @classmethod
@@ -32,19 +35,19 @@ class Class(object):
         '''documentation'''
         return arg
 
-class TestNamingOuterClassMethod(unittest.TestCase):
 
+class TestNamingOuterClassMethod(unittest.TestCase):
     def test_class_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(Class.function.__name__,
-                Original.function.__name__)
+        self.assertEqual(Class.function.__name__, Original.function.__name__)
 
     def test_instance_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(Class().function.__name__,
-                Original().function.__name__)
+        self.assertEqual(
+            Class().function.__name__, Original().function.__name__
+        )
 
     def test_class_object_qualname(self):
         # Test preservation of instance method __qualname__ attribute.
@@ -69,26 +72,26 @@ class TestNamingOuterClassMethod(unittest.TestCase):
     def test_class_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(Class.function.__module__,
-                Original.function.__module__)
+        self.assertEqual(
+            Class.function.__module__, Original.function.__module__
+        )
 
     def test_instance_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(Class().function.__module__,
-                Original().function.__module__)
+        self.assertEqual(
+            Class().function.__module__, Original().function.__module__
+        )
 
     def test_class_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(Class.function.__doc__,
-                Original.function.__doc__)
+        self.assertEqual(Class.function.__doc__, Original.function.__doc__)
 
     def test_instance_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(Class().function.__doc__,
-                Original().function.__doc__)
+        self.assertEqual(Class().function.__doc__, Original().function.__doc__)
 
     def test_class_argspec(self):
         # Test preservation of instance method argument specification.
@@ -107,17 +110,17 @@ class TestNamingOuterClassMethod(unittest.TestCase):
     def test_class_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(Class.function,
-                type(Original.function)))
+        self.assertTrue(isinstance(Class.function, type(Original.function)))
 
     def test_instance_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(Class().function,
-                type(Original().function)))
+        self.assertTrue(
+            isinstance(Class().function, type(Original().function))
+        )
+
 
 class TestCallingOuterClassMethod(unittest.TestCase):
-
     def test_class_call_function(self):
         # Test calling classmethod. Prior to Python 3.9, the instance
         # and class passed to the wrapper will both be None because our
@@ -135,7 +138,7 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         def _decorator(wrapped, instance, args, kwargs):
             if PYXY < (3, 9):
                 self.assertEqual(instance, None)
-                self.assertEqual(args, (Class,)+_args)
+                self.assertEqual(args, (Class,) + _args)
             else:
                 self.assertEqual(instance, Class)
                 self.assertEqual(args, _args)
@@ -177,7 +180,7 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         def _decorator(wrapped, instance, args, kwargs):
             if PYXY < (3, 9):
                 self.assertEqual(instance, None)
-                self.assertEqual(args, (Class,)+_args)
+                self.assertEqual(args, (Class,) + _args)
             else:
                 self.assertEqual(instance, Class)
                 self.assertEqual(args, _args)
@@ -201,6 +204,7 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         result = Class()._function(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
+
 
 if __name__ == '__main__':
     unittest.main()

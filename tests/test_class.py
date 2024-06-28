@@ -15,21 +15,23 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = types.ModuleType('decorators')
 exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 class class1(object):
     pass
+
 
 class1o = class1
 
 class1d = decorators.passthru_decorator(class1)
 
-class TestIntrospection(unittest.TestCase):
 
+class TestIntrospection(unittest.TestCase):
     def test_getmembers(self):
         class1o_members = inspect.getmembers(class1o)
         class1d_members = inspect.getmembers(class1d)
 
-class TestInheritance(unittest.TestCase):
 
+class TestInheritance(unittest.TestCase):
     def test_single_inheritance(self):
         @wrapt.decorator
         def passthru(wrapped, instance, args, kwargs):
@@ -60,4 +62,7 @@ class TestInheritance(unittest.TestCase):
         self.assertTrue(isinstance(derived, DerivedClass))
         self.assertEqual(derived.value, 2)
 
-        self.assertEqual(type(derived).__mro__, (DerivedClass, BaseClass.__wrapped__, object))
+        self.assertEqual(
+            type(derived).__mro__,
+            (DerivedClass, BaseClass.__wrapped__, object),
+        )

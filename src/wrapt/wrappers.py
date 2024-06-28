@@ -4,7 +4,6 @@ import inspect
 
 
 class _ObjectProxyMethods(object):
-
     # We use properties to override the values of __module__ and
     # __doc__. If we add these in ObjectProxy, the derived class
     # __dict__ will still be setup to have string variants of these
@@ -81,7 +80,9 @@ class ObjectProxy(_ObjectProxyBase):
         # using a property and it must instead be set explicitly.
 
         try:
-            object.__setattr__(self, '__annotations__', wrapped.__annotations__)
+            object.__setattr__(
+                self, '__annotations__', wrapped.__annotations__
+            )
         except AttributeError:
             pass
 
@@ -115,9 +116,11 @@ class ObjectProxy(_ObjectProxyBase):
 
     def __repr__(self):
         return '<{} at 0x{:x} for {} at 0x{:x}>'.format(
-                type(self).__name__, id(self),
-                type(self.__wrapped__).__name__,
-                id(self.__wrapped__))
+            type(self).__name__,
+            id(self),
+            type(self.__wrapped__).__name__,
+            id(self.__wrapped__),
+        )
 
     def __reversed__(self):
         return reversed(self.__wrapped__)
@@ -126,6 +129,7 @@ class ObjectProxy(_ObjectProxyBase):
         return round(self.__wrapped__)
 
     if sys.hexversion >= 0x03070000:
+
         def __mro_entries__(self, bases):
             return (self.__wrapped__,)
 
@@ -175,7 +179,9 @@ class ObjectProxy(_ObjectProxyBase):
             except AttributeError:
                 pass
             try:
-                object.__setattr__(self, '__annotations__', value.__annotations__)
+                object.__setattr__(
+                    self, '__annotations__', value.__annotations__
+                )
             except AttributeError:
                 pass
 
@@ -425,15 +431,13 @@ class ObjectProxy(_ObjectProxyBase):
         raise NotImplementedError('object proxy must define __deepcopy__()')
 
     def __reduce__(self):
-        raise NotImplementedError(
-                'object proxy must define __reduce_ex__()')
+        raise NotImplementedError('object proxy must define __reduce_ex__()')
 
     def __reduce_ex__(self, protocol):
-        raise NotImplementedError(
-                'object proxy must define __reduce_ex__()')
+        raise NotImplementedError('object proxy must define __reduce_ex__()')
+
 
 class CallableObjectProxy(ObjectProxy):
-
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):
             return self, args
@@ -442,8 +446,8 @@ class CallableObjectProxy(ObjectProxy):
 
         return self.__wrapped__(*args, **kwargs)
 
-class PartialCallableObjectProxy(ObjectProxy):
 
+class PartialCallableObjectProxy(ObjectProxy):
     def __init__(*args, **kwargs):
         def _unpack_self(self, *args):
             return self, args
@@ -476,14 +480,25 @@ class PartialCallableObjectProxy(ObjectProxy):
 
         return self.__wrapped__(*_args, **_kwargs)
 
+
 class _FunctionWrapperBase(ObjectProxy):
+    __slots__ = (
+        '_self_instance',
+        '_self_wrapper',
+        '_self_enabled',
+        '_self_binding',
+        '_self_parent',
+    )
 
-    __slots__ = ('_self_instance', '_self_wrapper', '_self_enabled',
-            '_self_binding', '_self_parent')
-
-    def __init__(self, wrapped, instance, wrapper, enabled=None,
-            binding='function', parent=None):
-
+    def __init__(
+        self,
+        wrapped,
+        instance,
+        wrapper,
+        enabled=None,
+        binding='function',
+        parent=None,
+    ):
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
         object.__setattr__(self, '_self_instance', instance)
@@ -522,9 +537,14 @@ class _FunctionWrapperBase(ObjectProxy):
             if not inspect.isclass(self.__wrapped__):
                 descriptor = self.__wrapped__.__get__(instance, owner)
 
-                return self.__bound_function_wrapper__(descriptor, instance,
-                        self._self_wrapper, self._self_enabled,
-                        self._self_binding, self)
+                return self.__bound_function_wrapper__(
+                    descriptor,
+                    instance,
+                    self._self_wrapper,
+                    self._self_enabled,
+                    self._self_binding,
+                    self,
+                )
 
             return self
 
@@ -538,13 +558,16 @@ class _FunctionWrapperBase(ObjectProxy):
         # function from the parent again.
 
         if self._self_instance is None and self._self_binding == 'function':
-            descriptor = self._self_parent.__wrapped__.__get__(
-                    instance, owner)
+            descriptor = self._self_parent.__wrapped__.__get__(instance, owner)
 
             return self._self_parent.__bound_function_wrapper__(
-                    descriptor, instance, self._self_wrapper,
-                    self._self_enabled, self._self_binding,
-                    self._self_parent)
+                descriptor,
+                instance,
+                self._self_wrapper,
+                self._self_enabled,
+                self._self_binding,
+                self._self_parent,
+            )
 
         return self
 
@@ -575,8 +598,9 @@ class _FunctionWrapperBase(ObjectProxy):
             if self._self_instance is None:
                 instance = getattr(self.__wrapped__, '__self__', None)
                 if instance is not None:
-                    return self._self_wrapper(self.__wrapped__, instance,
-                            args, kwargs)
+                    return self._self_wrapper(
+                        self.__wrapped__, instance, args, kwargs
+                    )
 
         # This is generally invoked when the wrapped function is being
         # called as a normal function and is not bound to a class as an
@@ -584,8 +608,9 @@ class _FunctionWrapperBase(ObjectProxy):
         # wrapped function was a method, but this wrapper was in turn
         # wrapped using the staticmethod decorator.
 
-        return self._self_wrapper(self.__wrapped__, self._self_instance,
-                args, kwargs)
+        return self._self_wrapper(
+            self.__wrapped__, self._self_instance, args, kwargs
+        )
 
     def __set_name__(self, owner, name):
         # This is a special method use to supply information to
@@ -614,8 +639,8 @@ class _FunctionWrapperBase(ObjectProxy):
         else:
             return issubclass(subclass, self.__wrapped__)
 
-class BoundFunctionWrapper(_FunctionWrapperBase):
 
+class BoundFunctionWrapper(_FunctionWrapperBase):
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):
             return self, args
@@ -652,11 +677,14 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
                     raise TypeError('missing 1 required positional argument')
 
                 instance, args = args[0], args[1:]
-                wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
+                wrapped = PartialCallableObjectProxy(
+                    self.__wrapped__, instance
+                )
                 return self._self_wrapper(wrapped, instance, args, kwargs)
 
-            return self._self_wrapper(self.__wrapped__, self._self_instance,
-                    args, kwargs)
+            return self._self_wrapper(
+                self.__wrapped__, self._self_instance, args, kwargs
+            )
 
         else:
             # As in this case we would be dealing with a classmethod or
@@ -674,11 +702,10 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
 
             instance = getattr(self.__wrapped__, '__self__', None)
 
-            return self._self_wrapper(self.__wrapped__, instance, args,
-                    kwargs)
+            return self._self_wrapper(self.__wrapped__, instance, args, kwargs)
+
 
 class FunctionWrapper(_FunctionWrapperBase):
-
     __bound_function_wrapper__ = BoundFunctionWrapper
 
     def __init__(self, wrapped, wrapper, enabled=None):
@@ -769,5 +796,6 @@ class FunctionWrapper(_FunctionWrapperBase):
         else:
             binding = 'function'
 
-        super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
-                enabled, binding)
+        super(FunctionWrapper, self).__init__(
+            wrapped, None, wrapper, enabled, binding
+        )

@@ -34,6 +34,4 @@ extensions = [
 
 # --- Setup ------------------------------------------------------------------
 
-setuptools.setup(
-    ext_modules=[] if disable_extensions else extensions
-)
+setuptools.setup(ext_modules=[] if disable_extensions else extensions)

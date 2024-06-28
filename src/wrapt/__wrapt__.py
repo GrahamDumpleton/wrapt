@@ -1,3 +1,8 @@
-from .wrappers import (ObjectProxy, CallableObjectProxy,
-        PartialCallableObjectProxy, FunctionWrapper,
-        BoundFunctionWrapper, _FunctionWrapperBase)
+from .wrappers import (
+    ObjectProxy,
+    CallableObjectProxy,
+    PartialCallableObjectProxy,
+    FunctionWrapper,
+    BoundFunctionWrapper,
+    _FunctionWrapperBase,
+)

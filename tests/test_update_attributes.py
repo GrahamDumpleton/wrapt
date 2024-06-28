@@ -7,8 +7,8 @@ import wrapt
 def passthru_decorator(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
-class TestUpdateAttributes(unittest.TestCase):
 
+class TestUpdateAttributes(unittest.TestCase):
     def test_update_name(self):
         @passthru_decorator
         def function():
@@ -37,14 +37,14 @@ class TestUpdateAttributes(unittest.TestCase):
         self.assertEqual(instance.__name__, 'override_name')
 
     def test_update_qualname(self):
-
         @passthru_decorator
         def function():
             pass
 
         method = self.test_update_qualname
-        self.assertEqual(function.__qualname__,
-                (method.__qualname__ + '.<locals>.function'))
+        self.assertEqual(
+            function.__qualname__, (method.__qualname__ + '.<locals>.function')
+        )
 
         function.__qualname__ = 'override_qualname'
 
@@ -60,8 +60,9 @@ class TestUpdateAttributes(unittest.TestCase):
         instance = wrapt.FunctionWrapper(function, wrapper)
 
         method = self.test_update_qualname_modified_on_original
-        self.assertEqual(instance.__qualname__,
-                (method.__qualname__ + '.<locals>.function'))
+        self.assertEqual(
+            instance.__qualname__, (method.__qualname__ + '.<locals>.function')
+        )
 
         instance.__qualname__ = 'override_qualname'
 
@@ -133,7 +134,9 @@ class TestUpdateAttributes(unittest.TestCase):
 
         override_annotations = {'override_annotations': ''}
         function.__annotations__ = override_annotations
-        self.assertEqual(function.__wrapped__.__annotations__, override_annotations)
+        self.assertEqual(
+            function.__wrapped__.__annotations__, override_annotations
+        )
         self.assertEqual(function.__annotations__, override_annotations)
 
     def test_update_annotations_modified_on_original(self):
@@ -150,6 +153,7 @@ class TestUpdateAttributes(unittest.TestCase):
         instance.__annotations__ = override_annotations
         self.assertEqual(function.__annotations__, override_annotations)
         self.assertEqual(instance.__annotations__, override_annotations)
+
 
 if __name__ == '__main__':
     unittest.main()

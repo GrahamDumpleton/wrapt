@@ -4,12 +4,13 @@ import wrapt
 
 from compat import PYXY
 
+
 @wrapt.synchronized
 def function():
     print('function')
 
-class C1(object):
 
+class C1(object):
     @wrapt.synchronized
     def function1(self):
         print('function1')
@@ -24,18 +25,21 @@ class C1(object):
     def function3():
         print('function3')
 
+
 c1 = C1()
+
 
 @wrapt.synchronized
 class C2(object):
     pass
 
+
 @wrapt.synchronized
 class C3:
     pass
 
-class C4(object):
 
+class C4(object):
     # Prior to Python 3.9, this yields undesirable results due to how
     # class method is implemented. The classmethod doesn't bind the
     # method to the class before calling. As a consequence, the
@@ -54,22 +58,25 @@ class C4(object):
     def function3():
         print('function3')
 
+
 c4 = C4()
 
-class C5(object):
 
+class C5(object):
     def __bool__(self):
         return False
-    __nonzero__=__bool__
+
+    __nonzero__ = __bool__
 
     @wrapt.synchronized
     def function1(self):
         print('function1')
 
+
 c5 = C5()
 
-class TestSynchronized(unittest.TestCase):
 
+class TestSynchronized(unittest.TestCase):
     def test_synchronized_function(self):
         _lock0 = getattr(function, '_synchronized_lock', None)
         self.assertEqual(_lock0, None)
@@ -291,6 +298,7 @@ class TestSynchronized(unittest.TestCase):
 
         _lock2 = getattr(c5, '_synchronized_lock', None)
         self.assertNotEqual(_lock2, None)
+
 
 if __name__ == '__main__':
     unittest.main()

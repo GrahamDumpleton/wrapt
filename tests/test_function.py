@@ -15,16 +15,18 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 decorators = types.ModuleType('decorators')
 exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 def function1(arg):
     '''documentation'''
     return arg
 
+
 function1o = function1
 function1d = decorators.passthru_decorator(function1)
-assert(function1d is not function1o)
+assert function1d is not function1o
+
 
 class TestNamingFunction(unittest.TestCase):
-
     def test_object_name(self):
         # Test preservation of function __name__ attribute.
 
@@ -66,8 +68,8 @@ class TestNamingFunction(unittest.TestCase):
 
         self.assertTrue(isinstance(function1d, type(function1o)))
 
-class TestCallingFunction(unittest.TestCase):
 
+class TestCallingFunction(unittest.TestCase):
     def test_call_function(self):
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
@@ -86,6 +88,7 @@ class TestCallingFunction(unittest.TestCase):
         result = _function(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
+
 
 if __name__ == '__main__':
     unittest.main()

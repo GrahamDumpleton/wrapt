@@ -1,20 +1,40 @@
 __version_info__ = ('1', '16', '0')
 __version__ = '.'.join(__version_info__)
 
-from .__wrapt__ import (ObjectProxy, CallableObjectProxy, FunctionWrapper,
-        BoundFunctionWrapper, PartialCallableObjectProxy)
+from .__wrapt__ import (
+    ObjectProxy,
+    CallableObjectProxy,
+    FunctionWrapper,
+    BoundFunctionWrapper,
+    PartialCallableObjectProxy,
+)
 
-from .patches import (resolve_path, apply_patch, wrap_object, wrap_object_attribute,
-        function_wrapper, wrap_function_wrapper, patch_function_wrapper,
-        transient_function_wrapper)
+from .patches import (
+    resolve_path,
+    apply_patch,
+    wrap_object,
+    wrap_object_attribute,
+    function_wrapper,
+    wrap_function_wrapper,
+    patch_function_wrapper,
+    transient_function_wrapper,
+)
 
 from .weakrefs import WeakFunctionProxy
 
-from .decorators import (adapter_factory, AdapterFactory, decorator,
-        synchronized)
+from .decorators import (
+    adapter_factory,
+    AdapterFactory,
+    decorator,
+    synchronized,
+)
 
-from .importer import (register_post_import_hook, when_imported,
-        notify_module_loaded, discover_post_import_hooks)
+from .importer import (
+    register_post_import_hook,
+    when_imported,
+    notify_module_loaded,
+    discover_post_import_hooks,
+)
 
 # Import of inspect.getcallargs() included for backward compatibility. An
 # implementation of this was previously bundled and made available here for
