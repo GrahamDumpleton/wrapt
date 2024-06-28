@@ -1,13 +1,12 @@
+import inspect
 import unittest
-import sys
-from inspect import getfullargspec
 
 from wrapt import formatargspec
 
 class TestFormatargspec35(unittest.TestCase):
 
     def assertFormatEqual(self, func, ref):
-        formatted = formatargspec(*getfullargspec(func))
+        formatted = formatargspec(*inspect.getfullargspec(func))
         self.assertEqual(formatted, ref)
 
     def test_formatargspec(self):
@@ -21,10 +20,7 @@ class TestFormatargspec35(unittest.TestCase):
         self.assertFormatEqual(foo3, '(a, b, *args, **kwargs)')
 
         def foo4(a: int, b) -> list: pass
-        if sys.version_info[:2] < (3, 7):
-            formatted4 = '(a:int, b) -> list'
-        else:
-            formatted4 = '(a: int, b) -> list'
+        formatted4 = '(a: int, b) -> list'
         self.assertFormatEqual(foo4, formatted4)
 
         # examples from https://www.python.org/dev/peps/pep-3102/

@@ -19,18 +19,6 @@ def construct_dummy(path, parent):
         return DummyCollector(path, parent=parent)
 
 def pytest_pycollect_makemodule(path, parent):
-    if '_py33' in path.basename and version < (3, 3):
-        return construct_dummy(path, parent)
-    if '_py34' in path.basename and version < (3, 4):
-        return construct_dummy(path, parent)
-    if '_py35' in path.basename and version < (3, 5):
-        return construct_dummy(path, parent)
-    if '_py36' in path.basename and version < (3, 6):
-        return construct_dummy(path, parent)
-    if '_py37' in path.basename and version < (3, 7):
-        return construct_dummy(path, parent)
-    if '_py38' in path.basename and version < (3, 8):
-        return construct_dummy(path, parent)
     if '_py39' in path.basename and version < (3, 9):
         return construct_dummy(path, parent)
     if '_py310' in path.basename and version < (3, 10):

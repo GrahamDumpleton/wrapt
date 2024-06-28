@@ -180,13 +180,9 @@ class TestPostImportHooks(unittest.TestCase):
 
         import this
 
-        if sys.version_info[:2] >= (3, 3):
-            from importlib.machinery import SourceFileLoader
-            self.assertIsInstance(this.__loader__, SourceFileLoader)
-            self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
-
-        else:
-            self.assertEqual(hasattr(this, "__loader__"), False)
+        from importlib.machinery import SourceFileLoader
+        self.assertIsInstance(this.__loader__, SourceFileLoader)
+        self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
 
 if __name__ == '__main__':
     unittest.main()

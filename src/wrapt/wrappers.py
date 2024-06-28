@@ -369,9 +369,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __int__(self):
         return int(self.__wrapped__)
 
-    def __long__(self):
-        return long(self.__wrapped__)
-
     def __float__(self):
         return float(self.__wrapped__)
 
