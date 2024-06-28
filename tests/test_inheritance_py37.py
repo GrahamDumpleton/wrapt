@@ -1,9 +1,6 @@
-from __future__ import print_function
-
-import unittest
-
 import abc
 import _py_abc
+import unittest
 
 import wrapt
 

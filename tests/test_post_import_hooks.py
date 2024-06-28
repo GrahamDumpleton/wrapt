@@ -1,8 +1,6 @@
-from __future__ import print_function
-
-import unittest
 import sys
 import threading
+import unittest
 
 import wrapt
 from wrapt.importer import _post_import_hooks

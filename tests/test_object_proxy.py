@@ -1,9 +1,7 @@
-from __future__ import print_function
-
-import unittest
-import types
-import sys
 import re
+import sys
+import types
+import unittest
 
 is_pypy = '__pypy__' in sys.builtin_module_names
 

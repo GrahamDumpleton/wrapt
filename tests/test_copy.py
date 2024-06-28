@@ -1,8 +1,5 @@
-from __future__ import print_function
-
-import unittest
-
 import copy
+import unittest
 
 import wrapt
 

@@ -1,8 +1,5 @@
-from __future__ import print_function
-
-import unittest
-import threading
 import inspect
+import unittest
 
 import wrapt
 
