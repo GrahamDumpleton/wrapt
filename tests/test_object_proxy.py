@@ -9,7 +9,7 @@ is_pypy = '__pypy__' in sys.builtin_module_names
 
 import wrapt
 
-from compat import PY2, PY3, exec_
+from compat import PY2, PY3
 
 OBJECTS_CODE = """
 class TargetBaseClass(object):
@@ -24,7 +24,7 @@ def target():
 """
 
 objects = types.ModuleType('objects')
-exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
+exec(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
 class TestAttributeAccess(unittest.TestCase):
 

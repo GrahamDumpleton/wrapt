@@ -8,7 +8,7 @@ from typing import Iterable
 
 import wrapt
 
-from compat import PY2, exec_
+from compat import PY2
 
 DECORATORS_CODE = """
 import wrapt
@@ -28,7 +28,7 @@ def adapter2(wrapped, instance, args, kwargs):
 """
 
 decorators = types.ModuleType('decorators')
-exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 def function1(arg1, arg2) -> Iterable:
     '''documentation'''
