@@ -2,9 +2,6 @@ import sys
 import operator
 import inspect
 
-def with_metaclass(meta, *bases):
-    """Create a base class with a metaclass."""
-    return meta("NewBase", bases, {})
 
 class _ObjectProxyMethods(object):
 
@@ -49,6 +46,7 @@ class _ObjectProxyMethods(object):
     def __weakref__(self):
         return self.__wrapped__.__weakref__
 
+
 class _ObjectProxyMetaType(type):
     def __new__(cls, name, bases, dictionary):
         # Copy our special properties into the class so that they
@@ -60,8 +58,11 @@ class _ObjectProxyMetaType(type):
 
         return type.__new__(cls, name, bases, dictionary)
 
-class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
+class _ObjectProxyBase(metaclass=_ObjectProxyMetaType): ...
+
+
+class ObjectProxy(_ObjectProxyBase):
     __slots__ = '__wrapped__'
 
     def __init__(self, wrapped):
