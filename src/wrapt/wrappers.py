@@ -337,7 +337,7 @@ class ObjectProxy(_ObjectProxyBase):
         self.__wrapped__ %= other
         return self
 
-    def __ipow__(self, other):
+    def __ipow__(self, other, *args):
         self.__wrapped__ **= other
         return self
 

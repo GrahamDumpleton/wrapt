@@ -512,4 +512,4 @@ def synchronized(wrapped):
     return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
 
 
-synchronized._synchronized_meta_lock = Lock()
+setattr(synchronized, '_synchronized_meta_lock', Lock())

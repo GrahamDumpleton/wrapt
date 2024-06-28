@@ -6,6 +6,7 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 from importlib.util import find_spec
 import sys
 import threading
+from typing import Callable
 
 from .__wrapt__ import ObjectProxy
 
@@ -15,7 +16,7 @@ from .__wrapt__ import ObjectProxy
 # module will be truncated but the list left in the dictionary. This
 # acts as a flag to indicate that the module had already been imported.
 
-_post_import_hooks = {}
+_post_import_hooks: dict[str, list[Callable[[object], object]]] = {}
 _post_import_hooks_init = False
 _post_import_hooks_lock = threading.RLock()
 
