@@ -1,11 +1,9 @@
-from __future__ import print_function
-
 import unittest
 
 import wrapt
 
-class TestObjectDescriptors(unittest.TestCase):
 
+class TestObjectDescriptors(unittest.TestCase):
     def test_set_name(self):
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -33,6 +31,7 @@ class TestObjectDescriptors(unittest.TestCase):
 
         self.assertEqual(attribute_name, ["method"])
         self.assertEqual(instance.method(), True)
+
 
 if __name__ == '__main__':
     unittest.main()

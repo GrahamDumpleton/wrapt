@@ -157,7 +157,7 @@ some specific behaviour of the proxy.
 
     def function():
         print('executing', function.__name__)
-    
+
     class CallableWrapper(wrapt.ObjectProxy):
 
         def __call__(self, *args, **kwargs):
@@ -208,7 +208,7 @@ change will also be reflected in the wrapped object.
 
     >>> function.attribute
     1
-    >>> proxy.attribute 
+    >>> proxy.attribute
     1
 
 If an attribute was updated on the wrapped object directly, that change is
@@ -247,7 +247,7 @@ be prefixed with ``_self_``.
               return wrapped(*args, **kwargs)
           finally:
               print('exiting', wrapped.__name__)
-        
+
     >>> proxy = CallableWrapper(function, wrapper)
 
     >>> proxy._self_wrapper
@@ -281,11 +281,11 @@ definition.
         @attribute.deleter
         def attribute(self):
            del self._self_attribute
-     
+
     >>> proxy = CustomProxy(1)
     >>> print proxy.attribute
     1
-    >>> proxy.attribute = 2 
+    >>> proxy.attribute = 2
     >>> print proxy.attribute
     2
     >>> del proxy.attribute
@@ -405,7 +405,7 @@ The above rules can be summarised with the following example.
 ::
 
     import inspect
-    
+
     def wrapper(wrapped, instance, args, kwargs):
         if instance is None:
             if inspect.isclass(wrapped):

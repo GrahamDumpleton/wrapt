@@ -1,16 +1,12 @@
-from __future__ import print_function
-
-import unittest
 import sys
 import threading
+import unittest
 
 import wrapt
 from wrapt.importer import _post_import_hooks
 
-from compat import PY2, PY3
 
 class TestPostImportHooks(unittest.TestCase):
-
     def setUp(self):
         super(TestPostImportHooks, self).setUp()
 
@@ -31,14 +27,14 @@ class TestPostImportHooks(unittest.TestCase):
 
         self.assertEqual(len(invoked), 0)
 
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked), 1)
 
     def test_after_import(self):
         invoked = []
 
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked), 0)
 
@@ -61,7 +57,7 @@ class TestPostImportHooks(unittest.TestCase):
         self.assertEqual(len(invoked_one), 0)
         self.assertEqual(len(invoked_two), 0)
 
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked_one), 1)
         self.assertEqual(len(invoked_two), 0)
@@ -82,12 +78,13 @@ class TestPostImportHooks(unittest.TestCase):
             self.assertEqual(module.__name__, 'this')
             invoked.append(1)
 
-        import this
+        import this  # noqa
+
         self.assertEqual(len(invoked), 1)
 
         del sys.modules['this']
         wrapt.register_post_import_hook(hook_this, 'this')
-        import this
+        import this  # noqa
 
         self.assertEqual(len(invoked), 2)
 
@@ -97,7 +94,7 @@ class TestPostImportHooks(unittest.TestCase):
         # been imported, creates a thread which in turn attempts to register
         # another import hook.
 
-        import this
+        import this  # noqa
 
         @wrapt.when_imported('this')
         def hook_this(module):
@@ -133,7 +130,8 @@ class TestPostImportHooks(unittest.TestCase):
 
             self.assertFalse(thread.is_alive())
 
-        import this
+        import this  # noqa
+
         del sys.modules['this']
 
     def test_import_deadlock_3(self):
@@ -148,9 +146,6 @@ class TestPostImportHooks(unittest.TestCase):
         # there is a module import lock per named module and so we do not have
         # this problem.
 
-        if PY2:
-          return
-
         hooks_called = []
 
         @wrapt.when_imported('this')
@@ -158,13 +153,13 @@ class TestPostImportHooks(unittest.TestCase):
             hooks_called.append('this')
 
             self.assertFalse('wsgiref' in sys.modules)
-    
+
             @wrapt.when_imported('wsgiref')
             def hook_wsgiref(module):
                 hooks_called.append('wsgiref')
 
             def worker():
-                import wsgiref
+                import wsgiref  # noqa
 
             thread = threading.Thread(target=worker)
             thread.start()
@@ -172,7 +167,8 @@ class TestPostImportHooks(unittest.TestCase):
 
             self.assertFalse(thread.is_alive())
 
-        import this
+        import this  # noqa
+
         del sys.modules['this']
 
         self.assertEqual(hooks_called, ['this', 'wsgiref'])
@@ -182,15 +178,13 @@ class TestPostImportHooks(unittest.TestCase):
         def hook_this(module):
             pass
 
-        import this
+        import this  # noqa
 
-        if sys.version_info[:2] >= (3, 3):
-            from importlib.machinery import SourceFileLoader
-            self.assertIsInstance(this.__loader__, SourceFileLoader)
-            self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
+        from importlib.machinery import SourceFileLoader
 
-        else:
-            self.assertEqual(hasattr(this, "__loader__"), False)
+        self.assertIsInstance(this.__loader__, SourceFileLoader)
+        self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
+
 
 if __name__ == '__main__':
     unittest.main()

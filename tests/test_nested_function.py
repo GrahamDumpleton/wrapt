@@ -1,11 +1,8 @@
-from __future__ import print_function
-
-import unittest
+import inspect
 import types
+import unittest
 
 import wrapt
-
-from compat import exec_, getfullargspec
 
 DECORATORS_CODE = """
 import wrapt
@@ -16,27 +13,33 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 """
 
 decorators = types.ModuleType('decorators')
-exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+
 
 def function1():
     def inner(arg):
         '''documentation'''
         return arg
+
     return inner
 
+
 function1o = function1
+
 
 def function1():
     @decorators.passthru_decorator
     def inner(arg):
         '''documentation'''
         return arg
+
     return inner
+
 
 function1d = function1
 
-class TestNamingNestedFunction(unittest.TestCase):
 
+class TestNamingNestedFunction(unittest.TestCase):
     def test_object_name(self):
         # Test preservation of function __name__ attribute.
 
@@ -65,8 +68,8 @@ class TestNamingNestedFunction(unittest.TestCase):
     def test_argspec(self):
         # Test preservation of function argument specification.
 
-        function1o_argspec = getfullargspec(function1o())
-        function1d_argspec = getfullargspec(function1d())
+        function1o_argspec = inspect.getfullargspec(function1o())
+        function1d_argspec = inspect.getfullargspec(function1d())
         self.assertEqual(function1o_argspec, function1d_argspec)
 
     def test_isinstance(self):
@@ -74,8 +77,8 @@ class TestNamingNestedFunction(unittest.TestCase):
 
         self.assertTrue(isinstance(function1d(), type(function1o())))
 
-class TestCallingNestedFunction(unittest.TestCase):
 
+class TestCallingNestedFunction(unittest.TestCase):
     def test_call_function(self):
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
@@ -95,11 +98,13 @@ class TestCallingNestedFunction(unittest.TestCase):
             @decorators.passthru_decorator
             def inner(*args, **kwargs):
                 return args, kwargs
+
             return inner
 
         result = _function()(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,12 +1,8 @@
-from __future__ import print_function
-
-import unittest
 import inspect
 import types
+import unittest
 
 import wrapt
-
-from compat import exec_, getfullargspec
 
 DECORATORS_CODE = """
 import wrapt
@@ -17,36 +13,42 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 """
 
 decorators = types.ModuleType('decorators')
-exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
-class OldClass1():
+
+class OldClass1:
     def function(self, arg):
         '''documentation'''
         return arg
 
+
 OldClass1o = OldClass1
 
-class OldClass1():
+
+class OldClass1:
     @decorators.passthru_decorator
     def function(self, arg):
         '''documentation'''
         return arg
 
+
 OldClass1d = OldClass1
 
-class TestNamingInstanceMethodOldStyle(unittest.TestCase):
 
+class TestNamingInstanceMethodOldStyle(unittest.TestCase):
     def test_class_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(OldClass1d.function.__name__,
-                OldClass1o.function.__name__)
+        self.assertEqual(
+            OldClass1d.function.__name__, OldClass1o.function.__name__
+        )
 
     def test_instance_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(OldClass1d().function.__name__,
-                OldClass1o().function.__name__)
+        self.assertEqual(
+            OldClass1d().function.__name__, OldClass1o().function.__name__
+        )
 
     def test_class_object_qualname(self):
         # Test preservation of instance method __qualname__ attribute.
@@ -71,63 +73,72 @@ class TestNamingInstanceMethodOldStyle(unittest.TestCase):
     def test_class_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(OldClass1d.function.__module__,
-                OldClass1o.function.__module__)
+        self.assertEqual(
+            OldClass1d.function.__module__, OldClass1o.function.__module__
+        )
 
     def test_instance_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(OldClass1d().function.__module__,
-                OldClass1o().function.__module__)
+        self.assertEqual(
+            OldClass1d().function.__module__, OldClass1o().function.__module__
+        )
 
     def test_class_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(OldClass1d.function.__doc__,
-                OldClass1o.function.__doc__)
+        self.assertEqual(
+            OldClass1d.function.__doc__, OldClass1o.function.__doc__
+        )
 
     def test_instance_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(OldClass1d().function.__doc__,
-                OldClass1o().function.__doc__)
+        self.assertEqual(
+            OldClass1d().function.__doc__, OldClass1o().function.__doc__
+        )
 
     def test_class_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(OldClass1o.function)
-        function_argspec = getfullargspec(OldClass1d.function)
+        original_argspec = inspect.getfullargspec(OldClass1o.function)
+        function_argspec = inspect.getfullargspec(OldClass1d.function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_instance_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(OldClass1o().function)
-        function_argspec = getfullargspec(OldClass1d().function)
+        original_argspec = inspect.getfullargspec(OldClass1o().function)
+        function_argspec = inspect.getfullargspec(OldClass1d().function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_getmembers(self):
-        original_members = inspect.getmembers(OldClass1o().function)
-        function_members = inspect.getmembers(OldClass1d().function)
+        inspect.getmembers(OldClass1o().function)
+        inspect.getmembers(OldClass1d().function)
 
     def test_class_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(OldClass1d.function,
-                type(OldClass1o.function)))
+        self.assertTrue(
+            isinstance(OldClass1d.function, type(OldClass1o.function))
+        )
 
     def test_instance_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(OldClass1d().function,
-                type(OldClass1o().function)))
+        self.assertTrue(
+            isinstance(OldClass1d().function, type(OldClass1o().function))
+        )
+
 
 class NewClass1(object):
     def function(self, arg):
         '''documentation'''
         return arg
 
+
 NewClass1o = NewClass1
+
 
 class NewClass1(object):
     @decorators.passthru_decorator
@@ -135,21 +146,24 @@ class NewClass1(object):
         '''documentation'''
         return arg
 
+
 NewClass1d = NewClass1
 
-class TestNamingInstanceMethodNewStyle(unittest.TestCase):
 
+class TestNamingInstanceMethodNewStyle(unittest.TestCase):
     def test_class_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(NewClass1d.function.__name__,
-                NewClass1o.function.__name__)
+        self.assertEqual(
+            NewClass1d.function.__name__, NewClass1o.function.__name__
+        )
 
     def test_instance_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(NewClass1d().function.__name__,
-                NewClass1o().function.__name__)
+        self.assertEqual(
+            NewClass1d().function.__name__, NewClass1o().function.__name__
+        )
 
     def test_class_object_qualname(self):
         # Test preservation of instance method __qualname__ attribute.
@@ -174,55 +188,61 @@ class TestNamingInstanceMethodNewStyle(unittest.TestCase):
     def test_class_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(NewClass1d.function.__module__,
-                NewClass1o.function.__module__)
+        self.assertEqual(
+            NewClass1d.function.__module__, NewClass1o.function.__module__
+        )
 
     def test_instance_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(NewClass1d().function.__module__,
-                NewClass1o().function.__module__)
+        self.assertEqual(
+            NewClass1d().function.__module__, NewClass1o().function.__module__
+        )
 
     def test_class_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(NewClass1d.function.__doc__,
-                NewClass1o.function.__doc__)
+        self.assertEqual(
+            NewClass1d.function.__doc__, NewClass1o.function.__doc__
+        )
 
     def test_instance_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(NewClass1d().function.__doc__,
-                NewClass1o().function.__doc__)
+        self.assertEqual(
+            NewClass1d().function.__doc__, NewClass1o().function.__doc__
+        )
 
     def test_class_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(NewClass1o.function)
-        function_argspec = getfullargspec(NewClass1d.function)
+        original_argspec = inspect.getfullargspec(NewClass1o.function)
+        function_argspec = inspect.getfullargspec(NewClass1d.function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_instance_argspec(self):
         # Test preservation of instance method argument specification.
 
-        original_argspec = getfullargspec(NewClass1o().function)
-        function_argspec = getfullargspec(NewClass1d().function)
+        original_argspec = inspect.getfullargspec(NewClass1o().function)
+        function_argspec = inspect.getfullargspec(NewClass1d().function)
         self.assertEqual(original_argspec, function_argspec)
 
     def test_class_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(NewClass1d.function,
-                type(NewClass1o.function)))
+        self.assertTrue(
+            isinstance(NewClass1d.function, type(NewClass1o.function))
+        )
 
     def test_instance_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(NewClass1d().function,
-                type(NewClass1o().function)))
+        self.assertTrue(
+            isinstance(NewClass1d().function, type(NewClass1o().function))
+        )
+
 
 class TestCallingInstanceMethodOldStyle(unittest.TestCase):
-
     def test_class_call_function(self):
         # Test calling instancemethod via class and passing in the class
         # instance directly.
@@ -243,12 +263,12 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class():
+        class Class:
             @_decorator
             def _function(self, *args, **kwargs):
                 return (args, kwargs)
 
-        result = Class._function(*((Class(),)+_args), **_kwargs)
+        result = Class._function(*((Class(),) + _args), **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
 
@@ -271,7 +291,7 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class():
+        class Class:
             @_decorator
             def _function(self, *args, **kwargs):
                 return (args, kwargs)
@@ -300,13 +320,13 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class():
+        class Class:
             @_decorator
             @_decorator
             def _function(self, *args, **kwargs):
                 return (args, kwargs)
 
-        result = Class._function(*((Class(),)+_args), **_kwargs)
+        result = Class._function(*((Class(),) + _args), **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
 
@@ -329,7 +349,7 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class():
+        class Class:
             @_decorator
             @_decorator
             def _function(self, *args, **kwargs):
@@ -338,9 +358,9 @@ class TestCallingInstanceMethodOldStyle(unittest.TestCase):
         result = Class()._function(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
+
 
 class TestCallingInstanceMethodNewStyle(unittest.TestCase):
-
     def test_class_call_function(self):
         # Test calling instancemethod via class and passing in the class
         # instance directly.
@@ -456,6 +476,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         result = Class()._function(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
+
 
 if __name__ == '__main__':
     unittest.main()

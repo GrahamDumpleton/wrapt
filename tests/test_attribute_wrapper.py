@@ -1,15 +1,14 @@
-from __future__ import print_function
-
 import unittest
 
 import wrapt
+
 
 class Class(object):
     def __init__(self, value):
         self.value = value
 
-class TestAttributeProxy(unittest.TestCase):
 
+class TestAttributeProxy(unittest.TestCase):
     def test_wrap_attribute(self):
         wrapt.wrap_object_attribute(__name__, 'Class.value', wrapt.ObjectProxy)
 

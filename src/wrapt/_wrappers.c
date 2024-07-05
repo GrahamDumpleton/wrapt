@@ -2845,7 +2845,7 @@ static PyObject *WraptBoundFunctionWrapper_call(
 #endif
     }
 
-    /* 
+    /*
     * We need to do things different depending on whether we are likely
     * wrapping an instance method vs a static method or class method.
     */
