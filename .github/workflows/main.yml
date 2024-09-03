@@ -291,7 +291,7 @@ jobs:
     - name: Install coverage package
       run: python -m pip install -U coverage
     - name: Download partial coverage reports
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4.1.7
       with:
         name: coverage
     - name: Combine coverage
