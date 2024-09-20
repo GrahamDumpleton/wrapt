@@ -1321,6 +1321,7 @@ static PyObject *WraptObjectProxy_round(
         WraptObjectProxyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *ndigits = NULL;
+    int res;
 
     PyObject *module = NULL;
     PyObject *dict = NULL;
@@ -1346,13 +1347,23 @@ static PyObject *WraptObjectProxy_round(
         return NULL;
 
     round = PyObject_GetAttrString(module, "round");
+    dict = PyModule_GetDict(module);
 
+    #if PY_VERSION_HEX >= 0x30d0000  /* Python >=3.13 */
+    res = PyDict_GetItemStringRef(dict, "round", &round);
+    if (res != 1) {
+        Py_DECREF(module);
+        return NULL;
+    }
+    #else
+    round = PyDict_GetItemString(dict, "round");
     if (!round) {
         Py_DECREF(module);
         return NULL;
     }
-
     Py_INCREF(round);
+    #endif
+
     Py_DECREF(module);
 
     result = PyObject_CallFunctionObjArgs(round, self->wrapped, ndigits, NULL);
