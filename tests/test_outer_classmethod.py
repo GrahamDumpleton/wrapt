@@ -128,18 +128,20 @@ class TestCallingOuterClassMethod(unittest.TestCase):
         # first argument with the actual arguments following that. This
         # was only finally fixed in Python 3.9. For more details see:
         # https://bugs.python.org/issue19072
+        # Starting with Python 3.13 the old behavior is back.
+        # For more details see https://github.com/python/cpython/issues/89519
 
         _args = (1, 2)
         _kwargs = {'one': 1, 'two': 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            if PYXY < (3, 9):
-                self.assertEqual(instance, None)
-                self.assertEqual(args, (Class,)+_args)
-            else:
+            if (3, 9) <= PYXY < (3, 13):
                 self.assertEqual(instance, Class)
                 self.assertEqual(args, _args)
+            else:
+                self.assertEqual(instance, None)
+                self.assertEqual(args, (Class,)+_args)
 
             self.assertEqual(kwargs, _kwargs)
             self.assertEqual(wrapped.__module__, _function.__module__)
@@ -176,12 +178,12 @@ class TestCallingOuterClassMethod(unittest.TestCase):
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
-            if PYXY < (3, 9):
-                self.assertEqual(instance, None)
-                self.assertEqual(args, (Class,)+_args)
-            else:
+            if (3, 9) <= PYXY < (3, 13):
                 self.assertEqual(instance, Class)
                 self.assertEqual(args, _args)
+            else:
+                self.assertEqual(instance, None)
+                self.assertEqual(args, (Class,)+_args)
 
             self.assertEqual(kwargs, _kwargs)
             self.assertEqual(wrapped.__module__, _function.__module__)
