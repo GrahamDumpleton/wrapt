@@ -112,5 +112,51 @@ class TestDecorator(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
+    def test_decorated_function_as_instance_attribute(self):
+
+        @wrapt.decorator
+        def passthrough(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        
+        @passthrough
+        def function():
+            pass
+
+        class A:
+            _function = function
+
+        self.assertTrue(A._function._self_parent is function)
+        self.assertEqual(A._function._self_binding, "function")
+        self.assertEqual(A._function._self_owner, A)
+
+        A._function()
+
+        a = A()
+
+        self.assertTrue(a._function._self_parent is function)
+        self.assertEqual(a._function._self_binding, "function")
+        self.assertEqual(a._function._self_owner, A)
+
+        with self.assertRaises(TypeError):
+            a._function()
+
+        # Test example without using the decorator to show same outcome. The
+        # exception should be "TypeError: function() takes 0 positional
+        # arguments but 1 was given".
+
+        def xpassthrough(wrapped):
+            return wrapped
+
+        xfunction = xpassthrough(function)
+
+        class B:
+            _xfunction = xfunction
+
+        b = B()
+
+        with self.assertRaises(TypeError):
+            b._xfunction()   
+
+
 if __name__ == '__main__':
     unittest.main()
