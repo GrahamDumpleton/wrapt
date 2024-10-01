@@ -2285,7 +2285,7 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
     }
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-            "OOO|OOO:FunctionWrapperBase", kwlist, &wrapped, &instance,
+            "OOO|OOOO:FunctionWrapperBase", kwlist, &wrapped, &instance,
             &wrapper, &enabled, &binding, &parent, &owner)) {
         return -1;
     }
@@ -2503,7 +2503,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
                 (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
                 obj, self->wrapper, self->enabled, self->binding,
-                self, owner, NULL);
+                self, type, NULL);
 
         Py_XDECREF(bound_type);
         Py_DECREF(descriptor);
@@ -2563,7 +2563,7 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
                 (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
                 obj, self->wrapper, self->enabled, self->binding,
-                self->parent, owner, NULL);
+                self->parent, type, NULL);
 
         Py_XDECREF(bound_type);
         Py_DECREF(descriptor);
@@ -2782,7 +2782,7 @@ static PyGetSetDef WraptFunctionWrapperBase_getset[] = {
                             NULL, 0 },
     { "_self_parent",       (getter)WraptFunctionWrapperBase_get_self_parent,
                             NULL, 0 },
-    { "_self_owner",       (getter)WraptFunctionWrapperBase_get_self_ownwer,
+    { "_self_owner",       (getter)WraptFunctionWrapperBase_get_self_owner,
                             NULL, 0 },
     { NULL },
 };
@@ -3179,7 +3179,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     }
 
     result = WraptFunctionWrapperBase_raw_init(self, wrapped, Py_None,
-            wrapper, enabled, binding, Py_None);
+            wrapper, enabled, binding, Py_None, Py_None);
 
     return result;
 }
