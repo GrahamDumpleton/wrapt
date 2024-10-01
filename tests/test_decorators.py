@@ -112,7 +112,7 @@ class TestDecorator(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
-    def test_decorated_function_as_instance_attribute(self):
+    def test_decorated_function_as_class_attribute(self):
 
         @wrapt.decorator
         def passthrough(wrapped, instance, args, kwargs):
@@ -157,6 +157,43 @@ class TestDecorator(unittest.TestCase):
         with self.assertRaises(TypeError):
             b._xfunction()   
 
+    def test_decorated_function_as_instance_attribute(self):
+
+        @wrapt.decorator
+        def passthrough(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        
+        @passthrough
+        def function():
+            pass
+
+        class A:
+            def __init__(self):
+                self._function = function
+
+        a = A()
+
+        self.assertTrue(a._function._self_parent is None)
+        self.assertEqual(a._function._self_binding, "function")
+        self.assertTrue(a._function._self_owner is None)
+
+        a._function()
+
+        # Test example without using the decorator to show same outcome. The
+        # call should work with no hidden argumemts being passed.
+
+        def xpassthrough(wrapped):
+            return wrapped
+
+        xfunction = xpassthrough(function)
+
+        class B:
+            def __init__(self):
+                self._xfunction = xfunction
+
+        b = B()
+
+        b._xfunction() 
 
 if __name__ == '__main__':
     unittest.main()
