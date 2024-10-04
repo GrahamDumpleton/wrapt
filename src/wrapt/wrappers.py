@@ -505,51 +505,50 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, '_self_owner', owner)
 
     def __get__(self, instance, owner):
-        # This method is actually doing double duty for both unbound and
-        # bound derived wrapper classes. It should possibly be broken up
-        # and the distinct functionality moved into the derived classes.
-        # Can't do that straight away due to some legacy code which is
-        # relying on it being here in this base class.
+        # This method is actually doing double duty for both unbound and bound
+        # derived wrapper classes. It should possibly be broken up and the
+        # distinct functionality moved into the derived classes. Can't do that
+        # straight away due to some legacy code which is relying on it being
+        # here in this base class.
         #
-        # The distinguishing attribute which determines whether we are
-        # being called in an unbound or bound wrapper is the parent
-        # attribute. If binding has never occurred, then the parent will
-        # be None.
+        # The distinguishing attribute which determines whether we are being
+        # called in an unbound or bound wrapper is the parent attribute. If
+        # binding has never occurred, then the parent will be None.
         #
-        # First therefore, is if we are called in an unbound wrapper. In
-        # this case we perform the binding.
+        # First therefore, is if we are called in an unbound wrapper. In this
+        # case we perform the binding.
         #
-        # We have one special case to worry about here. This is where we
-        # are decorating a nested class. In this case the wrapped class
-        # would not have a __get__() method to call. In that case we
-        # simply return self.
+        # We have two special cases to worry about here. These are where we are
+        # decorating a class or builtin function as neither provide a __get__()
+        # method to call. In this case we simply return self.
         #
-        # Note that we otherwise still do binding even if instance is
-        # None and accessing an unbound instance method from a class.
-        # This is because we need to be able to later detect that
-        # specific case as we will need to extract the instance from the
-        # first argument of those passed in.
+        # Note that we otherwise still do binding even if instance is None and
+        # accessing an unbound instance method from a class. This is because we
+        # need to be able to later detect that specific case as we will need to
+        # extract the instance from the first argument of those passed in.
 
         if self._self_parent is None:
-            if not inspect.isclass(self.__wrapped__):
-                descriptor = self.__wrapped__.__get__(instance, owner)
+            if self._self_binding == 'builtin':
+                return self
+            
+            if self._self_binding == "class":
+                return self
 
-                return self.__bound_function_wrapper__(descriptor, instance,
-                        self._self_wrapper, self._self_enabled,
-                        self._self_binding, self, owner)
+            descriptor = self.__wrapped__.__get__(instance, owner)
 
-            return self
+            return self.__bound_function_wrapper__(descriptor, instance,
+                    self._self_wrapper, self._self_enabled,
+                    self._self_binding, self, owner)
 
-        # Now we have the case of binding occurring a second time on what
-        # was already a bound function. In this case we would usually
-        # return ourselves again. This mirrors what Python does.
+        # Now we have the case of binding occurring a second time on what was
+        # already a bound function. In this case we would usually return
+        # ourselves again. This mirrors what Python does.
         #
-        # The special case this time is where we were originally bound
-        # with an instance of None and we were likely an instance
-        # method. In that case we rebind against the original wrapped
-        # function from the parent again.
+        # The special case this time is where we were originally bound with an
+        # instance of None and we were likely an instance method. In that case
+        # we rebind against the original wrapped function from the parent again.
 
-        if self._self_instance is None and self._self_binding in ('function', 'callable'):
+        if self._self_instance is None and self._self_binding in ('function', 'instancemethod', 'callable'):
             descriptor = self._self_parent.__wrapped__.__get__(
                     instance, owner)
 
@@ -583,7 +582,7 @@ class _FunctionWrapperBase(ObjectProxy):
         # a function that was already bound to an instance. In that case
         # we want to extract the instance from the function and use it.
 
-        if self._self_binding in ('function', 'callable', 'classmethod'):
+        if self._self_binding in ('function', 'instancemethod', 'classmethod', 'callable'):
             if self._self_instance is None:
                 instance = getattr(self.__wrapped__, '__self__', None)
                 if instance is not None:
@@ -634,11 +633,11 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
 
         self, args = _unpack_self(*args)
 
-        # If enabled has been specified, then evaluate it at this point
-        # and if the wrapper is not to be executed, then simply return
-        # the bound function rather than a bound wrapper for the bound
-        # function. When evaluating enabled, if it is callable we call
-        # it, otherwise we evaluate it as a boolean.
+        # If enabled has been specified, then evaluate it at this point and if
+        # the wrapper is not to be executed, then simply return the bound
+        # function rather than a bound wrapper for the bound function. When
+        # evaluating enabled, if it is callable we call it, otherwise we
+        # evaluate it as a boolean.
 
         if self._self_enabled is not None:
             if callable(self._self_enabled):
@@ -647,26 +646,10 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
             elif not self._self_enabled:
                 return self.__wrapped__(*args, **kwargs)
 
-        # We need to do things different depending on whether we are
-        # likely wrapping an instance method vs a static method or class
-        # method.
+        # We need to do things different depending on whether we are likely
+        # wrapping an instance method vs a static method or class method.
 
         if self._self_binding == 'function':
-            # if self._self_instance is None:
-            #     # This situation can occur where someone is calling the
-            #     # instancemethod via the class type and passing the instance
-            #     # as the first argument. We need to shift the args before
-            #     # making the call to the wrapper and effectively bind the
-            #     # instance to the wrapped function using a partial so the
-            #     # wrapper doesn't see anything as being different.
-
-            #     if not args:
-            #         raise TypeError('missing 1 required positional argument')
-
-            #     instance, args = args[0], args[1:]
-            #     wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
-            #     return self._self_wrapper(wrapped, instance, args, kwargs)
-
             if self._self_instance is None and args:
                 instance, newargs = args[0], args[1:]
                 if isinstance(instance, self._self_owner):
@@ -679,11 +662,11 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
         elif self._self_binding == 'callable':
             if self._self_instance is None:
                 # This situation can occur where someone is calling the
-                # instancemethod via the class type and passing the instance
-                # as the first argument. We need to shift the args before
-                # making the call to the wrapper and effectively bind the
-                # instance to the wrapped function using a partial so the
-                # wrapper doesn't see anything as being different.
+                # instancemethod via the class type and passing the instance as
+                # the first argument. We need to shift the args before making
+                # the call to the wrapper and effectively bind the instance to
+                # the wrapped function using a partial so the wrapper doesn't
+                # see anything as being different.
 
                 if not args:
                     raise TypeError('missing 1 required positional argument')
@@ -787,27 +770,41 @@ class FunctionWrapper(_FunctionWrapperBase):
         # So to get the best outcome we can, whenever we aren't sure what
         # it is, we label it as a 'callable'. If it was already bound and
         # that is rebound later, we assume that it will be an instance
-        # method and try an cope with the possibility that the 'self'
+        # method and try and cope with the possibility that the 'self'
         # argument it being passed as an explicit argument and shuffle
         # the arguments around to extract 'self' for use as the instance.
 
-        if inspect.isfunction(wrapped):
-            binding = 'function'
+        binding = None
 
-        elif isinstance(wrapped, classmethod):
-            binding = 'classmethod'
+        if isinstance(wrapped, _FunctionWrapperBase):
+            binding = wrapped._self_binding
 
-        elif isinstance(wrapped, staticmethod):
-            binding = 'staticmethod'
+        if not binding:
+            if inspect.isbuiltin(wrapped):
+                binding = 'builtin'
 
-        elif hasattr(wrapped, '__self__'):
-            if inspect.isclass(wrapped.__self__):
+            elif inspect.isfunction(wrapped):
+                binding = 'function'
+
+            elif inspect.isclass(wrapped):
+                binding = 'class'
+
+            elif isinstance(wrapped, classmethod):
                 binding = 'classmethod'
+
+            elif isinstance(wrapped, staticmethod):
+                binding = 'staticmethod'
+
+            elif hasattr(wrapped, '__self__'):
+                if inspect.isclass(wrapped.__self__):
+                    binding = 'classmethod'
+                elif inspect.ismethod(wrapped):
+                    binding = 'instancemethod'
+                else:
+                    binding = 'callable'
+
             else:
                 binding = 'callable'
-
-        else:
-            binding = 'callable'
 
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
                 enabled, binding)

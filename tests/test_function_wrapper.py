@@ -213,12 +213,7 @@ class TestAttributeAccess(unittest.TestCase):
 
         self.assertEqual(function2._self_wrapper, decorator2)
 
-        # We can't identify this as being an instance method in
-        # Python 3 when it is a class so have to disable the check
-        # for Python 2. This has flow on effect of not working
-        # in the case of an instance either.
-
-        self.assertEqual(function2._self_binding, 'callable')
+        self.assertEqual(function2._self_binding, 'instancemethod')
 
     def test_classmethod_attributes_external_instance(self):
         def decorator1(wrapped, instance, args, kwargs):
@@ -515,7 +510,7 @@ class TestFunctionBinding(unittest.TestCase):
 
     def test_re_bind_after_none(self):
 
-        def function():
+        def function(self):
             pass
 
         def wrapper(wrapped, instance, args, kwargs):
@@ -528,6 +523,8 @@ class TestFunctionBinding(unittest.TestCase):
         instance = object()
 
         _bound_wrapper_1 = _wrapper.__get__(None, type(instance))
+
+        _bound_wrapper_1(instance)
 
         self.assertTrue(_bound_wrapper_1._self_parent is _wrapper)
 
@@ -542,6 +539,8 @@ class TestFunctionBinding(unittest.TestCase):
         self.assertTrue(isinstance(_bound_wrapper_2,
                 wrapt.BoundFunctionWrapper))
         self.assertEqual(_bound_wrapper_2._self_instance, instance)
+
+        _bound_wrapper_2()
 
         self.assertTrue(_bound_wrapper_1 is not _bound_wrapper_2)
 

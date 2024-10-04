@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import operator
 import unittest
 
 import wrapt
@@ -119,7 +120,7 @@ class TestDecorator(unittest.TestCase):
             return wrapped(*args, **kwargs)
         
         @passthrough
-        def function():
+        def function(self):
             pass
 
         class A:
@@ -129,42 +130,38 @@ class TestDecorator(unittest.TestCase):
         self.assertEqual(A._function._self_binding, "function")
         self.assertEqual(A._function._self_owner, A)
 
-        A._function()
-
         a = A()
+
+        A._function(a)
 
         self.assertTrue(a._function._self_parent is function)
         self.assertEqual(a._function._self_binding, "function")
         self.assertEqual(a._function._self_owner, A)
 
-        with self.assertRaises(TypeError):
-            a._function()
+        a._function()
 
-        # Test example without using the decorator to show same outcome. The
-        # exception should be "TypeError: function() takes 0 positional
-        # arguments but 1 was given".
+        # Test example without using the decorator to show same outcome.
 
-        def xpassthrough(wrapped):
-            return wrapped
-
-        xfunction = xpassthrough(function)
+        def xfunction(self):
+            pass
 
         class B:
             _xfunction = xfunction
 
         b = B()
 
-        with self.assertRaises(TypeError):
-            b._xfunction()   
+        B._xfunction(b)
+
+        b._xfunction()
 
     def test_decorated_function_as_instance_attribute(self):
 
         @wrapt.decorator
         def passthrough(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
-        
+
         @passthrough
-        def function():
+        def function(self):
             pass
 
         class A:
@@ -177,15 +174,19 @@ class TestDecorator(unittest.TestCase):
         self.assertEqual(a._function._self_binding, "function")
         self.assertTrue(a._function._self_owner is None)
 
-        a._function()
+        a._function(a)
 
-        # Test example without using the decorator to show same outcome. The
-        # call should work with no hidden argumemts being passed.
+        bound_a = a._function.__get__(a, A)
+        self.assertTrue(bound_a._self_parent is function)
+        self.assertEqual(bound_a._self_binding, "function")
+        self.assertTrue(bound_a._self_owner is A)
 
-        def xpassthrough(wrapped):
-            return wrapped
+        bound_a()
 
-        xfunction = xpassthrough(function)
+        # Test example without using the decorator to show same outcome.
+
+        def xfunction(self):
+            pass
 
         class B:
             def __init__(self):
@@ -193,7 +194,108 @@ class TestDecorator(unittest.TestCase):
 
         b = B()
 
-        b._xfunction() 
+        b._xfunction(b) 
+
+    def test_decorated_builtin_as_class_attribute(self):
+
+        @wrapt.decorator
+        def passthrough(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        function = passthrough(operator.add)
+
+        class A:
+            _function = function
+
+        self.assertTrue(A._function._self_parent is None)
+        self.assertEqual(A._function._self_binding, "builtin")
+        self.assertTrue(A._function._self_owner is None)
+
+        A._function(1, 2)
+
+        a = A()
+
+        self.assertTrue(a._function._self_parent is None)
+        self.assertEqual(a._function._self_binding, "builtin")
+        self.assertTrue(a._function._self_owner is None)
+
+        a._function(1, 2)
+
+        # Test example without using the decorator to show same outcome.
+
+        class B:
+            _xfunction = operator.add
+
+        B._xfunction(1, 2)
+
+        b = B()
+
+        b._xfunction(1, 2)
+
+    def test_call_semantics_for_assorted_decorator_use_cases(self):
+        def g1():
+            pass
+
+        def g2(self):
+            pass
+
+        class C1:
+            def __init__(self):
+                self.f3 = g1
+
+            def f1(self):
+                print("SELF", self)
+
+            f2 = g2
+
+        c1 = C1()
+
+        c1.f2()
+        c1.f3()
+
+        class C2:
+            f2 = C1.f1
+            f3 = C1.f2
+
+        c2 = C2()
+
+        c2.f2()
+        c2.f3()
+
+        class C3:
+            f2 = c1.f1
+
+        c3 = C3()
+
+        c3.f2()
+
+        @wrapt.decorator
+        def passthrough(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class C11:
+            @passthrough
+            def f1(self):
+                print("SELF", self)
+
+        c11 = C11()
+
+        class C12:
+            f2 = C11.f1
+
+        c12 = C12()
+
+        c12.f2()
+
+        class C13:
+            f2 = c11.f1
+
+        c13 = C13()
+
+        c13.f2()
+
+        C11.f1(c11)
+        C12.f2(c12)
 
 if __name__ == '__main__':
     unittest.main()

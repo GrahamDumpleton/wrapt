@@ -9,12 +9,12 @@ Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
 
 **Bugs Fixed**
 
-* When a normal function which had `wrapt.decorator` applied, was assigned as a
-  class attribute, and the function attribute called via the class or an
-  instance of the class, an additional argument was being passed, inserted as
-  the first argument, which was the class or instance. This was not the correct
-  behaviour and the class or instance should not have been passed as the first
-  argument.
+* When a normal function or builtin function which had `wrapt.decorator` or a
+  function wrapper applied, was assigned as a class attribute, and the function
+  attribute called via the class or an instance of the class, an additional
+  argument was being passed, inserted as the first argument, which was the class
+  or instance. This was not the correct behaviour and the class or instance
+  should not have been passed as the first argument.
 
 Version 1.16.0
 --------------

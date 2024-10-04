@@ -2353,16 +2353,19 @@ static PyObject *WraptFunctionWrapperBase_call(
     static PyObject *function_str = NULL;
     static PyObject *callable_str = NULL;
     static PyObject *classmethod_str = NULL;
+    static PyObject *instancemethod_str = NULL;
 
     if (!function_str) {
 #if PY_MAJOR_VERSION >= 3
         function_str = PyUnicode_InternFromString("function");
         callable_str = PyUnicode_InternFromString("callable");
         classmethod_str = PyUnicode_InternFromString("classmethod");
+        instancemethod_str = PyUnicode_InternFromString("instancemethod");
 #else
         function_str = PyString_InternFromString("function");
         callable_str = PyString_InternFromString("callable");
         classmethod_str = PyString_InternFromString("classmethod");
+        instancemethod_str = PyString_InternFromString("instancemethod");
 #endif
     }
 
@@ -2394,6 +2397,8 @@ static PyObject *WraptFunctionWrapperBase_call(
 
     if ((self->instance == Py_None) && (self->binding == function_str ||
             PyObject_RichCompareBool(self->binding, function_str,
+            Py_EQ) == 1 || self->binding == instancemethod_str ||
+            PyObject_RichCompareBool(self->binding, instancemethod_str,
             Py_EQ) == 1 || self->binding == callable_str ||
             PyObject_RichCompareBool(self->binding, callable_str,
             Py_EQ) == 1 || self->binding == classmethod_str ||
@@ -2439,6 +2444,9 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     static PyObject *bound_type_str = NULL;
     static PyObject *function_str = NULL;
     static PyObject *callable_str = NULL;
+    static PyObject *builtin_str = NULL;
+    static PyObject *class_str = NULL;
+    static PyObject *instancemethod_str = NULL;
 
     if (!bound_type_str) {
 #if PY_MAJOR_VERSION >= 3
@@ -2454,27 +2462,30 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
 #if PY_MAJOR_VERSION >= 3
         function_str = PyUnicode_InternFromString("function");
         callable_str = PyUnicode_InternFromString("callable");
+        builtin_str = PyUnicode_InternFromString("builtin");
+        class_str = PyUnicode_InternFromString("class");
+        instancemethod_str = PyUnicode_InternFromString("instancemethod");
 #else
         function_str = PyString_InternFromString("function");
         callable_str = PyString_InternFromString("callable");
+        builtin_str = PyString_InternFromString("builtin");
+        class_str = PyString_InternFromString("class");
+        instancemethod_str = PyString_InternFromString("instancemethod");
 #endif
     }
 
     if (self->parent == Py_None) {
-#if PY_MAJOR_VERSION < 3
-        if (PyObject_IsInstance(self->object_proxy.wrapped,
-                (PyObject *)&PyClass_Type) || PyObject_IsInstance(
-                self->object_proxy.wrapped, (PyObject *)&PyType_Type)) {
+        if (self->binding == builtin_str || PyObject_RichCompareBool(
+            self->binding, builtin_str, Py_EQ) == 1) {
             Py_INCREF(self);
             return (PyObject *)self;
         }
-#else
-        if (PyObject_IsInstance(self->object_proxy.wrapped,
-                (PyObject *)&PyType_Type)) {
+
+        if (self->binding == class_str || PyObject_RichCompareBool(
+            self->binding, class_str, Py_EQ) == 1) {
             Py_INCREF(self);
             return (PyObject *)self;
         }
-#endif
 
         if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL) {
             PyErr_Format(PyExc_AttributeError,
@@ -2513,6 +2524,8 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
 
     if (self->instance == Py_None && (self->binding == function_str ||
             PyObject_RichCompareBool(self->binding, function_str,
+            Py_EQ) == 1 || self->binding == instancemethod_str ||
+            PyObject_RichCompareBool(self->binding, instancemethod_str,
             Py_EQ) == 1 || self->binding == callable_str ||
             PyObject_RichCompareBool(self->binding, callable_str,
             Py_EQ) == 1)) {
@@ -3105,6 +3118,9 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     static PyObject *classmethod_str = NULL;
     static PyObject *staticmethod_str = NULL;
     static PyObject *callable_str = NULL;
+    static PyObject *builtin_str = NULL;
+    static PyObject *class_str = NULL;
+    static PyObject *instancemethod_str = NULL;
 
     int result = 0;
 
@@ -3147,35 +3163,74 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 #endif
     }
 
-    if (PyObject_IsInstance(wrapped, (PyObject *)&PyFunction_Type)) {
-        binding = function_str;
-    }
-    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type)) {
-        binding = classmethod_str;
-    }
-    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type)) {
-        binding = staticmethod_str;
-    }
-    else if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
-#if PY_MAJOR_VERSION < 3
-        if (PyObject_IsInstance(instance, (PyObject *)&PyClass_Type) ||
-                PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
-            binding = classmethod_str;
-        }
+    if (!builtin_str) {
+#if PY_MAJOR_VERSION >= 3
+        builtin_str = PyUnicode_InternFromString("builtin");
 #else
-        if (PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
+        builtin_str = PyString_InternFromString("builtin");
+#endif
+    }
+
+    if (!class_str) {
+#if PY_MAJOR_VERSION >= 3
+        class_str = PyUnicode_InternFromString("class");
+#else
+        class_str = PyString_InternFromString("class");
+#endif
+    }
+
+    if (!instancemethod_str) {
+#if PY_MAJOR_VERSION >= 3
+        instancemethod_str = PyUnicode_InternFromString("instancemethod");
+#else
+        instancemethod_str = PyString_InternFromString("instancemethod");
+#endif
+    }
+
+    if (PyObject_IsInstance(wrapped, (PyObject *)&WraptFunctionWrapperBase_Type)) {
+        binding = PyObject_GetAttrString(wrapped, "_self_binding");
+    }
+
+    if (!binding) {
+        if (PyCFunction_Check(wrapped)) {
+            binding = builtin_str;
+        }
+        else if (PyObject_IsInstance(wrapped, (PyObject *)&PyFunction_Type)) {
+            binding = function_str;
+        }
+        else if (PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type)) {
             binding = classmethod_str;
         }
-#endif
-        else
+        else if (PyObject_IsInstance(wrapped, (PyObject *)&PyType_Type)) {
+            binding = class_str;
+        }
+        else if (PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type)) {
+            binding = staticmethod_str;
+        }
+        else if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
+    #if PY_MAJOR_VERSION < 3
+            if (PyObject_IsInstance(instance, (PyObject *)&PyClass_Type) ||
+                    PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
+                binding = classmethod_str;
+            }
+    #else
+            if (PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
+                binding = classmethod_str;
+            }
+    #endif
+            else if (PyObject_IsInstance(wrapped, (PyObject *)&PyMethod_Type)) {
+                binding = instancemethod_str;
+            }
+            else
+                binding = callable_str;
+
+            Py_DECREF(instance);
+        }
+        else {
+            PyErr_Clear();
+
             binding = callable_str;
-
-        Py_DECREF(instance);
-    }
-    else {
-        PyErr_Clear();
-
-        binding = callable_str;
+        }
     }
 
     result = WraptFunctionWrapperBase_raw_init(self, wrapped, Py_None,
