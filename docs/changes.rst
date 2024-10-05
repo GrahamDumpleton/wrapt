@@ -16,6 +16,12 @@ Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
   or instance. This was not the correct behaviour and the class or instance
   should not have been passed as the first argument.
 
+* When an instance of a callable class object was wrapped which didn't not have
+  a `__get__()` method for binding, and it was called in context whhere binding
+  would be attempted, it would fail with error that `__get__()` did not exist
+  when instead it should have been called directly, ignoring that binding was
+  not possible. 
+
 Version 1.16.0
 --------------
 

@@ -528,13 +528,21 @@ class _FunctionWrapperBase(ObjectProxy):
         # extract the instance from the first argument of those passed in.
 
         if self._self_parent is None:
+            # Technically can probably just check for existence of __get__ on
+            # the wrapped object, but this is more explicit.
+
             if self._self_binding == 'builtin':
                 return self
             
             if self._self_binding == "class":
                 return self
 
-            descriptor = self.__wrapped__.__get__(instance, owner)
+            binder = getattr(self.__wrapped__, '__get__', None)
+
+            if binder is None:
+                return self
+
+            descriptor =  binder(instance, owner)
 
             return self.__bound_function_wrapper__(descriptor, instance,
                     self._self_wrapper, self._self_enabled,

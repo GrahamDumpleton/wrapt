@@ -554,7 +554,7 @@ class TestInvalidWrapper(unittest.TestCase):
             wrapper = wrapt.FunctionWrapper(None, _wrapper)
             wrapper.__get__(list(), list)()
 
-        self.assertRaises(AttributeError, run, ())
+        self.assertRaises(TypeError, run, ())
 
 class TestInvalidCalling(unittest.TestCase):
 

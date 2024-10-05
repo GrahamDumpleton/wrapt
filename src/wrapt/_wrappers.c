@@ -2488,10 +2488,8 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         }
 
         if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL) {
-            PyErr_Format(PyExc_AttributeError,
-                    "'%s' object has no attribute '__get__'",
-                    Py_TYPE(self->object_proxy.wrapped)->tp_name);
-            return NULL;
+            Py_INCREF(self);
+            return (PyObject *)self;
         }
 
         descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(

@@ -297,5 +297,43 @@ class TestDecorator(unittest.TestCase):
         C11.f1(c11)
         C12.f2(c12)
 
+    def test_call_semantics_for_assorted_wrapped_descriptor_use_cases(self):
+        class A:
+            def __call__(self):
+                print("A:__call__")
+
+        a = A()
+
+        class B:
+            def __call__(self):
+                print("B:__call__")
+            def __get__(self, obj, type):
+                print("B:__get__")
+                return self
+
+        b = B()
+
+        class C:
+            f1 = a
+            f2 = b
+
+        c = C()
+
+        c.f1()
+        c.f2()
+
+        @wrapt.decorator
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class D:
+            f1 = wrapper(a)
+            f2 = wrapper(b)
+
+        d = D()
+
+        d.f1()
+        d.f2()
+
 if __name__ == '__main__':
     unittest.main()
