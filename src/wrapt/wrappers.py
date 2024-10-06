@@ -126,6 +126,9 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
                 type(self.__wrapped__).__name__,
                 id(self.__wrapped__))
 
+    def __format__(self, format_spec):
+        return format(self.__wrapped__, format_spec)
+
     def __reversed__(self):
         return reversed(self.__wrapped__)
 

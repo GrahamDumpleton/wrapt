@@ -1583,6 +1583,13 @@ class TestObjectRepresentationObjectProxy(unittest.TestCase):
 
         self.assertNotEqual(repr(value).find('ObjectProxy at'), -1)
 
+    def test_format(self):
+        value = 1
+
+        proxy = wrapt.ObjectProxy(1)
+
+        self.assertEqual("{:0>3}".format(proxy), "{:0>3}".format(value))
+
 class TestDerivedClassCreation(unittest.TestCase):
 
     def test_derived_new(self):

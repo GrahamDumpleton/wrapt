@@ -1284,6 +1284,24 @@ static PyObject *WraptObjectProxy_bytes(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_format(
+        WraptObjectProxyObject *self, PyObject *args)
+{
+    PyObject *format_spec = NULL;
+
+    if (!self->wrapped) {
+      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      return NULL;
+    }
+
+    if (!PyArg_ParseTuple(args, "|O:format", &format_spec))
+        return NULL;
+
+    return PyObject_Format(self->wrapped, format_spec);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_reversed(
         WraptObjectProxyObject *self, PyObject *args)
 {
@@ -1797,6 +1815,7 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     { "__getattr__", (PyCFunction)WraptObjectProxy_getattr,
                     METH_VARARGS , 0 },
     { "__bytes__",  (PyCFunction)WraptObjectProxy_bytes, METH_NOARGS, 0 },
+    { "__format__",  (PyCFunction)WraptObjectProxy_format, METH_VARARGS, 0 },
     { "__reversed__", (PyCFunction)WraptObjectProxy_reversed, METH_NOARGS, 0 },
 #if PY_MAJOR_VERSION >= 3
     { "__round__",  (PyCFunction)WraptObjectProxy_round, METH_NOARGS, 0 },

@@ -7,6 +7,11 @@ Version 1.17.0
 Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
 3.8 or later is required.
 
+**New Features**
+
+* Add `__format__()` method to `ObjectProxy` class to allow formatting of
+  wrapped object.
+
 **Bugs Fixed**
 
 * When a normal function or builtin function which had `wrapt.decorator` or a
