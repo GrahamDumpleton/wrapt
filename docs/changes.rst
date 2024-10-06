@@ -27,6 +27,8 @@ Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
   when instead it should have been called directly, ignoring that binding was
   not possible. 
 
+* The `__round__` hook for the object proxy didn't accept `ndigits` argument.
+
 Version 1.16.0
 --------------
 

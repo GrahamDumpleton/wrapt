@@ -133,8 +133,8 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         return reversed(self.__wrapped__)
 
     if not PY2:
-        def __round__(self):
-            return round(self.__wrapped__)
+        def __round__(self, ndigits=None):
+            return round(self.__wrapped__, ndigits)
 
     if sys.hexversion >= 0x03070000:
         def __mro_entries__(self, bases):

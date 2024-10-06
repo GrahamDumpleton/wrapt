@@ -1852,7 +1852,9 @@ class SpecialMethods(unittest.TestCase):
         proxy = wrapt.ObjectProxy(instance)
 
         self.assertEqual(round(instance), round(proxy))
-
+        self.assertEqual(round(instance, 3), round(proxy, 3))
+        self.assertEqual(round(instance, ndigits=3), round(proxy, ndigits=3))
+        
 class TestArgumentUnpacking(unittest.TestCase):
 
     def test_self_keyword_argument_on_dict(self):
