@@ -128,7 +128,7 @@ static int WraptObjectProxy_init(WraptObjectProxyObject *self,
 {
     PyObject *wrapped = NULL;
 
-    static char *kwlist[] = { "wrapped", NULL };
+    char *const kwlist[] = { "wrapped", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ObjectProxy",
             kwlist, &wrapped)) {
@@ -2292,7 +2292,7 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
 
     static PyObject *callable_str = NULL;
 
-    static char *kwlist[] = { "wrapped", "instance", "wrapper",
+    char *const kwlist[] = { "wrapped", "instance", "wrapper",
             "enabled", "binding", "parent", "owner", NULL };
 
     if (!callable_str) {
@@ -3141,7 +3141,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 
     int result = 0;
 
-    static char *kwlist[] = { "wrapped", "wrapper", "enabled", NULL };
+    char *const kwlist[] = { "wrapped", "wrapper", "enabled", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O:FunctionWrapper",
             kwlist, &wrapped, &wrapper, &enabled)) {
