@@ -46,10 +46,12 @@ jobs:
         path: .coverage.*
 
   test_linux_no_gil:
-    name: Test (NO GIL) (${{ matrix.os }}, ${{ matrix.python-version }})
+    name: Test - NO GIL (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        os:
+          - ubuntu-20.04
         python-version: [3.13-dev]
     steps:
     - name: Checkout code
