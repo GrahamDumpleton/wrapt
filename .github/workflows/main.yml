@@ -45,6 +45,32 @@ jobs:
         name: coverage
         path: .coverage.*
 
+  test_linux_no_gil:
+    name: Test (NO GIL) (${{ matrix.os }}, ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.13-dev]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: deadsnakes/action@v3.2.0
+      with:
+        python-version: ${{ matrix.python-version }}
+        nogil: true
+    - name: Update pip
+      run: python -m pip install -U pip wheel setuptools
+    - name: Install tox
+      run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
+    - name: Test with tox
+      run: python -m tox
+    - name: Store partial coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage
+        path: .coverage.*
+
   # test_aarch64_linux:
   #   name: Test (${{ matrix.python.os }}, ${{ matrix.python.python-version }}, aarch64)
   #   runs-on: ${{ matrix.python.os }}
@@ -178,6 +204,7 @@ jobs:
     name: Build wheels (3.8+) on ${{ matrix.os }} for ${{ matrix.arch }}
     needs:
     - test_linux
+    - test_linux_no_gil
     #- test_aarch64_linux
     - test_macos
     - test_windows
@@ -216,6 +243,7 @@ jobs:
   #   if: ${{ false }}  # disable for now
   #   needs:
   #   - test_linux
+  #   - test_linux_no_gil
   #   - test_macos
   #   - test_windows
   #   runs-on: ubuntu-20.04
