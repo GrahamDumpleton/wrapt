@@ -12,6 +12,11 @@ Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
 * Add `__format__()` method to `ObjectProxy` class to allow formatting of
   wrapped object.
 
+* Added C extension internal flag to indicate that `wrapt` should be safe for
+  Python 3.13 free threading mode. Releases will include free threading variants
+  of Python wheels. Note that as free threading is new, one should be cautious
+  about using it in production until it has been more widely tested.
+
 **Bugs Fixed**
 
 * When a normal function or builtin function which had `wrapt.decorator` or a
