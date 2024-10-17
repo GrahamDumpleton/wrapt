@@ -22,7 +22,7 @@ jobs:
           - "3.10"
           - 3.11
           - 3.12
-          - 3.13-dev
+          - 3.13
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -52,7 +52,7 @@ jobs:
       matrix:
         os:
           - ubuntu-20.04
-        python-version: [3.13-dev]
+        python-version: [3.13]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -120,7 +120,7 @@ jobs:
           - "3.10"
           - 3.11
           - 3.12
-          - 3.13-dev
+          - 3.13
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -156,7 +156,7 @@ jobs:
           - "3.10"
           - 3.11
           - 3.12
-          - 3.13-dev
+          - 3.13
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -226,7 +226,7 @@ jobs:
         if: ${{ matrix.arch == 'aarch64' }}
         uses: docker/setup-qemu-action@v2
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21.2
+        uses: pypa/cibuildwheel@v2.21.3
         with:
           output-dir: dist
         env:
