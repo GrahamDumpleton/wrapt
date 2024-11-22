@@ -1583,6 +1583,13 @@ class TestObjectRepresentationObjectProxy(unittest.TestCase):
 
         self.assertNotEqual(repr(value).find('ObjectProxy at'), -1)
 
+    def test_format(self):
+        value = 1
+
+        proxy = wrapt.ObjectProxy(1)
+
+        self.assertEqual("{:0>3}".format(proxy), "{:0>3}".format(value))
+
 class TestDerivedClassCreation(unittest.TestCase):
 
     def test_derived_new(self):
@@ -1845,7 +1852,9 @@ class SpecialMethods(unittest.TestCase):
         proxy = wrapt.ObjectProxy(instance)
 
         self.assertEqual(round(instance), round(proxy))
-
+        self.assertEqual(round(instance, 3), round(proxy, 3))
+        self.assertEqual(round(instance, ndigits=3), round(proxy, ndigits=3))
+        
 class TestArgumentUnpacking(unittest.TestCase):
 
     def test_self_keyword_argument_on_dict(self):

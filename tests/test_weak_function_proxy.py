@@ -145,6 +145,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
 
         self.assertEqual(proxy(1, 2), (1, 2))
 
+        Class.function = None
         Class = None
         gc.collect()
 
@@ -166,6 +167,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
 
         self.assertEqual(proxy(1, 2), (1, 2))
 
+        Class.function = None
         Class = None
         gc.collect()
 

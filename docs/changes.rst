@@ -1,6 +1,39 @@
 Release Notes
 =============
 
+Version 1.17.0
+--------------
+
+Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
+3.8 or later is required.
+
+**New Features**
+
+* Add `__format__()` method to `ObjectProxy` class to allow formatting of
+  wrapped object.
+
+* Added C extension internal flag to indicate that `wrapt` should be safe for
+  Python 3.13 free threading mode. Releases will include free threading variants
+  of Python wheels. Note that as free threading is new, one should be cautious
+  about using it in production until it has been more widely tested.
+
+**Bugs Fixed**
+
+* When a normal function or builtin function which had `wrapt.decorator` or a
+  function wrapper applied, was assigned as a class attribute, and the function
+  attribute called via the class or an instance of the class, an additional
+  argument was being passed, inserted as the first argument, which was the class
+  or instance. This was not the correct behaviour and the class or instance
+  should not have been passed as the first argument.
+
+* When an instance of a callable class object was wrapped which didn't not have
+  a `__get__()` method for binding, and it was called in context whhere binding
+  would be attempted, it would fail with error that `__get__()` did not exist
+  when instead it should have been called directly, ignoring that binding was
+  not possible. 
+
+* The `__round__` hook for the object proxy didn't accept `ndigits` argument.
+
 Version 1.16.0
 --------------
 
