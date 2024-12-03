@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 1.17.1
+--------------
+
+**Bugs Fixed**
+
+* Due to GitHub actions changes, binary wheels were missing for macOS Intel.
+
 Version 1.17.0
 --------------
 
