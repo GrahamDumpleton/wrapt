@@ -10,7 +10,7 @@ run the command:
 
     tox
 
-By default tests are run for Python 2.7, 3.5-3.9 and PyPy, with and
+By default tests are run for Python 3.5-3.9 and PyPy, with and
 without the C extensions.
 
 ::
