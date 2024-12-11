@@ -5,7 +5,7 @@ import types
 
 import wrapt
 
-from compat import exec_, getfullargspec
+from compat import getfullargspec
 
 DECORATORS_CODE = """
 import wrapt
@@ -16,7 +16,7 @@ def passthru_decorator(wrapped, instance, args, kwargs):
 """
 
 decorators = types.ModuleType('decorators')
-exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 def function1():
     def inner(arg):
