@@ -7,7 +7,6 @@ import threading
 import wrapt
 from wrapt.importer import _post_import_hooks
 
-from compat import PY2, PY3
 
 class TestPostImportHooks(unittest.TestCase):
 
@@ -148,9 +147,6 @@ class TestPostImportHooks(unittest.TestCase):
         # there is a module import lock per named module and so we do not have
         # this problem.
 
-        if PY2:
-          return
-
         hooks_called = []
 
         @wrapt.when_imported('this')
@@ -158,7 +154,7 @@ class TestPostImportHooks(unittest.TestCase):
             hooks_called.append('this')
 
             self.assertFalse('wsgiref' in sys.modules)
-    
+
             @wrapt.when_imported('wsgiref')
             def hook_wsgiref(module):
                 hooks_called.append('wsgiref')

@@ -15,21 +15,18 @@ without the C extensions.
 
 ::
 
-    py27-without-extensions
     py35-without-extensions
     py36-without-extensions
     py37-without-extensions
     py38-without-extensions
     py39-without-extensions
 
-    py27-install-extensions
     py35-install-extensions
     py36-install-extensions
     py37-install-extensions
     py38-install-extensions
     py39-install-extensions
 
-    py27-disable-extensions
     py35-disable-extensions
     py36-disable-extensions
     py37-disable-extensions
@@ -44,10 +41,6 @@ If wishing to run tests for a specific Python combination you can run
 ::
 
     tox -e py39-install-extensions
-
-If adding more tests and you need to add a test which is Python 2 or
-Python 3 specific, then end the name of the Python code file as
-``_py2.py`` or ``_py3.py`` appropriately.
 
 For further options refer to the documentation for ``tox``.
 

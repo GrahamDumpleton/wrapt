@@ -6,8 +6,6 @@ import types
 
 import wrapt
 
-from compat import PY2, PY3, exec_
-
 class TestInheritance(unittest.TestCase):
 
     def test_single_inheritance(self):

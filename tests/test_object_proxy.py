@@ -9,8 +9,6 @@ is_pypy = '__pypy__' in sys.builtin_module_names
 
 import wrapt
 
-from compat import PY2, PY3, exec_
-
 OBJECTS_CODE = """
 class TargetBaseClass(object):
     "documentation"
@@ -24,7 +22,7 @@ def target():
 """
 
 objects = types.ModuleType('objects')
-exec_(OBJECTS_CODE, objects.__dict__, objects.__dict__)
+exec(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
 class TestAttributeAccess(unittest.TestCase):
 
@@ -69,8 +67,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, function1)
         self.assertEqual(function2.__name__, function1.__name__)
 
-        if PY3:
-            self.assertEqual(function2.__qualname__, function1.__qualname__)
+        self.assertEqual(function2.__qualname__, function1.__qualname__)
 
         function2.__wrapped__ = None
 
@@ -80,8 +77,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, None)
         self.assertFalse(hasattr(function2, '__name__'))
 
-        if PY3:
-            self.assertFalse(hasattr(function2, '__qualname__'))
+        self.assertFalse(hasattr(function2, '__qualname__'))
 
         def function3(*args, **kwargs):
             return args, kwargs
@@ -92,8 +88,7 @@ class TestAttributeAccess(unittest.TestCase):
         self.assertEqual(function2.__wrapped__, function3)
         self.assertEqual(function2.__name__, function3.__name__)
 
-        if PY3:
-            self.assertEqual(function2.__qualname__, function3.__qualname__)
+        self.assertEqual(function2.__qualname__, function3.__qualname__)
 
     def test_delete_wrapped(self):
         def function1(*args, **kwargs):
@@ -875,9 +870,6 @@ class TestAsNumberObjectProxy(unittest.TestCase):
         one = wrapt.ObjectProxy(1)
 
         self.assertEqual(int(one), 1)
-
-        if not PY3:
-            self.assertEqual(long(one), 1)
 
     def test_float(self):
         one = wrapt.ObjectProxy(1)
@@ -1804,15 +1796,14 @@ class CallableFunction(unittest.TestCase):
 class SpecialMethods(unittest.TestCase):
 
     def test_class_bytes(self):
-        if PY3:
-            class Class(object):
-                def __bytes__(self):
-                    return b'BYTES'
-            instance = Class()
+        class Class(object):
+            def __bytes__(self):
+                return b'BYTES'
+        instance = Class()
 
-            proxy = wrapt.ObjectProxy(instance)
+        proxy = wrapt.ObjectProxy(instance)
 
-            self.assertEqual(bytes(instance), bytes(proxy))
+        self.assertEqual(bytes(instance), bytes(proxy))
 
     def test_str_format(self):
         instance = 'abcd'
@@ -1854,7 +1845,7 @@ class SpecialMethods(unittest.TestCase):
         self.assertEqual(round(instance), round(proxy))
         self.assertEqual(round(instance, 3), round(proxy, 3))
         self.assertEqual(round(instance, ndigits=3), round(proxy, ndigits=3))
-        
+
 class TestArgumentUnpacking(unittest.TestCase):
 
     def test_self_keyword_argument_on_dict(self):
