@@ -3,33 +3,6 @@ as well as some commonly used decorators.
 
 """
 
-import sys
-
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    string_types = basestring,
-
-    def exec_(_code_, _globs_=None, _locs_=None):
-        """Execute code in a namespace."""
-        if _globs_ is None:
-            frame = sys._getframe(1)
-            _globs_ = frame.f_globals
-            if _locs_ is None:
-                _locs_ = frame.f_locals
-            del frame
-        elif _locs_ is None:
-            _locs_ = _globs_
-        exec("""exec _code_ in _globs_, _locs_""")
-
-else:
-    string_types = str,
-
-    import builtins
-
-    exec_ = getattr(builtins, "exec")
-    del builtins
-
 from functools import partial
 from inspect import isclass
 from threading import Lock, RLock
@@ -102,9 +75,6 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
         else:
             return signature(self._self_adapter)
 
-    if PY2:
-        func_code = __code__
-        func_defaults = __defaults__
 
 class _BoundAdapterWrapper(BoundFunctionWrapper):
 
@@ -120,8 +90,6 @@ class _BoundAdapterWrapper(BoundFunctionWrapper):
         else:
             return signature(self._self_parent._self_adapter)
 
-    if PY2:
-        im_func = __func__
 
 class AdapterWrapper(FunctionWrapper):
 
@@ -145,10 +113,6 @@ class AdapterWrapper(FunctionWrapper):
     @property
     def __kwdefaults__(self):
         return self._self_surrogate.__kwdefaults__
-
-    if PY2:
-        func_code = __code__
-        func_defaults = __defaults__
 
     @property
     def __signature__(self):
@@ -220,13 +184,13 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
 
                     annotations = {}
 
-                    if not isinstance(adapter, string_types):
+                    if not isinstance(adapter, str):
                         if len(adapter) == 7:
                             annotations = adapter[-1]
                             adapter = adapter[:-1]
                         adapter = formatargspec(*adapter)
 
-                    exec_('def adapter{}: pass'.format(adapter), ns, ns)
+                    exec('def adapter{}: pass'.format(adapter), ns, ns)
                     adapter = ns['adapter']
 
                     # Override the annotations for the manufactured
