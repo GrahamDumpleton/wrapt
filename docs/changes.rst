@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 1.17.1
+--------------
+
+**Bugs Fixed**
+
+* Due to GitHub actions changes, binary wheels were missing for macOS Intel.
+
+* Not implemented error for `__reduce__()` on `ObjectProxy` was incorrectly
+  displaying the error as being on `__reduce_ex__()`.
+
 Version 1.17.0
 --------------
 
