@@ -4,6 +4,11 @@ Release Notes
 Version 1.17.2
 --------------
 
+**New Features**
+
+* Added universal binary wheels for macOS. That is, contains both x86_64 and
+  arm64 architectures in the same wheel.
+
 Version 1.17.1
 --------------
 
