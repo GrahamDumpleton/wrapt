@@ -2,13 +2,6 @@ import sys
 import operator
 import inspect
 
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    string_types = basestring,
-else:
-    string_types = str,
-
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     return meta("NewBase", bases, {})
@@ -116,9 +109,8 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __str__(self):
         return str(self.__wrapped__)
 
-    if not PY2:
-        def __bytes__(self):
-            return bytes(self.__wrapped__)
+    def __bytes__(self):
+        return bytes(self.__wrapped__)
 
     def __repr__(self):
         return '<{} at 0x{:x} for {} at 0x{:x}>'.format(
@@ -132,9 +124,8 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __reversed__(self):
         return reversed(self.__wrapped__)
 
-    if not PY2:
-        def __round__(self, ndigits=None):
-            return round(self.__wrapped__, ndigits)
+    def __round__(self, ndigits=None):
+        return round(self.__wrapped__, ndigits)
 
     if sys.hexversion >= 0x03070000:
         def __mro_entries__(self, bases):
@@ -482,7 +473,7 @@ class PartialCallableObjectProxy(ObjectProxy):
             return self, args
 
         self, args = _unpack_self(*args)
-    
+
         _args = self._self_args + args
 
         _kwargs = dict(self._self_kwargs)
@@ -536,7 +527,7 @@ class _FunctionWrapperBase(ObjectProxy):
 
             if self._self_binding == 'builtin':
                 return self
-            
+
             if self._self_binding == "class":
                 return self
 

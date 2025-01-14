@@ -5,15 +5,7 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 
 import sys
 import threading
-
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    string_types = basestring,
-    find_spec = None
-else:
-    string_types = str,
-    from importlib.util import find_spec
+from importlib.util import find_spec
 
 from .__wrapt__ import ObjectProxy
 
@@ -49,7 +41,7 @@ def register_post_import_hook(hook, name):
     # Create a deferred import hook if hook is a string name rather than
     # a callable function.
 
-    if isinstance(hook, string_types):
+    if isinstance(hook, str):
         hook = _create_import_hook_from_string(hook)
 
     with _post_import_hooks_lock:

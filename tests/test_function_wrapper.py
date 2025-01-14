@@ -4,8 +4,6 @@ import unittest
 
 import wrapt
 
-from compat import PY2, PY3, exec_
-
 class TestClassInheritence(unittest.TestCase):
 
     def test_function_type_inheritence(self):
