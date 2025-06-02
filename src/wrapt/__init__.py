@@ -54,6 +54,5 @@ __all__ = (
 
     "register_post_import_hook",
     "when_imported",
-    "notify_module_loaded",
     "discover_post_import_hooks",
 )
