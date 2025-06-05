@@ -11,7 +11,7 @@ class TestFormatargspec38(unittest.TestCase):
         self.assertEqual(formatted, ref)
 
     def test_formatargspec(self):
-        # exemples from https://www.python.org/dev/peps/pep-0570/
+        # examples from https://www.python.org/dev/peps/pep-0570/
         def name1(p1, p2, /, p_or_kw, *, kw): pass
         self.assertFormatEqual(name1, '(p1, p2, p_or_kw, *, kw)')
 

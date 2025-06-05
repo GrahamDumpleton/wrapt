@@ -84,8 +84,8 @@ work for versions of Python older than Python 3.7.
 Using issubclass() on abstract classes
 --------------------------------------
 
-If a class heirarchy has a base class which uses the ``abc.ABCMeta``
-metaclass, and a decorator is applied to a class in the heirarchy, use of
+If a class hierarchy has a base class which uses the ``abc.ABCMeta``
+metaclass, and a decorator is applied to a class in the hierarchy, use of
 ``issubclass()`` with classes where the decorator is applied will result in
 an exception of:
 
