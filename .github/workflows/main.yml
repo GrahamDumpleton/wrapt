@@ -42,7 +42,7 @@ jobs:
     - name: Store partial coverage reports
       uses: actions/upload-artifact@v4
       with:
-        name: coverage
+        name: coverage-linux
         path: .coverage.*
 
   test_linux_no_gil:
@@ -70,7 +70,7 @@ jobs:
     - name: Store partial coverage reports
       uses: actions/upload-artifact@v4
       with:
-        name: coverage
+        name: coverage-linux-no-gil
         path: .coverage.*
 
   # test_aarch64_linux:
@@ -140,7 +140,7 @@ jobs:
     - name: Store partial coverage reports
       uses: actions/upload-artifact@v4
       with:
-        name: coverage
+        name: coverage-macos
         path: .coverage.*
 
   test_windows:
@@ -199,7 +199,7 @@ jobs:
     - name: Store built wheels
       uses: actions/upload-artifact@v4
       with:
-        name: dist
+        name: dist-sdist
         path: dist/*
 
   bdist_wheel:
@@ -239,7 +239,7 @@ jobs:
             CIBW_FREE_THREADED_SUPPORT: 1
       - uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-bdist-wheel
           path: dist/*.whl
 
   # coveralls:
