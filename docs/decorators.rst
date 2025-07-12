@@ -126,7 +126,7 @@ being able to be dropped in the latter.
 
     def with_optional_arguments(wrapped=None, myarg1=1, myarg2=2):
         if wrapped is None:
-            return functools.partial(with_optional_arguments,
+            return wrapt.PartialCallableObjectProxy(with_optional_arguments,
                     myarg1=myarg1, myarg2=myarg2)
 
         @wrapt.decorator
@@ -155,7 +155,7 @@ be enforced using the keyword only argument syntax.
 
     def with_optional_arguments(wrapped=None, *, myarg1=1, myarg2=2):
         if wrapped is None:
-            return functools.partial(with_optional_arguments,
+            return wrapt.PartialCallableObjectProxy(with_optional_arguments,
                     myarg1=myarg1, myarg2=myarg2)
 
         @wrapt.decorator
@@ -163,6 +163,10 @@ be enforced using the keyword only argument syntax.
             return wrapped(*args, **kwargs)
 
         return wrapper(wrapped)
+
+The ``wrapt.PartialCallableObjectProxy()`` object is an implementation of
+``functools.partial()`` which uses wrapt and preserves introspection for the
+wrapped callable object.
 
 Processing Function Arguments
 -----------------------------
