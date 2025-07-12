@@ -45,7 +45,7 @@ __all__ = (
     "patch_function_wrapper",
     "transient_function_wrapper",
 
-    "WeakFunctionProxy"
+    "WeakFunctionProxy",
 
     "adapter_factory",
     "AdapterFactory",
