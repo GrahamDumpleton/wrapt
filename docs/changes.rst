@@ -221,7 +221,7 @@ Version 1.13.2
   setting the `WRAPT_INSTALL_EXTENSIONS` environment variable to `true`
   when installing the `wrapt` package.
 
-  Note that the next signficant release of `wrapt` will drop support for
+  Note that the next significant release of `wrapt` will drop support for
   Python 2.7 and Python 3.5. The change described here is to ensure that
   `wrapt` can be used with Python 2.7 on Windows for just a little bit
   longer. If using Python 2.7 on non Windows platforms, it will still
@@ -258,18 +258,18 @@ Version 1.13.0
 
 * When a decorator was applied on top of a data/non-data descriptor in a
   class definition, the call to the special method ``__set_name__()`` to
-  notify the descriptor of the variable name was not being propogated. Note
+  notify the descriptor of the variable name was not being propagated. Note
   that this issue has been addressed in the ``FunctionWrapper`` used by
   ``@wrapt.decorator`` but has not been applied to the generic
   ``ObjectProxy`` class. If using ``ObjectProxy`` directly to construct a
   custom wrapper which is applied to a descriptor, you will need to
-  propogate the ``__set_name__()`` call yourself if required.
+  propagate the ``__set_name__()`` call yourself if required.
 
 * The ``issubclass()`` builtin method would give incorrect results when used
   with a class which had a decorator applied to it. Note that this has only
   been able to be fixed for Python 3.7+. Also, due to what is arguably a
   bug (https://bugs.python.org/issue44847) in the Python standard library,
-  you will still have problems when the class heirarchy uses a base class
+  you will still have problems when the class hierarchy uses a base class
   which has the ``abc.ABCMeta`` metaclass. In this later case an exception
   will be raised of ``TypeError: issubclass() arg 1 must be a class``.
 
