@@ -12,6 +12,7 @@ from .__wrapt__ import ObjectProxy, _FunctionWrapperBase
 # and the original function. The function is then rebound at the point
 # of a call via the weak function proxy.
 
+
 def _weak_function_proxy_callback(ref, proxy, callback):
     if proxy._self_expired:
         return
@@ -25,9 +26,10 @@ def _weak_function_proxy_callback(ref, proxy, callback):
     if callback is not None:
         callback(proxy)
 
+
 class WeakFunctionProxy(ObjectProxy):
 
-    __slots__ = ('_self_expired', '_self_instance')
+    __slots__ = ("_self_expired", "_self_instance")
 
     def __init__(self, wrapped, callback=None):
         # We need to determine if the wrapped function is actually a
@@ -43,22 +45,23 @@ class WeakFunctionProxy(ObjectProxy):
         # the callback here so as not to cause any odd reference cycles.
 
         _callback = callback and functools.partial(
-                _weak_function_proxy_callback, proxy=self,
-                callback=callback)
+            _weak_function_proxy_callback, proxy=self, callback=callback
+        )
 
         self._self_expired = False
 
         if isinstance(wrapped, _FunctionWrapperBase):
-            self._self_instance = weakref.ref(wrapped._self_instance,
-                    _callback)
+            self._self_instance = weakref.ref(wrapped._self_instance, _callback)
 
             if wrapped._self_parent is not None:
                 super(WeakFunctionProxy, self).__init__(
-                        weakref.proxy(wrapped._self_parent, _callback))
+                    weakref.proxy(wrapped._self_parent, _callback)
+                )
 
             else:
                 super(WeakFunctionProxy, self).__init__(
-                        weakref.proxy(wrapped, _callback))
+                    weakref.proxy(wrapped, _callback)
+                )
 
             return
 
@@ -66,13 +69,13 @@ class WeakFunctionProxy(ObjectProxy):
             self._self_instance = weakref.ref(wrapped.__self__, _callback)
 
             super(WeakFunctionProxy, self).__init__(
-                    weakref.proxy(wrapped.__func__, _callback))
+                weakref.proxy(wrapped.__func__, _callback)
+            )
 
         except AttributeError:
             self._self_instance = None
 
-            super(WeakFunctionProxy, self).__init__(
-                    weakref.proxy(wrapped, _callback))
+            super(WeakFunctionProxy, self).__init__(weakref.proxy(wrapped, _callback))
 
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):

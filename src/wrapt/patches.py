@@ -4,13 +4,14 @@ import sys
 PY2 = sys.version_info[0] == 2
 
 if PY2:
-    string_types = basestring,
+    string_types = (basestring,)
 else:
-    string_types = str,
+    string_types = (str,)
 
 from .__wrapt__ import FunctionWrapper
 
 # Helper functions for applying wrappers to existing functions.
+
 
 def resolve_path(module, name):
     if isinstance(module, string_types):
@@ -19,7 +20,7 @@ def resolve_path(module, name):
 
     parent = module
 
-    path = name.split('.')
+    path = name.split(".")
     attribute = path[0]
 
     # We can't just always use getattr() because in doing
@@ -53,8 +54,10 @@ def resolve_path(module, name):
 
     return (parent, attribute, original)
 
+
 def apply_patch(parent, attribute, replacement):
     setattr(parent, attribute, replacement)
+
 
 def wrap_object(module, name, factory, args=(), kwargs={}):
     (parent, attribute, original) = resolve_path(module, name)
@@ -62,11 +65,13 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
     apply_patch(parent, attribute, wrapper)
     return wrapper
 
+
 # Function for applying a proxy object to an attribute of a class
 # instance. The wrapper works by defining an attribute of the same name
 # on the class which is a descriptor and which intercepts access to the
 # instance attribute. Note that this cannot be used on attributes which
 # are themselves defined by a property object.
+
 
 class AttributeWrapper(object):
 
@@ -86,17 +91,20 @@ class AttributeWrapper(object):
     def __delete__(self, instance):
         del instance.__dict__[self.attribute]
 
+
 def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
-    path, attribute = name.rsplit('.', 1)
+    path, attribute = name.rsplit(".", 1)
     parent = resolve_path(module, path)[2]
     wrapper = AttributeWrapper(attribute, factory, args, kwargs)
     apply_patch(parent, attribute, wrapper)
     return wrapper
 
+
 # Functions for creating a simple decorator using a FunctionWrapper,
 # plus short cut functions for applying wrappers to functions. These are
 # for use when doing monkey patching. For a more featured way of
 # creating decorators see the decorator decorator instead.
+
 
 def function_wrapper(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):
@@ -108,15 +116,20 @@ def function_wrapper(wrapper):
         else:
             target_wrapper = wrapper.__get__(instance, type(instance))
         return FunctionWrapper(target_wrapped, target_wrapper)
+
     return FunctionWrapper(wrapper, _wrapper)
+
 
 def wrap_function_wrapper(module, name, wrapper):
     return wrap_object(module, name, FunctionWrapper, (wrapper,))
 
+
 def patch_function_wrapper(module, name, enabled=None):
     def _wrapper(wrapper):
         return wrap_object(module, name, FunctionWrapper, (wrapper, enabled))
+
     return _wrapper
+
 
 def transient_function_wrapper(module, name):
     def _decorator(wrapper):
@@ -128,6 +141,7 @@ def transient_function_wrapper(module, name):
                 target_wrapper = wrapper.__get__(None, instance)
             else:
                 target_wrapper = wrapper.__get__(instance, type(instance))
+
             def _execute(wrapped, instance, args, kwargs):
                 (parent, attribute, original) = resolve_path(module, name)
                 replacement = FunctionWrapper(original, target_wrapper)
@@ -136,6 +150,9 @@ def transient_function_wrapper(module, name):
                     return wrapped(*args, **kwargs)
                 finally:
                     setattr(parent, attribute, original)
+
             return FunctionWrapper(target_wrapped, _execute)
+
         return FunctionWrapper(wrapper, _wrapper)
+
     return _decorator

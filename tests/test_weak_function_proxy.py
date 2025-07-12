@@ -5,6 +5,7 @@ import gc
 
 import wrapt
 
+
 class TestWeakFunctionProxy(unittest.TestCase):
 
     def test_isinstance(self):
@@ -177,20 +178,21 @@ class TestWeakFunctionProxy(unittest.TestCase):
     def test_decorator_method(self):
         @wrapt.decorator
         def bark(wrapped, instance, args, kwargs):
-            return 'bark'
+            return "bark"
 
         class Animal(object):
             @bark
             def squeal(self):
-                return 'squeal'
+                return "squeal"
 
         animal = Animal()
 
-        self.assertEqual(animal.squeal(), 'bark')
+        self.assertEqual(animal.squeal(), "bark")
 
         method = wrapt.WeakFunctionProxy(animal.squeal)
 
-        self.assertEqual(method(), 'bark')
+        self.assertEqual(method(), "bark")
+
 
 class TestArgumentUnpackingWeakFunctionProxy(unittest.TestCase):
 
@@ -200,7 +202,10 @@ class TestArgumentUnpackingWeakFunctionProxy(unittest.TestCase):
 
         proxy = wrapt.WeakFunctionProxy(function)
 
-        self.assertEqual(proxy(self='self', arg1='arg1'), ('self', (), dict(arg1='arg1')))
+        self.assertEqual(
+            proxy(self="self", arg1="arg1"), ("self", (), dict(arg1="arg1"))
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

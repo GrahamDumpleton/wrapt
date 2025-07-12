@@ -9,10 +9,10 @@ import threading
 PY2 = sys.version_info[0] == 2
 
 if PY2:
-    string_types = basestring,
+    string_types = (basestring,)
     find_spec = None
 else:
-    string_types = str,
+    string_types = (str,)
     from importlib.util import find_spec
 
 from .__wrapt__ import ObjectProxy
@@ -34,16 +34,19 @@ _post_import_hooks_lock = threading.RLock()
 # proxy callback being registered which will defer loading of the
 # specified module containing the callback function until required.
 
+
 def _create_import_hook_from_string(name):
     def import_hook(module):
-        module_name, function = name.split(':')
-        attrs = function.split('.')
+        module_name, function = name.split(":")
+        attrs = function.split(".")
         __import__(module_name)
         callback = sys.modules[module_name]
         for attr in attrs:
             callback = getattr(callback, attr)
         return callback(module)
+
     return import_hook
+
 
 def register_post_import_hook(hook, name):
     # Create a deferred import hook if hook is a string name rather than
@@ -78,7 +81,9 @@ def register_post_import_hook(hook, name):
     if module is not None:
         hook(module)
 
+
 # Register post import hooks defined as package entry points.
+
 
 def _create_import_hook_from_entrypoint(entrypoint):
     def import_hook(module):
@@ -87,7 +92,9 @@ def _create_import_hook_from_entrypoint(entrypoint):
         for attr in entrypoint.attrs:
             callback = getattr(callback, attr)
         return callback(module)
+
     return import_hook
+
 
 def discover_post_import_hooks(group):
     try:
@@ -99,13 +106,15 @@ def discover_post_import_hooks(group):
         callback = _create_import_hook_from_entrypoint(entrypoint)
         register_post_import_hook(callback, entrypoint.name)
 
+
 # Indicate that a module has been loaded. Any post import hooks which
 # were registered against the target module will be invoked. If an
 # exception is raised in any of the post import hooks, that will cause
 # the import of the target module to fail.
 
+
 def notify_module_loaded(module):
-    name = getattr(module, '__name__', None)
+    name = getattr(module, "__name__", None)
 
     with _post_import_hooks_lock:
         hooks = _post_import_hooks.pop(name, ())
@@ -117,10 +126,12 @@ def notify_module_loaded(module):
     for hook in hooks:
         hook(module)
 
+
 # A custom module import finder. This intercepts attempts to import
 # modules and watches out for attempts to import target modules of
 # interest. When a module of interest is imported, then any post import
 # hooks which are registered will be invoked.
+
 
 class _ImportHookLoader:
 
@@ -130,17 +141,18 @@ class _ImportHookLoader:
 
         return module
 
+
 class _ImportHookChainedLoader(ObjectProxy):
 
     def __init__(self, loader):
         super(_ImportHookChainedLoader, self).__init__(loader)
 
         if hasattr(loader, "load_module"):
-          self.__self_setattr__('load_module', self._self_load_module)
+            self.__self_setattr__("load_module", self._self_load_module)
         if hasattr(loader, "create_module"):
-          self.__self_setattr__('create_module', self._self_create_module)
+            self.__self_setattr__("create_module", self._self_create_module)
         if hasattr(loader, "exec_module"):
-          self.__self_setattr__('exec_module', self._self_exec_module)
+            self.__self_setattr__("exec_module", self._self_exec_module)
 
     def _self_set_loader(self, module):
         # Set module's loader to self.__wrapped__ unless it's already set to
@@ -154,7 +166,8 @@ class _ImportHookChainedLoader(ObjectProxy):
         # module loader was used. It isn't clear whether the attribute still
         # existed in that case or was set to None.
 
-        class UNDEFINED: pass
+        class UNDEFINED:
+            pass
 
         if getattr(module, "__loader__", UNDEFINED) in (None, self):
             try:
@@ -162,8 +175,10 @@ class _ImportHookChainedLoader(ObjectProxy):
             except AttributeError:
                 pass
 
-        if (getattr(module, "__spec__", None) is not None
-                and getattr(module.__spec__, "loader", None) is self):
+        if (
+            getattr(module, "__spec__", None) is not None
+            and getattr(module.__spec__, "loader", None) is self
+        ):
             module.__spec__.loader = self.__wrapped__
 
     def _self_load_module(self, fullname):
@@ -183,6 +198,7 @@ class _ImportHookChainedLoader(ObjectProxy):
         self._self_set_loader(module)
         self.__wrapped__.exec_module(module)
         notify_module_loaded(module)
+
 
 class ImportHookFinder:
 
@@ -285,11 +301,14 @@ class ImportHookFinder:
         finally:
             del self.in_progress[fullname]
 
+
 # Decorator for marking that a function should be called as a post
 # import hook when the target module is imported.
+
 
 def when_imported(name):
     def register(hook):
         register_post_import_hook(hook, name)
         return hook
+
     return register

@@ -5,13 +5,15 @@ import inspect
 PY2 = sys.version_info[0] == 2
 
 if PY2:
-    string_types = basestring,
+    string_types = (basestring,)
 else:
-    string_types = str,
+    string_types = (str,)
+
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     return meta("NewBase", bases, {})
+
 
 class _ObjectProxyMethods(object):
 
@@ -56,6 +58,7 @@ class _ObjectProxyMethods(object):
     def __weakref__(self):
         return self.__wrapped__.__weakref__
 
+
 class _ObjectProxyMetaType(type):
     def __new__(cls, name, bases, dictionary):
         # Copy our special properties into the class so that they
@@ -67,19 +70,20 @@ class _ObjectProxyMetaType(type):
 
         return type.__new__(cls, name, bases, dictionary)
 
+
 class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
-    __slots__ = '__wrapped__'
+    __slots__ = "__wrapped__"
 
     def __init__(self, wrapped):
-        object.__setattr__(self, '__wrapped__', wrapped)
+        object.__setattr__(self, "__wrapped__", wrapped)
 
         # Python 3.2+ has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
         # be an actual string object instead.
 
         try:
-            object.__setattr__(self, '__qualname__', wrapped.__qualname__)
+            object.__setattr__(self, "__qualname__", wrapped.__qualname__)
         except AttributeError:
             pass
 
@@ -87,7 +91,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         # using a property and it must instead be set explicitly.
 
         try:
-            object.__setattr__(self, '__annotations__', wrapped.__annotations__)
+            object.__setattr__(self, "__annotations__", wrapped.__annotations__)
         except AttributeError:
             pass
 
@@ -117,14 +121,17 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         return str(self.__wrapped__)
 
     if not PY2:
+
         def __bytes__(self):
             return bytes(self.__wrapped__)
 
     def __repr__(self):
-        return '<{} at 0x{:x} for {} at 0x{:x}>'.format(
-                type(self).__name__, id(self),
-                type(self.__wrapped__).__name__,
-                id(self.__wrapped__))
+        return "<{} at 0x{:x} for {} at 0x{:x}>".format(
+            type(self).__name__,
+            id(self),
+            type(self.__wrapped__).__name__,
+            id(self.__wrapped__),
+        )
 
     def __format__(self, format_spec):
         return format(self.__wrapped__, format_spec)
@@ -133,10 +140,12 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         return reversed(self.__wrapped__)
 
     if not PY2:
+
         def __round__(self, ndigits=None):
             return round(self.__wrapped__, ndigits)
 
     if sys.hexversion >= 0x03070000:
+
         def __mro_entries__(self, bases):
             return (self.__wrapped__,)
 
@@ -168,33 +177,33 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         return bool(self.__wrapped__)
 
     def __setattr__(self, name, value):
-        if name.startswith('_self_'):
+        if name.startswith("_self_"):
             object.__setattr__(self, name, value)
 
-        elif name == '__wrapped__':
+        elif name == "__wrapped__":
             object.__setattr__(self, name, value)
             try:
-                object.__delattr__(self, '__qualname__')
+                object.__delattr__(self, "__qualname__")
             except AttributeError:
                 pass
             try:
-                object.__setattr__(self, '__qualname__', value.__qualname__)
+                object.__setattr__(self, "__qualname__", value.__qualname__)
             except AttributeError:
                 pass
             try:
-                object.__delattr__(self, '__annotations__')
+                object.__delattr__(self, "__annotations__")
             except AttributeError:
                 pass
             try:
-                object.__setattr__(self, '__annotations__', value.__annotations__)
+                object.__setattr__(self, "__annotations__", value.__annotations__)
             except AttributeError:
                 pass
 
-        elif name == '__qualname__':
+        elif name == "__qualname__":
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
 
-        elif name == '__annotations__':
+        elif name == "__annotations__":
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
 
@@ -208,19 +217,19 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         # If we are being to lookup '__wrapped__' then the
         # '__init__()' method cannot have been called.
 
-        if name == '__wrapped__':
-            raise ValueError('wrapper has not been initialised')
+        if name == "__wrapped__":
+            raise ValueError("wrapper has not been initialised")
 
         return getattr(self.__wrapped__, name)
 
     def __delattr__(self, name):
-        if name.startswith('_self_'):
+        if name.startswith("_self_"):
             object.__delattr__(self, name)
 
-        elif name == '__wrapped__':
-            raise TypeError('__wrapped__ must be an object')
+        elif name == "__wrapped__":
+            raise TypeError("__wrapped__ must be an object")
 
-        elif name == '__qualname__':
+        elif name == "__qualname__":
             object.__delattr__(self, name)
             delattr(self.__wrapped__, name)
 
@@ -433,18 +442,17 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         return iter(self.__wrapped__)
 
     def __copy__(self):
-        raise NotImplementedError('object proxy must define __copy__()')
+        raise NotImplementedError("object proxy must define __copy__()")
 
     def __deepcopy__(self, memo):
-        raise NotImplementedError('object proxy must define __deepcopy__()')
+        raise NotImplementedError("object proxy must define __deepcopy__()")
 
     def __reduce__(self):
-        raise NotImplementedError(
-                'object proxy must define __reduce__()')
+        raise NotImplementedError("object proxy must define __reduce__()")
 
     def __reduce_ex__(self, protocol):
-        raise NotImplementedError(
-                'object proxy must define __reduce_ex__()')
+        raise NotImplementedError("object proxy must define __reduce_ex__()")
+
 
 class CallableObjectProxy(ObjectProxy):
 
@@ -456,6 +464,7 @@ class CallableObjectProxy(ObjectProxy):
 
         return self.__wrapped__(*args, **kwargs)
 
+
 class PartialCallableObjectProxy(ObjectProxy):
 
     def __init__(*args, **kwargs):
@@ -465,12 +474,12 @@ class PartialCallableObjectProxy(ObjectProxy):
         self, args = _unpack_self(*args)
 
         if len(args) < 1:
-            raise TypeError('partial type takes at least one argument')
+            raise TypeError("partial type takes at least one argument")
 
         wrapped, args = args[0], args[1:]
 
         if not callable(wrapped):
-            raise TypeError('the first argument must be callable')
+            raise TypeError("the first argument must be callable")
 
         super(PartialCallableObjectProxy, self).__init__(wrapped)
 
@@ -482,7 +491,7 @@ class PartialCallableObjectProxy(ObjectProxy):
             return self, args
 
         self, args = _unpack_self(*args)
-    
+
         _args = self._self_args + args
 
         _kwargs = dict(self._self_kwargs)
@@ -490,22 +499,37 @@ class PartialCallableObjectProxy(ObjectProxy):
 
         return self.__wrapped__(*_args, **_kwargs)
 
+
 class _FunctionWrapperBase(ObjectProxy):
 
-    __slots__ = ('_self_instance', '_self_wrapper', '_self_enabled',
-            '_self_binding', '_self_parent', '_self_owner')
+    __slots__ = (
+        "_self_instance",
+        "_self_wrapper",
+        "_self_enabled",
+        "_self_binding",
+        "_self_parent",
+        "_self_owner",
+    )
 
-    def __init__(self, wrapped, instance, wrapper, enabled=None,
-            binding='callable', parent=None, owner=None):
+    def __init__(
+        self,
+        wrapped,
+        instance,
+        wrapper,
+        enabled=None,
+        binding="callable",
+        parent=None,
+        owner=None,
+    ):
 
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
-        object.__setattr__(self, '_self_instance', instance)
-        object.__setattr__(self, '_self_wrapper', wrapper)
-        object.__setattr__(self, '_self_enabled', enabled)
-        object.__setattr__(self, '_self_binding', binding)
-        object.__setattr__(self, '_self_parent', parent)
-        object.__setattr__(self, '_self_owner', owner)
+        object.__setattr__(self, "_self_instance", instance)
+        object.__setattr__(self, "_self_wrapper", wrapper)
+        object.__setattr__(self, "_self_enabled", enabled)
+        object.__setattr__(self, "_self_binding", binding)
+        object.__setattr__(self, "_self_parent", parent)
+        object.__setattr__(self, "_self_owner", owner)
 
     def __get__(self, instance, owner):
         # This method is actually doing double duty for both unbound and bound
@@ -534,22 +558,28 @@ class _FunctionWrapperBase(ObjectProxy):
             # Technically can probably just check for existence of __get__ on
             # the wrapped object, but this is more explicit.
 
-            if self._self_binding == 'builtin':
+            if self._self_binding == "builtin":
                 return self
-            
+
             if self._self_binding == "class":
                 return self
 
-            binder = getattr(self.__wrapped__, '__get__', None)
+            binder = getattr(self.__wrapped__, "__get__", None)
 
             if binder is None:
                 return self
 
-            descriptor =  binder(instance, owner)
+            descriptor = binder(instance, owner)
 
-            return self.__bound_function_wrapper__(descriptor, instance,
-                    self._self_wrapper, self._self_enabled,
-                    self._self_binding, self, owner)
+            return self.__bound_function_wrapper__(
+                descriptor,
+                instance,
+                self._self_wrapper,
+                self._self_enabled,
+                self._self_binding,
+                self,
+                owner,
+            )
 
         # Now we have the case of binding occurring a second time on what was
         # already a bound function. In this case we would usually return
@@ -559,14 +589,22 @@ class _FunctionWrapperBase(ObjectProxy):
         # instance of None and we were likely an instance method. In that case
         # we rebind against the original wrapped function from the parent again.
 
-        if self._self_instance is None and self._self_binding in ('function', 'instancemethod', 'callable'):
-            descriptor = self._self_parent.__wrapped__.__get__(
-                    instance, owner)
+        if self._self_instance is None and self._self_binding in (
+            "function",
+            "instancemethod",
+            "callable",
+        ):
+            descriptor = self._self_parent.__wrapped__.__get__(instance, owner)
 
             return self._self_parent.__bound_function_wrapper__(
-                    descriptor, instance, self._self_wrapper,
-                    self._self_enabled, self._self_binding,
-                    self._self_parent, owner)
+                descriptor,
+                instance,
+                self._self_wrapper,
+                self._self_enabled,
+                self._self_binding,
+                self._self_parent,
+                owner,
+            )
 
         return self
 
@@ -593,12 +631,16 @@ class _FunctionWrapperBase(ObjectProxy):
         # a function that was already bound to an instance. In that case
         # we want to extract the instance from the function and use it.
 
-        if self._self_binding in ('function', 'instancemethod', 'classmethod', 'callable'):
+        if self._self_binding in (
+            "function",
+            "instancemethod",
+            "classmethod",
+            "callable",
+        ):
             if self._self_instance is None:
-                instance = getattr(self.__wrapped__, '__self__', None)
+                instance = getattr(self.__wrapped__, "__self__", None)
                 if instance is not None:
-                    return self._self_wrapper(self.__wrapped__, instance,
-                            args, kwargs)
+                    return self._self_wrapper(self.__wrapped__, instance, args, kwargs)
 
         # This is generally invoked when the wrapped function is being
         # called as a normal function and is not bound to a class as an
@@ -606,8 +648,7 @@ class _FunctionWrapperBase(ObjectProxy):
         # wrapped function was a method, but this wrapper was in turn
         # wrapped using the staticmethod decorator.
 
-        return self._self_wrapper(self.__wrapped__, self._self_instance,
-                args, kwargs)
+        return self._self_wrapper(self.__wrapped__, self._self_instance, args, kwargs)
 
     def __set_name__(self, owner, name):
         # This is a special method use to supply information to
@@ -636,6 +677,7 @@ class _FunctionWrapperBase(ObjectProxy):
         else:
             return issubclass(subclass, self.__wrapped__)
 
+
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(*args, **kwargs):
@@ -660,17 +702,18 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
         # We need to do things different depending on whether we are likely
         # wrapping an instance method vs a static method or class method.
 
-        if self._self_binding == 'function':
+        if self._self_binding == "function":
             if self._self_instance is None and args:
                 instance, newargs = args[0], args[1:]
                 if isinstance(instance, self._self_owner):
                     wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
                     return self._self_wrapper(wrapped, instance, newargs, kwargs)
 
-            return self._self_wrapper(self.__wrapped__, self._self_instance,
-                    args, kwargs)
+            return self._self_wrapper(
+                self.__wrapped__, self._self_instance, args, kwargs
+            )
 
-        elif self._self_binding == 'callable':
+        elif self._self_binding == "callable":
             if self._self_instance is None:
                 # This situation can occur where someone is calling the
                 # instancemethod via the class type and passing the instance as
@@ -680,14 +723,15 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
                 # see anything as being different.
 
                 if not args:
-                    raise TypeError('missing 1 required positional argument')
+                    raise TypeError("missing 1 required positional argument")
 
                 instance, args = args[0], args[1:]
                 wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
                 return self._self_wrapper(wrapped, instance, args, kwargs)
 
-            return self._self_wrapper(self.__wrapped__, self._self_instance,
-                    args, kwargs)
+            return self._self_wrapper(
+                self.__wrapped__, self._self_instance, args, kwargs
+            )
 
         else:
             # As in this case we would be dealing with a classmethod or
@@ -703,10 +747,10 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
             # class type, as it reflects what they have available in the
             # decoratored function.
 
-            instance = getattr(self.__wrapped__, '__self__', None)
+            instance = getattr(self.__wrapped__, "__self__", None)
 
-            return self._self_wrapper(self.__wrapped__, instance, args,
-                    kwargs)
+            return self._self_wrapper(self.__wrapped__, instance, args, kwargs)
+
 
 class FunctionWrapper(_FunctionWrapperBase):
 
@@ -792,30 +836,29 @@ class FunctionWrapper(_FunctionWrapperBase):
 
         if not binding:
             if inspect.isbuiltin(wrapped):
-                binding = 'builtin'
+                binding = "builtin"
 
             elif inspect.isfunction(wrapped):
-                binding = 'function'
+                binding = "function"
 
             elif inspect.isclass(wrapped):
-                binding = 'class'
+                binding = "class"
 
             elif isinstance(wrapped, classmethod):
-                binding = 'classmethod'
+                binding = "classmethod"
 
             elif isinstance(wrapped, staticmethod):
-                binding = 'staticmethod'
+                binding = "staticmethod"
 
-            elif hasattr(wrapped, '__self__'):
+            elif hasattr(wrapped, "__self__"):
                 if inspect.isclass(wrapped.__self__):
-                    binding = 'classmethod'
+                    binding = "classmethod"
                 elif inspect.ismethod(wrapped):
-                    binding = 'instancemethod'
+                    binding = "instancemethod"
                 else:
-                    binding = 'callable'
+                    binding = "callable"
 
             else:
-                binding = 'callable'
+                binding = "callable"
 
-        super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
-                enabled, binding)
+        super(FunctionWrapper, self).__init__(wrapped, None, wrapper, enabled, binding)
