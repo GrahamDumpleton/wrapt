@@ -15,37 +15,39 @@ def passthru_decorator(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 """
 
-decorators = types.ModuleType('decorators')
+decorators = types.ModuleType("decorators")
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+
 
 class Class(object):
     @staticmethod
     def function(self, arg):
-        '''documentation'''
+        """documentation"""
         return arg
 
+
 Original = Class
+
 
 class Class(object):
     @staticmethod
     @decorators.passthru_decorator
     def function(self, arg):
-        '''documentation'''
+        """documentation"""
         return arg
+
 
 class TestNamingOuterStaticMethod(unittest.TestCase):
 
     def test_class_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(Class.function.__name__,
-                Original.function.__name__)
+        self.assertEqual(Class.function.__name__, Original.function.__name__)
 
     def test_instance_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(Class().function.__name__,
-                Original().function.__name__)
+        self.assertEqual(Class().function.__name__, Original().function.__name__)
 
     def test_class_object_qualname(self):
         # Test preservation of instance method __qualname__ attribute.
@@ -70,26 +72,22 @@ class TestNamingOuterStaticMethod(unittest.TestCase):
     def test_class_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(Class.function.__module__,
-                Original.function.__module__)
+        self.assertEqual(Class.function.__module__, Original.function.__module__)
 
     def test_instance_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(Class().function.__module__,
-                Original().function.__module__)
+        self.assertEqual(Class().function.__module__, Original().function.__module__)
 
     def test_class_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(Class.function.__doc__,
-                Original.function.__doc__)
+        self.assertEqual(Class.function.__doc__, Original.function.__doc__)
 
     def test_instance_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(Class().function.__doc__,
-                Original().function.__doc__)
+        self.assertEqual(Class().function.__doc__, Original().function.__doc__)
 
     def test_class_argspec(self):
         # Test preservation of instance method argument specification.
@@ -108,14 +106,13 @@ class TestNamingOuterStaticMethod(unittest.TestCase):
     def test_class_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(Class.function,
-                type(Original.function)))
+        self.assertTrue(isinstance(Class.function, type(Original.function)))
 
     def test_instance_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(Class().function,
-                type(Original().function)))
+        self.assertTrue(isinstance(Class().function, type(Original().function)))
+
 
 class TestCallingOuterStaticMethod(unittest.TestCase):
 
@@ -126,7 +123,7 @@ class TestCallingOuterStaticMethod(unittest.TestCase):
         # doesn't bind the method and treats it like a normal function.
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -157,7 +154,7 @@ class TestCallingOuterStaticMethod(unittest.TestCase):
         # like a normal function.
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -180,5 +177,6 @@ class TestCallingOuterStaticMethod(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -18,21 +18,26 @@ def adapter1(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 """
 
-decorators = types.ModuleType('decorators')
+decorators = types.ModuleType("decorators")
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 def function1(arg1, arg2):
-    '''documentation'''
+    """documentation"""
     return arg1, arg2
+
 
 function1o = function1
 
+
 @decorators.adapter1
 def function1(arg1, arg2):
-    '''documentation'''
+    """documentation"""
     return arg1, arg2
 
+
 function1d = function1
+
 
 class TestArgumentSpecification(unittest.TestCase):
 
@@ -41,7 +46,8 @@ class TestArgumentSpecification(unittest.TestCase):
         # actually needs to match that of the adapter function the
         # prototype of which was supplied via the dummy function.
 
-        def _adapter(arg1, arg2, *, arg3=None, **kwargs): pass
+        def _adapter(arg1, arg2, *, arg3=None, **kwargs):
+            pass
 
         function1a_argspec = inspect.getfullargspec(_adapter)
         function1d_argspec = inspect.getfullargspec(function1d)
@@ -55,11 +61,13 @@ class TestArgumentSpecification(unittest.TestCase):
         if PY2:
             return
 
-        def _adapter(arg1, arg2, *, arg3=None, **kwargs): pass
+        def _adapter(arg1, arg2, *, arg3=None, **kwargs):
+            pass
 
         function1a_signature = str(inspect.signature(_adapter))
         function1d_signature = str(inspect.signature(function1d))
         self.assertEqual(function1a_signature, function1d_signature)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

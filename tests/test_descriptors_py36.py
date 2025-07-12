@@ -4,6 +4,7 @@ import unittest
 
 import wrapt
 
+
 class TestObjectDescriptors(unittest.TestCase):
 
     def test_set_name(self):
@@ -34,5 +35,6 @@ class TestObjectDescriptors(unittest.TestCase):
         self.assertEqual(attribute_name, ["method"])
         self.assertEqual(instance.method(), True)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

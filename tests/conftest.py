@@ -7,9 +7,11 @@ except ImportError:
 
 version = tuple(sys.version_info[:2])
 
+
 class DummyCollector(FileCollector):
     def collect(self):
         return []
+
 
 def construct_dummy(path, parent):
     if hasattr(DummyCollector, "from_parent"):
@@ -18,28 +20,29 @@ def construct_dummy(path, parent):
     else:
         return DummyCollector(path, parent=parent)
 
+
 def pytest_pycollect_makemodule(path, parent):
-    if '_py33' in path.basename and version < (3, 3):
+    if "_py33" in path.basename and version < (3, 3):
         return construct_dummy(path, parent)
-    if '_py34' in path.basename and version < (3, 4):
+    if "_py34" in path.basename and version < (3, 4):
         return construct_dummy(path, parent)
-    if '_py35' in path.basename and version < (3, 5):
+    if "_py35" in path.basename and version < (3, 5):
         return construct_dummy(path, parent)
-    if '_py36' in path.basename and version < (3, 6):
+    if "_py36" in path.basename and version < (3, 6):
         return construct_dummy(path, parent)
-    if '_py37' in path.basename and version < (3, 7):
+    if "_py37" in path.basename and version < (3, 7):
         return construct_dummy(path, parent)
-    if '_py38' in path.basename and version < (3, 8):
+    if "_py38" in path.basename and version < (3, 8):
         return construct_dummy(path, parent)
-    if '_py39' in path.basename and version < (3, 9):
+    if "_py39" in path.basename and version < (3, 9):
         return construct_dummy(path, parent)
-    if '_py310' in path.basename and version < (3, 10):
+    if "_py310" in path.basename and version < (3, 10):
         return construct_dummy(path, parent)
-    if '_py311' in path.basename and version < (3, 11):
+    if "_py311" in path.basename and version < (3, 11):
         return construct_dummy(path, parent)
-    if '_py312' in path.basename and version < (3, 12):
+    if "_py312" in path.basename and version < (3, 12):
         return construct_dummy(path, parent)
-    if '_py3' in path.basename and version < (3, 0):
+    if "_py3" in path.basename and version < (3, 0):
         return construct_dummy(path, parent)
-    if '_py2' in path.basename and version >= (3, 0):
+    if "_py2" in path.basename and version >= (3, 0):
         return construct_dummy(path, parent)

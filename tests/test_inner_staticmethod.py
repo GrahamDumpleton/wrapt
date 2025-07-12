@@ -15,43 +15,44 @@ def passthru_decorator(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 """
 
-decorators = types.ModuleType('decorators')
+decorators = types.ModuleType("decorators")
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+
 
 class Class(object):
     @staticmethod
     def function(self, arg):
-        '''documentation'''
+        """documentation"""
         return arg
 
+
 Original = Class
+
 
 class Class(object):
     @decorators.passthru_decorator
     @staticmethod
     def function(self, arg):
-        '''documentation'''
+        """documentation"""
         return arg
+
 
 class TestNamingInnerStaticMethod(unittest.TestCase):
 
     def test_class_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(Class.function.__name__,
-                Original.function.__name__)
+        self.assertEqual(Class.function.__name__, Original.function.__name__)
 
     def test_instance_object_name(self):
         # Test preservation of instance method __name__ attribute.
 
-        self.assertEqual(Class().function.__name__,
-                Original().function.__name__)
+        self.assertEqual(Class().function.__name__, Original().function.__name__)
 
     def test_class_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(Class.function.__module__,
-                Original.function.__module__)
+        self.assertEqual(Class.function.__module__, Original.function.__module__)
 
     def test_class_object_qualname(self):
         # Test preservation of instance method __qualname__ attribute.
@@ -76,20 +77,17 @@ class TestNamingInnerStaticMethod(unittest.TestCase):
     def test_instance_module_name(self):
         # Test preservation of instance method __module__ attribute.
 
-        self.assertEqual(Class().function.__module__,
-                Original().function.__module__)
+        self.assertEqual(Class().function.__module__, Original().function.__module__)
 
     def test_class_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(Class.function.__doc__,
-                Original.function.__doc__)
+        self.assertEqual(Class.function.__doc__, Original.function.__doc__)
 
     def test_instance_doc_string(self):
         # Test preservation of instance method __doc__ attribute.
 
-        self.assertEqual(Class().function.__doc__,
-                Original().function.__doc__)
+        self.assertEqual(Class().function.__doc__, Original().function.__doc__)
 
     def test_class_argspec(self):
         # Test preservation of instance method argument specification.
@@ -108,14 +106,13 @@ class TestNamingInnerStaticMethod(unittest.TestCase):
     def test_class_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(Class.function,
-                type(Original.function)))
+        self.assertTrue(isinstance(Class.function, type(Original.function)))
 
     def test_instance_isinstance(self):
         # Test preservation of isinstance() checks.
 
-        self.assertTrue(isinstance(Class().function,
-                type(Original().function)))
+        self.assertTrue(isinstance(Class().function, type(Original().function)))
+
 
 class TestCallingInnerStaticMethod(unittest.TestCase):
 
@@ -123,7 +120,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # Test calling staticmethod.
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -150,7 +147,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # Test calling staticmethod via class instance.
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -177,7 +174,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # Test calling staticmethod.
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -205,7 +202,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # Test calling staticmethod via class instance.
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -235,7 +232,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # the class using wrapping function.
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         def _decorator(wrapped, instance, args, kwargs):
             self.assertEqual(instance, None)
@@ -260,7 +257,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         # the class using wrapping function.
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         def _decorator(wrapped, instance, args, kwargs):
             self.assertEqual(instance, None)
@@ -279,5 +276,6 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

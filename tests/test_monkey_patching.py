@@ -5,53 +5,66 @@ import sys
 
 import wrapt
 
+
 def global_function_1(*args, **kwargs):
     return args, kwargs
+
 
 def global_function_2(*args, **kwargs):
     return args, kwargs
 
+
 def global_function_3(*args, **kwargs):
     return args, kwargs
+
 
 def global_function_3_enabled_literal_false(*args, **kwargs):
     return args, kwargs
 
+
 def global_function_3_enabled_literal_true(*args, **kwargs):
     return args, kwargs
+
 
 def global_function_3_enabled_callable(*args, **kwargs):
     return args, kwargs
 
+
 def global_function_4(*args, **kwargs):
     return args, kwargs
+
 
 class Class_1(object):
     def method(self, *args, **kwargs):
         return args, kwargs
+
 
 class Class_2(object):
     @classmethod
     def method(cls, *args, **kwargs):
         return cls, args, kwargs
 
+
 class Class_2_1(Class_2):
     pass
 
+
 class Class_2_2(Class_2_1):
     pass
+
 
 class Class_3(object):
     @staticmethod
     def method(*args, **kwargs):
         return args, kwargs
 
+
 class TestMonkeyPatching(unittest.TestCase):
 
     def test_function_wrapper(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -75,7 +88,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_function_wrapper_instance_method(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -103,7 +116,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_function_wrapper_class_method(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -130,7 +143,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_function_module_name(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -141,7 +154,7 @@ class TestMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        wrapt.wrap_function_wrapper(__name__, 'global_function_1', wrapper)
+        wrapt.wrap_function_wrapper(__name__, "global_function_1", wrapper)
 
         result = global_function_1(*_args, **_kwargs)
 
@@ -151,7 +164,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_function_module(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -164,7 +177,7 @@ class TestMonkeyPatching(unittest.TestCase):
 
         module = sys.modules[__name__]
 
-        wrapt.wrap_function_wrapper(module, 'global_function_2', wrapper)
+        wrapt.wrap_function_wrapper(module, "global_function_2", wrapper)
 
         result = global_function_2(*_args, **_kwargs)
 
@@ -174,7 +187,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_instance_method_module_name(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -187,8 +200,7 @@ class TestMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        wrapt.wrap_function_wrapper(__name__, 'Class_1.method',
-                wrapper)
+        wrapt.wrap_function_wrapper(__name__, "Class_1.method", wrapper)
 
         result = _instance.method(*_args, **_kwargs)
 
@@ -198,7 +210,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_class_method_module_name(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -209,8 +221,7 @@ class TestMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        wrapt.wrap_function_wrapper(__name__, 'Class_2.method',
-                wrapper)
+        wrapt.wrap_function_wrapper(__name__, "Class_2.method", wrapper)
 
         result = Class_2.method(*_args, **_kwargs)
 
@@ -219,7 +230,7 @@ class TestMonkeyPatching(unittest.TestCase):
 
     def test_wrap_class_method_inherited(self):
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -229,8 +240,7 @@ class TestMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        wrapt.wrap_function_wrapper(__name__, 'Class_2_1.method',
-                wrapper)
+        wrapt.wrap_function_wrapper(__name__, "Class_2_1.method", wrapper)
 
         result = Class_2_1.method(*_args, **_kwargs)
         self.assertEqual(result, (Class_2_1, _args, _kwargs))
@@ -245,7 +255,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_wrap_static_method_module_name(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -256,8 +266,7 @@ class TestMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        wrapt.wrap_function_wrapper(__name__, 'Class_3.method',
-                wrapper)
+        wrapt.wrap_function_wrapper(__name__, "Class_3.method", wrapper)
 
         result = Class_3.method(*_args, **_kwargs)
 
@@ -267,11 +276,11 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_patch_function_module_name(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
-        @wrapt.patch_function_wrapper(__name__, 'global_function_3')
+        @wrapt.patch_function_wrapper(__name__, "global_function_3")
         def wrapper(wrapped, instance, args, kwargs):
             called.append((args, kwargs))
             self.assertEqual(instance, None)
@@ -287,11 +296,13 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_patch_function_module_name_enabled_literal_false(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
-        @wrapt.patch_function_wrapper(__name__, 'global_function_3_enabled_literal_false', enabled=False)
+        @wrapt.patch_function_wrapper(
+            __name__, "global_function_3_enabled_literal_false", enabled=False
+        )
         def wrapper(wrapped, instance, args, kwargs):
             called.append((args, kwargs))
             self.assertEqual(instance, None)
@@ -307,11 +318,13 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_patch_function_module_name_enabled_literal_true(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
-        @wrapt.patch_function_wrapper(__name__, 'global_function_3_enabled_literal_true', enabled=True)
+        @wrapt.patch_function_wrapper(
+            __name__, "global_function_3_enabled_literal_true", enabled=True
+        )
         def wrapper(wrapped, instance, args, kwargs):
             called.append((args, kwargs))
             self.assertEqual(instance, None)
@@ -327,7 +340,7 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_patch_function_module_name_enabled_callable(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -336,7 +349,9 @@ class TestMonkeyPatching(unittest.TestCase):
         def enabled():
             return enable
 
-        @wrapt.patch_function_wrapper(__name__, 'global_function_3_enabled_callable', enabled=enabled)
+        @wrapt.patch_function_wrapper(
+            __name__, "global_function_3_enabled_callable", enabled=enabled
+        )
         def wrapper(wrapped, instance, args, kwargs):
             called.append((args, kwargs))
             self.assertEqual(instance, None)
@@ -359,13 +374,13 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_patch_function_module(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
         module = sys.modules[__name__]
 
-        @wrapt.patch_function_wrapper(module, 'global_function_4')
+        @wrapt.patch_function_wrapper(module, "global_function_4")
         def wrapper(wrapped, instance, args, kwargs):
             called.append((args, kwargs))
             self.assertEqual(instance, None)
@@ -384,12 +399,13 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_transient_function_wrapper(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
-        @wrapt.transient_function_wrapper(__name__,
-                'TestMonkeyPatching._test_transient_function_wrapper')
+        @wrapt.transient_function_wrapper(
+            __name__, "TestMonkeyPatching._test_transient_function_wrapper"
+        )
         def wrapper(wrapped, instance, args, kwargs):
             called.append((args, kwargs))
             self.assertEqual(wrapped, self._test_transient_function_wrapper)
@@ -410,15 +426,16 @@ class TestMonkeyPatching(unittest.TestCase):
     def test_transient_function_wrapper_instance_method(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
         _self = self
 
         class wrapper(object):
-            @wrapt.transient_function_wrapper(__name__,
-                    'TestMonkeyPatching._test_transient_function_wrapper')
+            @wrapt.transient_function_wrapper(
+                __name__, "TestMonkeyPatching._test_transient_function_wrapper"
+            )
             def __call__(self, wrapped, instance, args, kwargs):
                 called.append((args, kwargs))
                 _self.assertEqual(wrapped, _self._test_transient_function_wrapper)
@@ -436,12 +453,13 @@ class TestMonkeyPatching(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
+
 class TestExplicitMonkeyPatching(unittest.TestCase):
 
     def test_patch_instance_method_class(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -469,7 +487,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
     def test_patch_instance_method_dict(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -485,7 +503,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
             def function(self, *args, **kwargs):
                 return args, kwargs
 
-        Class.function = wrapper(vars(Class)['function'])
+        Class.function = wrapper(vars(Class)["function"])
 
         _instance = Class()
 
@@ -497,7 +515,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
     def test_patch_instance_method_instance(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -525,7 +543,7 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
     def test_patch_instance_method_extracted(self):
 
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         called = []
 
@@ -550,5 +568,6 @@ class TestExplicitMonkeyPatching(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

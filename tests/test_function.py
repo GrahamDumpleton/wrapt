@@ -16,16 +16,19 @@ def passthru_decorator(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 """
 
-decorators = types.ModuleType('decorators')
+decorators = types.ModuleType("decorators")
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 def function1(arg):
-    '''documentation'''
+    """documentation"""
     return arg
+
 
 function1o = function1
 function1d = decorators.passthru_decorator(function1)
-assert(function1d is not function1o)
+assert function1d is not function1o
+
 
 class TestNamingFunction(unittest.TestCase):
 
@@ -70,11 +73,12 @@ class TestNamingFunction(unittest.TestCase):
 
         self.assertTrue(isinstance(function1d, type(function1o)))
 
+
 class TestCallingFunction(unittest.TestCase):
 
     def test_call_function(self):
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -91,5 +95,6 @@ class TestCallingFunction(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

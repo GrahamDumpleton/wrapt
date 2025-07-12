@@ -27,34 +27,43 @@ def adapter2(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 """
 
-decorators = types.ModuleType('decorators')
+decorators = types.ModuleType("decorators")
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
+
 def function1(arg1, arg2) -> Iterable:
-    '''documentation'''
+    """documentation"""
     return arg1, arg2
+
 
 function1o = function1
 
+
 @decorators.adapter1
 def function1(arg1, arg2) -> Iterable:
-    '''documentation'''
+    """documentation"""
     return arg1, arg2
+
 
 function1d = function1
 
+
 def function2(arg1, arg2) -> Iterable:
-    '''documentation'''
+    """documentation"""
     return arg1, arg2
+
 
 function2o = function2
 
+
 @decorators.adapter1
 def function2(arg1, arg2) -> Iterable:
-    '''documentation'''
+    """documentation"""
     return arg1, arg2
 
+
 function2d = function2
+
 
 class TestAdapterAttributesWithAnnotations(unittest.TestCase):
 
@@ -63,6 +72,7 @@ class TestAdapterAttributesWithAnnotations(unittest.TestCase):
 
         self.assertEqual(function1d.__annotations__, function1o.__annotations__)
 
+
 class TestArgumentSpecificationWithAnnotations(unittest.TestCase):
 
     def test_argspec(self):
@@ -70,7 +80,8 @@ class TestArgumentSpecificationWithAnnotations(unittest.TestCase):
         # actually needs to match that of the adapter function the
         # prototype of which was supplied via the dummy function.
 
-        def _adapter(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable: pass
+        def _adapter(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
+            pass
 
         function1a_argspec = inspect.getfullargspec(_adapter)
         function1d_argspec = inspect.getfullargspec(function1d)
@@ -91,7 +102,8 @@ class TestArgumentSpecificationWithAnnotations(unittest.TestCase):
         if PY2:
             return
 
-        def _adapter(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable: pass
+        def _adapter(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
+            pass
 
         function1a_signature = str(inspect.signature(_adapter))
         function1d_signature = str(inspect.signature(function1d))
@@ -102,10 +114,12 @@ class TestArgumentSpecificationWithAnnotations(unittest.TestCase):
 
         self.assertTrue(isinstance(function1d, type(function1o)))
 
+
 class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
     def test_dynamic_adapter_function(self):
-        def _adapter1(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable: pass
+        def _adapter1(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
+            pass
 
         argspec1 = inspect.getfullargspec(_adapter1)
 
@@ -123,11 +137,12 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         # annotations which reference a non builtin type, so use test
         # function which returns int rather than Iterable.
 
-        def _adapter2(arg1, arg2, arg3=None, *args, **kwargs) -> int: pass
+        def _adapter2(arg1, arg2, arg3=None, *args, **kwargs) -> int:
+            pass
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
-        args = '(arg1, arg2, arg3=None, *args, **kwargs) -> int'
+        args = "(arg1, arg2, arg3=None, *args, **kwargs) -> int"
 
         @wrapt.decorator(adapter=args)
         def _wrapper_2(wrapped, instance, args, kwargs):
@@ -135,12 +150,13 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
         @_wrapper_2
         def _function_2():
-           pass
+            pass
 
         self.assertEqual(inspect.getfullargspec(_function_2), argspec2)
 
     def test_dynamic_adapter_instancemethod(self):
-        def _adapter1(self, arg1, arg2, arg3=None, *args, **kwargs) -> Iterable: pass
+        def _adapter1(self, arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
+            pass
 
         argspec1 = inspect.getfullargspec(_adapter1)
 
@@ -161,11 +177,12 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         # Can't use a function signature with adapter factory which has
         # annotations which reference a non builtin type.
 
-        def _adapter2(self, arg1, arg2, arg3=None, *args, **kwargs) -> int: pass
+        def _adapter2(self, arg1, arg2, arg3=None, *args, **kwargs) -> int:
+            pass
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
-        args = '(self, arg1, arg2, arg3=None, *args, **kwargs) -> int'
+        args = "(self, arg1, arg2, arg3=None, *args, **kwargs) -> int"
 
         @wrapt.decorator(adapter=args)
         def _wrapper_2(wrapped, instance, args, kwargs):
@@ -182,7 +199,8 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         self.assertEqual(inspect.getfullargspec(instance2.function), argspec2)
 
     def test_dynamic_adapter_classmethod(self):
-        def _adapter1(cls, arg1, arg2, arg3=None, *args, **kwargs) -> Iterable: pass
+        def _adapter1(cls, arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
+            pass
 
         argspec1 = inspect.getfullargspec(_adapter1)
 
@@ -204,11 +222,12 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         # Can't use a function signature with adapter factory which has
         # annotations which reference a non builtin type.
 
-        def _adapter2(cls, arg1, arg2, arg3=None, *args, **kwargs) -> int: pass
+        def _adapter2(cls, arg1, arg2, arg3=None, *args, **kwargs) -> int:
+            pass
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
-        args = '(cls, arg1, arg2, arg3=None, *args, **kwargs) -> int'
+        args = "(cls, arg1, arg2, arg3=None, *args, **kwargs) -> int"
 
         @wrapt.decorator(adapter=args)
         def _wrapper_2(wrapped, instance, args, kwargs):
@@ -228,7 +247,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
     def test_adapter_factory(self):
         def factory(wrapped):
             argspec = inspect.getfullargspec(wrapped)
-            argspec.args.insert(0, 'arg0')
+            argspec.args.insert(0, "arg0")
             return argspec
 
         @wrapt.decorator(adapter=wrapt.adapter_factory(factory))
@@ -241,8 +260,9 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
         argspec = inspect.getfullargspec(_function_1)
 
-        self.assertEqual(argspec.args, ['arg0', 'arg1', 'arg2'])
-        self.assertEqual(argspec.annotations, {'return': Iterable})
+        self.assertEqual(argspec.args, ["arg0", "arg1", "arg2"])
+        self.assertEqual(argspec.annotations, {"return": Iterable})
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

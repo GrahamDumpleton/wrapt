@@ -4,6 +4,7 @@ import unittest
 
 import wrapt
 
+
 class TestPartialCallableObjectProxy(unittest.TestCase):
 
     def test_no_arguments(self):
@@ -40,7 +41,7 @@ class TestPartialCallableObjectProxy(unittest.TestCase):
         def func0(*args, **kwargs):
             return (args, kwargs)
 
-        args, kwargs = (), {'k1': 1}
+        args, kwargs = (), {"k1": 1}
 
         partial0 = wrapt.PartialCallableObjectProxy(func0, **kwargs)
 
@@ -60,11 +61,12 @@ class TestPartialCallableObjectProxy(unittest.TestCase):
         def func0(*args, **kwargs):
             return (args, kwargs)
 
-        args, kwargs = (), {'k1': 1, 'k2': 2, 'k3': 3}
+        args, kwargs = (), {"k1": 1, "k2": 2, "k3": 3}
 
         partial0 = wrapt.PartialCallableObjectProxy(func0, **kwargs)
 
         self.assertEqual(partial0(), (args, kwargs))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -5,11 +5,12 @@ import unittest
 
 import wrapt
 
+
 class TestDecorator(unittest.TestCase):
 
     def test_no_parameters(self):
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         def _decorator(wrapped, instance, args, kwargs):
@@ -25,11 +26,12 @@ class TestDecorator(unittest.TestCase):
 
     def test_instance_method_as_decorator(self):
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         class Instance(object):
             def __init__(self):
                 self.count = 0
+
             @wrapt.decorator
             def decorator(self, wrapped, instance, args, kwargs):
                 self.count += 1
@@ -53,10 +55,11 @@ class TestDecorator(unittest.TestCase):
 
     def test_class_method_as_decorator(self):
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         class Instance(object):
             count = 0
+
             @wrapt.decorator
             @classmethod
             def decorator(cls, wrapped, instance, args, kwargs):
@@ -79,7 +82,7 @@ class TestDecorator(unittest.TestCase):
 
     def test_class_type_as_decorator(self):
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         class ClassDecorator(object):
@@ -96,12 +99,13 @@ class TestDecorator(unittest.TestCase):
 
     def test_class_type_as_decorator_args(self):
         _args = (1, 2)
-        _kwargs = {'one': 1, 'two': 2}
+        _kwargs = {"one": 1, "two": 2}
 
         @wrapt.decorator
         class ClassDecorator(object):
             def __init__(self, arg):
                 assert arg == 1
+
             def __call__(self, wrapped, instance, args, kwargs):
                 return wrapped(*args, **kwargs)
 
@@ -118,7 +122,7 @@ class TestDecorator(unittest.TestCase):
         @wrapt.decorator
         def passthrough(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
-        
+
         @passthrough
         def function(self):
             pass
@@ -194,7 +198,7 @@ class TestDecorator(unittest.TestCase):
 
         b = B()
 
-        b._xfunction(b) 
+        b._xfunction(b)
 
     def test_decorated_builtin_as_class_attribute(self):
 
@@ -307,6 +311,7 @@ class TestDecorator(unittest.TestCase):
         class B:
             def __call__(self):
                 print("B:__call__")
+
             def __get__(self, obj, type):
                 print("B:__get__")
                 return self
@@ -335,5 +340,6 @@ class TestDecorator(unittest.TestCase):
         d.f1()
         d.f2()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

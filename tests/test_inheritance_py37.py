@@ -7,6 +7,7 @@ import _py_abc
 
 import wrapt
 
+
 class TestClassInheritance(unittest.TestCase):
 
     def test_basic_inheritance(self):
@@ -50,8 +51,10 @@ class TestClassInheritance(unittest.TestCase):
 
         def function():
             pass
+
         class F(wrapt.FunctionWrapper):
             pass
+
         instance = F(function, wrapper)
         self.assertTrue(isinstance(instance, wrapt.FunctionWrapper))
 
@@ -177,5 +180,6 @@ class TestClassInheritance(unittest.TestCase):
         self.assertTrue(isinstance(D1(), B1))
         self.assertTrue(isinstance(D1(), C1))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
