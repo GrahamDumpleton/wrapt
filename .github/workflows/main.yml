@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-20.04
+          - ubuntu-latest
         python-version:
           - 3.8
           - 3.9
@@ -40,9 +40,9 @@ jobs:
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: coverage
+        name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
         path: .coverage.*
 
   test_linux_no_gil:
@@ -51,7 +51,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-20.04
+          - ubuntu-latest
         python-version: [3.13]
     steps:
     - name: Checkout code
@@ -68,9 +68,9 @@ jobs:
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: coverage
+        name: coverage-no-gil-${{ matrix.os }}-${{ matrix.python-version }}
         path: .coverage.*
 
   # test_aarch64_linux:
@@ -79,10 +79,10 @@ jobs:
   #   strategy:
   #     matrix:
   #       python:
-  #         #- {os: ubuntu-20.04,  python-version: 3.7, pyver: py37}
-  #         #- {os: ubuntu-20.04,  python-version: 3.8, pyver: py38}
-  #         #- {os: ubuntu-20.04,  python-version: 3.9, pyver: py39}
-  #         - {os: ubuntu-20.04,  python-version: "3.10", pyver: py310}
+  #         #- {os: ubuntu-latest,  python-version: 3.7, pyver: py37}
+  #         #- {os: ubuntu-latest,  python-version: 3.8, pyver: py38}
+  #         #- {os: ubuntu-latest,  python-version: 3.9, pyver: py39}
+  #         - {os: ubuntu-latest,  python-version: "3.10", pyver: py310}
   #   env:
   #     py: python${{ matrix.python.python-version }}
   #   steps:
@@ -138,9 +138,9 @@ jobs:
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: coverage
+        name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
         path: .coverage.*
 
   test_windows:
@@ -180,7 +180,7 @@ jobs:
     - test_linux
     - test_macos
     - test_windows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -197,9 +197,9 @@ jobs:
     - name: Build pure Python source wheel
       run: WRAPT_INSTALL_EXTENSIONS=false python setup.py bdist_wheel
     - name: Store built wheels
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: dist
+        name: sdist
         path: dist/*
 
   bdist_wheel:
@@ -213,10 +213,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
         arch: [auto]
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             arch: aarch64
           - os: macos-13
             arch: universal2
@@ -237,9 +237,9 @@ jobs:
             CIBW_BUILD_VERBOSITY: 1
             CIBW_ARCHS: ${{ matrix.arch }}
             CIBW_FREE_THREADED_SUPPORT: 1
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
 
   # coveralls:
@@ -250,7 +250,7 @@ jobs:
   #   - test_linux_no_gil
   #   - test_macos
   #   - test_windows
-  #   runs-on: ubuntu-20.04
+  #   runs-on: ubuntu-latest
   #   steps:
   #   - name: Checkout code
   #     uses: actions/checkout@v3
