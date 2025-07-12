@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 2.0.0
+--------------
+
+**New Features**
+
+* Added `__all__` attribute to `wrapt` module to expose the public API.
+
 Version 1.17.2
 --------------
 
