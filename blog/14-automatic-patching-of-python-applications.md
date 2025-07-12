@@ -370,8 +370,6 @@ name of the entry point defined in the setup.py file for autowrapt.
 The actual code for the `autowrapt_this()` function was:
 
 ```python
-from __future__ import print_function
-
 def autowrapt_this(module):
     print('The wrapt package is absolutely amazing and you should use it.')
 ```
