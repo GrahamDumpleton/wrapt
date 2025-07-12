@@ -75,7 +75,7 @@ Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
   a `__get__()` method for binding, and it was called in context whhere binding
   would be attempted, it would fail with error that `__get__()` did not exist
   when instead it should have been called directly, ignoring that binding was
-  not possible. 
+  not possible.
 
 * The `__round__` hook for the object proxy didn't accept `ndigits` argument.
 
@@ -377,7 +377,7 @@ Version 1.11.0
   result in an exception being raised to indicate that a proxy object had
   not been initialised when in fact the argument wasn't even an instance
   of a proxy object.
-  
+
   Because an incorrect cast in C level code was being performed and
   an attribute in memory checked on the basis of it being a type different
   to what it actually was, technically it may have resulted in a process
@@ -652,7 +652,7 @@ Version 1.10.0
 * The ``inspect.signature()`` function was only added in Python 3.3.
   Use fallback when doesn't exist and on Python 3.2 or earlier Python 3
   versions.
-  
+
   Note that testing is only performed for Python 3.3+, so it isn't
   actually known if the ``wrapt`` package works on Python 3.2.
 

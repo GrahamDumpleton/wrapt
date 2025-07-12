@@ -75,7 +75,7 @@ Blog Posts
 
 Blog posts related to the **wrapt** module:
 
-* https://github.com/GrahamDumpleton/wrapt/tree/master/blog 
+* https://github.com/GrahamDumpleton/wrapt/tree/master/blog
 
 Installation
 ------------

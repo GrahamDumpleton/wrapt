@@ -21,7 +21,7 @@ other functions.
 ::
 
     import wrapt
-    
+
     @wrapt.decorator
     def pass_through(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
@@ -70,7 +70,7 @@ The above rules can be summarised with the following example.
 ::
 
     import inspect
-    
+
     @wrapt.decorator
     def universal(wrapped, instance, args, kwargs):
         if instance is None:
