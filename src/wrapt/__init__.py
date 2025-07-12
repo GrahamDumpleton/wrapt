@@ -28,3 +28,31 @@ from inspect import getcallargs
 # bundled implementation here in case any user of wrapt was also needing it.
 
 from .arguments import formatargspec
+
+__all__ = (
+    "ObjectProxy",
+    "CallableObjectProxy",
+    "FunctionWrapper",
+    "BoundFunctionWrapper",
+    "PartialCallableObjectProxy",
+
+    "resolve_path",
+    "apply_patch",
+    "wrap_object",
+    "wrap_object_attribute",
+    "function_wrapper",
+    "wrap_function_wrapper",
+    "patch_function_wrapper",
+    "transient_function_wrapper",
+
+    "WeakFunctionProxy"
+
+    "adapter_factory",
+    "AdapterFactory",
+    "decorator",
+    "synchronized",
+
+    "register_post_import_hook",
+    "when_imported",
+    "discover_post_import_hooks",
+)
