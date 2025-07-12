@@ -10,25 +10,8 @@ PY2 = sys.version_info[0] == 2
 if PY2:
     string_types = (basestring,)
 
-    def exec_(_code_, _globs_=None, _locs_=None):
-        """Execute code in a namespace."""
-        if _globs_ is None:
-            frame = sys._getframe(1)
-            _globs_ = frame.f_globals
-            if _locs_ is None:
-                _locs_ = frame.f_locals
-            del frame
-        elif _locs_ is None:
-            _locs_ = _globs_
-        exec("""exec _code_ in _globs_, _locs_""")
-
 else:
     string_types = (str,)
-
-    import builtins
-
-    exec_ = getattr(builtins, "exec")
-    del builtins
 
 from functools import partial
 from inspect import isclass
@@ -240,7 +223,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                             adapter = adapter[:-1]
                         adapter = formatargspec(*adapter)
 
-                    exec_(f"def adapter{adapter}: pass", ns, ns)
+                    exec(f"def adapter{adapter}: pass", ns, ns)
                     adapter = ns["adapter"]
 
                     # Override the annotations for the manufactured

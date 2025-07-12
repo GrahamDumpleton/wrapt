@@ -4,7 +4,7 @@ import types
 
 import wrapt
 
-from compat import PY2, PY3, exec_
+from compat import PY2, PY3
 
 DECORATORS_CODE = """
 import wrapt
@@ -17,7 +17,7 @@ def adapter1(wrapped, instance, args, kwargs):
 """
 
 decorators = types.ModuleType("decorators")
-exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
+exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 
 def function1(arg1, arg2):
