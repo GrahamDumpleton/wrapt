@@ -5,8 +5,6 @@ import threading
 import wrapt
 from wrapt.importer import _post_import_hooks
 
-from compat import PY2, PY3
-
 
 class TestPostImportHooks(unittest.TestCase):
 
@@ -148,9 +146,6 @@ class TestPostImportHooks(unittest.TestCase):
         # is a fundamental behaviour of Python and not wrapt. In Python 3.X
         # there is a module import lock per named module and so we do not have
         # this problem.
-
-        if PY2:
-            return
 
         hooks_called = []
 

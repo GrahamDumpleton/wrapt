@@ -2,8 +2,6 @@ import sys
 import operator
 import inspect
 
-PY2 = sys.version_info[0] == 2
-
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
@@ -125,10 +123,8 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __str__(self):
         return str(self.__wrapped__)
 
-    if not PY2:
-
-        def __bytes__(self):
-            return bytes(self.__wrapped__)
+    def __bytes__(self):
+        return bytes(self.__wrapped__)
 
     def __repr__(self):
         return f"<{type(self).__name__} at 0x{id(self):x} for {type(self.__wrapped__).__name__} at 0x{id(self.__wrapped__):x}>"
@@ -139,15 +135,11 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __reversed__(self):
         return reversed(self.__wrapped__)
 
-    if not PY2:
+    def __round__(self, ndigits=None):
+        return round(self.__wrapped__, ndigits)
 
-        def __round__(self, ndigits=None):
-            return round(self.__wrapped__, ndigits)
-
-    if sys.hexversion >= 0x03070000:
-
-        def __mro_entries__(self, bases):
-            return (self.__wrapped__,)
+    def __mro_entries__(self, bases):
+        return (self.__wrapped__,)
 
     def __lt__(self, other):
         return self.__wrapped__ < other

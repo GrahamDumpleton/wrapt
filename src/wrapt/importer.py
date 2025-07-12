@@ -6,12 +6,7 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 import sys
 import threading
 
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    find_spec = None
-else:
-    from importlib.util import find_spec
+from importlib.util import find_spec
 
 from .__wrapt__ import ObjectProxy
 
@@ -227,32 +222,18 @@ class ImportHookFinder:
         # Now call back into the import system again.
 
         try:
-            if not find_spec:
-                # For Python 2 we don't have much choice but to
-                # call back in to __import__(). This will
-                # actually cause the module to be imported. If no
-                # module could be found then ImportError will be
-                # raised. Otherwise we return a loader which
-                # returns the already loaded module and invokes
-                # the post import hooks.
+            # For Python 3 we need to use find_spec().loader
+            # from the importlib.util module. It doesn't actually
+            # import the target module and only finds the
+            # loader. If a loader is found, we need to return
+            # our own loader which will then in turn call the
+            # real loader to import the module and invoke the
+            # post import hooks.
 
-                __import__(fullname)
+            loader = getattr(find_spec(fullname), "loader", None)
 
-                return _ImportHookLoader()
-
-            else:
-                # For Python 3 we need to use find_spec().loader
-                # from the importlib.util module. It doesn't actually
-                # import the target module and only finds the
-                # loader. If a loader is found, we need to return
-                # our own loader which will then in turn call the
-                # real loader to import the module and invoke the
-                # post import hooks.
-
-                loader = getattr(find_spec(fullname), "loader", None)
-
-                if loader and not isinstance(loader, _ImportHookChainedLoader):
-                    return _ImportHookChainedLoader(loader)
+            if loader and not isinstance(loader, _ImportHookChainedLoader):
+                return _ImportHookChainedLoader(loader)
 
         finally:
             del self.in_progress[fullname]
