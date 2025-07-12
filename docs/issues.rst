@@ -27,6 +27,11 @@ the Python interpreter was fixed, the only solution is the recommendation
 that decorators implemented using ``@wrapt.decorator`` always be placed
 outside of ``@classmethod`` and never inside.
 
+Unfortunately, in Python 3.13 this change in Python was reverted back to the
+old behaviour because various third party code relied on the broken behaviour
+and even though technically not correct, it was deemed safer to revert the fix.
+The original warning thus applies.
+
 Using decorated class with super()
 ----------------------------------
 
