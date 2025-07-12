@@ -73,7 +73,7 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
 # are themselves defined by a property object.
 
 
-class AttributeWrapper(object):
+class AttributeWrapper:
 
     def __init__(self, attribute, factory, args, kwargs):
         self.attribute = attribute

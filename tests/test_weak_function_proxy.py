@@ -63,7 +63,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(id(proxy), result[0])
 
     def test_instancemethod_delete_instance(self):
-        class Class(object):
+        class Class:
             def function(self, a, b):
                 return a, b
 
@@ -85,7 +85,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(id(proxy), result[0])
 
     def test_instancemethod_delete_function(self):
-        class Class(object):
+        class Class:
             def function(self, a, b):
                 return a, b
 
@@ -108,7 +108,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(id(proxy), result[0])
 
     def test_instancemethod_delete_function_and_instance(self):
-        class Class(object):
+        class Class:
             def function(self, a, b):
                 return a, b
 
@@ -131,7 +131,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(id(proxy), result[0])
 
     def test_classmethod(self):
-        class Class(object):
+        class Class:
             @classmethod
             def function(cls, a, b):
                 self.assertEqual(cls, Class)
@@ -154,7 +154,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(id(proxy), result[0])
 
     def test_staticmethod(self):
-        class Class(object):
+        class Class:
             @staticmethod
             def function(a, b):
                 return a, b
@@ -180,7 +180,7 @@ class TestWeakFunctionProxy(unittest.TestCase):
         def bark(wrapped, instance, args, kwargs):
             return "bark"
 
-        class Animal(object):
+        class Animal:
             @bark
             def squeal(self):
                 return "squeal"

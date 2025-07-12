@@ -17,7 +17,7 @@ class TestInheritance(unittest.TestCase):
             return wrapped(*args, **kwargs)
 
         @passthru
-        class BaseClass(object):
+        class BaseClass:
             def __init__(self):
                 self.value = 1
 
@@ -52,11 +52,11 @@ class TestInheritance(unittest.TestCase):
             return wrapped(*args, **kwargs)
 
         @passthru
-        class BaseClass1(object):
+        class BaseClass1:
             pass
 
         @passthru
-        class BaseClass2(object):
+        class BaseClass2:
             pass
 
         class DerivedClass(BaseClass1, BaseClass2):
@@ -80,7 +80,7 @@ class TestInheritance(unittest.TestCase):
             return wrapped(*args, **kwargs)
 
         @passthru
-        class CommonClass(object):
+        class CommonClass:
             pass
 
         @passthru

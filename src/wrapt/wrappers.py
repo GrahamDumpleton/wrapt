@@ -25,7 +25,7 @@ class WrapperNotInitializedError(ValueError, AttributeError):
     pass
 
 
-class _ObjectProxyMethods(object):
+class _ObjectProxyMethods:
 
     # We use properties to override the values of __module__ and
     # __doc__. If we add these in ObjectProxy, the derived class

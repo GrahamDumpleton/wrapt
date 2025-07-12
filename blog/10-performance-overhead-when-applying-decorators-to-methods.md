@@ -75,7 +75,7 @@ def my_function_wrapper(wrapped):
         return wrapped(*args, **kwargs)
     return _my_function_wrapper
 
-class Class(object):
+class Class:
     @my_function_wrapper
     def method(self):
         pass
@@ -109,7 +109,7 @@ Now for when using our decorator factory. To provide context this time we
 need to present the complete recipe for the implementation.
 
 ```python
-class object_proxy(object):
+class object_proxy:
 
     def __init__(self, wrapped):
         self.wrapped = wrapped

@@ -164,7 +164,7 @@ class AdapterWrapper(FunctionWrapper):
         return self._self_surrogate.__signature__
 
 
-class AdapterFactory(object):
+class AdapterFactory:
     def __call__(self, wrapped):
         raise NotImplementedError()
 
@@ -268,7 +268,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
             # to a class type.
             #
             #     @decorator
-            #     class mydecoratorclass(object):
+            #     class mydecoratorclass:
             #         def __init__(self, arg=None):
             #             self.arg = arg
             #         def __call__(self, wrapped, instance, args, kwargs):
@@ -342,7 +342,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                     # as the decorator wrapper function.
                     #
                     #     @decorator
-                    #     class mydecoratorclass(object):
+                    #     class mydecoratorclass:
                     #         def __init__(self, arg=None):
                     #             self.arg = arg
                     #         def __call__(self, wrapped, instance,
@@ -382,7 +382,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                     # In this case the decorator was applied to a class
                     # method.
                     #
-                    #     class myclass(object):
+                    #     class myclass:
                     #         @decorator
                     #         @classmethod
                     #         def decoratorclassmethod(cls, wrapped,
@@ -407,7 +407,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                     # In this case the decorator was applied to an instance
                     # method.
                     #
-                    #     class myclass(object):
+                    #     class myclass:
                     #         @decorator
                     #         def decoratorclassmethod(self, wrapped,
                     #                 instance, args, kwargs):

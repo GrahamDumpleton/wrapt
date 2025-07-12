@@ -45,7 +45,7 @@ argument to the decorator.
     def function():
         pass
 
-    class Class(object):
+    class Class:
 
         @synchronized(lock)
         def function(self):
@@ -223,7 +223,7 @@ for the different contexts the decorator is used in.
         pass
 
     @synchronized # lock bound to Class
-    class Class(object):
+    class Class:
 
         @synchronized # lock bound to instance of Class
         def function_im(self):
@@ -256,7 +256,7 @@ able to do the following.
 
 ::
 
-    class Class(object):
+    class Class:
 
         @synchronized
         def function_im_1(self):
@@ -342,7 +342,7 @@ class itself.
 
 ::
 
-    class Class(object):
+    class Class:
 
         @synchronized
         @classmethod
@@ -359,7 +359,7 @@ structure which they all manipulate.
 
 ::
 
-    class Data(object):
+    class Data:
         pass
 
     data = Data()
@@ -504,7 +504,7 @@ which is the same across the whole class, or one which is at global scope.
 
 ::
 
-    class Class(object):
+    class Class:
         lock1 = threading.RLock()
         lock2 = threading.RLock()
 
@@ -527,7 +527,7 @@ lock in at that time.
 
 ::
 
-    class Class(object):
+    class Class:
 
         def __init__(self):
             self.lock1 = threading.RLock()

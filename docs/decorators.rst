@@ -85,7 +85,7 @@ the class.
 
     import wrapt
 
-    class with_arguments(object):
+    class with_arguments:
 
         def __init__(self, myarg1, myarg2):
             self.myarg1 = myarg1
@@ -592,7 +592,7 @@ the actual instance method.
     def pass_through(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
-    class Class(object):
+    class Class:
 
         @pass_through
         def function_im(self, arg1, arg2):
@@ -633,7 +633,7 @@ method.
     def pass_through(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
-    class Class(object):
+    class Class:
 
         @pass_through
         @classmethod
@@ -674,7 +674,7 @@ be able to distinguish a call to a static method from a normal function.
     def pass_through(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
-    class Class(object):
+    class Class:
 
         @pass_through
         @staticmethod
@@ -698,7 +698,7 @@ is a class type.
         return wrapped(*args, **kwargs)
 
     @pass_through
-    class Class(object):
+    class Class:
         pass
 
     c = Class()

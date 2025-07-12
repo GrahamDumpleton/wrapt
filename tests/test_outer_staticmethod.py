@@ -19,7 +19,7 @@ decorators = types.ModuleType("decorators")
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 
-class Class(object):
+class Class:
     @staticmethod
     def function(self, arg):
         """documentation"""
@@ -29,7 +29,7 @@ class Class(object):
 Original = Class
 
 
-class Class(object):
+class Class:
     @staticmethod
     @decorators.passthru_decorator
     def function(self, arg):
@@ -136,7 +136,7 @@ class TestCallingOuterStaticMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @staticmethod
             @_decorator
             def _function(*args, **kwargs):
@@ -167,7 +167,7 @@ class TestCallingOuterStaticMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @staticmethod
             @_decorator
             def _function(*args, **kwargs):

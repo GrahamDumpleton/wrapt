@@ -316,7 +316,7 @@ Now way back in the very first post in this series of blog posts, a way in
 which a decorator could be implemented as a class was described.
 
 ```python
-class function_wrapper(object):
+class function_wrapper:
 
     def __init__(self, wrapped):
         self.wrapped = wrapped
@@ -332,7 +332,7 @@ save away the state object as an attribute of the instance of the class,
 along with the reference to the wrapped function.
 
 ```python
-class cache(object):
+class cache:
 
     def __init__(self, wrapped):
         self.wrapped = wrapped
@@ -371,7 +371,7 @@ What one should be able to do, at least for where there are required
 arguments, is do:
 
 ```python
-class with_arguments(object):
+class with_arguments:
 
     def __init__(self, arg):
         self.arg = arg

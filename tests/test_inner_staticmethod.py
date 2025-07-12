@@ -19,7 +19,7 @@ decorators = types.ModuleType("decorators")
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 
-class Class(object):
+class Class:
     @staticmethod
     def function(self, arg):
         """documentation"""
@@ -29,7 +29,7 @@ class Class(object):
 Original = Class
 
 
-class Class(object):
+class Class:
     @decorators.passthru_decorator
     @staticmethod
     def function(self, arg):
@@ -133,7 +133,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @staticmethod
             def _function(*args, **kwargs):
@@ -160,7 +160,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @staticmethod
             def _function(*args, **kwargs):
@@ -187,7 +187,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @_decorator
             @staticmethod
@@ -215,7 +215,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @_decorator
             @staticmethod
@@ -240,7 +240,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             @staticmethod
             def _function(*args, **kwargs):
                 return (args, kwargs)
@@ -265,7 +265,7 @@ class TestCallingInnerStaticMethod(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        class Class(object):
+        class Class:
             @staticmethod
             def _function(*args, **kwargs):
                 return (args, kwargs)

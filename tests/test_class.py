@@ -20,7 +20,7 @@ decorators = types.ModuleType("decorators")
 exec_(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 
-class class1(object):
+class class1:
     pass
 
 
@@ -44,7 +44,7 @@ class TestInheritance(unittest.TestCase):
             return wrapped(*args, **kwargs)
 
         @passthru
-        class BaseClass(object):
+        class BaseClass:
             def __init__(self):
                 self.value = 1
 

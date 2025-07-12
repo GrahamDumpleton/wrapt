@@ -23,7 +23,7 @@ normal undecorated function call.
     def function1():
         pass
 
-    class Class(object):
+    class Class:
 
         def function1(self):
             pass
@@ -77,7 +77,7 @@ implemented using function closures.
     def function2():
         pass
 
-    class Class(object):
+    class Class:
 
         @wrapper2
         def function2(self):
@@ -135,7 +135,7 @@ implementation.
     def function3():
         pass
 
-    class Class(object):
+    class Class:
 
         @wrapper3
         def function3(self):
@@ -253,7 +253,7 @@ are implemented using the **decorator** module available from PyPi.
     def function4():
         pass
 
-    class Class(object):
+    class Class:
 
         @wrapper4
         def function4(self):

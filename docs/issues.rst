@@ -68,7 +68,7 @@ wrapped class and use it as the base class.
 ::
 
     @mydecorator
-    class Base(object):
+    class Base:
         pass
 
     class Derived(Base.__wrapped__):

@@ -65,7 +65,7 @@ def function2():
     pass
 
 @synchronized # lock bound to Class
-class Class(object):
+class Class:
 
     @synchronized # lock bound to instance of Class
     def function_im(self):
@@ -85,7 +85,7 @@ class Class(object):
 What we now want to do is modify the decorator to also allow:
 
 ```python
-class Object(object):
+class Object:
 
     @synchronized
     def function_im_1(self):

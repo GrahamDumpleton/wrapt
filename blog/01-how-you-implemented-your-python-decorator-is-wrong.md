@@ -109,7 +109,7 @@ understand how the more generic case of a function wrapper works it is more
 illustrative to show how to implement it using a class.
 
 ```python
-class function_wrapper(object):
+class function_wrapper:
     def __init__(self, wrapped):
         self.wrapped = wrapped
     def __call__(self, *args, **kwargs):
@@ -186,7 +186,7 @@ normally have a `__name__` attribute, attempting to access the name of
 the function will actually result in an AttributeError exception.
 
 ```python
-class function_wrapper(object):
+class function_wrapper:
     def __init__(self, wrapped):
         self.wrapped = wrapped
     def __call__(self, *args, **kwargs):
@@ -258,7 +258,7 @@ If using a class to implement the wrapper, instead of the
 ```python
 import functools
 
-class function_wrapper(object):
+class function_wrapper:
     def __init__(self, wrapped):
         self.wrapped = wrapped
         functools.update_wrapper(self, wrapped)
@@ -296,7 +296,7 @@ function. As a result it isn't possible to derive an argument specification
 at all, even though the wrapped function is actually still callable.
 
 ```python
-class function_wrapper(object): ...
+class function_wrapper: ...
 
 @function_wrapper
 def function(arg1, arg2): pass
@@ -328,7 +328,7 @@ methods into these special method types. Methods of classes do provide a
 number of potential problems though.
 
 ```python
-class Class(object):
+class Class:
 
     @function_wrapper
     def method(self):
@@ -350,7 +350,7 @@ exception. This is because the wrappers created by these, do not have some
 of the attributes being copied.
 
 ```python
-class Class(object):
+class Class:
     @function_wrapper
     @classmethod
     def cmethod(cls):
@@ -377,7 +377,7 @@ actually be what is called a descriptor, meaning that in order to get back
 a callable, the descriptor has to be correctly bound to the instance first.
 
 ```python
-class Class(object):
+class Class:
     @function_wrapper
     @classmethod
     def cmethod(cls):

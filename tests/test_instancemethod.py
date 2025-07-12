@@ -122,7 +122,7 @@ class TestNamingInstanceMethodOldStyle(unittest.TestCase):
         self.assertTrue(isinstance(OldClass1d().function, type(OldClass1o().function)))
 
 
-class NewClass1(object):
+class NewClass1:
     def function(self, arg):
         """documentation"""
         return arg
@@ -131,7 +131,7 @@ class NewClass1(object):
 NewClass1o = NewClass1
 
 
-class NewClass1(object):
+class NewClass1:
     @decorators.passthru_decorator
     def function(self, arg):
         """documentation"""
@@ -361,7 +361,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             def _function(self, *args, **kwargs):
                 return (args, kwargs)
@@ -389,7 +389,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             def _function(self, *args, **kwargs):
                 return (args, kwargs)
@@ -418,7 +418,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @_decorator
             def _function(self, *args, **kwargs):
@@ -447,7 +447,7 @@ class TestCallingInstanceMethodNewStyle(unittest.TestCase):
         def _function(*args, **kwargs):
             return args, kwargs
 
-        class Class(object):
+        class Class:
             @_decorator
             @_decorator
             def _function(self, *args, **kwargs):

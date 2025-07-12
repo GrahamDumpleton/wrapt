@@ -112,7 +112,7 @@ ARGS (1, 2)
 ```
 
 ```python
-class Class(object):
+class Class:
     @my_function_wrapper
     def function_im(self, a, b):
         pass
@@ -134,7 +134,7 @@ The change to support the latter however, broke things for the case of the
 decorator being applied to a class method. Similarly for a static method.
 
 ```python
-class Class(object):
+class Class:
 
     @my_function_wrapper
     @classmethod
@@ -540,7 +540,7 @@ existing decorators marking a method as either a class method or a static
 method. What happens if we reverse the order?
 
 ```python
-class Class(object):
+class Class:
 
     @classmethod
     @my_function_wrapper
@@ -606,7 +606,7 @@ distinguish when a decorator was applied to a class. So lets check that.
 
 ```python
 @my_function_wrapper
-class Class(object):
+class Class:
     pass
 
 >>> c = Class()
@@ -644,7 +644,7 @@ ARGS (1, 2)
 ```
 
 ```python
-class Class(object):
+class Class:
 
     @my_function_wrapper
     def function_im(self, a, b):
@@ -695,7 +695,7 @@ INSTANCE None
 ARGS (1, 2)
 
 @my_function_wrapper
-class Class(object):
+class Class:
     pass
 
 c = Class()

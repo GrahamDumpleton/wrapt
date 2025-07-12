@@ -325,7 +325,7 @@ def synchronized(wrapped, instance, args, kwargs):
     with lock:
         return wrapped(*args, **kwargs)
 
-class Object(object):
+class Object:
 
     @synchronized
     def method_im(self):
@@ -481,7 +481,7 @@ contexts the decorator is used in.
 def function():
     pass
 
-class Object(object):
+class Object:
 
     @synchronized
     def method_im(self):
@@ -523,7 +523,7 @@ def function2():
     pass
 
 @synchronized # lock bound to Class
-class Class(object):
+class Class:
 
     @synchronized # lock bound to instance of Class
     def function_im(self):
@@ -548,7 +548,7 @@ what about those synchronized statements. The goal here is that we want to
 be able to write:
 
 ```python
-class Object(object):
+class Object:
 
     @synchronized
     def function_im_1(self):

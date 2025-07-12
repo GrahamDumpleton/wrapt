@@ -705,7 +705,7 @@ Version 1.8.0
   ::
 
       @wrapt.decorator
-      class mydecoratorclass(object):
+      class mydecoratorclass:
           def __init__(self, arg=None):
               self.arg = arg
           def __call__(self, wrapped, instance, args, kwargs):

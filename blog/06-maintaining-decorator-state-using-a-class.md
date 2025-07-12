@@ -29,7 +29,7 @@ As described in the previous post, the pattern we were trying to use so as
 to allow us to use a class as a decorator was:
 
 ```python
-class with_arguments(object):
+class with_arguments:
 
     def __init__(self, arg):
         self.arg = arg
@@ -188,7 +188,7 @@ Do not try and reproduce this
 So the complete solution we now have at this point is:
 
 ```python
-class object_proxy(object):
+class object_proxy:
 
     def __init__(self, wrapped):
         self.wrapped = wrapped
