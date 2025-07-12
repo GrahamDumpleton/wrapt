@@ -1,4 +1,5 @@
 import sys
+import re
 
 try:
     from pytest import File as FileCollector
@@ -22,27 +23,24 @@ def construct_dummy(path, parent):
 
 
 def pytest_pycollect_makemodule(path, parent):
-    if "_py33" in path.basename and version < (3, 3):
+    basename = path.basename
+    
+    # Handle Python 2/3 general cases
+    if "_py2" in basename and version >= (3, 0):
         return construct_dummy(path, parent)
-    if "_py34" in path.basename and version < (3, 4):
+    if "_py3" in basename and version < (3, 0):
         return construct_dummy(path, parent)
-    if "_py35" in path.basename and version < (3, 5):
-        return construct_dummy(path, parent)
-    if "_py36" in path.basename and version < (3, 6):
-        return construct_dummy(path, parent)
-    if "_py37" in path.basename and version < (3, 7):
-        return construct_dummy(path, parent)
-    if "_py38" in path.basename and version < (3, 8):
-        return construct_dummy(path, parent)
-    if "_py39" in path.basename and version < (3, 9):
-        return construct_dummy(path, parent)
-    if "_py310" in path.basename and version < (3, 10):
-        return construct_dummy(path, parent)
-    if "_py311" in path.basename and version < (3, 11):
-        return construct_dummy(path, parent)
-    if "_py312" in path.basename and version < (3, 12):
-        return construct_dummy(path, parent)
-    if "_py3" in path.basename and version < (3, 0):
-        return construct_dummy(path, parent)
-    if "_py2" in path.basename and version >= (3, 0):
-        return construct_dummy(path, parent)
+    
+    # Handle specific Python version cases using regex
+    # Match patterns like "_py33", "_py34", "_py310", etc.
+    version_match = re.search(r'_py(\d+)(\d*)', basename)
+    if version_match:
+        major = int(version_match.group(1))
+        minor_str = version_match.group(2)
+        minor = int(minor_str) if minor_str else 0
+        
+        # Check if current version is less than the required version
+        if version < (major, minor):
+            return construct_dummy(path, parent)
+    
+    return None
