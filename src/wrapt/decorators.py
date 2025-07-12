@@ -240,7 +240,7 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
                             adapter = adapter[:-1]
                         adapter = formatargspec(*adapter)
 
-                    exec_("def adapter{}: pass".format(adapter), ns, ns)
+                    exec_(f"def adapter{adapter}: pass", ns, ns)
                     adapter = ns["adapter"]
 
                     # Override the annotations for the manufactured

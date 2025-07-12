@@ -1596,7 +1596,7 @@ class TestObjectRepresentationObjectProxy(unittest.TestCase):
 
         proxy = wrapt.ObjectProxy(1)
 
-        self.assertEqual("{:0>3}".format(proxy), "{:0>3}".format(value))
+        self.assertEqual(f"{proxy:0>3}", f"{value:0>3}")
 
 class TestDerivedClassCreation(unittest.TestCase):
 
