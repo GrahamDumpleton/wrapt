@@ -4,9 +4,29 @@ Release Notes
 Version 2.0.0
 --------------
 
+A major version bump is being done due to subtle changes in the behaviour of
+the `ObjectProxy` class which may break code which relied on the previous
+behaviour. Not being sure if this will be the case or not, so a major version
+bump seen as being the safest option.
+
 **New Features**
 
 * Added `__all__` attribute to `wrapt` module to expose the public API.
+
+**Features Changed**
+
+* The `ObjectProxy` class now raises a `WrapperNotInitializedError` exception
+  rather than Python builtin `ValueError` exception when an attempt is made
+  to access an attribute of the wrapped object before the wrapper has been
+  initialized. The `WrapperNotInitializedError` exception inherits from both
+  `ValueError` and `AttributeError` so that it can be caught by code which
+  wants to handle both cases. This is being done to allow IDEs such as PyCharm
+  to give a live view of Python objects and their attributes. Previously a
+  `ValueError` exception was being raised, which was problematic because
+  PyCharm would see it as an actual error and fail. By using a custom exception
+  that also inherits from `AttributeError` it is hoped the IDE will see it as
+  a normal attribute access error rather than an actual error and so just not
+  attempt to show the attribute within the IDE.
 
 Version 1.17.2
 --------------

@@ -15,6 +15,16 @@ def with_metaclass(meta, *bases):
     return meta("NewBase", bases, {})
 
 
+class WrapperNotInitializedError(ValueError, AttributeError):
+    """
+    Exception raised when a wrapper is accessed before it has been initialized.
+    To satisfy different situations where this could arise, we inherit from both
+    ValueError and AttributeError.
+    """
+
+    pass
+
+
 class _ObjectProxyMethods(object):
 
     # We use properties to override the values of __module__ and
@@ -218,7 +228,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         # '__init__()' method cannot have been called.
 
         if name == "__wrapped__":
-            raise ValueError("wrapper has not been initialised")
+            raise WrapperNotInitializedError("wrapper has not been initialised")
 
         return getattr(self.__wrapped__, name)
 

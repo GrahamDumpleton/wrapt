@@ -48,7 +48,49 @@ PyTypeObject WraptFunctionWrapper_Type;
 /* ------------------------------------------------------------------------- */
 
 static void raise_uninitialized_wrapper_error(void) {
-  PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+  // We need to reach into the wrapt.wrappers module to get the exception
+  // class because the exception we need to raise needs to inherit from both
+  // ValueError and AttributeError and we can't do that in C code using the
+  // built in exception classes, or at least not easily or safely.
+
+  PyObject *wrapt_wrappers_module = NULL;
+  PyObject *wrapper_not_initialized_error = NULL;
+
+  // Import the wrapt.wrappers module and get the exception class.
+  // We do this fresh each time to be safe with multiple sub-interpreters.
+
+  wrapt_wrappers_module = PyImport_ImportModule("wrapt.wrappers");
+
+  if (!wrapt_wrappers_module) {
+    // Fallback to ValueError if import fails.
+
+    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+
+    return;
+  }
+
+  wrapper_not_initialized_error = PyObject_GetAttrString(
+      wrapt_wrappers_module, "WrapperNotInitializedError");
+
+  if (!wrapper_not_initialized_error) {
+    // Fallback to ValueError if attribute lookup fails.
+
+    Py_DECREF(wrapt_wrappers_module);
+
+    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+
+    return;
+  }
+
+  // Raise the custom exception.
+
+  PyErr_SetString(wrapper_not_initialized_error,
+                  "wrapper has not been initialized");
+
+  // Clean up references.
+
+  Py_DECREF(wrapper_not_initialized_error);
+  Py_DECREF(wrapt_wrappers_module);
 }
 
 /* ------------------------------------------------------------------------- */

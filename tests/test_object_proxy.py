@@ -42,6 +42,16 @@ class TestAttributeAccess(unittest.TestCase):
         except ValueError:
             pass
 
+        try:
+            a.__wrapped__
+        except AttributeError:
+            pass
+
+        try:
+            a + b
+        except AttributeError:
+            pass
+
     def test_attributes(self):
         def function1(*args, **kwargs):
             return args, kwargs
