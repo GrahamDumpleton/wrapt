@@ -4,11 +4,6 @@ import inspect
 
 PY2 = sys.version_info[0] == 2
 
-if PY2:
-    string_types = (basestring,)
-else:
-    string_types = (str,)
-
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""

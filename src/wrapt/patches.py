@@ -3,18 +3,13 @@ import sys
 
 PY2 = sys.version_info[0] == 2
 
-if PY2:
-    string_types = (basestring,)
-else:
-    string_types = (str,)
-
 from .__wrapt__ import FunctionWrapper
 
 # Helper functions for applying wrappers to existing functions.
 
 
 def resolve_path(module, name):
-    if isinstance(module, string_types):
+    if isinstance(module, str):
         __import__(module)
         module = sys.modules[module]
 
