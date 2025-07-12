@@ -47,6 +47,12 @@ PyTypeObject WraptFunctionWrapper_Type;
 
 /* ------------------------------------------------------------------------- */
 
+static void raise_uninitialized_wrapper_error(void) {
+  PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_new(PyTypeObject *type, PyObject *args,
                                       PyObject *kwds) {
   WraptObjectProxyObject *self;
@@ -169,7 +175,7 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self) {
 
 static PyObject *WraptObjectProxy_repr(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -192,7 +198,7 @@ typedef long Py_hash_t;
 
 static Py_hash_t WraptObjectProxy_hash(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -203,7 +209,7 @@ static Py_hash_t WraptObjectProxy_hash(WraptObjectProxyObject *self) {
 
 static PyObject *WraptObjectProxy_str(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -215,7 +221,7 @@ static PyObject *WraptObjectProxy_str(WraptObjectProxyObject *self) {
 static PyObject *WraptObjectProxy_add(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -224,7 +230,7 @@ static PyObject *WraptObjectProxy_add(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -239,7 +245,7 @@ static PyObject *WraptObjectProxy_add(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_subtract(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -248,7 +254,7 @@ static PyObject *WraptObjectProxy_subtract(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -263,7 +269,7 @@ static PyObject *WraptObjectProxy_subtract(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -272,7 +278,7 @@ static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -288,7 +294,7 @@ static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_divide(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -297,7 +303,7 @@ static PyObject *WraptObjectProxy_divide(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -313,7 +319,7 @@ static PyObject *WraptObjectProxy_divide(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_remainder(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -322,7 +328,7 @@ static PyObject *WraptObjectProxy_remainder(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -337,7 +343,7 @@ static PyObject *WraptObjectProxy_remainder(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_divmod(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -346,7 +352,7 @@ static PyObject *WraptObjectProxy_divmod(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -362,7 +368,7 @@ static PyObject *WraptObjectProxy_power(PyObject *o1, PyObject *o2,
                                         PyObject *modulo) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -371,7 +377,7 @@ static PyObject *WraptObjectProxy_power(PyObject *o1, PyObject *o2,
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -385,7 +391,7 @@ static PyObject *WraptObjectProxy_power(PyObject *o1, PyObject *o2,
 
 static PyObject *WraptObjectProxy_negative(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -396,7 +402,7 @@ static PyObject *WraptObjectProxy_negative(WraptObjectProxyObject *self) {
 
 static PyObject *WraptObjectProxy_positive(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -407,7 +413,7 @@ static PyObject *WraptObjectProxy_positive(WraptObjectProxyObject *self) {
 
 static PyObject *WraptObjectProxy_absolute(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -418,7 +424,7 @@ static PyObject *WraptObjectProxy_absolute(WraptObjectProxyObject *self) {
 
 static int WraptObjectProxy_bool(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -429,7 +435,7 @@ static int WraptObjectProxy_bool(WraptObjectProxyObject *self) {
 
 static PyObject *WraptObjectProxy_invert(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -441,7 +447,7 @@ static PyObject *WraptObjectProxy_invert(WraptObjectProxyObject *self) {
 static PyObject *WraptObjectProxy_lshift(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -450,7 +456,7 @@ static PyObject *WraptObjectProxy_lshift(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -465,7 +471,7 @@ static PyObject *WraptObjectProxy_lshift(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_rshift(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -474,7 +480,7 @@ static PyObject *WraptObjectProxy_rshift(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -489,7 +495,7 @@ static PyObject *WraptObjectProxy_rshift(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_and(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -498,7 +504,7 @@ static PyObject *WraptObjectProxy_and(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -513,7 +519,7 @@ static PyObject *WraptObjectProxy_and(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_xor(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -522,7 +528,7 @@ static PyObject *WraptObjectProxy_xor(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -537,7 +543,7 @@ static PyObject *WraptObjectProxy_xor(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_or(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -546,7 +552,7 @@ static PyObject *WraptObjectProxy_or(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -561,7 +567,7 @@ static PyObject *WraptObjectProxy_or(PyObject *o1, PyObject *o2) {
 #if PY_MAJOR_VERSION < 3
 static PyObject *WraptObjectProxy_int(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -573,7 +579,7 @@ static PyObject *WraptObjectProxy_int(WraptObjectProxyObject *self) {
 
 static PyObject *WraptObjectProxy_long(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -584,7 +590,7 @@ static PyObject *WraptObjectProxy_long(WraptObjectProxyObject *self) {
 
 static PyObject *WraptObjectProxy_float(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -598,7 +604,7 @@ static PyObject *WraptObjectProxy_oct(WraptObjectProxyObject *self) {
   PyNumberMethods *nb;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -620,7 +626,7 @@ static PyObject *WraptObjectProxy_hex(WraptObjectProxyObject *self) {
   PyNumberMethods *nb;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -642,7 +648,7 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -668,7 +674,7 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -694,7 +700,7 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -721,7 +727,7 @@ static PyObject *WraptObjectProxy_inplace_divide(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -749,7 +755,7 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -776,7 +782,7 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -802,7 +808,7 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -828,7 +834,7 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -854,7 +860,7 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -880,7 +886,7 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -906,7 +912,7 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -930,7 +936,7 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_floor_divide(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -939,7 +945,7 @@ static PyObject *WraptObjectProxy_floor_divide(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -954,7 +960,7 @@ static PyObject *WraptObjectProxy_floor_divide(PyObject *o1, PyObject *o2) {
 static PyObject *WraptObjectProxy_true_divide(PyObject *o1, PyObject *o2) {
   if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -963,7 +969,7 @@ static PyObject *WraptObjectProxy_true_divide(PyObject *o1, PyObject *o2) {
 
   if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
     if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+      raise_uninitialized_wrapper_error();
       return NULL;
     }
 
@@ -981,7 +987,7 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1008,7 +1014,7 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
   PyObject *object = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1031,7 +1037,7 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_index(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1042,7 +1048,7 @@ static PyObject *WraptObjectProxy_index(WraptObjectProxyObject *self) {
 
 static Py_ssize_t WraptObjectProxy_length(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1054,7 +1060,7 @@ static Py_ssize_t WraptObjectProxy_length(WraptObjectProxyObject *self) {
 static int WraptObjectProxy_contains(WraptObjectProxyObject *self,
                                      PyObject *value) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1066,7 +1072,7 @@ static int WraptObjectProxy_contains(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_getitem(WraptObjectProxyObject *self,
                                           PyObject *key) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1078,7 +1084,7 @@ static PyObject *WraptObjectProxy_getitem(WraptObjectProxyObject *self,
 static int WraptObjectProxy_setitem(WraptObjectProxyObject *self, PyObject *key,
                                     PyObject *value) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1116,7 +1122,7 @@ static PyObject *WraptObjectProxy_self_setattr(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_dir(WraptObjectProxyObject *self,
                                       PyObject *args) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1131,7 +1137,7 @@ static PyObject *WraptObjectProxy_enter(WraptObjectProxyObject *self,
   PyObject *result = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1155,7 +1161,7 @@ static PyObject *WraptObjectProxy_exit(WraptObjectProxyObject *self,
   PyObject *result = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1216,7 +1222,7 @@ static PyObject *WraptObjectProxy_reduce_ex(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_bytes(WraptObjectProxyObject *self,
                                         PyObject *args) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1230,7 +1236,7 @@ static PyObject *WraptObjectProxy_format(WraptObjectProxyObject *self,
   PyObject *format_spec = NULL;
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1245,7 +1251,7 @@ static PyObject *WraptObjectProxy_format(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_reversed(WraptObjectProxyObject *self,
                                            PyObject *args) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1269,7 +1275,7 @@ static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
   char *const kwlist[] = {"ndigits", NULL};
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1306,7 +1312,7 @@ static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_complex(WraptObjectProxyObject *self,
                                           PyObject *args) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1319,7 +1325,7 @@ static PyObject *WraptObjectProxy_complex(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_mro_entries(WraptObjectProxyObject *self,
                                               PyObject *args, PyObject *kwds) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1330,7 +1336,7 @@ static PyObject *WraptObjectProxy_mro_entries(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_get_name(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1342,7 +1348,7 @@ static PyObject *WraptObjectProxy_get_name(WraptObjectProxyObject *self) {
 static int WraptObjectProxy_set_name(WraptObjectProxyObject *self,
                                      PyObject *value) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1353,7 +1359,7 @@ static int WraptObjectProxy_set_name(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_get_qualname(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1365,7 +1371,7 @@ static PyObject *WraptObjectProxy_get_qualname(WraptObjectProxyObject *self) {
 static int WraptObjectProxy_set_qualname(WraptObjectProxyObject *self,
                                          PyObject *value) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1376,7 +1382,7 @@ static int WraptObjectProxy_set_qualname(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_get_module(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1388,7 +1394,7 @@ static PyObject *WraptObjectProxy_get_module(WraptObjectProxyObject *self) {
 static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
                                        PyObject *value) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1402,7 +1408,7 @@ static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_get_doc(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1414,7 +1420,7 @@ static PyObject *WraptObjectProxy_get_doc(WraptObjectProxyObject *self) {
 static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
                                     PyObject *value) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1428,7 +1434,7 @@ static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_get_class(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1440,7 +1446,7 @@ static PyObject *WraptObjectProxy_get_class(WraptObjectProxyObject *self) {
 static int WraptObjectProxy_set_class(WraptObjectProxyObject *self,
                                       PyObject *value) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1452,7 +1458,7 @@ static int WraptObjectProxy_set_class(WraptObjectProxyObject *self,
 static PyObject *
 WraptObjectProxy_get_annotations(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1464,7 +1470,7 @@ WraptObjectProxy_get_annotations(WraptObjectProxyObject *self) {
 static int WraptObjectProxy_set_annotations(WraptObjectProxyObject *self,
                                             PyObject *value) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1475,7 +1481,7 @@ static int WraptObjectProxy_set_annotations(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_get_wrapped(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1554,7 +1560,7 @@ static PyObject *WraptObjectProxy_getattr(WraptObjectProxyObject *self,
 #endif
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1610,7 +1616,7 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
     return PyObject_GenericSetAttr((PyObject *)self, name, value);
 
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return -1;
   }
 
@@ -1622,7 +1628,7 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_richcompare(WraptObjectProxyObject *self,
                                               PyObject *other, int opcode) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1633,7 +1639,7 @@ static PyObject *WraptObjectProxy_richcompare(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -1816,7 +1822,7 @@ PyTypeObject WraptObjectProxy_Type = {
 static PyObject *WraptCallableObjectProxy_call(WraptObjectProxyObject *self,
                                                PyObject *args, PyObject *kwds) {
   if (!self->wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -2012,7 +2018,7 @@ static PyObject *WraptPartialCallableObjectProxy_call(
   long offset;
 
   if (!self->object_proxy.wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -2504,7 +2510,7 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
   PyObject *result = NULL;
 
   if (!self->object_proxy.wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -2533,7 +2539,7 @@ WraptFunctionWrapperBase_instancecheck(WraptFunctionWrapperObject *self,
   int check = 0;
 
   if (!self->object_proxy.wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
@@ -2561,7 +2567,7 @@ WraptFunctionWrapperBase_subclasscheck(WraptFunctionWrapperObject *self,
   int check = 0;
 
   if (!self->object_proxy.wrapped) {
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
+    raise_uninitialized_wrapper_error();
     return NULL;
   }
 
