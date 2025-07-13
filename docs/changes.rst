@@ -4,10 +4,12 @@ Release Notes
 Version 2.0.0
 --------------
 
-A major version bump is being done due to subtle changes in the behaviour of
-the `ObjectProxy` class which may break code which relied on the previous
-behaviour. Not being sure if this will be the case or not, so a major version
-bump seen as being the safest option.
+There have been subtle changes in a corner case of the behaviour of the
+`ObjectProxy` class, which although not expected to cause problems, still has
+the potential for causing issues if code was for some reason dependent on prior
+behaviour. All existing code related to Python 2.X has also been removed.
+Finally it has also been a while since the last significant release. For all
+these reasons a major version bump is being made.
 
 **New Features**
 
@@ -27,6 +29,9 @@ bump seen as being the safest option.
   that also inherits from `AttributeError` it is hoped the IDE will see it as
   a normal attribute access error rather than an actual error and so just not
   attempt to show the attribute within the IDE.
+
+* Code related to Python 2.X and workarounds for older Python 3.X versions has
+  been removed.
 
 Version 1.17.2
 --------------

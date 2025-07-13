@@ -125,19 +125,11 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
   self->wrapped = wrapped;
 
   if (!module_str) {
-#if PY_MAJOR_VERSION >= 3
     module_str = PyUnicode_InternFromString("__module__");
-#else
-    module_str = PyString_InternFromString("__module__");
-#endif
   }
 
   if (!doc_str) {
-#if PY_MAJOR_VERSION >= 3
     doc_str = PyUnicode_InternFromString("__doc__");
-#else
-    doc_str = PyString_InternFromString("__doc__");
-#endif
   }
 
   object = PyObject_GetAttr(wrapped, module_str);
@@ -221,22 +213,12 @@ static PyObject *WraptObjectProxy_repr(WraptObjectProxyObject *self) {
     return NULL;
   }
 
-#if PY_MAJOR_VERSION >= 3
   return PyUnicode_FromFormat("<%s at %p for %s at %p>", Py_TYPE(self)->tp_name,
                               self, Py_TYPE(self->wrapped)->tp_name,
                               self->wrapped);
-#else
-  return PyString_FromFormat("<%s at %p for %s at %p>", Py_TYPE(self)->tp_name,
-                             self, Py_TYPE(self->wrapped)->tp_name,
-                             self->wrapped);
-#endif
 }
 
 /* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 3)
-typedef long Py_hash_t;
-#endif
 
 static Py_hash_t WraptObjectProxy_hash(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
@@ -329,32 +311,6 @@ static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2) {
 
   return PyNumber_Multiply(o1, o2);
 }
-
-/* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_divide(PyObject *o1, PyObject *o2) {
-  if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type)) {
-    if (!((WraptObjectProxyObject *)o1)->wrapped) {
-      raise_uninitialized_wrapper_error();
-      return NULL;
-    }
-
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
-  }
-
-  if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type)) {
-    if (!((WraptObjectProxyObject *)o2)->wrapped) {
-      raise_uninitialized_wrapper_error();
-      return NULL;
-    }
-
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
-
-  return PyNumber_Divide(o1, o2);
-}
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -606,19 +562,6 @@ static PyObject *WraptObjectProxy_or(PyObject *o1, PyObject *o2) {
 
 /* ------------------------------------------------------------------------- */
 
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_int(WraptObjectProxyObject *self) {
-  if (!self->wrapped) {
-    raise_uninitialized_wrapper_error();
-    return NULL;
-  }
-
-  return PyNumber_Int(self->wrapped);
-}
-#endif
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *WraptObjectProxy_long(WraptObjectProxyObject *self) {
   if (!self->wrapped) {
     raise_uninitialized_wrapper_error();
@@ -638,50 +581,6 @@ static PyObject *WraptObjectProxy_float(WraptObjectProxyObject *self) {
 
   return PyNumber_Float(self->wrapped);
 }
-
-/* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_oct(WraptObjectProxyObject *self) {
-  PyNumberMethods *nb;
-
-  if (!self->wrapped) {
-    raise_uninitialized_wrapper_error();
-    return NULL;
-  }
-
-  if ((nb = self->wrapped->ob_type->tp_as_number) == NULL ||
-      nb->nb_oct == NULL) {
-    PyErr_SetString(PyExc_TypeError,
-                    "oct() argument can't be converted to oct");
-    return NULL;
-  }
-
-  return (*nb->nb_oct)(self->wrapped);
-}
-#endif
-
-/* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_hex(WraptObjectProxyObject *self) {
-  PyNumberMethods *nb;
-
-  if (!self->wrapped) {
-    raise_uninitialized_wrapper_error();
-    return NULL;
-  }
-
-  if ((nb = self->wrapped->ob_type->tp_as_number) == NULL ||
-      nb->nb_hex == NULL) {
-    PyErr_SetString(PyExc_TypeError,
-                    "hex() argument can't be converted to hex");
-    return NULL;
-  }
-
-  return (*nb->nb_hex)(self->wrapped);
-}
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -760,34 +659,6 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
   Py_INCREF(self);
   return (PyObject *)self;
 }
-
-/* ------------------------------------------------------------------------- */
-
-#if PY_MAJOR_VERSION < 3
-static PyObject *WraptObjectProxy_inplace_divide(WraptObjectProxyObject *self,
-                                                 PyObject *other) {
-  PyObject *object = NULL;
-
-  if (!self->wrapped) {
-    raise_uninitialized_wrapper_error();
-    return NULL;
-  }
-
-  if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-
-  object = PyNumber_InPlaceDivide(self->wrapped, other);
-
-  if (!object)
-    return NULL;
-
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
-
-  Py_INCREF(self);
-  return (PyObject *)self;
-}
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -1143,13 +1014,8 @@ static PyObject *WraptObjectProxy_self_setattr(WraptObjectProxyObject *self,
   PyObject *name = NULL;
   PyObject *value = NULL;
 
-#if PY_MAJOR_VERSION >= 3
   if (!PyArg_ParseTuple(args, "UO:__self_setattr__", &name, &value))
     return NULL;
-#else
-  if (!PyArg_ParseTuple(args, "SO:__self_setattr__", &name, &value))
-    return NULL;
-#endif
 
   if (PyObject_GenericSetAttr((PyObject *)self, name, value) != 0) {
     return NULL;
@@ -1303,7 +1169,6 @@ static PyObject *WraptObjectProxy_reversed(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-#if PY_MAJOR_VERSION >= 3
 static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
                                         PyObject *args, PyObject *kwds) {
   PyObject *ndigits = NULL;
@@ -1347,7 +1212,6 @@ static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
 
   return result;
 }
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -1568,11 +1432,7 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
   PyErr_Clear();
 
   if (!getattr_str) {
-#if PY_MAJOR_VERSION >= 3
     getattr_str = PyUnicode_InternFromString("__getattr__");
-#else
-    getattr_str = PyString_InternFromString("__getattr__");
-#endif
   }
 
   object = PyObject_GenericGetAttr((PyObject *)self, getattr_str);
@@ -1593,13 +1453,8 @@ static PyObject *WraptObjectProxy_getattr(WraptObjectProxyObject *self,
                                           PyObject *args) {
   PyObject *name = NULL;
 
-#if PY_MAJOR_VERSION >= 3
   if (!PyArg_ParseTuple(args, "U:__getattr__", &name))
     return NULL;
-#else
-  if (!PyArg_ParseTuple(args, "S:__getattr__", &name))
-    return NULL;
-#endif
 
   if (!self->wrapped) {
     raise_uninitialized_wrapper_error();
@@ -1620,19 +1475,11 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
   PyObject *match = NULL;
 
   if (!startswith_str) {
-#if PY_MAJOR_VERSION >= 3
     startswith_str = PyUnicode_InternFromString("startswith");
-#else
-    startswith_str = PyString_InternFromString("startswith");
-#endif
   }
 
   if (!self_str) {
-#if PY_MAJOR_VERSION >= 3
     self_str = PyUnicode_InternFromString("_self_");
-#else
-    self_str = PyString_InternFromString("_self_");
-#endif
   }
 
   match = PyObject_CallMethodObjArgs(name, startswith_str, self_str, NULL);
@@ -1647,11 +1494,7 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
   Py_XDECREF(match);
 
   if (!wrapped_str) {
-#if PY_MAJOR_VERSION >= 3
     wrapped_str = PyUnicode_InternFromString("__wrapped__");
-#else
-    wrapped_str = PyString_InternFromString("__wrapped__");
-#endif
   }
 
   if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
@@ -1691,46 +1534,28 @@ static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self) {
 /* ------------------------------------------------------------------------- */
 
 static PyNumberMethods WraptObjectProxy_as_number = {
-    (binaryfunc)WraptObjectProxy_add,      /*nb_add*/
-    (binaryfunc)WraptObjectProxy_subtract, /*nb_subtract*/
-    (binaryfunc)WraptObjectProxy_multiply, /*nb_multiply*/
-#if PY_MAJOR_VERSION < 3
-    (binaryfunc)WraptObjectProxy_divide, /*nb_divide*/
-#endif
-    (binaryfunc)WraptObjectProxy_remainder, /*nb_remainder*/
-    (binaryfunc)WraptObjectProxy_divmod,    /*nb_divmod*/
-    (ternaryfunc)WraptObjectProxy_power,    /*nb_power*/
-    (unaryfunc)WraptObjectProxy_negative,   /*nb_negative*/
-    (unaryfunc)WraptObjectProxy_positive,   /*nb_positive*/
-    (unaryfunc)WraptObjectProxy_absolute,   /*nb_absolute*/
-    (inquiry)WraptObjectProxy_bool,         /*nb_nonzero/nb_bool*/
-    (unaryfunc)WraptObjectProxy_invert,     /*nb_invert*/
-    (binaryfunc)WraptObjectProxy_lshift,    /*nb_lshift*/
-    (binaryfunc)WraptObjectProxy_rshift,    /*nb_rshift*/
-    (binaryfunc)WraptObjectProxy_and,       /*nb_and*/
-    (binaryfunc)WraptObjectProxy_xor,       /*nb_xor*/
-    (binaryfunc)WraptObjectProxy_or,        /*nb_or*/
-#if PY_MAJOR_VERSION < 3
-    0, /*nb_coerce*/
-#endif
-#if PY_MAJOR_VERSION < 3
-    (unaryfunc)WraptObjectProxy_int,  /*nb_int*/
-    (unaryfunc)WraptObjectProxy_long, /*nb_long*/
-#else
-    (unaryfunc)WraptObjectProxy_long, /*nb_int*/
-    0,                                /*nb_long/nb_reserved*/
-#endif
-    (unaryfunc)WraptObjectProxy_float, /*nb_float*/
-#if PY_MAJOR_VERSION < 3
-    (unaryfunc)WraptObjectProxy_oct, /*nb_oct*/
-    (unaryfunc)WraptObjectProxy_hex, /*nb_hex*/
-#endif
-    (binaryfunc)WraptObjectProxy_inplace_add,      /*nb_inplace_add*/
-    (binaryfunc)WraptObjectProxy_inplace_subtract, /*nb_inplace_subtract*/
-    (binaryfunc)WraptObjectProxy_inplace_multiply, /*nb_inplace_multiply*/
-#if PY_MAJOR_VERSION < 3
-    (binaryfunc)WraptObjectProxy_inplace_divide, /*nb_inplace_divide*/
-#endif
+    (binaryfunc)WraptObjectProxy_add,               /*nb_add*/
+    (binaryfunc)WraptObjectProxy_subtract,          /*nb_subtract*/
+    (binaryfunc)WraptObjectProxy_multiply,          /*nb_multiply*/
+    (binaryfunc)WraptObjectProxy_remainder,         /*nb_remainder*/
+    (binaryfunc)WraptObjectProxy_divmod,            /*nb_divmod*/
+    (ternaryfunc)WraptObjectProxy_power,            /*nb_power*/
+    (unaryfunc)WraptObjectProxy_negative,           /*nb_negative*/
+    (unaryfunc)WraptObjectProxy_positive,           /*nb_positive*/
+    (unaryfunc)WraptObjectProxy_absolute,           /*nb_absolute*/
+    (inquiry)WraptObjectProxy_bool,                 /*nb_nonzero/nb_bool*/
+    (unaryfunc)WraptObjectProxy_invert,             /*nb_invert*/
+    (binaryfunc)WraptObjectProxy_lshift,            /*nb_lshift*/
+    (binaryfunc)WraptObjectProxy_rshift,            /*nb_rshift*/
+    (binaryfunc)WraptObjectProxy_and,               /*nb_and*/
+    (binaryfunc)WraptObjectProxy_xor,               /*nb_xor*/
+    (binaryfunc)WraptObjectProxy_or,                /*nb_or*/
+    (unaryfunc)WraptObjectProxy_long,               /*nb_int*/
+    0,                                              /*nb_long/nb_reserved*/
+    (unaryfunc)WraptObjectProxy_float,              /*nb_float*/
+    (binaryfunc)WraptObjectProxy_inplace_add,       /*nb_inplace_add*/
+    (binaryfunc)WraptObjectProxy_inplace_subtract,  /*nb_inplace_subtract*/
+    (binaryfunc)WraptObjectProxy_inplace_multiply,  /*nb_inplace_multiply*/
     (binaryfunc)WraptObjectProxy_inplace_remainder, /*nb_inplace_remainder*/
     (ternaryfunc)WraptObjectProxy_inplace_power,    /*nb_inplace_power*/
     (binaryfunc)WraptObjectProxy_inplace_lshift,    /*nb_inplace_lshift*/
@@ -1781,15 +1606,11 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     {"__bytes__", (PyCFunction)WraptObjectProxy_bytes, METH_NOARGS, 0},
     {"__format__", (PyCFunction)WraptObjectProxy_format, METH_VARARGS, 0},
     {"__reversed__", (PyCFunction)WraptObjectProxy_reversed, METH_NOARGS, 0},
-#if PY_MAJOR_VERSION >= 3
     {"__round__", (PyCFunction)WraptObjectProxy_round,
      METH_VARARGS | METH_KEYWORDS, 0},
-#endif
     {"__complex__", (PyCFunction)WraptObjectProxy_complex, METH_NOARGS, 0},
-#if PY_MAJOR_VERSION > 3 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 7)
     {"__mro_entries__", (PyCFunction)WraptObjectProxy_mro_entries,
      METH_VARARGS | METH_KEYWORDS, 0},
-#endif
     {NULL, NULL},
 };
 
@@ -1831,13 +1652,8 @@ PyTypeObject WraptObjectProxy_Type = {
     (getattrofunc)WraptObjectProxy_getattro, /*tp_getattro*/
     (setattrofunc)WraptObjectProxy_setattro, /*tp_setattro*/
     0,                                       /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC |
-        Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-#endif
-    0,                                             /*tp_doc*/
+    0,                                                             /*tp_doc*/
     (traverseproc)WraptObjectProxy_traverse,       /*tp_traverse*/
     (inquiry)WraptObjectProxy_clear,               /*tp_clear*/
     (richcmpfunc)WraptObjectProxy_richcompare,     /*tp_richcompare*/
@@ -1886,27 +1702,22 @@ PyTypeObject WraptCallableObjectProxy_Type = {
     sizeof(WraptObjectProxyObject),                       /*tp_basicsize*/
     0,                                                    /*tp_itemsize*/
     /* methods */
-    0,                                          /*tp_dealloc*/
-    0,                                          /*tp_print*/
-    0,                                          /*tp_getattr*/
-    0,                                          /*tp_setattr*/
-    0,                                          /*tp_compare*/
-    0,                                          /*tp_repr*/
-    0,                                          /*tp_as_number*/
-    0,                                          /*tp_as_sequence*/
-    0,                                          /*tp_as_mapping*/
-    0,                                          /*tp_hash*/
-    (ternaryfunc)WraptCallableObjectProxy_call, /*tp_call*/
-    0,                                          /*tp_str*/
-    0,                                          /*tp_getattro*/
-    0,                                          /*tp_setattro*/
-    0,                                          /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-#endif
+    0,                                             /*tp_dealloc*/
+    0,                                             /*tp_print*/
+    0,                                             /*tp_getattr*/
+    0,                                             /*tp_setattr*/
+    0,                                             /*tp_compare*/
+    0,                                             /*tp_repr*/
+    0,                                             /*tp_as_number*/
+    0,                                             /*tp_as_sequence*/
+    0,                                             /*tp_as_mapping*/
+    0,                                             /*tp_hash*/
+    (ternaryfunc)WraptCallableObjectProxy_call,    /*tp_call*/
+    0,                                             /*tp_str*/
+    0,                                             /*tp_getattro*/
+    0,                                             /*tp_setattro*/
+    0,                                             /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,      /*tp_flags*/
     0,                                             /*tp_doc*/
     0,                                             /*tp_traverse*/
     0,                                             /*tp_clear*/
@@ -3005,27 +2816,22 @@ PyTypeObject WraptBoundFunctionWrapper_Type = {
     sizeof(WraptFunctionWrapperObject),                    /*tp_basicsize*/
     0,                                                     /*tp_itemsize*/
     /* methods */
-    0,                                           /*tp_dealloc*/
-    0,                                           /*tp_print*/
-    0,                                           /*tp_getattr*/
-    0,                                           /*tp_setattr*/
-    0,                                           /*tp_compare*/
-    0,                                           /*tp_repr*/
-    0,                                           /*tp_as_number*/
-    0,                                           /*tp_as_sequence*/
-    0,                                           /*tp_as_mapping*/
-    0,                                           /*tp_hash*/
-    (ternaryfunc)WraptBoundFunctionWrapper_call, /*tp_call*/
-    0,                                           /*tp_str*/
-    0,                                           /*tp_getattro*/
-    0,                                           /*tp_setattro*/
-    0,                                           /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-#endif
+    0,                                             /*tp_dealloc*/
+    0,                                             /*tp_print*/
+    0,                                             /*tp_getattr*/
+    0,                                             /*tp_setattr*/
+    0,                                             /*tp_compare*/
+    0,                                             /*tp_repr*/
+    0,                                             /*tp_as_number*/
+    0,                                             /*tp_as_sequence*/
+    0,                                             /*tp_as_mapping*/
+    0,                                             /*tp_hash*/
+    (ternaryfunc)WraptBoundFunctionWrapper_call,   /*tp_call*/
+    0,                                             /*tp_str*/
+    0,                                             /*tp_getattro*/
+    0,                                             /*tp_setattro*/
+    0,                                             /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,      /*tp_flags*/
     0,                                             /*tp_doc*/
     0,                                             /*tp_traverse*/
     0,                                             /*tp_clear*/
@@ -3076,59 +2882,31 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
   }
 
   if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
     function_str = PyUnicode_InternFromString("function");
-#else
-    function_str = PyString_InternFromString("function");
-#endif
   }
 
   if (!classmethod_str) {
-#if PY_MAJOR_VERSION >= 3
     classmethod_str = PyUnicode_InternFromString("classmethod");
-#else
-    classmethod_str = PyString_InternFromString("classmethod");
-#endif
   }
 
   if (!staticmethod_str) {
-#if PY_MAJOR_VERSION >= 3
     staticmethod_str = PyUnicode_InternFromString("staticmethod");
-#else
-    staticmethod_str = PyString_InternFromString("staticmethod");
-#endif
   }
 
   if (!callable_str) {
-#if PY_MAJOR_VERSION >= 3
     callable_str = PyUnicode_InternFromString("callable");
-#else
-    callable_str = PyString_InternFromString("callable");
-#endif
   }
 
   if (!builtin_str) {
-#if PY_MAJOR_VERSION >= 3
     builtin_str = PyUnicode_InternFromString("builtin");
-#else
-    builtin_str = PyString_InternFromString("builtin");
-#endif
   }
 
   if (!class_str) {
-#if PY_MAJOR_VERSION >= 3
     class_str = PyUnicode_InternFromString("class");
-#else
-    class_str = PyString_InternFromString("class");
-#endif
   }
 
   if (!instancemethod_str) {
-#if PY_MAJOR_VERSION >= 3
     instancemethod_str = PyUnicode_InternFromString("instancemethod");
-#else
-    instancemethod_str = PyString_InternFromString("instancemethod");
-#endif
   }
 
   if (PyObject_IsInstance(wrapped,
@@ -3148,17 +2926,9 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     } else if (PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type)) {
       binding = staticmethod_str;
     } else if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0) {
-#if PY_MAJOR_VERSION < 3
-      if (PyObject_IsInstance(instance, (PyObject *)&PyClass_Type) ||
-          PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
-        binding = classmethod_str;
-      }
-#else
       if (PyObject_IsInstance(instance, (PyObject *)&PyType_Type)) {
         binding = classmethod_str;
-      }
-#endif
-      else if (PyObject_IsInstance(wrapped, (PyObject *)&PyMethod_Type)) {
+      } else if (PyObject_IsInstance(wrapped, (PyObject *)&PyMethod_Type)) {
         binding = instancemethod_str;
       } else
         binding = callable_str;
@@ -3192,27 +2962,22 @@ PyTypeObject WraptFunctionWrapper_Type = {
     sizeof(WraptFunctionWrapperObject),               /*tp_basicsize*/
     0,                                                /*tp_itemsize*/
     /* methods */
-    0, /*tp_dealloc*/
-    0, /*tp_print*/
-    0, /*tp_getattr*/
-    0, /*tp_setattr*/
-    0, /*tp_compare*/
-    0, /*tp_repr*/
-    0, /*tp_as_number*/
-    0, /*tp_as_sequence*/
-    0, /*tp_as_mapping*/
-    0, /*tp_hash*/
-    0, /*tp_call*/
-    0, /*tp_str*/
-    0, /*tp_getattro*/
-    0, /*tp_setattro*/
-    0, /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
-        Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-#endif
+    0,                                             /*tp_dealloc*/
+    0,                                             /*tp_print*/
+    0,                                             /*tp_getattr*/
+    0,                                             /*tp_setattr*/
+    0,                                             /*tp_compare*/
+    0,                                             /*tp_repr*/
+    0,                                             /*tp_as_number*/
+    0,                                             /*tp_as_sequence*/
+    0,                                             /*tp_as_mapping*/
+    0,                                             /*tp_hash*/
+    0,                                             /*tp_call*/
+    0,                                             /*tp_str*/
+    0,                                             /*tp_getattro*/
+    0,                                             /*tp_setattro*/
+    0,                                             /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,      /*tp_flags*/
     0,                                             /*tp_doc*/
     0,                                             /*tp_traverse*/
     0,                                             /*tp_clear*/
@@ -3237,7 +3002,6 @@ PyTypeObject WraptFunctionWrapper_Type = {
 
 /* ------------------------------------------------------------------------- */
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     "_wrappers", /* m_name */
@@ -3249,16 +3013,11 @@ static struct PyModuleDef moduledef = {
     NULL,        /* m_clear */
     NULL,        /* m_free */
 };
-#endif
 
 static PyObject *moduleinit(void) {
   PyObject *module;
 
-#if PY_MAJOR_VERSION >= 3
   module = PyModule_Create(&moduledef);
-#else
-  module = Py_InitModule3("_wrappers", NULL, NULL);
-#endif
 
   if (module == NULL)
     return NULL;
@@ -3310,10 +3069,6 @@ static PyObject *moduleinit(void) {
   return module;
 }
 
-#if PY_MAJOR_VERSION < 3
-PyMODINIT_FUNC init_wrappers(void) { moduleinit(); }
-#else
 PyMODINIT_FUNC PyInit__wrappers(void) { return moduleinit(); }
-#endif
 
 /* ------------------------------------------------------------------------- */
