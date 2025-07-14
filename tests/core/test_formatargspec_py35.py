@@ -1,4 +1,3 @@
-import sys
 import unittest
 from inspect import getfullargspec
 
@@ -30,10 +29,7 @@ class TestFormatargspec35(unittest.TestCase):
         def foo4(a: int, b) -> list:
             pass
 
-        if sys.version_info[:2] < (3, 7):
-            formatted4 = "(a:int, b) -> list"
-        else:
-            formatted4 = "(a: int, b) -> list"
+        formatted4 = "(a: int, b) -> list"
         self.assertFormatEqual(foo4, formatted4)
 
         # examples from https://www.python.org/dev/peps/pep-3102/
