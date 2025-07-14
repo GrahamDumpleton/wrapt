@@ -6,15 +6,10 @@ as well as some commonly used decorators.
 import sys
 
 from functools import partial
-from inspect import isclass
+from inspect import isclass, signature
 from threading import Lock, RLock
 
 from .arguments import formatargspec
-
-try:
-    from inspect import signature
-except ImportError:
-    pass
 
 from .__wrapt__ import (
     FunctionWrapper,
@@ -25,7 +20,7 @@ from .__wrapt__ import (
 
 # Adapter wrapper for the wrapped function which will overlay certain
 # properties from the adapter function onto the wrapped function so that
-# functions such as inspect.getargspec(), inspect.getfullargspec(),
+# functions such as inspect.getfullargspec(),
 # inspect.signature() and inspect.getsource() return the correct results
 # one would expect.
 

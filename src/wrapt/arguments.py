@@ -1,6 +1,6 @@
 """The inspect.formatargspec() function was dropped in Python 3.11 but we need
 it for when constructing signature changing decorators based on result of
-inspect.getargspec() or inspect.getfullargspec(). The code here implements
+inspect.getfullargspec(). The code here implements
 inspect.formatargspec() based on Parameter and Signature from inspect module,
 which were added in Python 3.6. Thanks to Cyril Jouve for the implementation.
 """
