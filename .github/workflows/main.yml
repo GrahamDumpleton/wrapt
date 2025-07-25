@@ -150,6 +150,7 @@ jobs:
       matrix:
         os:
           - windows-latest
+          - windows-11-arm
         python-version:
           - 3.8
           - 3.9
@@ -160,6 +161,20 @@ jobs:
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
+        exclude:
+          # setup-python only support 3.11+ for windows arm
+          - os: windows-11-arm
+            python-version: 3.8
+          - os: windows-11-arm
+            python-version: 3.9
+          - os: windows-11-arm
+            python-version: "3.10"
+          - os: windows-11-arm
+            python-version: pypy-3.8
+          - os: windows-11-arm
+            python-version: pypy-3.9
+          - os: windows-11-arm
+            python-version: pypy-3.10
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -213,7 +228,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, windows-11-arm, macos-13, macos-14]
         arch: [auto]
         include:
           - os: ubuntu-latest
