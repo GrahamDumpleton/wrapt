@@ -23,7 +23,7 @@ jobs:
           - 3.11
           - 3.12
           - 3.13
-          - 3.14
+          - 3.14-dev
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -55,7 +55,7 @@ jobs:
           - ubuntu-latest
         python-version:
           - 3.13
-          - 3.14
+          - 3.14-dev
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -124,7 +124,7 @@ jobs:
           - 3.11
           - 3.12
           - 3.13
-          - 3.14
+          - 3.14-dev
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -162,7 +162,7 @@ jobs:
           - 3.11
           - 3.12
           - 3.13
-          - 3.14
+          - 3.14-dev
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
