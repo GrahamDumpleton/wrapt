@@ -33,6 +33,8 @@ these reasons a major version bump is being made.
 * Code related to Python 2.X and workarounds for older Python 3.X versions has
   been removed.
 
+* Removed wrapt.getcallargs()
+
 Version 1.17.2
 --------------
 

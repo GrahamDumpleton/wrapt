@@ -35,12 +35,6 @@ from .importer import (
     discover_post_import_hooks,
 )
 
-# Import of inspect.getcallargs() included for backward compatibility. An
-# implementation of this was previously bundled and made available here for
-# Python <2.7. Avoid using this in future.
-
-from inspect import getcallargs
-
 # Variant of inspect.formatargspec() included here for forward compatibility.
 # This is being done because Python 3.11 dropped inspect.formatargspec() but
 # code for handling signature changing decorators relied on it. Exposing the
