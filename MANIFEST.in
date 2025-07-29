@@ -3,3 +3,6 @@ include LICENSE
 
 recursive-include src *.c
 recursive-include tests *.py requirements.txt
+
+include src/wrapt/py.typed
+include src/wrapt/wrapt.pyi
