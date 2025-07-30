@@ -93,24 +93,19 @@ def _create_import_hook_from_entrypoint(entrypoint):
                 callback = getattr(callback, attr)
         return callback(module)
     
-    def import_hook_legacy(module):
-        __import__(entrypoint.module_name)
-        callback = sys.modules[entrypoint.module_name]
-        for attr in entrypoint.attrs:
-            callback = getattr(callback, attr)
-        return callback(module)
-    
-    if sys.version_info < (3, 10):
-        return import_hook_legacy
     return import_hook
 
 def discover_post_import_hooks(group):
-    if sys.version_info >= (3, 10):
-        from importlib.metadata import entry_points
-    else:
-        from pkg_resources import iter_entry_points as entry_points
+    from importlib.metadata import entry_points
 
-    for entrypoint in entry_points(group=group):
+    try:
+        # Python 3.10+ style with select parameter
+        entrypoints = entry_points(group=group)
+    except TypeError:
+        # Python 3.8-3.9 style that returns a dict
+        entrypoints = entry_points().get(group, ())
+        
+    for entrypoint in entrypoints:
         entrypoint.load()
         callback = _create_import_hook_from_entrypoint(entrypoint)
         register_post_import_hook(callback, entrypoint.name)
