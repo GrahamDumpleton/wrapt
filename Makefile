@@ -17,5 +17,5 @@ mostlyclean:
 clean: mostlyclean
 	rm -rf build dist src/wrapt.egg-info .tox
 
-test :
+test:
 	tox --skip-missing-interpreters

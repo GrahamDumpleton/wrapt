@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=38.3.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wrapt"
+dynamic = ["version"]
+description = "Module for decorators, wrappers and monkey patching."
+readme = "README.rst"
+license = {text = "BSD"}
+authors = [
+    {name = "Graham Dumpleton", email = "Graham.Dumpleton@gmail.com"}
+]
+requires-python = ">=3.8"
+keywords = ["wrapper", "proxy", "decorator"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+[project.urls]
+Homepage = "https://github.com/GrahamDumpleton/wrapt"
+"Bug Tracker" = "https://github.com/GrahamDumpleton/wrapt/issues/"
+Changelog = "https://wrapt.readthedocs.io/en/latest/changes.html"
+Documentation = "https://wrapt.readthedocs.io/"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "tox",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "wrapt.__version__"}
+
+# uv configuration
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+    "tox",
+]
