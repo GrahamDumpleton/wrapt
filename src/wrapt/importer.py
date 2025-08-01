@@ -82,36 +82,20 @@ def register_post_import_hook(hook, name):
 
 def _create_import_hook_from_entrypoint(entrypoint):
     def import_hook(module):
-        entrypoint_value = entrypoint.value.split(":")
-        module_name = entrypoint_value[0]
-        __import__(module_name)
-        callback = sys.modules[module_name]
-
-        if len(entrypoint_value) > 1:
-            attrs = entrypoint_value[1].split(".")
-            for attr in attrs:
-                callback = getattr(callback, attr)
-        return callback(module)
-    
-    def import_hook_legacy(module):
         __import__(entrypoint.module_name)
         callback = sys.modules[entrypoint.module_name]
         for attr in entrypoint.attrs:
             callback = getattr(callback, attr)
         return callback(module)
-    
-    if sys.version_info < (3, 10):
-        return import_hook_legacy
     return import_hook
 
 def discover_post_import_hooks(group):
-    if sys.version_info >= (3, 10):
-        from importlib.metadata import entry_points
-    else:
-        from pkg_resources import iter_entry_points as entry_points
+    try:
+        import pkg_resources
+    except ImportError:
+        return
 
-    for entrypoint in entry_points(group=group):
-        entrypoint.load()
+    for entrypoint in pkg_resources.iter_entry_points(group=group):
         callback = _create_import_hook_from_entrypoint(entrypoint)
         register_post_import_hook(callback, entrypoint.name)
 
