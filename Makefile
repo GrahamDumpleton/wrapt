@@ -8,14 +8,17 @@ install : all
 package :
 	python setup.py sdist
 
-release : clean package
-	twine upload dist/*
+release :
+	@echo "ERROR: Direct releases are no longer supported from this Makefile."
+	@echo "Release packages are built by GitHub Actions."
+	@echo "Push a tag to trigger the build workflow."
+	@exit 1
 
-mostlyclean:
+mostlyclean :
 	rm -rf .coverage.*
 
-clean: mostlyclean
+clean : mostlyclean
 	rm -rf build dist src/wrapt.egg-info .tox
 
-test:
+test :
 	tox --skip-missing-interpreters
