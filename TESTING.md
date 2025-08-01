@@ -106,6 +106,76 @@ Each `test-version` run includes three important test scenarios:
 - `WRAPT_INSTALL_EXTENSIONS=true/false` - Controls whether C extensions are built during installation
 - `WRAPT_DISABLE_EXTENSIONS=true/false` - Controls whether C extensions are used at runtime
 
+## Mypy Type Checking Tests
+
+The project includes custom pytest handlers for testing mypy type checking behavior. These tests ensure that the wrapt library's type annotations work correctly and produce expected mypy error messages.
+
+### Test File Convention
+
+Mypy tests follow a specific naming pattern in the `tests/` directory:
+
+- **Test files**: `mypy_*.py` - Python files containing code to be type-checked
+- **Expected output files**: `mypy_*.out` - Files containing the expected mypy output
+
+### How Mypy Tests Work
+
+The custom test handler in `conftest.py` automatically discovers pairs of `mypy_*.py` and `mypy_*.out` files and:
+
+1. Runs `mypy --show-error-codes --python-version X.Y` on the `.py` file
+2. Compares the actual output with the expected output in the `.out` file
+3. Fails the test if the outputs don't match
+
+These tests only run on Python 3.9+ to ensure consistent mypy behavior.
+
+### Creating New Mypy Tests
+
+To create a new mypy test case:
+
+1. **Create the test file**: Write a Python file with the code you want to type-check:
+   ```bash
+   # Create tests/mypy_your_test_name.py
+   ```
+
+2. **Generate the expected output**: Run mypy to capture the expected output:
+   ```bash
+   mypy --show-error-codes tests/mypy_your_test_name.py > tests/mypy_your_test_name.out
+   ```
+
+3. **Verify the output**: Review the generated `.out` file to ensure it contains the expected error messages and type information.
+
+4. **Run the test**: The test will automatically be discovered and run with pytest:
+   ```bash
+   pytest tests/ -k mypy_your_test_name
+   ```
+
+### Example
+
+The existing `mypy_function_wrapper.py` test demonstrates type checking for `FunctionWrapper`:
+
+```python
+from wrapt import FunctionWrapper
+
+def f(a: bool, b: str) -> int:
+    return 1
+
+def standard_wrapper(wrapped, instance, *args, **kwargs):
+    pass
+
+f1 = FunctionWrapper(f, standard_wrapper)
+reveal_type(f1)  # Should reveal the original function's type
+
+result1a: int = f1(True, "test")     # Valid usage
+result1b: str = f1(1, None)         # Invalid usage - should error
+```
+
+The corresponding `mypy_function_wrapper.out` file contains the expected mypy output, including:
+- Type revelation notes
+- Assignment errors
+- Argument type errors
+- Error codes for each issue
+
+This approach ensures that the wrapt library's type annotations behave consistently and provide helpful error messages to users.
+
 ## Development Workflow
 
 ### Testing During Development
@@ -141,9 +211,10 @@ For quick testing during development, you can:
 
 When adding new test files:
 
-1. Use the standard `test_*.py` naming convention for general tests
-2. Use the `test_*_pyXX.py` convention if your test requires features from a specific Python version
-3. The version detection is automatic - no additional configuration needed
+1. **Standard unit tests**: Use the `test_*.py` naming convention for general tests
+2. **Version-specific tests**: Use the `test_*_pyXX.py` convention if your test requires features from a specific Python version
+3. **Mypy type tests**: Use the `mypy_*.py` naming convention for type checking tests (see the Mypy Type Checking Tests section above)
+4. The version detection is automatic - no additional configuration needed
 
 ### Test Dependencies
 

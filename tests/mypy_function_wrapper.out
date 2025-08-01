@@ -1,0 +1,9 @@
+tests/mypy_function_wrapper.py:14: note: Revealed type is "def (a: builtins.bool, b: builtins.str) -> builtins.int"
+tests/mypy_function_wrapper.py:17: error: Incompatible types in assignment (expression has type "int", variable has type "str")  [assignment]
+tests/mypy_function_wrapper.py:17: error: Argument 1 has incompatible type "int"; expected "bool"  [arg-type]
+tests/mypy_function_wrapper.py:17: error: Argument 2 has incompatible type "None"; expected "str"  [arg-type]
+tests/mypy_function_wrapper.py:26: note: Revealed type is "def (a: builtins.bool, b: builtins.str) -> builtins.int"
+tests/mypy_function_wrapper.py:29: error: Incompatible types in assignment (expression has type "int", variable has type "str")  [assignment]
+tests/mypy_function_wrapper.py:29: error: Argument 1 has incompatible type "int"; expected "bool"  [arg-type]
+tests/mypy_function_wrapper.py:29: error: Argument 2 has incompatible type "None"; expected "str"  [arg-type]
+Found 6 errors in 1 file (checked 1 source file)
