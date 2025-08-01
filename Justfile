@@ -112,7 +112,7 @@ test-version version:
 # Run mypy type checking for a specific Python version
 test-mypy-version version:
     echo "=== Running mypy type checking with Python {{version}} ==="
-    uv run --python {{version}} mypy src/wrapt
+    mypy src/wrapt
 
 # Install development dependencies with uv
 dev-install: venv

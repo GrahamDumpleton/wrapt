@@ -149,9 +149,8 @@ When adding new test files:
 
 Test dependencies are managed in `pyproject.toml`. The main requirements are:
 - `pytest` - For running unit tests
-- `mypy` - For type checking and static analysis
 
-If running `tox`, it is assumed that is installed as a tool using `uv tool install` command (or any other available method) and available in your `PATH`.
+If running `tox` or `mypy` tests, it is assumed that these are installed as a tool using `uv tool install` command (or any other available method) and available in your `PATH`.
 
 ## Continuous Integration
 
