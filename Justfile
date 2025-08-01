@@ -82,34 +82,30 @@ test-mypy:
 test-version version:
     #!/usr/bin/env bash
     set -euo pipefail
-    
-    echo "=== Testing Python {{version}} - without C extensions ==="
+
     rm -rf .venv-test-tmp
     uv venv .venv-test-tmp --python {{version}}
     source .venv-test-tmp/bin/activate
-    uv pip install pytest
+    uv pip install pytest "pytest-mypy-plugins; python_version >= '3.9'"
+
+    echo "=== Testing Python {{version}} - without C extensions ==="
+
     WRAPT_INSTALL_EXTENSIONS=false uv pip install -e .
     pytest
-    deactivate
-    
+
+    uv pip uninstall wrapt
+
     echo "=== Testing Python {{version}} - with C extensions ==="
-    rm -rf .venv-test-tmp
-    uv venv .venv-test-tmp --python {{version}}
-    source .venv-test-tmp/bin/activate
-    uv pip install pytest
+
     WRAPT_INSTALL_EXTENSIONS=true uv pip install -e .
     pytest
-    deactivate
-    
+
     echo "=== Testing Python {{version}} - with C extensions disabled at runtime ==="
-    rm -rf .venv-test-tmp
-    uv venv .venv-test-tmp --python {{version}}
-    source .venv-test-tmp/bin/activate
-    uv pip install pytest
-    WRAPT_INSTALL_EXTENSIONS=true uv pip install -e .
+
     WRAPT_DISABLE_EXTENSIONS=true pytest
+
     deactivate
-    
+
     rm -rf .venv-test-tmp
     echo "All test variants completed for Python {{version}}"
 
