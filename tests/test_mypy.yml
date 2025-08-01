@@ -1,0 +1,18 @@
+- case: function_wrapper
+  main: |
+    from wrapt import FunctionWrapper
+
+    def x(a: bool, b: str) -> int:
+        return 1
+
+    def wrapper(*args, **kwargs):
+        pass
+
+    x = FunctionWrapper(x, wrapper)
+    reveal_type(x)
+
+    x(1, None)
+  out: |
+    main:10: note: Revealed type is "def (a: builtins.bool, b: builtins.str) -> builtins.int"
+    main:12: error: Argument 1 to "x" has incompatible type "int"; expected "bool"  [arg-type]
+    main:12: error: Argument 2 to "x" has incompatible type "None"; expected "str"  [arg-type]
