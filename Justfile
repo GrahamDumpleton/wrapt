@@ -105,7 +105,7 @@ dev-install: venv
 
 # Run tests using pip-installed pytest (backward compatibility check)
 test-pip: venv
-    source .venv/bin/activate && pip install pytest && pytest
+    source .venv/bin/activate && pip install pytest && pip install -e . && pytest
 
 # Check if virtual environment exists
 venv-check:

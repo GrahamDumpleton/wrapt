@@ -53,7 +53,6 @@ Documentation
    wrappers
    examples
    benchmarks
-   testing
    changes
    issues
 
