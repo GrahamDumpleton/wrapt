@@ -1,4 +1,5 @@
-include README.rst
+include README.md
+include RELEASE.rst
 include LICENSE
 
 recursive-include src *.c

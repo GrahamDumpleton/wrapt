@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "wrapt"
 dynamic = ["version"]
 description = "Module for decorators, wrappers and monkey patching."
-readme = "README.rst"
-license = {text = "BSD"}
+readme = "README.md"
+license = {text = "BSD-2-Clause"}
 authors = [
     {name = "Graham Dumpleton", email = "Graham.Dumpleton@gmail.com"}
 ]
@@ -15,7 +15,6 @@ requires-python = ">=3.8"
 keywords = ["wrapper", "proxy", "decorator"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",

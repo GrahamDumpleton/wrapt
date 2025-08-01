@@ -8,12 +8,25 @@ venv:
     uv pip install pip  # Install pip for backward compatibility
 
 # Install the package in development mode
-install: venv
+install: venv clear-cache
     uv pip install -e .
+
+# Install from local source distribution (for testing)
+install-local: package clear-cache
+    uv pip install dist/wrapt-*.tar.gz
+
+# Install from local source distribution with verbose output
+install-local-verbose: package clear-cache
+    uv pip install -v dist/wrapt-*.tar.gz
 
 # Create source distribution package
 package: venv
     uv run python setup.py sdist
+
+# Clear pip cache for wrapt to avoid conflicts with local development
+clear-cache:
+    uv cache clean wrapt || true
+    uv cache clean || true
 
 # Release: clean, package, and upload to PyPI
 release:
@@ -34,7 +47,7 @@ mostlyclean:
     rm -rf .tox .venv
 
 # Clean build artifacts, coverage files, and virtual environment
-clean: mostlyclean
+clean: mostlyclean clear-cache
     rm -rf build dist src/wrapt.egg-info
 
 # Run tests with tox
