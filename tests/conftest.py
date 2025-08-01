@@ -60,6 +60,7 @@ def run_custom_action(py_file: pathlib.Path) -> str:
     and return the combined stdout/stderr output as text.
     """
     import subprocess
+    import platform
 
     major, minor = version
     cmd = [
@@ -77,7 +78,15 @@ def run_custom_action(py_file: pathlib.Path) -> str:
             text=True,
             check=False,
         )
-        return proc.stdout
+        output = proc.stdout
+
+        # On Windows, convert backslash paths to forward slashes for consistency
+        # with .out files
+
+        if platform.system() == "Windows":
+            output = re.sub(r"\btests\\", "tests/", output)
+
+        return output
     except FileNotFoundError:
         return "mypy: command not found\n"
 
