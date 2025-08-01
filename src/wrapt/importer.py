@@ -3,6 +3,7 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 
 """
 
+import importlib.metadata
 import sys
 import threading
 from importlib.util import find_spec
@@ -89,23 +90,20 @@ def _create_import_hook_from_entrypoint(entrypoint):
             for attr in attrs:
                 callback = getattr(callback, attr)
         return callback(module)
-    
+
     return import_hook
 
 
 def discover_post_import_hooks(group):
-    from importlib.metadata import entry_points
-
     try:
         # Python 3.10+ style with select parameter
-        entrypoints = entry_points(group=group)
+        entrypoints = importlib.metadata.entry_points(group=group)
     except TypeError:
         # Python 3.8-3.9 style that returns a dict
-        entrypoints = entry_points().get(group, ())
-        
+        entrypoints = importlib.metadata.entry_points().get(group, ())
+
     for entrypoint in entrypoints:
-        entrypoint.load()
-        callback = _create_import_hook_from_entrypoint(entrypoint)
+        callback = entrypoint.load()  # Use the loaded callback directly
         register_post_import_hook(callback, entrypoint.name)
 
 
