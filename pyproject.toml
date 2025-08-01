@@ -38,6 +38,7 @@ Documentation = "https://wrapt.readthedocs.io/"
 dev = [
     "pytest",
     "tox",
+    "setuptools",
 ]
 
 [tool.setuptools]
@@ -55,4 +56,5 @@ version = {attr = "wrapt.__version__"}
 dev-dependencies = [
     "pytest",
     "tox",
+    "setuptools",
 ]
