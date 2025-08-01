@@ -29,6 +29,7 @@ release-test: clean package
 # Remove coverage files
 mostlyclean:
     rm -rf .coverage.*
+    rm -rf src/wrapt/_wrappers.*.so
 
 # Clean build artifacts, coverage files, and virtual environment
 clean: mostlyclean
