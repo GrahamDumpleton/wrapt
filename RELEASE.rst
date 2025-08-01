@@ -3,28 +3,46 @@ wrapt
 
 |PyPI|
 
-The aim of the **wrapt** module is to provide a transparent object proxy
-for Python, which can be used as the basis for the construction of function
-wrappers and decorator functions.
+A Python module for decorators, wrappers and monkey patching.
 
-The **wrapt** module focuses very much on correctness. It therefore goes
-way beyond existing mechanisms such as ``functools.wraps()`` to ensure that
-decorators preserve introspectability, signatures, type checking abilities
-etc. The decorators that can be constructed using this module will work in
-far more scenarios than typical decorators and provide more predictable and
-consistent behaviour.
+Overview
+--------
 
-To ensure that the overhead is as minimal as possible, a C extension module
-is used for performance critical components. An automatic fallback to a
-pure Python implementation is also provided where a target system does not
-have a compiler to allow the C extension to be compiled.
+The **wrapt** module provides a transparent object proxy for Python, which can be used as the basis for the construction of function wrappers and decorator functions.
+
+The **wrapt** module focuses very much on correctness. It goes way beyond existing mechanisms such as ``functools.wraps()`` to ensure that decorators preserve introspectability, signatures, type checking abilities etc. The decorators that can be constructed using this module will work in far more scenarios than typical decorators and provide more predictable and consistent behaviour.
+
+To ensure that the overhead is as minimal as possible, a C extension module is used for performance critical components. An automatic fallback to a pure Python implementation is also provided where a target system does not have a compiler to allow the C extension to be compiled.
+
+Key Features
+------------
+
+* **Universal decorators** that work with functions, methods, classmethods, staticmethods, and classes
+* **Transparent object proxies** for advanced wrapping scenarios  
+* **Monkey patching utilities** for safe runtime modifications
+* **C extension** for optimal performance with Python fallback
+* **Comprehensive introspection preservation** (signatures, annotations, etc.)
+* **Thread-safe decorator implementations**
+
+Installation
+------------
+
+Install from PyPI using pip::
+
+    pip install wrapt
+
+Supported Python Versions
+--------------------------
+
+* Python 3.8+
+* CPython and PyPy implementations
 
 Documentation
 -------------
 
-For further information on the **wrapt** module see:
+For comprehensive documentation, examples, and advanced usage patterns, visit:
 
-* http://wrapt.readthedocs.org/
+* https://wrapt.readthedocs.io/
 
 Quick Start
 -----------
@@ -127,13 +145,13 @@ in the same way, with ``args`` and ``kwargs`` being passed. The
 ``instance`` argument doesn't need to be used in calling the wrapped
 function.
 
-Repository
-----------
+Links
+-----
 
-Full source code for the **wrapt** module, including documentation files
-and unit tests, can be obtained from github.
-
-* https://github.com/GrahamDumpleton/wrapt
+* **Documentation**: https://wrapt.readthedocs.io/
+* **Source Code**: https://github.com/GrahamDumpleton/wrapt
+* **Bug Reports**: https://github.com/GrahamDumpleton/wrapt/issues/
+* **Changelog**: https://wrapt.readthedocs.io/en/latest/changes.html
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg?logo=python&cacheSeconds=3600
    :target: https://pypi.python.org/pypi/wrapt
