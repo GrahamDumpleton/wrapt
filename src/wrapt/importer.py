@@ -82,20 +82,31 @@ def register_post_import_hook(hook, name):
 
 def _create_import_hook_from_entrypoint(entrypoint):
     def import_hook(module):
-        __import__(entrypoint.module_name)
-        callback = sys.modules[entrypoint.module_name]
-        for attr in entrypoint.attrs:
-            callback = getattr(callback, attr)
+        entrypoint_value = entrypoint.value.split(":")
+        module_name = entrypoint_value[0]
+        __import__(module_name)
+        callback = sys.modules[module_name]
+
+        if len(entrypoint_value) > 1:
+            attrs = entrypoint_value[1].split(".")
+            for attr in attrs:
+                callback = getattr(callback, attr)
         return callback(module)
+    
     return import_hook
 
 def discover_post_import_hooks(group):
-    try:
-        import pkg_resources
-    except ImportError:
-        return
+    from importlib.metadata import entry_points
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    try:
+        # Python 3.10+ style with select parameter
+        entrypoints = entry_points(group=group)
+    except TypeError:
+        # Python 3.8-3.9 style that returns a dict
+        entrypoints = entry_points().get(group, ())
+        
+    for entrypoint in entrypoints:
+        entrypoint.load()
         callback = _create_import_hook_from_entrypoint(entrypoint)
         register_post_import_hook(callback, entrypoint.name)
 
