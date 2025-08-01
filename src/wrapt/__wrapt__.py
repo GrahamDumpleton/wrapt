@@ -22,7 +22,7 @@ _use_extensions = not os.environ.get("WRAPT_DISABLE_EXTENSIONS")
 
 if _use_extensions:
     try:
-        from ._wrappers import (
+        from ._wrappers import (  # type: ignore[no-redef]
             BoundFunctionWrapper,
             CallableObjectProxy,
             FunctionWrapper,

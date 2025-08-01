@@ -8,7 +8,7 @@ which were added in Python 3.6. Thanks to Cyril Jouve for the implementation.
 try:
     from inspect import Parameter, Signature
 except ImportError:
-    from inspect import formatargspec
+    from inspect import formatargspec  # type: ignore[attr-defined]
 else:
 
     def formatargspec(
