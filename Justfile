@@ -55,18 +55,49 @@ test-tox:
     tox --skip-missing-interpreters
 
 # Run tests with uv (modern alternative)
-test: dev-install
-    uv run --python 3.8 pytest
-    uv run --python 3.9 pytest
-    uv run --python 3.10 pytest
-    uv run --python 3.11 pytest
-    uv run --python 3.12 pytest
-    uv run --python 3.13 pytest
-    uv run --python 3.14 pytest
+test:
+    just test-version 3.8
+    just test-version 3.9
+    just test-version 3.10
+    just test-version 3.11
+    just test-version 3.12
+    just test-version 3.13
+    just test-version 3.14
 
 # Run tests with uv for a specific Python version
-test-version version: dev-install
-    uv run --python {{version}} pytest
+test-version version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    
+    echo "=== Testing Python {{version}} - without C extensions ==="
+    rm -rf .venv-test-tmp
+    uv venv .venv-test-tmp --python {{version}}
+    source .venv-test-tmp/bin/activate
+    uv pip install pytest
+    WRAPT_INSTALL_EXTENSIONS=false uv pip install -e .
+    pytest
+    deactivate
+    
+    echo "=== Testing Python {{version}} - with C extensions ==="
+    rm -rf .venv-test-tmp
+    uv venv .venv-test-tmp --python {{version}}
+    source .venv-test-tmp/bin/activate
+    uv pip install pytest
+    WRAPT_INSTALL_EXTENSIONS=true uv pip install -e .
+    pytest
+    deactivate
+    
+    echo "=== Testing Python {{version}} - with C extensions disabled at runtime ==="
+    rm -rf .venv-test-tmp
+    uv venv .venv-test-tmp --python {{version}}
+    source .venv-test-tmp/bin/activate
+    uv pip install pytest
+    WRAPT_INSTALL_EXTENSIONS=true uv pip install -e .
+    WRAPT_DISABLE_EXTENSIONS=true pytest
+    deactivate
+    
+    rm -rf .venv-test-tmp
+    echo "All test variants completed for Python {{version}}"
 
 # Install development dependencies with uv
 dev-install: venv
