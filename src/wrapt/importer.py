@@ -7,6 +7,7 @@ import importlib.metadata
 import sys
 import threading
 from importlib.util import find_spec
+from typing import Callable, Dict, List
 
 from .__wrapt__ import ObjectProxy
 
@@ -16,7 +17,7 @@ from .__wrapt__ import ObjectProxy
 # module will be truncated but the list left in the dictionary. This
 # acts as a flag to indicate that the module had already been imported.
 
-_post_import_hooks = {}
+_post_import_hooks: Dict[str, List[Callable]] = {}
 _post_import_hooks_init = False
 _post_import_hooks_lock = threading.RLock()
 
