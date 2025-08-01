@@ -343,7 +343,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         self.__wrapped__ %= other
         return self
 
-    def __ipow__(self, other):
+    def __ipow__(self, other):  # type: ignore[misc]
         self.__wrapped__ **= other
         return self
 
