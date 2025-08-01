@@ -66,7 +66,6 @@ test:
 
 # Run mypy type checking for all supported Python versions
 test-mypy:
-    just test-mypy-version 3.8
     just test-mypy-version 3.9
     just test-mypy-version 3.10
     just test-mypy-version 3.11
@@ -112,7 +111,7 @@ test-version version:
 # Run mypy type checking for a specific Python version
 test-mypy-version version:
     echo "=== Running mypy type checking with Python {{version}} ==="
-    mypy src/wrapt
+    mypy --python-version {{version}} src/wrapt
 
 # Install development dependencies with uv
 dev-install: venv
