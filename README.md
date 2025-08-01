@@ -106,6 +106,10 @@ We welcome contributions! This is a pretty casual process - if you're interested
 
 Please note that wrapt is now considered a mature project. We're not expecting any significant new developments or major feature additions. The primary focus is on ensuring that the package continues to work correctly with newer Python versions and maintaining compatibility as the Python ecosystem evolves.
 
+### Testing
+
+For information about running tests, including Python version-specific test conventions and available test commands, see [TESTING.md](TESTING.md).
+
 ## License
 
 This project is licensed under the BSD License - see the [LICENSE](LICENSE) file for details.
