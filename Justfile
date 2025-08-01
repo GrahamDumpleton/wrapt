@@ -30,10 +30,12 @@ release-test: clean package
 mostlyclean:
     rm -rf .coverage.*
     rm -rf src/wrapt/_wrappers.*.so
+    rm -rf .pytest_cache
+    rm -rf .tox .venv
 
 # Clean build artifacts, coverage files, and virtual environment
 clean: mostlyclean
-    rm -rf build dist src/wrapt.egg-info .tox .venv
+    rm -rf build dist src/wrapt.egg-info
 
 # Run tests with tox
 test-tox:
