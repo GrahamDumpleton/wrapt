@@ -4,16 +4,17 @@ wrappers.
 
 import os
 
-# Import Python fallbacks.
-
 from .wrappers import (
-    ObjectProxy,
-    CallableObjectProxy,
-    PartialCallableObjectProxy,
-    FunctionWrapper,
     BoundFunctionWrapper,
+    CallableObjectProxy,
+    FunctionWrapper,
+    ObjectProxy,
+    PartialCallableObjectProxy,
     _FunctionWrapperBase,
 )
+
+# Import Python fallbacks.
+
 
 # Try to use C extensions if not disabled.
 
@@ -22,11 +23,11 @@ _use_extensions = not os.environ.get("WRAPT_DISABLE_EXTENSIONS")
 if _use_extensions:
     try:
         from ._wrappers import (
-            ObjectProxy,
-            CallableObjectProxy,
-            PartialCallableObjectProxy,
-            FunctionWrapper,
             BoundFunctionWrapper,
+            CallableObjectProxy,
+            FunctionWrapper,
+            ObjectProxy,
+            PartialCallableObjectProxy,
             _FunctionWrapperBase,
         )
     except ImportError:
