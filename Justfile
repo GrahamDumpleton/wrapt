@@ -41,12 +41,15 @@ release-test: clean package
 # Remove coverage files
 mostlyclean: clear-cache
     rm -rf .coverage.*
-    rm -rf src/wrapt/_wrappers.*.so
     rm -rf .pytest_cache
     rm -rf .tox .venv
+    rm -rf .mypy_cache
+    rm -rf tests/__pycache__
+    rm -rf src/wrapt/__pycache__
+    rm -rf src/wrapt/_wrappers.*.so
     rm -rf docs/__pycache__
     rm -rf docs/_build
-    rm -rf .mypy_cache
+
 
 # Clean build artifacts, coverage files, and virtual environment
 clean: mostlyclean
