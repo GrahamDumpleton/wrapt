@@ -79,6 +79,12 @@ extend-exclude = '''
 )/
 '''
 
+# pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-v"]
+norecursedirs = [".tox", ".venv", "venv", "build", "dist"]
+
 # isort configuration (compatible with Black)
 [tool.isort]
 profile = "black"
