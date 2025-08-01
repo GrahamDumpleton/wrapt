@@ -33,7 +33,7 @@ def pytest_pycollect_makemodule(path, parent):
 
     # Handle specific Python version cases using regex
     # Match patterns like "_py33", "_py34", "_py310", etc.
-    version_match = re.search(r'_py(\d+)(\d*)', basename)
+    version_match = re.search(r'_py(\d)(\d*)', basename)
     if version_match:
         major = int(version_match.group(1))
         minor_str = version_match.group(2)
