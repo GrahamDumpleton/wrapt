@@ -74,6 +74,17 @@ just test-pip
 ```
 Runs tests using pip-installed pytest in the main virtual environment.
 
+#### Type Checking with mypy
+```bash
+just test-mypy
+```
+Runs mypy type checking across all supported Python versions (3.8-3.14).
+
+```bash
+just test-mypy-version 3.13
+```
+Runs mypy type checking for a specific Python version. Replace `3.13` with any supported version.
+
 ### Test Variants
 
 Each `test-version` run includes three important test scenarios:
@@ -116,6 +127,16 @@ For quick testing during development, you can:
    just test-tox
    ```
 
+4. Run type checking across all Python versions:
+   ```bash
+   just test-mypy
+   ```
+
+5. Run type checking for a specific Python version:
+   ```bash
+   just test-mypy-version 3.11
+   ```
+
 ### Adding New Tests
 
 When adding new test files:
@@ -126,7 +147,9 @@ When adding new test files:
 
 ### Test Dependencies
 
-Test dependencies are managed in `pyproject.toml`. The main requirement is `pytest`.
+Test dependencies are managed in `pyproject.toml`. The main requirements are:
+- `pytest` - For running unit tests
+- `mypy` - For type checking and static analysis
 
 If running `tox`, it is assumed that is installed as a tool using `uv tool install` command (or any other available method) and available in your `PATH`.
 

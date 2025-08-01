@@ -64,6 +64,16 @@ test:
     just test-version 3.13
     just test-version 3.14
 
+# Run mypy type checking for all supported Python versions
+test-mypy:
+    just test-mypy-version 3.8
+    just test-mypy-version 3.9
+    just test-mypy-version 3.10
+    just test-mypy-version 3.11
+    just test-mypy-version 3.12
+    just test-mypy-version 3.13
+    just test-mypy-version 3.14
+
 # Run tests with uv for a specific Python version
 test-version version:
     #!/usr/bin/env bash
@@ -98,6 +108,11 @@ test-version version:
     
     rm -rf .venv-test-tmp
     echo "All test variants completed for Python {{version}}"
+
+# Run mypy type checking for a specific Python version
+test-mypy-version version:
+    echo "=== Running mypy type checking with Python {{version}} ==="
+    uv run --python {{version}} mypy src/wrapt
 
 # Install development dependencies with uv
 dev-install: venv

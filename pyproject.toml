@@ -38,6 +38,7 @@ dev = [
     "pytest",
     "tox",
     "setuptools",
+    "mypy",
 ]
 
 [tool.setuptools]
@@ -56,4 +57,5 @@ dev-dependencies = [
     "pytest",
     "tox",
     "setuptools",
+    "mypy",
 ]
