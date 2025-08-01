@@ -518,4 +518,4 @@ def synchronized(wrapped):
     return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
 
 
-synchronized._synchronized_meta_lock = Lock()
+synchronized._synchronized_meta_lock = Lock()  # type: ignore[attr-defined]
