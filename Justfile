@@ -26,7 +26,6 @@ package: venv
 # Clear pip cache for wrapt to avoid conflicts with local development
 clear-cache:
     uv cache clean wrapt || true
-    uv cache clean || true
 
 # Release: clean, package, and upload to PyPI
 release:
@@ -40,14 +39,17 @@ release-test: clean package
     uv publish --index-url https://test.pypi.org/simple/ dist/*
 
 # Remove coverage files
-mostlyclean:
+mostlyclean: clear-cache
     rm -rf .coverage.*
     rm -rf src/wrapt/_wrappers.*.so
     rm -rf .pytest_cache
     rm -rf .tox .venv
+    rm -rf docs/__pycache__
+    rm -rf docs/_build
+    rm -rf .mypy_cache
 
 # Clean build artifacts, coverage files, and virtual environment
-clean: mostlyclean clear-cache
+clean: mostlyclean
     rm -rf build dist src/wrapt.egg-info
 
 # Run tests with tox
