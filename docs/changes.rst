@@ -33,6 +33,12 @@ these reasons a major version bump is being made.
 * Code related to Python 2.X and workarounds for older Python 3.X versions has
   been removed.
 
+* Dependency at runtime on `setuptools` for calculating package entry points
+  has been removed. Instead the `importlib.metadata` module is now used for
+  this purpose. The `wrapt` package no longer requires `setuptools` to be
+  installed at runtime. It is still required for building and installing the
+  package, but not for using it.
+
 Version 1.17.2
 --------------
 
