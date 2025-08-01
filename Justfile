@@ -88,21 +88,29 @@ test-version version:
     source .venv-test-tmp/bin/activate
     uv pip install pytest
 
+    export PYTHONPATH=src
+
     echo "=== Testing Python {{version}} - without C extensions ==="
 
-    WRAPT_INSTALL_EXTENSIONS=false uv pip install -e .
-    pytest
+    export WRAPT_INSTALL_EXTENSIONS=false
+
+    uv pip install -e .
+    uv run pytest
 
     uv pip uninstall wrapt
 
     echo "=== Testing Python {{version}} - with C extensions ==="
 
-    WRAPT_INSTALL_EXTENSIONS=true uv pip install -e .
-    pytest
+    export WRAPT_INSTALL_EXTENSIONS=true
+
+    uv pip install -e .
+    uv run pytest
 
     echo "=== Testing Python {{version}} - with C extensions disabled at runtime ==="
 
-    WRAPT_DISABLE_EXTENSIONS=true pytest
+    export WRAPT_DISABLE_EXTENSIONS=true
+ 
+    uv run pytest
 
     deactivate
 
