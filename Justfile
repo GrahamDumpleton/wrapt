@@ -86,7 +86,7 @@ test-version version:
     rm -rf .venv-test-tmp
     uv venv .venv-test-tmp --python {{version}}
     source .venv-test-tmp/bin/activate
-    uv pip install pytest "pytest-mypy-plugins; python_version >= '3.9'"
+    uv pip install pytest
 
     echo "=== Testing Python {{version}} - without C extensions ==="
 

@@ -38,7 +38,6 @@ dev = [
     "pytest",
     "tox",
     "setuptools",
-    "pytest-mypy-plugins; python_version >= '3.9'",
 ]
 
 [tool.setuptools]
@@ -57,7 +56,6 @@ dev-dependencies = [
     "pytest",
     "tox",
     "setuptools",
-    "pytest-mypy-plugins; python_version >= '3.9'",
 ]
 
 # Black configuration
