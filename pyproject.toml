@@ -12,6 +12,9 @@ authors = [
     {name = "Graham Dumpleton", email = "Graham.Dumpleton@gmail.com"}
 ]
 requires-python = ">=3.8"
+dependencies = [
+    "typing_extensions>=4.0.0; python_version < '3.10'"
+]
 keywords = ["wrapper", "proxy", "decorator"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

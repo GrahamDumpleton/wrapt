@@ -65,6 +65,7 @@ def run_custom_action(py_file: pathlib.Path) -> str:
     major, minor = version
     cmd = [
         "mypy",
+        "--strict",
         "--show-error-codes",
         "--python-version",
         f"{major}.{minor}",

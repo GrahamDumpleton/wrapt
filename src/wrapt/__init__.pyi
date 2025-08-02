@@ -1,16 +1,21 @@
-from typing import Callable, TypeVar, Any, Tuple, Dict, Union
+from typing import Callable, TypeVar, Any, Tuple, Dict
 
-WrappedFunction = TypeVar("WrappedFunction", bound=Callable)
+try:
+    from typing import ParamSpec  # Python 3.10+
+except ImportError:
+    from typing_extensions import ParamSpec  # Backport for older Python versions
 
-# Standard signature for wrappers
-StandardWrapper = Callable[[WrappedFunction, Any, Tuple[Any, ...], Dict[str, Any]], Any]
+from typing import Callable, TypeVar, Any, Tuple, Dict, ParamSpec
 
-# Catch-all wrapper signature
-CatchAllWrapper = Callable[..., Any]
+P = ParamSpec("P")
+R = TypeVar("R")
 
-# Union type to accept either wrapper style
-WrapperFunction = Union[StandardWrapper, CatchAllWrapper]
+WrappedFunction = Callable[P, R]
+WrapperFunction = Callable[[WrappedFunction, Any, Tuple[Any, ...], Dict[str, Any]], Any]
 
-def FunctionWrapper(
-    wrapped: WrappedFunction, wrapper: WrapperFunction
-) -> WrappedFunction: ...
+class FunctionWrapper:
+    def __init__(
+        self,
+        wrapped: WrappedFunction,
+        wrapper: WrapperFunction,
+    ) -> None: ...
