@@ -1,3 +1,0 @@
-tests/mypy_function_wrapper_t5.py:25: error: Argument 1 to "FunctionWrapper" has incompatible type "str"; expected "Callable[..., Any]"  [arg-type]
-tests/mypy_function_wrapper_t5.py:26: error: Argument 1 to "FunctionWrapper" has incompatible type "None"; expected "Callable[..., Any]"  [arg-type]
-Found 2 errors in 1 file (checked 1 source file)

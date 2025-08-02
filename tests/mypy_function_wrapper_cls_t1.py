@@ -13,12 +13,6 @@ It covers the following cases:
 - Wrapping a callable class
 - Wrapping a callable class instance
 
-A standard wrapper is a function that accepts the following arguments:
-- wrapped: the original function
-- instance: the instance (None for unbound functions)
-- args: positional arguments tuple
-- kwargs: keyword arguments dict
-
 These should all pass mypy type checking.
 """
 
