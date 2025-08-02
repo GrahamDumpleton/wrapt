@@ -210,10 +210,6 @@ wheels = [
 [[package]]
 name = "wrapt"
 source = { editable = "." }
-dependencies = [
-    { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.9.*'" },
-]
 
 [package.optional-dependencies]
 dev = [
@@ -235,7 +231,6 @@ dev = [
 requires-dist = [
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "setuptools", marker = "extra == 'dev'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.10'", specifier = ">=4.0.0" },
 ]
 provides-extras = ["dev"]
 

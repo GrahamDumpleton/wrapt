@@ -1,21 +1,16 @@
-from typing import Callable, TypeVar, Any, Tuple, Dict
+import sys
 
-try:
-    from typing import ParamSpec  # Python 3.10+
-except ImportError:
-    from typing_extensions import ParamSpec  # Backport for older Python versions
+if sys.version_info >= (3, 10):
+    from typing import Callable, Any, Tuple, Dict
 
-from typing import Callable, TypeVar, Any, Tuple, Dict, ParamSpec
+    WrappedFunction = Callable[..., Any]
+    WrapperFunction = Callable[
+        [WrappedFunction, Any, Tuple[Any, ...], Dict[str, Any]], Any
+    ]
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
-WrappedFunction = Callable[P, R]
-WrapperFunction = Callable[[WrappedFunction, Any, Tuple[Any, ...], Dict[str, Any]], Any]
-
-class FunctionWrapper:
-    def __init__(
-        self,
-        wrapped: WrappedFunction,
-        wrapper: WrapperFunction,
-    ) -> None: ...
+    class FunctionWrapper:
+        def __init__(
+            self,
+            wrapped: WrappedFunction,
+            wrapper: WrapperFunction,
+        ) -> None: ...

@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import pathlib
@@ -10,6 +11,13 @@ except ImportError:
     from pytest.collect import File as FileCollector
 
 version = tuple(sys.version_info[:2])
+
+
+# Set MYPYPATH to the src directory relative to this conftest.py file. This
+# allows mypy to find the source code for type checking.
+_conftest_dir = pathlib.Path(__file__).parent
+_src_dir = _conftest_dir.parent / "src"
+os.environ["MYPYPATH"] = str(_src_dir)
 
 
 class DummyCollector(FileCollector):
@@ -149,7 +157,7 @@ def pytest_collect_file(file_path, parent):
     We attach the collector to tests/conftest.py so the discovery runs once per tests session.
     """
     # Guard early so we don't attach the collector on older Pythons
-    if version < (3, 9):
+    if version < (3, 10):
         return
 
     # Newer pytest passes pathlib.Path-like objects; ensure we can get a string/Path
