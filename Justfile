@@ -83,6 +83,9 @@ test-version version:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    rm -rf .mypy_cache
+    rm -rf .pytest_cache
+
     rm -rf .venv-test-tmp
     uv venv .venv-test-tmp --python {{version}}
     source .venv-test-tmp/bin/activate
