@@ -1,11 +1,13 @@
 import sys
 
 if sys.version_info >= (3, 10):
-    from typing import Callable, Any, Tuple, Dict
+    from typing import Callable, Any
+
+    # FunctionWrapper
 
     WrappedFunction = Callable[..., Any]
     WrapperFunction = Callable[
-        [WrappedFunction, Any, Tuple[Any, ...], Dict[str, Any]], Any
+        [WrappedFunction, Any, tuple[Any, ...], dict[str, Any]], Any
     ]
 
     class FunctionWrapper:

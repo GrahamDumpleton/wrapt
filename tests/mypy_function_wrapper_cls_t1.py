@@ -16,7 +16,7 @@ It covers the following cases:
 These should all pass mypy type checking.
 """
 
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable
 
 from wrapt import FunctionWrapper
 
@@ -48,10 +48,10 @@ class ExampleClass:
 
 
 def standard_wrapper(
-    wrapped: Callable[[Any], Any],
+    wrapped: Callable[..., Any],
     instance: Any,
-    args: Tuple[Any, ...],
-    kwargs: Dict[str, Any],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
 ) -> Any:
     try:
         print(f"Before calling {wrapped.__name__}")

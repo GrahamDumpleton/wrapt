@@ -18,7 +18,7 @@ A catch all wrapper is a function that accepts any arguments.
 These should all pass mypy type checking.
 """
 
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable
 from wrapt import FunctionWrapper
 
 
@@ -50,8 +50,8 @@ class ExampleClass:
 
 def catch_all_wrapper(*args: Any, **kwargs: Any) -> Any:
     def _bind(
-        wrapped: Callable[[Any], Any], instance: Any, *args: Any, **kwargs: Any
-    ) -> Tuple[Callable[[Any], Any], Any, Tuple[Any, ...], Dict[str, Any]]:
+        wrapped: Callable[..., Any], instance: Any, *args: Any, **kwargs: Any
+    ) -> tuple[Callable[..., Any], Any, tuple[Any, ...], dict[str, Any]]:
         return wrapped, instance, args, kwargs
 
     _wrapped, _instance, _args, _kwargs = _bind(*args, **kwargs)

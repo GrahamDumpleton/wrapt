@@ -7,7 +7,7 @@ It covers the following cases:
 Should fail mypy type checking for incorrect cases.
 """
 
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from wrapt import FunctionWrapper
 
@@ -18,7 +18,7 @@ def function(x: int, y: str = "default") -> str:
 
 
 def standard_wrapper(
-    wrapped: str, instance: Any, args: Tuple[Any, ...], kwargs: Dict[str, Any]
+    wrapped: str, instance: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> Any:
     pass
 
