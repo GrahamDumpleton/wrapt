@@ -72,6 +72,8 @@ jobs:
       run: python -m pip install -U pip wheel setuptools
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
+    - name: Install mypy
+      run: python -m pip install "mypy; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -79,40 +81,6 @@ jobs:
       with:
         name: coverage-no-gil-${{ matrix.os }}-${{ matrix.python-version }}
         path: .coverage.*
-
-  # test_aarch64_linux:
-  #   name: Test (${{ matrix.python.os }}, ${{ matrix.python.python-version }}, aarch64)
-  #   runs-on: ${{ matrix.python.os }}
-  #   strategy:
-  #     matrix:
-  #       python:
-  #         #- {os: ubuntu-latest,  python-version: 3.7, pyver: py37}
-  #         #- {os: ubuntu-latest,  python-version: 3.8, pyver: py38}
-  #         #- {os: ubuntu-latest,  python-version: 3.9, pyver: py39}
-  #         - {os: ubuntu-latest,  python-version: "3.10", pyver: py310}
-  #   env:
-  #     py: python${{ matrix.python.python-version }}
-  #   steps:
-  #   - name: Checkout
-  #     uses: actions/checkout@v2
-  #   - name: Set up QEMU
-  #     id: qemu
-  #     uses: docker/setup-qemu-action@v1
-  #   - name: Test with tox
-  #     run: |
-  #           docker run --rm -v ${{ github.workspace }}:/io:rw --workdir=/io \
-  #           arm64v8/ubuntu \
-  #           bash -exc 'apt-get update && \
-  #           apt install software-properties-common -y && \
-  #           add-apt-repository ppa:deadsnakes/ppa -y && \
-  #           apt install -y ${{ env.py }} && \
-  #           apt install -y ${{ env.py }}-venv && \
-  #           ${{ env.py }} -m venv .env && \
-  #           source .env/bin/activate && \
-  #           pip install -U pip wheel setuptools && \
-  #           pip install "tox<4.0.0" "tox-gh-actions<3.0.0" && \
-  #           tox -e ${{ matrix.python.pyver }} && \
-  #           deactivate'
 
   test_macos:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
@@ -143,6 +111,8 @@ jobs:
       run: python -m pip install -U pip wheel setuptools
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
+    - name: Install mypy
+      run: python -m pip install "mypy; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -195,6 +165,8 @@ jobs:
       run: python -m pip install -U pip wheel setuptools
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
+    - name: Install mypy
+      run: python -m pip install "mypy; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
 
