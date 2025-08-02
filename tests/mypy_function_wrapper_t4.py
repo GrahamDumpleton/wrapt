@@ -18,7 +18,7 @@ def function(x: int, y: str = "default") -> str:
 
 
 def standard_wrapper(wrapped: Any) -> Any:
-    pass
+    return
 
 
 wrapped_function = FunctionWrapper(function, standard_wrapper)

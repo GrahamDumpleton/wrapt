@@ -19,7 +19,7 @@ def standard_wrapper(
     args: Tuple[Any, ...],
     kwargs: Dict[str, Any],
 ) -> Any:
-    pass
+    return wrapped(*args, **kwargs)
 
 
 wrapped_function = FunctionWrapper("string", standard_wrapper)

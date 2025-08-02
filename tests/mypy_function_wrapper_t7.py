@@ -20,7 +20,7 @@ def function(x: int, y: str = "default") -> str:
 def standard_wrapper(
     wrapped: str, instance: Any, args: Tuple[Any, ...], kwargs: Dict[str, Any]
 ) -> str:
-    pass
+    return "string"
 
 
 wrapped_function = FunctionWrapper(function, standard_wrapper)
