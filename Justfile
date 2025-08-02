@@ -86,7 +86,7 @@ test-version version:
     rm -rf .venv-test-tmp
     uv venv .venv-test-tmp --python {{version}}
     source .venv-test-tmp/bin/activate
-    uv pip install pytest mypy
+    uv pip install pytest
 
     export PYTHONPATH=src
 

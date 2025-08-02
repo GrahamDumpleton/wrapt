@@ -39,7 +39,6 @@ Documentation = "https://wrapt.readthedocs.io/"
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "mypy",
     "setuptools",
 ]
 
@@ -57,7 +56,6 @@ version = {attr = "wrapt.__version__"}
 [tool.uv]
 dev-dependencies = [
     "pytest",
-    "mypy",
     "setuptools",
 ]
 
