@@ -138,7 +138,7 @@ To create a new mypy test case:
 
 2. **Generate the expected output**: Run mypy to capture the expected output:
    ```bash
-   mypy --strict --show-error-codes tests/mypy_your_test_name.py > tests/mypy_your_test_name.out
+   MYPYPATH=`pwd`/src uv run mypy --strict --show-error-codes tests/mypy_your_test_name.py > tests/mypy_your_test_name.out
    ```
 
 3. **Verify the output**: Review the generated `.out` file to ensure it contains the expected error messages and type information.
