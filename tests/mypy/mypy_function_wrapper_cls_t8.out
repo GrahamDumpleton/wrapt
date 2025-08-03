@@ -1,0 +1,2 @@
+tests/mypy/mypy_function_wrapper_cls_t8.py:40: error: Argument 3 to "FunctionWrapper" has incompatible type "str"; expected "bool | Callable[[], bool] | None"  [arg-type]
+Found 1 error in 1 file (checked 1 source file)

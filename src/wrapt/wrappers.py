@@ -762,8 +762,8 @@ class FunctionWrapper(_FunctionWrapperBase):
     def __init__(self, wrapped, wrapper, enabled=None):
         """
         Initialize the `FunctionWrapper` with the `wrapped` callable, the
-        `wrapper` function, and an optional `enabled` state. The `enabled`
-        state can be a boolean or a callable that returns a boolean. When a
+        `wrapper` function, and an optional `enabled` argument. The `enabled`
+        argument can be a boolean or a callable that returns a boolean. When a
         callable is provided, it will be called each time the wrapper is
         invoked to determine if the wrapper function should be executed or
         whether the wrapped function should be called directly. If `enabled`
