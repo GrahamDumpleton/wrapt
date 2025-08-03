@@ -750,10 +750,26 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
 
 
 class FunctionWrapper(_FunctionWrapperBase):
+    """
+    A wrapper for callable objects that can be used to apply decorators to
+    functions, methods, classmethods, and staticmethods. It handles binding and
+    unbinding of methods, and allows for the wrapper to be enabled or
+    disabled.
+    """
 
     __bound_function_wrapper__ = BoundFunctionWrapper
 
     def __init__(self, wrapped, wrapper, enabled=None):
+        """
+        Initialize the FunctionWrapper with the wrapped callable, the wrapper
+        function, and an optional enabled state. The enabled state can be a
+        boolean or a callable that returns a boolean. When a callable is
+        provided, it will be called each time the wrapper is invoked
+        to determine if the wrapper function should be executed or whether the
+        wrapped function should be called directly. If enabled is not provided,
+        the wrapper is enabled by default.
+        """
+
         # What it is we are wrapping here could be anything. We need to
         # try and detect specific cases though. In particular, we need
         # to detect when we are given something that is a method of a
