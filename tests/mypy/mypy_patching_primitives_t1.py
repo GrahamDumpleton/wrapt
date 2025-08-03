@@ -10,7 +10,7 @@ It covers the following cases:
 """
 
 import sys
-from typing import Any, Callable
+from typing import Any
 
 from wrapt import apply_patch, resolve_path, wrap_object
 
