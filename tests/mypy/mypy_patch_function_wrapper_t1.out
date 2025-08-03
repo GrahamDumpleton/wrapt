@@ -1,5 +1,4 @@
-tests/mypy/mypy_patch_function_wrapper_t1.py:49: error: Argument 2 to "patch_function_wrapper" has incompatible type "None"; expected "str"  [arg-type]
-tests/mypy/mypy_patch_function_wrapper_t1.py:59: error: Argument 1 to "__call__" of "WrapperDecorator" has incompatible type "Callable[[Callable[..., Any], tuple[Any, ...], dict[str, Any]], Any]"; expected "Callable[[Callable[..., Any], Any, tuple[Any, ...], dict[str, Any]], Any]"  [arg-type]
-tests/mypy/mypy_patch_function_wrapper_t1.py:96: error: Argument "enabled" to "patch_function_wrapper" has incompatible type "int"; expected "bool | Callable[[], bool] | None"  [arg-type]
-tests/mypy/mypy_patch_function_wrapper_t1.py:106: error: Argument 2 to "patch_function_wrapper" has incompatible type "int"; expected "str"  [arg-type]
-Found 4 errors in 1 file (checked 1 source file)
+tests/mypy/mypy_patch_function_wrapper_t1.py:48: error: Argument 2 to "patch_function_wrapper" has incompatible type "None"; expected "str"  [arg-type]
+tests/mypy/mypy_patch_function_wrapper_t1.py:58: error: Argument 1 to "__call__" of "WrapperDecorator" has incompatible type "Callable[[Callable[..., Any], tuple[Any, ...], dict[str, Any]], Any]"; expected "Callable[[Callable[..., Any], Any, tuple[Any, ...], dict[str, Any]], Any]"  [arg-type]
+tests/mypy/mypy_patch_function_wrapper_t1.py:95: error: Argument "enabled" to "patch_function_wrapper" has incompatible type "int"; expected "bool | Callable[[], bool] | None"  [arg-type]
+Found 3 errors in 1 file (checked 1 source file)

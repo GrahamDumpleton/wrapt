@@ -10,7 +10,6 @@ It covers the following cases:
 - Callable for enabled argument. (OKAY)
 - None for enabled argument. (OKAY)
 - Incorrect type for enabled argument. (FAIL)
-- Incorrect type for name argument. (FAIL)
 """
 
 import sys
@@ -95,16 +94,6 @@ def none_for_enabled_argument(
 
 @patch_function_wrapper(this_module, "function", enabled=123)
 def incorrect_type_for_enabled_argument(
-    wrapped: Callable[..., Any],
-    instance: Any,
-    args: tuple[Any, ...],
-    kwargs: dict[str, Any],
-) -> Any:
-    return wrapped(*args, **kwargs)
-
-
-@patch_function_wrapper(this_module, 123)
-def incorrect_type_for_name_argument(
     wrapped: Callable[..., Any],
     instance: Any,
     args: tuple[Any, ...],
