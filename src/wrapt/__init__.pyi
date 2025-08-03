@@ -43,3 +43,12 @@ if sys.version_info >= (3, 10):
         name: str,
         enabled: bool | Callable[[], bool] | None = None,
     ) -> WrapperDecorator: ...
+
+    # transient_function_wrapper()
+
+    class TransientDecorator:
+        def __call__(self, wrapper: WrapperFunction) -> FunctionDecorator: ...
+
+    def transient_function_wrapper(
+        target: ModuleType | type[Any] | Any | str, name: str
+    ) -> TransientDecorator: ...

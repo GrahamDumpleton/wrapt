@@ -160,6 +160,14 @@ def patch_function_wrapper(target, name, enabled=None):
 
 
 def transient_function_wrapper(target, name):
+    """Creates a decorator that patches a target function with a wrapper
+    function, but only for the duration of the call that the decorator was
+    applied to. The `target` can be a module, class, or instance of a class.
+    In the special case of `target` being a string, it is assumed to be the name
+    of a module, with the module being imported if necessary. The `name` is a
+    string representing the dotted path to the attribute.
+    """
+
     def _decorator(wrapper):
         def _wrapper(wrapped, instance, args, kwargs):
             target_wrapped = args[0]
