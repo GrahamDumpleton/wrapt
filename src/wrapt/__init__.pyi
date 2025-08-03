@@ -20,7 +20,7 @@ if sys.version_info >= (3, 10):
 
     # function_wrapper()
 
-    class CallableWrapper:
+    class FunctionDecorator:
         def __call__(self, callable: Callable[..., Any]) -> FunctionWrapper: ...
 
-    def function_wrapper(wrapper: WrapperFunction) -> CallableWrapper: ...
+    def function_wrapper(wrapper: WrapperFunction) -> FunctionDecorator: ...
