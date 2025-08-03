@@ -41,8 +41,8 @@ these reasons a major version bump is being made.
 
 * For reasons to do with backward/forward compatibility the `wrapt` module
   included references to `getcallargs()` and `formatargspec()` functions which
-  were part of the `inspect` at one time or another. These were provided as
-  convenience for users of the `wrapt` module, but were not actually part of
+  were part of the `inspect` module at one time or another. These were provided
+  as convenience for users of the `wrapt` module, but were not actually part of
   the public API. They have now been removed from the `wrapt` module and are
   no longer available. If you need these functions, you should use the
   `inspect` module directly.
@@ -520,7 +520,7 @@ Version 1.10.5
   function of the same name in PEP-369 has been extended to allow a string
   name to be supplied for the import hook. This needs to be of the form
   ``module::function`` and will result in an import hook proxy being used
-  which will only load and call the function of the specified moduled when
+  which will only load and call the function of the specified module when
   the import hook is required. This avoids needing to load the code needed
   to operate on the target module unless required.
 
