@@ -6,12 +6,12 @@ from .__wrapt__ import FunctionWrapper
 # Helper functions for applying wrappers to existing functions.
 
 
-def resolve_path(module, name):
-    if isinstance(module, str):
-        __import__(module)
-        module = sys.modules[module]
+def resolve_path(target, name):
+    if isinstance(target, str):
+        __import__(target)
+        target = sys.modules[target]
 
-    parent = module
+    parent = target
 
     path = name.split(".")
     attribute = path[0]
@@ -52,8 +52,8 @@ def apply_patch(parent, attribute, replacement):
     setattr(parent, attribute, replacement)
 
 
-def wrap_object(module, name, factory, args=(), kwargs={}):
-    (parent, attribute, original) = resolve_path(module, name)
+def wrap_object(target, name, factory, args=(), kwargs={}):
+    (parent, attribute, original) = resolve_path(target, name)
     wrapper = factory(original, *args, **kwargs)
     apply_patch(parent, attribute, wrapper)
     return wrapper
@@ -123,18 +123,29 @@ def function_wrapper(wrapper):
     return FunctionWrapper(wrapper, _wrapper)
 
 
-def wrap_function_wrapper(module, name, wrapper):
-    return wrap_object(module, name, FunctionWrapper, (wrapper,))
+def wrap_function_wrapper(target, name, wrapper):
+    """
+    Wraps a function which is the attribute of a target object with a `wrapper`
+    function. The `target` can be a module, class, or instance of a class. In
+    the special case of `target` being a string, it is assumed to be the name
+    of a module, with the module being imported if necessary. The `name` is a
+    string representing the dotted path to the attribute. The `wrapper` function
+    should accept the `wrapped` function, `instance`, `args`, and `kwargs`
+    arguments, and would return the result of calling the wrapped attribute or
+    some other appropriate value.
+    """
+
+    return wrap_object(target, name, FunctionWrapper, (wrapper,))
 
 
-def patch_function_wrapper(module, name, enabled=None):
+def patch_function_wrapper(target, name, enabled=None):
     def _wrapper(wrapper):
-        return wrap_object(module, name, FunctionWrapper, (wrapper, enabled))
+        return wrap_object(target, name, FunctionWrapper, (wrapper, enabled))
 
     return _wrapper
 
 
-def transient_function_wrapper(module, name):
+def transient_function_wrapper(target, name):
     def _decorator(wrapper):
         def _wrapper(wrapped, instance, args, kwargs):
             target_wrapped = args[0]
@@ -146,7 +157,7 @@ def transient_function_wrapper(module, name):
                 target_wrapper = wrapper.__get__(instance, type(instance))
 
             def _execute(wrapped, instance, args, kwargs):
-                (parent, attribute, original) = resolve_path(module, name)
+                (parent, attribute, original) = resolve_path(target, name)
                 replacement = FunctionWrapper(original, target_wrapper)
                 setattr(parent, attribute, replacement)
                 try:

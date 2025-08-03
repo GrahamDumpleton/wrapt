@@ -1,7 +1,8 @@
 import sys
 
 if sys.version_info >= (3, 10):
-    from typing import Callable, Any
+    from typing import Any, Callable
+    from types import ModuleType
 
     # FunctionWrapper
 
@@ -24,3 +25,9 @@ if sys.version_info >= (3, 10):
         def __call__(self, callable: Callable[..., Any]) -> FunctionWrapper: ...
 
     def function_wrapper(wrapper: WrapperFunction) -> FunctionDecorator: ...
+
+    # wrap_function_wrapper()
+
+    def wrap_function_wrapper(
+        target: ModuleType | type[Any] | Any | str, name: str, wrapper: WrapperFunction
+    ) -> FunctionWrapper: ...
