@@ -32,3 +32,14 @@ if sys.version_info >= (3, 10):
     def wrap_function_wrapper(
         target: ModuleType | type[Any] | Any | str, name: str, wrapper: WrapperFunction
     ) -> FunctionWrapper: ...
+
+    # patch_function_wrapper()
+
+    class WrapperDecorator:
+        def __call__(self, wrapper: WrapperFunction) -> FunctionWrapper: ...
+
+    def patch_function_wrapper(
+        target: ModuleType | type[Any] | Any | str,
+        name: str,
+        enabled: bool | Callable[[], bool] | None = None,
+    ) -> WrapperDecorator: ...
