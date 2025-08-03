@@ -80,3 +80,24 @@ if sys.version_info >= (3, 10):
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
     ) -> Any: ...
+
+    # register_post_import_hook()
+
+    def register_post_import_hook(
+        hook: Callable[[ModuleType], Any] | str, name: str
+    ) -> None: ...
+
+    # discover_post_import_hooks()
+
+    def discover_post_import_hooks(group: str) -> None: ...
+
+    # notify_module_loaded()
+
+    def notify_module_loaded(module: ModuleType) -> None: ...
+
+    # when_imported()
+
+    class ImportHookDecorator:
+        def __call__(self, hook: Callable[[ModuleType], Any]) -> Callable[..., Any]: ...
+
+    def when_imported(name: str) -> ImportHookDecorator: ...

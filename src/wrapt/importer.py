@@ -43,6 +43,17 @@ def _create_import_hook_from_string(name):
 
 
 def register_post_import_hook(hook, name):
+    """
+    Register a post import hook for the target module `name`. The `hook`
+    function will be called once the module is imported and will be passed the
+    module as argument. If the module is already imported, the `hook` will be
+    called immediately. If you also want to defer loading of the module containing
+    the `hook` function until required, you can specify the `hook` as a string in
+    the form 'module:function'. This will result in a proxy hook function being
+    registered which will defer loading of the specified module containing the
+    callback function until required.
+    """
+
     # Create a deferred import hook if hook is a string name rather than
     # a callable function.
 
@@ -96,6 +107,12 @@ def _create_import_hook_from_entrypoint(entrypoint):
 
 
 def discover_post_import_hooks(group):
+    """
+    Discover and register post import hooks defined as package entry points
+    in the specified `group`. The group should be a string that matches the
+    entry point group name used in the package metadata.
+    """
+
     try:
         # Python 3.10+ style with select parameter
         entrypoints = importlib.metadata.entry_points(group=group)
@@ -115,6 +132,12 @@ def discover_post_import_hooks(group):
 
 
 def notify_module_loaded(module):
+    """
+    Notify that a `module` has been loaded and invoke any post import hooks
+    registered against the module. If the module is not registered, this
+    function does nothing.
+    """
+
     name = getattr(module, "__name__", None)
 
     with _post_import_hooks_lock:
@@ -294,6 +317,14 @@ class ImportHookFinder:
 
 
 def when_imported(name):
+    """
+    Returns a decorator that registers the decorated function as a post import
+    hook for the module specified by `name`. The function will be called once
+    the module with the specified name is imported, and will be passed the
+    module as argument. If the module is already imported, the function will
+    be called immediately.
+    """
+
     def register(hook):
         register_post_import_hook(hook, name)
         return hook
