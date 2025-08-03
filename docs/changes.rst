@@ -39,6 +39,14 @@ these reasons a major version bump is being made.
   installed at runtime. It is still required for building and installing the
   package, but not for using it.
 
+* For reasons to do with backward/forward compatibility the `wrapt` module
+  included references to `getcallargs()` and `formatargspec()` functions which
+  were part of the `inspect` at one time or another. These were provided as
+  convenience for users of the `wrapt` module, but were not actually part of
+  the public API. They have now been removed from the `wrapt` module and are
+  no longer available. If you need these functions, you should use the
+  `inspect` module directly.
+
 Version 1.17.2
 --------------
 

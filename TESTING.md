@@ -25,8 +25,6 @@ Test files can include version suffixes to indicate minimum Python version requi
 
 ### Examples in the Codebase
 
-- `test_formatargspec_py35.py` - Tests features that require Python 3.5+ (like type annotations)
-- `test_formatargspec_py38.py` - Tests features that require Python 3.8+ (like positional-only parameters)
 - `test_class_py37.py` - Tests class-related features that require Python 3.7+
 - `test_descriptors_py36.py` - Tests descriptor features that require Python 3.6+
 - `test_inheritance_py37.py` - Tests inheritance features that require Python 3.7+

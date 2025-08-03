@@ -1,8 +1,8 @@
-import unittest
 import sys
+import unittest
 from inspect import getfullargspec
 
-from wrapt import formatargspec
+from wrapt.arguments import formatargspec
 
 
 class TestFormatargspec38(unittest.TestCase):
