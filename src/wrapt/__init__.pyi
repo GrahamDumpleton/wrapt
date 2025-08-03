@@ -16,6 +16,7 @@ if sys.version_info >= (3, 10):
             self,
             wrapped: WrappedFunction,
             wrapper: WrapperFunction,
+            enabled: bool | Callable[[], bool] | None = None,
         ) -> None: ...
         def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
