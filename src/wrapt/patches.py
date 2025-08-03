@@ -7,6 +7,16 @@ from .__wrapt__ import FunctionWrapper
 
 
 def resolve_path(target, name):
+    """
+    Resolves the dotted path supplied as `name` to an attribute on a target
+    object. The `target` can be a module, class, or instance of a class. If the
+    `target` argument is a string, it is assumed to be the name of a module,
+    which will be imported if necessary and then used as the target object.
+    Returns a tuple containing the parent object holding the attribute lookup
+    resolved to, the attribute name (path prefix removed if present), and the
+    original attribute value.
+    """
+
     if isinstance(target, str):
         __import__(target)
         target = sys.modules[target]
@@ -49,13 +59,32 @@ def resolve_path(target, name):
 
 
 def apply_patch(parent, attribute, replacement):
+    """
+    Convenience function for applying a patch to an attribute. Currently this
+    maps to the standard setattr() function, but in the future may be extended
+    to support more complex patching strategies.
+    """
+
     setattr(parent, attribute, replacement)
 
 
 def wrap_object(target, name, factory, args=(), kwargs={}):
+    """
+    Wraps an object which is the attribute of a target object with a wrapper
+    object created by the `factory` function. The `target` can be a module,
+    class, or instance of a class. In the special case of `target` being a
+    string, it is assumed to be the name of a module, with the module being
+    imported if necessary and then used as the target object. The `name` is a
+    string representing the dotted path to the attribute. The `factory` function
+    should accept the original object and may accept additional positional and
+    keyword arguments which will be set by unpacking input arguments using
+    `*args` and `**kwargs` calling conventions. The factory function should
+    return a new object that will replace the original object."""
+
     (parent, attribute, original) = resolve_path(target, name)
     wrapper = factory(original, *args, **kwargs)
     apply_patch(parent, attribute, wrapper)
+
     return wrapper
 
 

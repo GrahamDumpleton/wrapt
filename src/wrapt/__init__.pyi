@@ -1,8 +1,8 @@
 import sys
 
 if sys.version_info >= (3, 10):
-    from typing import Any, Callable
     from types import ModuleType
+    from typing import Any, Callable
 
     # FunctionWrapper
 
@@ -52,3 +52,31 @@ if sys.version_info >= (3, 10):
     def transient_function_wrapper(
         target: ModuleType | type[Any] | Any | str, name: str
     ) -> TransientDecorator: ...
+
+    # resolve_path()
+
+    def resolve_path(
+        target: ModuleType | type[Any] | Any | str, name: str
+    ) -> tuple[ModuleType | type[Any] | Any, str, Callable[..., Any]]: ...
+
+    # apply_patch()
+
+    def apply_patch(
+        parent: ModuleType | type[Any] | Any,
+        attribute: str,
+        replacement: Any,
+    ) -> None: ...
+
+    # wrap_object()
+
+    WrapperFactory = Callable[
+        [Callable[..., Any], tuple[Any, ...], dict[str, Any]], Any
+    ]
+
+    def wrap_object(
+        target: ModuleType | type[Any] | Any | str,
+        name: str,
+        factory: WrapperFactory,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> Any: ...
