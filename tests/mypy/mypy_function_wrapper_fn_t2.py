@@ -21,7 +21,7 @@ def function(x: int, y: str = "default") -> str:
 def wrapper(
     wrapped: str, instance: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> Any:
-    pass
+    return
 
 
 wrapped_function = wrapper(function)
