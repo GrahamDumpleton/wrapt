@@ -45,6 +45,7 @@ mostlyclean: clear-cache
     rm -rf .tox .venv
     rm -rf .mypy_cache
     rm -rf tests/__pycache__
+    rm -rf tests/core/__pycache__
     rm -rf src/wrapt/__pycache__
     rm -rf src/wrapt/_wrappers.*.so
     rm -rf docs/__pycache__

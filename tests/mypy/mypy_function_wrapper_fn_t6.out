@@ -1,0 +1,2 @@
+tests/mypy/mypy_function_wrapper_fn_t6.py:15: error: Argument 1 to "function_wrapper" has incompatible type "Callable[[str, Any, tuple[Any, ...], dict[str, Any]], str]"; expected "Callable[[Callable[..., Any], Any, tuple[Any, ...], dict[str, Any]], Any]"  [arg-type]
+Found 1 error in 1 file (checked 1 source file)

@@ -4,14 +4,14 @@ This document explains how to run tests for the wrapt project and the convention
 
 ## Test Directory Structure
 
-The `tests/` directory contains all test files for the wrapt project. Test files follow these conventions:
+The `tests/core/` directory contains all test files for the wrapt project. Test files follow these conventions:
 
 - **Standard test files**: `test_*.py` - These run on all supported Python versions
 - **Python version-specific test files**: `test_*_pyXX.py` - These only run on specific Python versions or later
 
 ## Python Version-Specific Test Files
 
-The project uses a special naming convention to ensure certain tests only run on appropriate Python versions. This is handled automatically by the `conftest.py` configuration.
+The project uses a special naming convention to ensure certain tests only run on appropriate Python versions. This is handled automatically by the `tests/conftest.py` configuration.
 
 ### Naming Convention
 
@@ -34,7 +34,7 @@ Test files can include version suffixes to indicate minimum Python version requi
 
 ### How It Works
 
-The `conftest.py` file contains a `pytest_pycollect_makemodule` hook that:
+The `tests/conftest.py` file contains a `pytest_pycollect_makemodule` hook that:
 
 1. Parses the filename for version patterns using regex: `_py(\d)(\d*)`
 2. Compares the detected version requirement with the current Python version
@@ -112,7 +112,7 @@ The project includes custom pytest handlers for testing mypy type checking behav
 
 ### Test File Convention
 
-Mypy tests follow a specific naming pattern in the `tests/` directory:
+Mypy tests follow a specific naming pattern in the `tests/mypy/` directory:
 
 - **Test files**: `mypy_*.py` - Python files containing code to be type-checked
 - **Expected output files**: `mypy_*.out` - Files containing the expected mypy output
@@ -133,12 +133,12 @@ To create a new mypy test case:
 
 1. **Create the test file**: Write a Python file with the code you want to type-check:
    ```bash
-   # Create tests/mypy_your_test_name.py
+   # Create tests/mypy/mypy_your_test_name.py
    ```
 
 2. **Generate the expected output**: Run mypy to capture the expected output:
    ```bash
-   MYPYPATH=`pwd`/src uv run mypy --strict --show-error-codes tests/mypy_your_test_name.py > tests/mypy_your_test_name.out
+   MYPYPATH=`pwd`/src uv run mypy --strict --show-error-codes tests/mypy/mypy_your_test_name.py > tests/mypy/mypy_your_test_name.out
    ```
 
 3. **Verify the output**: Review the generated `.out` file to ensure it contains the expected error messages and type information.

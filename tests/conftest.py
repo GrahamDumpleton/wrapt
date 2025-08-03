@@ -93,7 +93,7 @@ def run_custom_action(py_file: pathlib.Path) -> str:
         # with .out files
 
         if platform.system() == "Windows":
-            output = re.sub(r"\btests\\", "tests/", output)
+            output = re.sub(r"\btests\\mypy\\", "tests/mypy/", output)
 
         return output
     except FileNotFoundError:
@@ -141,7 +141,7 @@ class MypyPairCollector(pytest.File):
 
         tests_dir = path.parent
 
-        for py_file in sorted(tests_dir.glob("mypy_*.py")):
+        for py_file in sorted(tests_dir.glob("mypy/mypy_*.py")):
             out_file = py_file.with_suffix(".out")
             if out_file.exists():
                 name = f"{py_file.stem}"

@@ -1,3 +1,0 @@
-tests/mypy_function_wrapper_fn_t5.py:14: error: Argument 1 to "function_wrapper" has incompatible type "str"; expected "Callable[[Callable[..., Any], Any, tuple[Any, ...], dict[str, Any]], Any]"  [arg-type]
-tests/mypy_function_wrapper_fn_t5.py:15: error: Argument 1 to "function_wrapper" has incompatible type "None"; expected "Callable[[Callable[..., Any], Any, tuple[Any, ...], dict[str, Any]], Any]"  [arg-type]
-Found 2 errors in 1 file (checked 1 source file)
