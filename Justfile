@@ -126,6 +126,12 @@ test-mypy-version version:
     echo "=== Running mypy type checking with Python {{version}} ==="
     mypy --python-version {{version}} src/wrapt
 
+check-mypy-test test:
+    MYPYPATH=src/ uv run mypy tests/mypy/{{test}}.py
+
+create-mypy-test test:
+    - MYPYPATH=src/ uv run mypy tests/mypy/{{test}}.py > tests/mypy/{{test}}.out
+
 # Install development dependencies with uv
 dev-install: venv
     uv sync
