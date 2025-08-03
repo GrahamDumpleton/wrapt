@@ -100,6 +100,16 @@ def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
 
 
 def function_wrapper(wrapper):
+    """
+    Creates a decorator for wrapping a function with a `wrapper` function.
+    The decorator which is returned may also be applied to any other callable
+    objects such as lambda functions, methods, classmethods, and staticmethods,
+    or objects which implement the `__call__()` method. The `wrapper` function
+    should accept the `wrapped` function, `instance`, `args`, and `kwargs`,
+    arguments and return the result of calling the wrapped function or some
+    other appropriate value.
+    """
+
     def _wrapper(wrapped, instance, args, kwargs):
         target_wrapped = args[0]
         if instance is None:
