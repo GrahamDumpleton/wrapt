@@ -134,20 +134,20 @@ To create a new mypy test case:
    # Create tests/mypy/mypy_your_test_name.py
    ```
 
-2. **Generate the expected output**: Run mypy to capture the expected output, by running:
+2. **Review output from test**: Review the test output to ensure it contains the expected error messages and type information:
    ```bash
-   MYPYPATH=`pwd`/src uv run mypy --strict --show-error-codes tests/mypy/mypy_your_test_name.py > tests/mypy/mypy_your_test_name.out
-   ```
-   or:
-   ```
-   just create-mypy-test mypy_your_test_name
-   ```
-   You can else preview output by running:
-   ```
-   just check-mypy-test mypy_your_test_name
+   just view-mypy-test mypy_your_test_name
    ```
 
-3. **Verify the output**: Review the generated `.out` file to ensure it contains the expected error messages and type information.
+3. **Save the expected output**: Run mypy to capture the expected output, by running:
+   ```bash
+   just save-mypy-test mypy_your_test_name
+   ```
+
+3. **Verify the output**: Check the output from running the test against expected output, by running: 
+   ```bash
+   just check-mypy-test mypy_your_test_name
+   ```
 
 4. **Run the test**: The test will automatically be discovered and run with pytest:
    ```bash
