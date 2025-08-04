@@ -32,6 +32,9 @@ lambda_function: Callable[[int], int] = lambda x: x + 1
 class ExampleClass:
     """A class with methods to be wrapped."""
 
+    def __init__(self, value: int) -> None:
+        self.value = value
+
     def __call__(self, value: int) -> str:
         return f"callable: {value}"
 
@@ -69,14 +72,26 @@ wrapped_classmethod = FunctionWrapper(ExampleClass.class_method, standard_wrappe
 wrapped_staticmethod = FunctionWrapper(ExampleClass.static_method, standard_wrapper)
 
 wrapped_method_instance = FunctionWrapper(
-    ExampleClass().instance_method, standard_wrapper
+    ExampleClass(0).instance_method, standard_wrapper
 )
 wrapped_classmethod_instance = FunctionWrapper(
-    ExampleClass().class_method, standard_wrapper
+    ExampleClass(0).class_method, standard_wrapper
 )
 wrapped_staticmethod_instance = FunctionWrapper(
-    ExampleClass().static_method, standard_wrapper
+    ExampleClass(0).static_method, standard_wrapper
 )
 
 wrapped_callable_class = FunctionWrapper(ExampleClass, standard_wrapper)
-wrapped_callable_object = FunctionWrapper(ExampleClass(), standard_wrapper)
+wrapped_callable_object = FunctionWrapper(ExampleClass(0), standard_wrapper)
+
+wrapped_function(1)
+wrapped_lambda(2)
+wrapped_method(ExampleClass(0), 3)
+wrapped_classmethod(4)
+wrapped_staticmethod(5)
+wrapped_method_instance(6)
+wrapped_classmethod_instance(7)
+wrapped_staticmethod_instance(8)
+
+wrapped_callable_class(9)
+wrapped_callable_object(10)
