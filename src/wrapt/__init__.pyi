@@ -2,7 +2,7 @@ import sys
 
 if sys.version_info >= (3, 10):
     from types import ModuleType, TracebackType
-    from typing import Any, Callable, Generic, ParamSpec, Protocol, TypeVar, overload
+    from typing import Any, Callable, Generic, ParamSpec, TypeVar, overload
 
     # FunctionWrapper
 
@@ -112,3 +112,20 @@ if sys.version_info >= (3, 10):
         def __call__(self, hook: Callable[[ModuleType], Any]) -> Callable[..., Any]: ...
 
     def when_imported(name: str) -> ImportHookDecorator: ...
+
+    # synchronized()
+
+    class SynchronizedObject:
+        def __call__(self, wrapped: Callable[P1, R1]) -> Callable[P1, R1]: ...
+        def __enter__(self) -> Any: ...
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+        ) -> bool | None: ...
+
+    @overload
+    def synchronized(wrapped: Callable[P1, R1]) -> Callable[P1, R1]: ...
+    @overload
+    def synchronized(wrapped: Any) -> SynchronizedObject: ...

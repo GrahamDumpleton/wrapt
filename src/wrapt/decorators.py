@@ -4,7 +4,6 @@ as well as some commonly used decorators.
 """
 
 import sys
-
 from functools import partial
 from inspect import isclass
 from threading import Lock, RLock
@@ -17,10 +16,10 @@ except ImportError:
     pass
 
 from .__wrapt__ import (
-    FunctionWrapper,
     BoundFunctionWrapper,
-    ObjectProxy,
     CallableObjectProxy,
+    FunctionWrapper,
+    ObjectProxy,
 )
 
 # Adapter wrapper for the wrapped function which will overlay certain
@@ -425,6 +424,18 @@ def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
 
 
 def synchronized(wrapped):
+    """Depending on the nature of the `wrapped` object, will either return a
+    decorator which can be used to wrap a function or method, or a context
+    manager, both of which will act accordingly depending on how used, to
+    synchronize access to calling of the wrapped function, or the block of
+    code within the context manager. If it is an object which is a
+    synchronization primitive, such as a threading Lock, RLock, Semaphore,
+    Condition, or Event, then it is assumed that the object is to be used
+    directly as the synchronization primitive, otherwise a lock is created
+    automatically and attached to the wrapped object and used as the
+    synchronization primitive.
+    """
+
     # Determine if being passed an object which is a synchronization
     # primitive. We can't check by type for Lock, RLock, Semaphore etc,
     # as the means of creating them isn't the type. Therefore use the
