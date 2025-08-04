@@ -10,6 +10,7 @@ It covers the following cases:
 """
 
 from typing import Any, Callable
+
 from wrapt import FunctionWrapper
 
 

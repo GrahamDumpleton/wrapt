@@ -1,3 +1,3 @@
-tests/mypy/mypy_function_wrapper_fn_t4.py:26: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "str"; expected "Callable[..., Any]"  [arg-type]
-tests/mypy/mypy_function_wrapper_fn_t4.py:27: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "None"; expected "Callable[..., Any]"  [arg-type]
+tests/mypy/mypy_function_wrapper_fn_t4.py:26: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "str"; expected "Callable[[VarArg(Any), KwArg(Any)], Any]"  [arg-type]
+tests/mypy/mypy_function_wrapper_fn_t4.py:27: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "None"; expected "Callable[[VarArg(Any), KwArg(Any)], Any]"  [arg-type]
 Found 2 errors in 1 file (checked 1 source file)

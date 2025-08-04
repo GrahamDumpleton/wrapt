@@ -1,42 +1,51 @@
 import sys
 
 if sys.version_info >= (3, 10):
-    from types import ModuleType
-    from typing import Any, Callable
+    from types import ModuleType, TracebackType
+    from typing import Any, Callable, Generic, ParamSpec, Protocol, TypeVar, overload
 
     # FunctionWrapper
 
-    WrappedFunction = Callable[..., Any]
+    P1 = ParamSpec("P1")
+    R1 = TypeVar("R1", covariant=True)
+
+    WrappedFunction = Callable[P1, R1]
     WrapperFunction = Callable[
-        [WrappedFunction, Any, tuple[Any, ...], dict[str, Any]], Any
+        [WrappedFunction[P1, R1], Any, tuple[Any, ...], dict[str, Any]], Any
     ]
 
-    class FunctionWrapper:
+    class FunctionWrapper(Generic[P1, R1]):
         def __init__(
             self,
-            wrapped: WrappedFunction,
-            wrapper: WrapperFunction,
+            wrapped: WrappedFunction[P1, R1],
+            wrapper: WrapperFunction[P1, R1],
             enabled: bool | Callable[[], bool] | None = None,
         ) -> None: ...
-        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+        def __call__(self, *args: P1.args, **kwargs: P1.kwargs) -> R1: ...
 
     # function_wrapper()
 
-    class FunctionDecorator:
-        def __call__(self, callable: Callable[..., Any]) -> FunctionWrapper: ...
+    class FunctionDecorator(Generic[P1, R1]):
+        def __call__(self, callable: Callable[P1, R1]) -> FunctionWrapper[P1, R1]: ...
 
-    def function_wrapper(wrapper: WrapperFunction) -> FunctionDecorator: ...
+    def function_wrapper(
+        wrapper: WrapperFunction[P1, R1],
+    ) -> FunctionDecorator[P1, R1]: ...
 
     # wrap_function_wrapper()
 
     def wrap_function_wrapper(
-        target: ModuleType | type[Any] | Any | str, name: str, wrapper: WrapperFunction
-    ) -> FunctionWrapper: ...
+        target: ModuleType | type[Any] | Any | str,
+        name: str,
+        wrapper: WrapperFunction[P1, R1],
+    ) -> FunctionWrapper[P1, R1]: ...
 
     # patch_function_wrapper()
 
     class WrapperDecorator:
-        def __call__(self, wrapper: WrapperFunction) -> FunctionWrapper: ...
+        def __call__(
+            self, wrapper: WrapperFunction[P1, R1]
+        ) -> FunctionWrapper[P1, R1]: ...
 
     def patch_function_wrapper(
         target: ModuleType | type[Any] | Any | str,
@@ -47,7 +56,9 @@ if sys.version_info >= (3, 10):
     # transient_function_wrapper()
 
     class TransientDecorator:
-        def __call__(self, wrapper: WrapperFunction) -> FunctionDecorator: ...
+        def __call__(
+            self, wrapper: WrapperFunction[P1, R1]
+        ) -> FunctionDecorator[P1, R1]: ...
 
     def transient_function_wrapper(
         target: ModuleType | type[Any] | Any | str, name: str
