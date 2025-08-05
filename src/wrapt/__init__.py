@@ -11,6 +11,7 @@ from .__wrapt__ import (
     FunctionWrapper,
     ObjectProxy,
     PartialCallableObjectProxy,
+    partial,
 )
 from .decorators import AdapterFactory, adapter_factory, decorator, synchronized
 from .importer import (
