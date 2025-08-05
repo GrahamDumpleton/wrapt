@@ -453,6 +453,11 @@ class CallableObjectProxy(ObjectProxy):
 
 
 class PartialCallableObjectProxy(ObjectProxy):
+    """Create a callable object proxy with partial application of the given
+    arguments and keywords. This behaves the same as `functools.partial`, but
+    implemented using the `ObjectProxy` class to provide better support for
+    introspection.
+    """
 
     def __init__(*args, **kwargs):
         def _unpack_self(self, *args):

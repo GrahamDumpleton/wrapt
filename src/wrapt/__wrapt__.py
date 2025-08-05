@@ -34,6 +34,13 @@ if _use_extensions:
         # C extensions not available, using Python implementations
         pass
 
-# Provide a alias for partial().
+# Provide an alias for partial().
 
-partial = PartialCallableObjectProxy
+
+def partial(*args, **kwargs):
+    """Create a callable object proxy with partial application of the given
+    arguments and keywords. This behaves the same as `functools.partial`, but
+    implemented using the `ObjectProxy` class to provide better support for
+    introspection.
+    """
+    return PartialCallableObjectProxy(*args, **kwargs)

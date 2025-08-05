@@ -1,0 +1,5 @@
+tests/mypy/mypy_partial_callable_t1.py:23: error: Too few arguments for "partial"  [call-arg]
+tests/mypy/mypy_partial_callable_t1.py:26: error: Argument 1 to "partial" has incompatible type "None"; expected "Callable[..., Any]"  [arg-type]
+tests/mypy/mypy_partial_callable_t1.py:35: error: Too few arguments for "PartialCallableObjectProxy"  [call-arg]
+tests/mypy/mypy_partial_callable_t1.py:38: error: Argument 1 to "PartialCallableObjectProxy" has incompatible type "None"; expected "Callable[..., Any]"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)
