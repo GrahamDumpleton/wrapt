@@ -8,20 +8,18 @@ from functools import partial
 from inspect import isclass, signature
 from threading import Lock, RLock
 
-from .arguments import formatargspec
-
 from .__wrapt__ import (
     BoundFunctionWrapper,
     CallableObjectProxy,
     FunctionWrapper,
     ObjectProxy,
 )
+from .arguments import formatargspec
 
 # Adapter wrapper for the wrapped function which will overlay certain
 # properties from the adapter function onto the wrapped function so that
-# functions such as inspect.getfullargspec(),
-# inspect.signature() and inspect.getsource() return the correct results
-# one would expect.
+# functions such as inspect.getfullargspec(), inspect.signature() and
+# inspect.getsource() return the correct results one would expect.
 
 
 class _AdapterFunctionCode(CallableObjectProxy):
