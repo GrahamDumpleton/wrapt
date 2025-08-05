@@ -28,10 +28,23 @@ def _weak_function_proxy_callback(ref, proxy, callback):
 
 
 class WeakFunctionProxy(ObjectProxy):
+    """A weak function proxy."""
 
     __slots__ = ("_self_expired", "_self_instance")
 
     def __init__(self, wrapped, callback=None):
+        """Create a proxy to object which uses a weak reference. This is
+        similar to the `weakref.proxy` but is designed to work with functions
+        and methods. It will automatically rebind the function to the instance
+        when called if the function was originally a bound method. This is
+        necessary because bound methods are transient objects and applying a
+        weak reference to one will immediately result in it being destroyed
+        and the weakref callback called. The weak reference is therefore
+        applied to the instance the method is bound to and the original
+        function. The function is then rebound at the point of a call via the
+        weak function proxy.
+        """
+
         # We need to determine if the wrapped function is actually a
         # bound method. In the case of a bound method, we need to keep a
         # reference to the original unbound function and the instance.

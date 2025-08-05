@@ -138,3 +138,13 @@ if sys.version_info >= (3, 10):
     def partial(
         func: Callable[..., Any], /, *args: Any, **kwargs: Any
     ) -> Callable[..., Any]: ...
+
+    # WeakFunctionProxy
+
+    class WeakFunctionProxy:
+        def __init__(
+            self,
+            wrapped: Callable[..., Any],
+            callback: Callable[..., Any] | None = None,
+        ) -> None: ...
+        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
