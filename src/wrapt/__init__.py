@@ -38,6 +38,7 @@ __all__ = (
     "FunctionWrapper",
     "ObjectProxy",
     "PartialCallableObjectProxy",
+    "partial",
     "AdapterFactory",
     "adapter_factory",
     "decorator",
@@ -55,5 +56,4 @@ __all__ = (
     "wrap_object",
     "wrap_object_attribute",
     "WeakFunctionProxy",
-    "partial",
 )
