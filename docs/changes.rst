@@ -15,6 +15,10 @@ these reasons a major version bump is being made.
 
 * Added `__all__` attribute to `wrapt` module to expose the public API.
 
+* The `wrapt.PartialCallableObjectProxy` class can now be accessed via the
+  alias `wrapt.partial`, which is a convenience for users who are used to using
+  `functools.partial` and want to use the `wrapt` version of it.
+
 **Features Changed**
 
 * The `ObjectProxy` class now raises a `WrapperNotInitializedError` exception

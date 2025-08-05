@@ -9,7 +9,7 @@ class TestPartialCallableObjectProxy(unittest.TestCase):
         def func0():
             return ((), {})
 
-        partial0 = wrapt.PartialCallableObjectProxy(func0)
+        partial0 = wrapt.partial(func0)
 
         args, kwargs = (), {}
 
@@ -21,7 +21,7 @@ class TestPartialCallableObjectProxy(unittest.TestCase):
 
         args, kwargs = (), {}
 
-        partial0 = wrapt.PartialCallableObjectProxy(func0, *args, **kwargs)
+        partial0 = wrapt.partial(func0, *args, **kwargs)
 
         self.assertEqual(partial0(), (args, kwargs))
 
@@ -31,7 +31,7 @@ class TestPartialCallableObjectProxy(unittest.TestCase):
 
         args, kwargs = (1,), {}
 
-        partial0 = wrapt.PartialCallableObjectProxy(func0, *args)
+        partial0 = wrapt.partial(func0, *args)
 
         self.assertEqual(partial0(), (args, kwargs))
 
@@ -41,7 +41,7 @@ class TestPartialCallableObjectProxy(unittest.TestCase):
 
         args, kwargs = (), {"k1": 1}
 
-        partial0 = wrapt.PartialCallableObjectProxy(func0, **kwargs)
+        partial0 = wrapt.partial(func0, **kwargs)
 
         self.assertEqual(partial0(), (args, kwargs))
 
@@ -51,7 +51,7 @@ class TestPartialCallableObjectProxy(unittest.TestCase):
 
         args, kwargs = (1, 2, 3), {}
 
-        partial0 = wrapt.PartialCallableObjectProxy(func0, *args)
+        partial0 = wrapt.partial(func0, *args)
 
         self.assertEqual(partial0(), (args, kwargs))
 
@@ -61,7 +61,7 @@ class TestPartialCallableObjectProxy(unittest.TestCase):
 
         args, kwargs = (), {"k1": 1, "k2": 2, "k3": 3}
 
-        partial0 = wrapt.PartialCallableObjectProxy(func0, **kwargs)
+        partial0 = wrapt.partial(func0, **kwargs)
 
         self.assertEqual(partial0(), (args, kwargs))
 

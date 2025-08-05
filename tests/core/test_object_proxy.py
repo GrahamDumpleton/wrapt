@@ -1,7 +1,7 @@
-import unittest
-import types
-import sys
 import re
+import sys
+import types
+import unittest
 
 is_pypy = "__pypy__" in sys.builtin_module_names
 
@@ -2039,7 +2039,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         # A dict when given self as keyword argument uses it to create item in
         # the dict and no attempt is made to use a positional argument.
 
-        wrapper = wrapt.PartialCallableObjectProxy(dict, arg1="arg1")
+        wrapper = wrapt.partial(dict, arg1="arg1")
 
         d = wrapper(self="self")
 
@@ -2049,7 +2049,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         # A dict when given self as keyword argument uses it to create item in
         # the dict and no attempt is made to use a positional argument.
 
-        wrapper = wrapt.PartialCallableObjectProxy(dict, self="self")
+        wrapper = wrapt.partial(dict, self="self")
 
         d = wrapper(arg1="arg1")
 
@@ -2066,7 +2066,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._args, ("arg1",))
         self.assertEqual(o._kwargs, {})
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object, "arg1")
+        wrapper = wrapt.partial(Object, "arg1")
 
         o = wrapper()
 
@@ -2084,7 +2084,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._args, ("arg1",))
         self.assertEqual(o._kwargs, {})
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.partial(Object)
 
         o = wrapper("arg1")
 
@@ -2108,7 +2108,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
             None,
         )
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object, self="self")
+        wrapper = wrapt.partial(Object, self="self")
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
@@ -2138,7 +2138,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
             None,
         )
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.partial(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(self="self")
@@ -2168,7 +2168,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
             None,
         )
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object, arg1="arg1", self="self")
+        wrapper = wrapt.partial(Object, arg1="arg1", self="self")
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
@@ -2198,7 +2198,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
             None,
         )
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.partial(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(arg1="arg1", self="self")
@@ -2222,7 +2222,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, dict(self="self"))
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object, self="self")
+        wrapper = wrapt.partial(Object, self="self")
 
         o = wrapper()
 
@@ -2240,7 +2240,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._args, ())
         self.assertEqual(o._kwargs, dict(self="self"))
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.partial(Object)
 
         o = wrapper(self="self")
 
@@ -2260,7 +2260,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._kwargs, {})
         self.assertEqual(o._self, "self")
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object, self="self")
+        wrapper = wrapt.partial(Object, self="self")
 
         o = wrapper()
 
@@ -2281,7 +2281,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
         self.assertEqual(o._kwargs, {})
         self.assertEqual(o._self, "self")
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.partial(Object)
 
         o = wrapper(self="self")
 
@@ -2307,7 +2307,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
             None,
         )
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object, _self="self")
+        wrapper = wrapt.partial(Object, _self="self")
 
         with self.assertRaises(TypeError) as e:
             o = wrapper()
@@ -2338,7 +2338,7 @@ class TestArgumentUnpackingPartial(unittest.TestCase):
             None,
         )
 
-        wrapper = wrapt.PartialCallableObjectProxy(Object)
+        wrapper = wrapt.partial(Object)
 
         with self.assertRaises(TypeError) as e:
             o = wrapper(_self="self")

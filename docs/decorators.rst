@@ -166,7 +166,10 @@ be enforced using the keyword only argument syntax.
 
 The ``wrapt.PartialCallableObjectProxy()`` object is an implementation of
 ``functools.partial()`` which uses wrapt and preserves introspection for the
-wrapped callable object.
+wrapped callable object. The example uses the name ``PartialCallableObjectProxy``
+here to make it clear that this is a specialized version of the standard library
+``functools.partial()`` function, but you can also use ``wrapt.partial()``,
+which is an alias to ``wrapt.PartialCallableObjectProxy()``.
 
 Processing Function Arguments
 -----------------------------

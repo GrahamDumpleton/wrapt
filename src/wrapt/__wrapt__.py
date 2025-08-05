@@ -33,3 +33,7 @@ if _use_extensions:
     except ImportError:
         # C extensions not available, using Python implementations
         pass
+
+# Provide a alias for partial().
+
+partial = PartialCallableObjectProxy
