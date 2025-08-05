@@ -332,10 +332,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
         self.__wrapped__ *= other
         return self
 
-    def __idiv__(self, other):
-        self.__wrapped__ = operator.idiv(self.__wrapped__, other)
-        return self
-
     def __itruediv__(self, other):
         self.__wrapped__ = operator.itruediv(self.__wrapped__, other)
         return self
