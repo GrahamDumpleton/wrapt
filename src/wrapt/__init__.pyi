@@ -132,9 +132,12 @@ if sys.version_info >= (3, 10):
 
     # PartialCallableObjectProxy
 
-    def PartialCallableObjectProxy(
-        func: Callable[..., Any], /, *args: Any, **kwargs: Any
-    ) -> Callable[..., Any]: ...
+    class PartialCallableObjectProxy:
+        def __init__(
+            self, func: Callable[..., Any], *args: Any, **kwargs: Any
+        ) -> None: ...
+        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
     def partial(
         func: Callable[..., Any], /, *args: Any, **kwargs: Any
     ) -> Callable[..., Any]: ...
