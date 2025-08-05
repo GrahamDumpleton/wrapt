@@ -2,7 +2,9 @@
 This example demonstrates the correct usage of the partial().
 
 It covers the following cases:
-- Correct usage of partial with a function.
+- Correct usage of partial with a function. (OKAY)
+- Using partial with no arguments. (FAIL)
+- Using partial with incorrect arguments. (FAIL)
 """
 
 from wrapt import PartialCallableObjectProxy, partial
