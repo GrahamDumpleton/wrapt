@@ -1,6 +1,6 @@
-import sys
-import operator
 import inspect
+import operator
+import sys
 
 
 def with_metaclass(meta, *bases):
@@ -247,9 +247,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
 
     def __mul__(self, other):
         return self.__wrapped__ * other
-
-    def __div__(self, other):
-        return operator.div(self.__wrapped__, other)
 
     def __truediv__(self, other):
         return operator.truediv(self.__wrapped__, other)
