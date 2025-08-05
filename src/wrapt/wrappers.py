@@ -287,9 +287,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     def __rmul__(self, other):
         return other * self.__wrapped__
 
-    def __rdiv__(self, other):
-        return operator.div(other, self.__wrapped__)
-
     def __rtruediv__(self, other):
         return operator.truediv(other, self.__wrapped__)
 
