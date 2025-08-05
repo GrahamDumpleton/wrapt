@@ -55,4 +55,5 @@ __all__ = (
     "wrap_object",
     "wrap_object_attribute",
     "WeakFunctionProxy",
+    "partial",
 )
