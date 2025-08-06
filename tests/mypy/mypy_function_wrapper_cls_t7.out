@@ -1,2 +1,2 @@
-tests/mypy/mypy_function_wrapper_cls_t7.py:26: error: Argument 2 to "FunctionWrapper" has incompatible type "Callable[[str, Any, tuple[Any, ...], dict[str, Any]], str]"; expected "Callable[[Callable[[int, str], str], Any, tuple[Any, ...], dict[str, Any]], Any]"  [arg-type]
+tests/mypy/mypy_function_wrapper_cls_t7.py:26: error: Argument 2 to "FunctionWrapper" has incompatible type "Callable[[str, Any, tuple[Any, ...], dict[str, Any]], str]"; expected "Callable[[Callable[[int, str], str], Any, tuple[Any, ...], dict[str, Any]], Any] | Callable[[Any, Callable[[int, str], str], Any, tuple[Any, ...], dict[str, Any]], Any] | Callable[[type[Any], Callable[[int, str], str], Any, tuple[Any, ...], dict[str, Any]], Any]"  [arg-type]
 Found 1 error in 1 file (checked 1 source file)

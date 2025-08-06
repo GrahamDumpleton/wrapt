@@ -14,6 +14,7 @@ It covers the following cases:
 
 import sys
 from typing import Any, Callable
+
 from wrapt import patch_function_wrapper
 
 
@@ -92,7 +93,7 @@ def none_for_enabled_argument(
     return wrapped(*args, **kwargs)
 
 
-@patch_function_wrapper(this_module, "function", enabled=123)
+@patch_function_wrapper(this_module, "function", enabled="string")
 def incorrect_type_for_enabled_argument(
     wrapped: Callable[..., Any],
     instance: Any,

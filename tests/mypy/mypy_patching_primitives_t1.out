@@ -2,7 +2,7 @@ tests/mypy/mypy_patching_primitives_t1.py:63: error: Too many values to unpack (
 tests/mypy/mypy_patching_primitives_t1.py:63: error: Argument 2 to "resolve_path" has incompatible type "None"; expected "str"  [arg-type]
 tests/mypy/mypy_patching_primitives_t1.py:65: error: Argument 2 to "apply_patch" has incompatible type "None"; expected "str"  [arg-type]
 tests/mypy/mypy_patching_primitives_t1.py:67: error: Argument 2 to "wrap_object" has incompatible type "None"; expected "str"  [arg-type]
-tests/mypy/mypy_patching_primitives_t1.py:67: error: Argument 3 to "wrap_object" has incompatible type "None"; expected "Callable[[Callable[..., Any], tuple[Any, ...], dict[str, Any]], Any]"  [arg-type]
+tests/mypy/mypy_patching_primitives_t1.py:67: error: Argument 3 to "wrap_object" has incompatible type "None"; expected "Callable[[Callable[..., Any], tuple[Any, ...], dict[str, Any]], type[ObjectProxy[Any]]] | type[ObjectProxy[Any]]"  [arg-type]
 tests/mypy/mypy_patching_primitives_t1.py:67: error: Argument 4 to "wrap_object" has incompatible type "None"; expected "tuple[Any, ...]"  [arg-type]
 tests/mypy/mypy_patching_primitives_t1.py:67: error: Argument 5 to "wrap_object" has incompatible type "None"; expected "dict[str, Any]"  [arg-type]
 Found 7 errors in 1 file (checked 1 source file)

@@ -1,15 +1,23 @@
 import sys
 
 if sys.version_info >= (3, 10):
+    from inspect import FullArgSpec
     from types import ModuleType, TracebackType
-    from typing import Any, Callable, Generic, ParamSpec, TypeVar, overload
+    from typing import Any, Callable, Generic, ParamSpec, Protocol, TypeVar, overload
 
-    # ObjectProxy
+    P = ParamSpec("P")
+    R = TypeVar("R", covariant=True)
 
     T = TypeVar("T", bound=Any)
 
+    class Boolean(Protocol):
+        def __bool__(self) -> bool: ...
+
+    # ObjectProxy
+
     class ObjectProxy(Generic[T]):
         __wrapped__: T
+        def __init__(self, wrapped: T) -> None: ...
 
     # CallableObjectProxy
 
@@ -40,69 +48,127 @@ if sys.version_info >= (3, 10):
 
     # FunctionWrapper
 
+    WrappedFunction = Callable[P, R]
+
+    WrapperFunction = (
+        # Function used as wrapper function.
+        Callable[[WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], Any]
+        # Hack to allow instance method as wrapper function.
+        | Callable[
+            [Any, WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], Any
+        ]
+        # Hack to allow class method as wrapper function.
+        | Callable[
+            [type[Any], WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]],
+            Any,
+        ]
+    )
+
+    class _FunctionWrapperBase(ObjectProxy[WrappedFunction[P, R]]):
+        _self_instance: Any
+        _self_wrapper: WrapperFunction[P, R]
+        _self_enabled: bool | Boolean | Callable[[], bool] | None
+        _self_binding: str
+        _self_parent: Any
+        _self_owner: Any
+
+    class BoundFunctionWrapper(_FunctionWrapperBase[P, R]):
+        def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
+        def __get__(
+            self, instance: Any, owner: type[Any] | None = None
+        ) -> "BoundFunctionWrapper[P, R]": ...
+
+    class FunctionWrapper(_FunctionWrapperBase[P, R]):
+        def __init__(
+            self,
+            wrapped: WrappedFunction[P, R],
+            wrapper: WrapperFunction[P, R],
+            enabled: bool | Boolean | Callable[[], bool] | None = None,
+        ) -> None: ...
+        def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
+        def __get__(
+            self, instance: Any, owner: type[Any] | None = None
+        ) -> BoundFunctionWrapper[P, R]: ...
+
+    # decorator()
+
     P1 = ParamSpec("P1")
     R1 = TypeVar("R1", covariant=True)
 
-    WrappedFunction = Callable[P1, R1]
-    WrapperFunction = Callable[
-        [WrappedFunction[P1, R1], Any, tuple[Any, ...], dict[str, Any]], Any
-    ]
+    P2 = ParamSpec("P2")
+    R2 = TypeVar("R2", covariant=True)
 
-    class BoundFunctionWrapper(Generic[P1, R1]):
-        def __call__(self, *args: P1.args, **kwargs: P1.kwargs) -> R1: ...
-        def __get__(
-            self, instance: Any, owner: type[Any] | None = None
-        ) -> "BoundFunctionWrapper[P1, R1]": ...
+    FW = TypeVar("FW", bound=FunctionWrapper[Any, Any])
 
-    class FunctionWrapper(Generic[P1, R1]):
-        __wrapped__: WrappedFunction[P1, R1]
-        def __init__(
-            self,
-            wrapped: WrappedFunction[P1, R1],
-            wrapper: WrapperFunction[P1, R1],
-            enabled: bool | Callable[[], bool] | None = None,
-        ) -> None: ...
-        def __call__(self, *args: P1.args, **kwargs: P1.kwargs) -> R1: ...
-        def __get__(
-            self, instance: Any, owner: type[Any] | None = None
-        ) -> BoundFunctionWrapper[P1, R1]: ...
+    class AdapterFactory:
+        def __call__(
+            self, wrapped: WrappedFunction[P1, R1]
+        ) -> WrappedFunction[P2, R2]: ...
+
+    def adapter_factory(wrapped: WrappedFunction[P1, R1]) -> AdapterFactory: ...
+
+    class FunctionDecorator(Generic[P1, R1, FW]):
+        def __call__(self, callable: Callable[P1, R1]) -> FW: ...
+
+    @overload
+    def decorator(
+        wrapper: type[T] | None = None,
+        /,
+        *,
+        enabled: bool | Boolean | Callable[[], bool] | None = None,
+        adapter: None = None,
+        proxy: type[FunctionWrapper[Any, Any]] = ...,
+    ) -> FunctionDecorator[P1, R1, FunctionWrapper[P1, R1]]: ...
+    @overload
+    def decorator(
+        wrapper: WrapperFunction[P1, R1] | None = None,
+        /,
+        *,
+        enabled: bool | Boolean | Callable[[], bool] | None = None,
+        adapter: None = None,
+        proxy: type[FunctionWrapper[P1, R1]] = ...,
+    ) -> FunctionDecorator[P1, R1, FunctionWrapper[P1, R1]]: ...
+    @overload
+    def decorator(
+        wrapper: WrapperFunction[P1, R1] | None = None,
+        /,
+        *,
+        enabled: bool | Boolean | Callable[[], bool] | None = None,
+        adapter: str | FullArgSpec | Callable[[Callable[P1, R1]], Callable[P2, R2]],
+        proxy: type[FunctionWrapper[P2, R2]] = ...,
+    ) -> FunctionDecorator[P2, R2, FunctionWrapper[Any, Any]]: ...
 
     # function_wrapper()
 
-    class FunctionDecorator(Generic[P1, R1]):
-        def __call__(self, callable: Callable[P1, R1]) -> FunctionWrapper[P1, R1]: ...
-
     def function_wrapper(
-        wrapper: WrapperFunction[P1, R1],
-    ) -> FunctionDecorator[P1, R1]: ...
+        wrapper: WrapperFunction[P, R],
+    ) -> FunctionDecorator[P, R, FunctionWrapper[P, R]]: ...
 
     # wrap_function_wrapper()
 
     def wrap_function_wrapper(
         target: ModuleType | type[Any] | Any | str,
         name: str,
-        wrapper: WrapperFunction[P1, R1],
-    ) -> FunctionWrapper[P1, R1]: ...
+        wrapper: WrapperFunction[P, R],
+    ) -> FunctionWrapper[P, R]: ...
 
     # patch_function_wrapper()
 
     class WrapperDecorator:
-        def __call__(
-            self, wrapper: WrapperFunction[P1, R1]
-        ) -> FunctionWrapper[P1, R1]: ...
+        def __call__(self, wrapper: WrapperFunction[P, R]) -> FunctionWrapper[P, R]: ...
 
     def patch_function_wrapper(
         target: ModuleType | type[Any] | Any | str,
         name: str,
-        enabled: bool | Callable[[], bool] | None = None,
+        enabled: bool | Boolean | Callable[[], bool] | None = None,
     ) -> WrapperDecorator: ...
 
     # transient_function_wrapper()
 
     class TransientDecorator:
         def __call__(
-            self, wrapper: WrapperFunction[P1, R1]
-        ) -> FunctionDecorator[P1, R1]: ...
+            self, wrapper: WrapperFunction[P, R]
+        ) -> FunctionDecorator[P, R, FunctionWrapper[P, R]]: ...
 
     def transient_function_wrapper(
         target: ModuleType | type[Any] | Any | str, name: str
@@ -125,13 +191,13 @@ if sys.version_info >= (3, 10):
     # wrap_object()
 
     WrapperFactory = Callable[
-        [Callable[..., Any], tuple[Any, ...], dict[str, Any]], Any
+        [Callable[..., Any], tuple[Any, ...], dict[str, Any]], type[ObjectProxy[Any]]
     ]
 
     def wrap_object(
         target: ModuleType | type[Any] | Any | str,
         name: str,
-        factory: WrapperFactory,
+        factory: WrapperFactory | type[ObjectProxy[Any]],
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
     ) -> Any: ...
@@ -141,7 +207,7 @@ if sys.version_info >= (3, 10):
     def wrap_object_attribute(
         target: ModuleType | type[Any] | Any | str,
         name: str,
-        factory: WrapperFactory,
+        factory: WrapperFactory | type[ObjectProxy[Any]],
         args: tuple[Any, ...] = (),
         kwargs: dict[str, Any] = {},
     ) -> Any: ...
@@ -170,7 +236,7 @@ if sys.version_info >= (3, 10):
     # synchronized()
 
     class SynchronizedObject:
-        def __call__(self, wrapped: Callable[P1, R1]) -> Callable[P1, R1]: ...
+        def __call__(self, wrapped: Callable[P, R]) -> Callable[P, R]: ...
         def __enter__(self) -> Any: ...
         def __exit__(
             self,
@@ -180,6 +246,6 @@ if sys.version_info >= (3, 10):
         ) -> bool | None: ...
 
     @overload
-    def synchronized(wrapped: Callable[P1, R1]) -> Callable[P1, R1]: ...
+    def synchronized(wrapped: Callable[P, R]) -> Callable[P, R]: ...
     @overload
     def synchronized(wrapped: Any) -> SynchronizedObject: ...
