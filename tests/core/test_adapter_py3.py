@@ -228,7 +228,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         class Class2:
             @_wrapper_2
             @classmethod
-            def function(self):
+            def function(cls):
                 pass
 
         instance2 = Class2()
