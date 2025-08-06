@@ -14,6 +14,12 @@ if sys.version_info >= (3, 10):
         [WrappedFunction[P1, R1], Any, tuple[Any, ...], dict[str, Any]], Any
     ]
 
+    class BoundFunctionWrapper(Generic[P1, R1]):
+        def __call__(self, *args: P1.args, **kwargs: P1.kwargs) -> R1: ...
+        def __get__(
+            self, instance: Any, owner: type[Any] | None = None
+        ) -> "BoundFunctionWrapper[P1, R1]": ...
+
     class FunctionWrapper(Generic[P1, R1]):
         def __init__(
             self,
@@ -22,6 +28,9 @@ if sys.version_info >= (3, 10):
             enabled: bool | Callable[[], bool] | None = None,
         ) -> None: ...
         def __call__(self, *args: P1.args, **kwargs: P1.kwargs) -> R1: ...
+        def __get__(
+            self, instance: Any, owner: type[Any] | None = None
+        ) -> BoundFunctionWrapper[P1, R1]: ...
 
     # function_wrapper()
 
