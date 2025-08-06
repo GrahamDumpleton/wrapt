@@ -50,19 +50,9 @@ if sys.version_info >= (3, 10):
 
     WrappedFunction = Callable[P, R]
 
-    WrapperFunction = (
-        # Function used as wrapper function.
-        Callable[[WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], Any]
-        # Hack to allow instance method as wrapper function.
-        | Callable[
-            [Any, WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], Any
-        ]
-        # Hack to allow class method as wrapper function.
-        | Callable[
-            [type[Any], WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]],
-            Any,
-        ]
-    )
+    WrapperFunction = Callable[
+        [WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], Any
+    ]
 
     class _FunctionWrapperBase(ObjectProxy[WrappedFunction[P, R]]):
         _self_instance: Any
