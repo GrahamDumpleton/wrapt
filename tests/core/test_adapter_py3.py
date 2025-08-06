@@ -1,7 +1,6 @@
 import inspect
-import unittest
 import types
-
+import unittest
 from typing import Iterable
 
 import wrapt
@@ -77,7 +76,7 @@ class TestArgumentSpecificationWithAnnotations(unittest.TestCase):
         # prototype of which was supplied via the dummy function.
 
         def _adapter(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
-            pass
+            return []
 
         function1a_argspec = inspect.getfullargspec(_adapter)
         function1d_argspec = inspect.getfullargspec(function1d)
@@ -96,7 +95,7 @@ class TestArgumentSpecificationWithAnnotations(unittest.TestCase):
         # prototype of which was supplied via the dummy function.
 
         def _adapter(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
-            pass
+            return []
 
         function1a_signature = str(inspect.signature(_adapter))
         function1d_signature = str(inspect.signature(function1d))
@@ -112,7 +111,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
     def test_dynamic_adapter_function(self):
         def _adapter1(arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
-            pass
+            return []
 
         argspec1 = inspect.getfullargspec(_adapter1)
 
@@ -149,7 +148,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
     def test_dynamic_adapter_instancemethod(self):
         def _adapter1(self, arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
-            pass
+            return []
 
         argspec1 = inspect.getfullargspec(_adapter1)
 
@@ -249,7 +248,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
         @_wrapper_1
         def _function_1(arg1, arg2) -> Iterable:
-            pass
+            return []
 
         argspec = inspect.getfullargspec(_function_1)
 
