@@ -21,6 +21,7 @@ if sys.version_info >= (3, 10):
         ) -> "BoundFunctionWrapper[P1, R1]": ...
 
     class FunctionWrapper(Generic[P1, R1]):
+        __wrapped__: WrappedFunction[P1, R1]
         def __init__(
             self,
             wrapped: WrappedFunction[P1, R1],
