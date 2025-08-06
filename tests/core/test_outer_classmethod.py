@@ -1,10 +1,10 @@
 import inspect
-import unittest
 import types
-
-import wrapt
+import unittest
 
 from compat import PYXY
+
+import wrapt
 
 DECORATORS_CODE = """
 import wrapt
@@ -20,7 +20,7 @@ exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class Class:
     @classmethod
-    def function(self, arg):
+    def function(cls, arg):
         """documentation"""
         return arg
 
@@ -31,7 +31,7 @@ Original = Class
 class Class:
     @classmethod
     @decorators.passthru_decorator
-    def function(self, arg):
+    def function(cls, arg):
         """documentation"""
         return arg
 

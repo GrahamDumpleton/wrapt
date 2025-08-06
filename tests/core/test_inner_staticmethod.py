@@ -1,6 +1,6 @@
 import inspect
-import unittest
 import types
+import unittest
 
 import wrapt
 
@@ -18,7 +18,7 @@ exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class Class:
     @staticmethod
-    def function(self, arg):
+    def function(arg):
         """documentation"""
         return arg
 
@@ -29,7 +29,7 @@ Original = Class
 class Class:
     @decorators.passthru_decorator
     @staticmethod
-    def function(self, arg):
+    def function(arg):
         """documentation"""
         return arg
 

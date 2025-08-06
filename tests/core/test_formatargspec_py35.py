@@ -27,7 +27,7 @@ class TestFormatargspec35(unittest.TestCase):
         self.assertFormatEqual(foo3, "(a, b, *args, **kwargs)")
 
         def foo4(a: int, b) -> list:
-            pass
+            return []
 
         formatted4 = "(a: int, b) -> list"
         self.assertFormatEqual(foo4, formatted4)

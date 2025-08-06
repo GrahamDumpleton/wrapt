@@ -1,6 +1,6 @@
 import inspect
-import unittest
 import types
+import unittest
 
 import wrapt
 
@@ -29,7 +29,7 @@ Original = Class
 class Class:
     @decorators.passthru_decorator
     @classmethod
-    def function(self, arg):
+    def function(cls, arg):
         """documentation"""
         return arg
 
