@@ -14,6 +14,28 @@ if sys.version_info >= (3, 10):
     class CallableObjectProxy(ObjectProxy[T]):
         def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
+    # PartialCallableObjectProxy
+
+    class PartialCallableObjectProxy:
+        def __init__(
+            self, func: Callable[..., Any], *args: Any, **kwargs: Any
+        ) -> None: ...
+        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def partial(
+        func: Callable[..., Any], /, *args: Any, **kwargs: Any
+    ) -> Callable[..., Any]: ...
+
+    # WeakFunctionProxy
+
+    class WeakFunctionProxy:
+        def __init__(
+            self,
+            wrapped: Callable[..., Any],
+            callback: Callable[..., Any] | None = None,
+        ) -> None: ...
+        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
     # FunctionWrapper
 
     P1 = ParamSpec("P1")
@@ -149,25 +171,3 @@ if sys.version_info >= (3, 10):
     def synchronized(wrapped: Callable[P1, R1]) -> Callable[P1, R1]: ...
     @overload
     def synchronized(wrapped: Any) -> SynchronizedObject: ...
-
-    # PartialCallableObjectProxy
-
-    class PartialCallableObjectProxy:
-        def __init__(
-            self, func: Callable[..., Any], *args: Any, **kwargs: Any
-        ) -> None: ...
-        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
-
-    def partial(
-        func: Callable[..., Any], /, *args: Any, **kwargs: Any
-    ) -> Callable[..., Any]: ...
-
-    # WeakFunctionProxy
-
-    class WeakFunctionProxy:
-        def __init__(
-            self,
-            wrapped: Callable[..., Any],
-            callback: Callable[..., Any] | None = None,
-        ) -> None: ...
-        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
