@@ -130,7 +130,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         # function which returns int rather than Iterable.
 
         def _adapter2(arg1, arg2, arg3=None, *args, **kwargs) -> int:
-            pass
+            return 0
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
@@ -170,7 +170,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         # annotations which reference a non builtin type.
 
         def _adapter2(self, arg1, arg2, arg3=None, *args, **kwargs) -> int:
-            pass
+            return 0
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
@@ -192,7 +192,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
 
     def test_dynamic_adapter_classmethod(self):
         def _adapter1(cls, arg1, arg2, arg3=None, *args, **kwargs) -> Iterable:
-            pass
+            return []
 
         argspec1 = inspect.getfullargspec(_adapter1)
 
@@ -215,7 +215,7 @@ class TestDynamicAdapterWithAnnotations(unittest.TestCase):
         # annotations which reference a non builtin type.
 
         def _adapter2(cls, arg1, arg2, arg3=None, *args, **kwargs) -> int:
-            pass
+            return 0
 
         argspec2 = inspect.getfullargspec(_adapter2)
 
