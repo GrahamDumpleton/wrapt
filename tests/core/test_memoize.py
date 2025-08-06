@@ -1,6 +1,6 @@
-import unittest
-import threading
 import inspect
+import threading
+import unittest
 
 import wrapt
 
@@ -21,8 +21,9 @@ def memoize(wrapped, instance, args, kwargs):
     # Now see if entry is in the cache and if it isn't then call
     # the wrapped function to generate it.
 
+    key = (args, frozenset(kwargs.items()))
+
     try:
-        key = (args, frozenset(kwargs.items()))
         return cache[key]
 
     except KeyError:
