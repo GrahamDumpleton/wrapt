@@ -144,7 +144,7 @@ adapter_factory = DelegatedAdapterFactory
 # original wrapped function.
 
 
-def decorator(wrapper=None, enabled=None, adapter=None, proxy=FunctionWrapper):
+def decorator(wrapper=None, /, *, enabled=None, adapter=None, proxy=FunctionWrapper):
     # The decorator should be supplied with a single positional argument
     # which is the wrapper function to be used to implement the
     # decorator. This may be preceded by a step whereby the keyword

@@ -51,6 +51,13 @@ these reasons a major version bump is being made.
   no longer available. If you need these functions, you should use the
   `inspect` module directly.
 
+* The `enabled`, `adapter` and `proxy` arguments to the `@decorator` decorator
+  had to be keyword parameters, and the initial `wrapped` argument had to be
+  positional only. Because though Python 2.X was still being supported it was
+  not possible to use appropriate syntax to mark them as such. These arguments
+  are now marked as positional and keyword only parameters in the function
+  signature as appropriate.
+
 Version 1.17.2
 --------------
 
