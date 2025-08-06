@@ -4,6 +4,16 @@ if sys.version_info >= (3, 10):
     from types import ModuleType, TracebackType
     from typing import Any, Callable, Generic, ParamSpec, TypeVar, overload
 
+    # ObjectProxy
+
+    T = TypeVar("T", bound=Any)
+
+    class ObjectProxy(Generic[T]):
+        __wrapped__: T
+
+    class CallableObjectProxy(ObjectProxy[T]):
+        def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
     # FunctionWrapper
 
     P1 = ParamSpec("P1")
