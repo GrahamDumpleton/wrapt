@@ -136,6 +136,16 @@ if sys.version_info >= (3, 10):
         kwargs: dict[str, Any],
     ) -> Any: ...
 
+    # wrap_object_attribute()
+
+    def wrap_object_attribute(
+        target: ModuleType | type[Any] | Any | str,
+        name: str,
+        factory: WrapperFactory,
+        args: tuple[Any, ...] = (),
+        kwargs: dict[str, Any] = {},
+    ) -> Any: ...
+
     # register_post_import_hook()
 
     def register_post_import_hook(

@@ -79,7 +79,8 @@ def wrap_object(target, name, factory, args=(), kwargs={}):
     should accept the original object and may accept additional positional and
     keyword arguments which will be set by unpacking input arguments using
     `*args` and `**kwargs` calling conventions. The factory function should
-    return a new object that will replace the original object."""
+    return a new object that will replace the original object.
+    """
 
     (parent, attribute, original) = resolve_path(target, name)
     wrapper = factory(original, *args, **kwargs)
@@ -115,6 +116,21 @@ class AttributeWrapper:
 
 
 def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
+    """
+    Wraps an object which is the attribute of a class instance with a wrapper
+    object created by the `factory` function. It does this by patching the
+    class, not the instance, with a descriptor that intercepts access to the
+    instance attribute. The `module` can be a module, class, or instance of a
+    class. In the special case of `module` being a string, it is assumed to be
+    the name of a module, with the module being imported if necessary and then
+    used as the target object. The `name` is a string representing the dotted
+    path to the attribute. The `factory` function should accept the original
+    object and may accept additional positional and keyword arguments which will
+    be set by unpacking input arguments using `*args` and `**kwargs` calling
+    conventions. The factory function should return a new object that will
+    replace the original object.
+    """
+
     path, attribute = name.rsplit(".", 1)
     parent = resolve_path(module, path)[2]
     wrapper = AttributeWrapper(attribute, factory, args, kwargs)
