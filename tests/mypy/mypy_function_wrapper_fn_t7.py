@@ -95,8 +95,6 @@ class ExampleClass:
 example_instance1 = ExampleClass()
 example_instance2 = ExampleClass(0)
 
-from typing import reveal_type
-
 example_instance2.instance_method(1)
 example_instance2.class_method(1)
 example_instance2.static_method(1)
