@@ -18,7 +18,7 @@ exec(DECORATORS_CODE, decorators.__dict__, decorators.__dict__)
 
 class Class:
     @classmethod
-    def function(self, arg):
+    def function(cls, arg):
         """documentation"""
         return arg
 
