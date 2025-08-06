@@ -11,6 +11,8 @@ if sys.version_info >= (3, 10):
     class ObjectProxy(Generic[T]):
         __wrapped__: T
 
+    # CallableObjectProxy
+
     class CallableObjectProxy(ObjectProxy[T]):
         def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
