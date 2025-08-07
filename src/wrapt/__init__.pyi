@@ -106,6 +106,23 @@ if sys.version_info >= (3, 10):
     # decorator()
 
     class FunctionDecorator(Generic[P, R]):
+        # @overload
+        # def __call__(
+        #     self, callable: Callable[P, R]
+        # ) -> FunctionWrapper[P, R]: ...
+        # @overload
+        # def __call__(
+        #     self, callable: Callable[Concatenate[T, P], R]
+        # ) -> FunctionWrapper[P, R]: ...
+        # @overload
+        # def __call__(
+        #     self, callable: Callable[Concatenate[type[T], P], R]
+        # ) -> FunctionWrapper[P, R]: ...
+        # @overload
+        # def __call__(
+        #     self, callable: Callable[[type[T]], R]
+        # ) -> FunctionWrapper[Any, R]: ...
+
         def __call__(self, callable: Callable[..., R]) -> FunctionWrapper[P, R]: ...
 
     class PartialFunctionDecorator:
@@ -269,6 +286,6 @@ if sys.version_info >= (3, 10):
         ) -> bool | None: ...
 
     @overload
-    def synchronized(wrapped: Callable[P, R]) -> Callable[P, R]: ...  # type: ignore
+    def synchronized(wrapped: Callable[P, R]) -> Callable[P, R]: ...
     @overload
     def synchronized(wrapped: Any) -> SynchronizedObject: ...
