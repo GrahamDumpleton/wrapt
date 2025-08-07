@@ -94,17 +94,17 @@ if sys.version_info >= (3, 10):
             self, instance: Any, owner: type[Any] | None = None
         ) -> BoundFunctionWrapper[P, R]: ...
 
-    # decorator()
+    # AdapterFactory/adapter_factory()
 
     class AdapterFactory:
-        def __call__(
-            self, wrapped: WrappedFunction[P1, R1]
-        ) -> WrappedFunction[P2, R2]: ...
+        def __call__(self, wrapped: WrappedFunction[P, R]) -> WrappedFunction[P, R]: ...
 
-    def adapter_factory(wrapped: WrappedFunction[P1, R1]) -> AdapterFactory: ...
+    def adapter_factory(wrapped: WrappedFunction[P, R]) -> AdapterFactory: ...
 
-    class FunctionDecorator(Generic[P1, R1]):
-        def __call__(self, callable: Callable[..., R1]) -> FunctionWrapper[P1, R1]: ...
+    # decorator()
+
+    class FunctionDecorator(Generic[P, R]):
+        def __call__(self, callable: Callable[..., R]) -> FunctionWrapper[P, R]: ...
 
     @overload
     def decorator(
