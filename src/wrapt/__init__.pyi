@@ -96,86 +96,61 @@ if sys.version_info >= (3, 10):
 
     # AdapterFactory/adapter_factory()
 
-    class AdapterFactory:
-        def __call__(self, wrapped: WrappedFunction[P, R]) -> WrappedFunction[P, R]: ...
+    class AdapterFactory(Protocol):
+        def __call__(
+            self, wrapped: Callable[..., Any]
+        ) -> str | FullArgSpec | Callable[..., Any]: ...
 
-    def adapter_factory(wrapped: WrappedFunction[P, R]) -> AdapterFactory: ...
+    def adapter_factory(wrapped: Callable[..., Any]) -> AdapterFactory: ...
 
     # decorator()
 
     class FunctionDecorator(Generic[P, R]):
         def __call__(self, callable: Callable[..., R]) -> FunctionWrapper[P, R]: ...
 
-    @overload
-    def decorator(
-        wrapper: type[T] | None = None,
-        /,
-        *,
-        enabled: bool | Boolean | Callable[[], bool] | None = None,
-        adapter: None = None,
-        proxy: type[FunctionWrapper[Any, Any]] = ...,
-    ) -> FunctionDecorator[Any, Any]: ...
-    @overload
-    def decorator(
-        wrapper: GenericCallableWrapperFunction[P, R] | None = None,
-        /,
-        *,
-        enabled: bool | Boolean | Callable[[], bool] | None = None,
-        adapter: None = None,
-        proxy: type[FunctionWrapper[P, R]] = ...,
-    ) -> FunctionDecorator[P, R]: ...
-    @overload
-    def decorator(
-        wrapper: InstanceMethodWrapperFunction[P, R] | None = None,
-        /,
-        *,
-        enabled: bool | Boolean | Callable[[], bool] | None = None,
-        adapter: None = None,
-        proxy: type[FunctionWrapper[P, R]] = ...,
-    ) -> FunctionDecorator[P, R]: ...
-    @overload
-    def decorator(
-        wrapper: ClassMethodWrapperFunction[P, R] | None = None,
-        /,
-        *,
-        enabled: bool | Boolean | Callable[[], bool] | None = None,
-        adapter: None = None,
-        proxy: type[FunctionWrapper[P, R]] = ...,
-    ) -> FunctionDecorator[P, R]: ...
+    class PartialFunctionDecorator:
+        @overload
+        def __call__(
+            self, wrapper: GenericCallableWrapperFunction[P, R], /
+        ) -> FunctionDecorator[P, R]: ...
+        @overload
+        def __call__(
+            self, wrapper: InstanceMethodWrapperFunction[P, R], /
+        ) -> FunctionDecorator[P, R]: ...
+        @overload
+        def __call__(
+            self, wrapper: ClassMethodWrapperFunction[P, R], /
+        ) -> FunctionDecorator[P, R]: ...
 
-    P1 = ParamSpec("P1")
-    R1 = TypeVar("R1", covariant=True)
+    # ... Decorator applied to class type.
 
-    P2 = ParamSpec("P2")
-    R2 = TypeVar("R2", covariant=True)
+    @overload
+    def decorator(wrapper: type[T], /) -> FunctionDecorator[Any, Any]: ...
+
+    # ... Decorator applied to function or method.
 
     @overload
     def decorator(
-        wrapper: GenericCallableWrapperFunction[P1, R1] | None = None,
-        /,
-        *,
-        enabled: bool | Boolean | Callable[[], bool] | None = None,
-        adapter: str | FullArgSpec | Callable[[Callable[P1, R1]], Callable[P2, R2]],
-        proxy: type[FunctionWrapper[P2, R2]] = ...,
-    ) -> FunctionDecorator[P2, R2]: ...
+        wrapper: GenericCallableWrapperFunction[P, R], /
+    ) -> FunctionDecorator[P, R]: ...
     @overload
     def decorator(
-        wrapper: InstanceMethodWrapperFunction[P1, R1] | None = None,
-        /,
-        *,
-        enabled: bool | Boolean | Callable[[], bool] | None = None,
-        adapter: str | FullArgSpec | Callable[[Callable[P1, R1]], Callable[P2, R2]],
-        proxy: type[FunctionWrapper[P2, R2]] = ...,
-    ) -> FunctionDecorator[P2, R2]: ...
+        wrapper: InstanceMethodWrapperFunction[P, R], /
+    ) -> FunctionDecorator[P, R]: ...
     @overload
     def decorator(
-        wrapper: ClassMethodWrapperFunction[P1, R1] | None = None,
-        /,
+        wrapper: ClassMethodWrapperFunction[P, R], /
+    ) -> FunctionDecorator[P, R]: ...
+
+    # ... Positional arguments.
+
+    @overload
+    def decorator(
         *,
         enabled: bool | Boolean | Callable[[], bool] | None = None,
-        adapter: str | FullArgSpec | Callable[[Callable[P1, R1]], Callable[P2, R2]],
-        proxy: type[FunctionWrapper[P2, R2]] = ...,
-    ) -> FunctionDecorator[P2, R2]: ...
+        adapter: str | FullArgSpec | AdapterFactory | Callable[..., Any] | None = None,
+        proxy: type[FunctionWrapper[Any, Any]] | None = None,
+    ) -> PartialFunctionDecorator: ...
 
     # function_wrapper()
 
