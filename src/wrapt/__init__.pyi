@@ -123,7 +123,7 @@ if sys.version_info >= (3, 10):
     ) -> FunctionDecorator[Any, Any]: ...
     @overload
     def decorator(
-        wrapper: WrapperFunction[P1, R1] | None = None,
+        wrapper: GenericCallableWrapperFunction[P1, R1] | None = None,
         /,
         *,
         enabled: bool | Boolean | Callable[[], bool] | None = None,
@@ -132,7 +132,43 @@ if sys.version_info >= (3, 10):
     ) -> FunctionDecorator[P1, R1]: ...
     @overload
     def decorator(
-        wrapper: WrapperFunction[P1, R1] | None = None,
+        wrapper: InstanceMethodWrapperFunction[P1, R1] | None = None,
+        /,
+        *,
+        enabled: bool | Boolean | Callable[[], bool] | None = None,
+        adapter: None = None,
+        proxy: type[FunctionWrapper[P1, R1]] = ...,
+    ) -> FunctionDecorator[P1, R1]: ...
+    @overload
+    def decorator(
+        wrapper: ClassMethodWrapperFunction[P1, R1] | None = None,
+        /,
+        *,
+        enabled: bool | Boolean | Callable[[], bool] | None = None,
+        adapter: None = None,
+        proxy: type[FunctionWrapper[P1, R1]] = ...,
+    ) -> FunctionDecorator[P1, R1]: ...
+    @overload
+    def decorator(
+        wrapper: GenericCallableWrapperFunction[P1, R1] | None = None,
+        /,
+        *,
+        enabled: bool | Boolean | Callable[[], bool] | None = None,
+        adapter: str | FullArgSpec | Callable[[Callable[P1, R1]], Callable[P2, R2]],
+        proxy: type[FunctionWrapper[P2, R2]] = ...,
+    ) -> FunctionDecorator[P2, R2]: ...
+    @overload
+    def decorator(
+        wrapper: InstanceMethodWrapperFunction[P1, R1] | None = None,
+        /,
+        *,
+        enabled: bool | Boolean | Callable[[], bool] | None = None,
+        adapter: str | FullArgSpec | Callable[[Callable[P1, R1]], Callable[P2, R2]],
+        proxy: type[FunctionWrapper[P2, R2]] = ...,
+    ) -> FunctionDecorator[P2, R2]: ...
+    @overload
+    def decorator(
+        wrapper: ClassMethodWrapperFunction[P1, R1] | None = None,
         /,
         *,
         enabled: bool | Boolean | Callable[[], bool] | None = None,
