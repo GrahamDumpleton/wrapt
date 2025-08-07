@@ -71,6 +71,7 @@ wrapped_method = FunctionWrapper(ExampleClass.instance_method, standard_wrapper)
 wrapped_classmethod = FunctionWrapper(ExampleClass.class_method, standard_wrapper)
 wrapped_staticmethod = FunctionWrapper(ExampleClass.static_method, standard_wrapper)
 
+
 wrapped_method_instance = FunctionWrapper(
     ExampleClass(0).instance_method, standard_wrapper
 )

@@ -1,10 +1,5 @@
 """
 This example demonstrates the usage of synchronized locking.
-
-It covers the following cases:
-- Normal use cases. (OKAY)
-- Wrong number of arguments to synchronized(). (FAIL)
-- Call synchronized function with wrong arguments. (FAIL)
 """
 
 from threading import Lock
@@ -93,11 +88,13 @@ def synchronized_object_function() -> None:
     return
 
 
+# Wrong number of arguments to synchronized(). (FAIL)
 def synchronized_wrong_args() -> None:
     with synchronized():
         pass
     return
 
 
+# Call synchronized function with wrong arguments. (FAIL)
 def function_with_wrong_args() -> None:
     synchronized_function(1, 2, 3)

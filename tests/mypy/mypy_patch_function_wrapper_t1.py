@@ -1,15 +1,5 @@
 """
 This example demonstrates the usage of the patch_wrapper_function() function.
-
-It covers the following cases:
-- Patch function of module directly. (OKAY)
-- Patch function of module by module __name__. (OKAY)
-- Incorrect type for attribute path. (FAIL)
-- Incorrect prototype for wrapper function. (FAIL)
-- Boolean for enabled argument. (OKAY)
-- Callable for enabled argument. (OKAY)
-- None for enabled argument. (OKAY)
-- Incorrect type for enabled argument. (FAIL)
 """
 
 import sys
@@ -46,6 +36,7 @@ def patch_module_using_name(
     return wrapped(*args, **kwargs)
 
 
+# Incorrect type for attribute path. (FAIL)
 @patch_function_wrapper(this_module, None)
 def incorrect_type_for_attribute_path(
     wrapped: Callable[..., Any],
@@ -56,6 +47,7 @@ def incorrect_type_for_attribute_path(
     return wrapped(*args, **kwargs)
 
 
+# Incorrect prototype for wrapper function. (FAIL)
 @patch_function_wrapper(this_module, "function")
 def incorrect_prototype_for_wrapper(
     wrapped: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]
@@ -93,6 +85,7 @@ def none_for_enabled_argument(
     return wrapped(*args, **kwargs)
 
 
+# Incorrect type for enabled argument. (FAIL)
 @patch_function_wrapper(this_module, "function", enabled="string")
 def incorrect_type_for_enabled_argument(
     wrapped: Callable[..., Any],

@@ -1,13 +1,6 @@
 """
 This example demonstrates the incorrect usage of the wrap_function_wrapper()
 function.
-
-It covers the following cases:
-- A wrapper function with incorrect number of arguments
-
-Target for wrapping is this module, referenced by name.
-
-Should fail mypy type checking for incorrect cases.
 """
 
 from typing import Any, Callable
@@ -24,4 +17,5 @@ def wrapper(wrapped: Any) -> Any:
     return
 
 
+# A wrapper function with incorrect number of arguments. (FAIL)
 wrapped_function = wrap_function_wrapper(__name__, "function", wrapper)

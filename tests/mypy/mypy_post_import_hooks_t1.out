@@ -1,6 +1,5 @@
-tests/mypy/mypy_post_import_hooks_t1.py:48: error: Argument 1 to "register_post_import_hook" has incompatible type "Callable[[], None]"; expected "Callable[[Module], Any] | str"  [arg-type]
-tests/mypy/mypy_post_import_hooks_t1.py:51: error: Argument 1 to "__call__" of "ImportHookDecorator" has incompatible type "Callable[[], None]"; expected "Callable[[Module], Any]"  [arg-type]
-tests/mypy/mypy_post_import_hooks_t1.py:56: error: Argument 1 to "discover_post_import_hooks" has incompatible type "None"; expected "str"  [arg-type]
-tests/mypy/mypy_post_import_hooks_t1.py:58: error: Argument 1 to "notify_module_loaded" has incompatible type "None"; expected Module  [arg-type]
-tests/mypy/mypy_post_import_hooks_t1.py:60: error: Argument 1 to "when_imported" has incompatible type "None"; expected "str"  [arg-type]
-Found 5 errors in 1 file (checked 1 source file)
+tests/mypy/mypy_post_import_hooks_t1.py:42: error: Argument 1 to "register_post_import_hook" has incompatible type "Callable[[], None]"; expected "Callable[[Module], Any] | str"  [arg-type]
+tests/mypy/mypy_post_import_hooks_t1.py:51: error: Argument 1 to "discover_post_import_hooks" has incompatible type "None"; expected "str"  [arg-type]
+tests/mypy/mypy_post_import_hooks_t1.py:54: error: Argument 1 to "notify_module_loaded" has incompatible type "None"; expected Module  [arg-type]
+tests/mypy/mypy_post_import_hooks_t1.py:57: error: Argument 1 to "when_imported" has incompatible type "None"; expected "str"  [arg-type]
+Found 4 errors in 1 file (checked 1 source file)

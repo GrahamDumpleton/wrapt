@@ -1,10 +1,5 @@
 """
 This example demonstrates the correct usage of the WeakFunctionProxy.
-
-It covers the following cases:
-- Correct usage of partial with a function. (OKAY)
-- Using partial with no arguments. (FAIL)
-- Using partial with incorrect arguments. (FAIL)
 """
 
 import weakref
@@ -31,6 +26,8 @@ proxy = WeakFunctionProxy(function, callback=callback)
 
 proxy(42)
 
+# Using partial with no arguments. (FAIL)
 proxy_no_args = WeakFunctionProxy()
 
+# Using partial with incorrect arguments. (FAIL)
 proxy_incorrect_args = WeakFunctionProxy(None)

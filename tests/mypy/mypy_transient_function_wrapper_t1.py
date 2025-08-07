@@ -1,15 +1,10 @@
 """
 This example demonstrates the usage of the transient_wrapper_function() function.
-
-It covers the following cases:
-- Patch function of module directly. (OKAY)
-- Patch function of module by module __name__. (OKAY)
-- Incorrect type for attribute path. (FAIL)
-- Incorrect prototype for wrapper function. (FAIL)
 """
 
 import sys
 from typing import Any, Callable
+
 from wrapt import transient_function_wrapper
 
 
@@ -53,6 +48,7 @@ def patch_module_by_name_fn(x: int, y: str = "default") -> str:
     return f"{x}: {y}"
 
 
+# Incorrect type for attribute path. (FAIL)
 @transient_function_wrapper(this_module, None)
 def incorrect_type_for_attribute_path(
     wrapped: Callable[..., Any],
@@ -63,6 +59,7 @@ def incorrect_type_for_attribute_path(
     return wrapped(*args, **kwargs)
 
 
+# Incorrect prototype for wrapper function. (FAIL)
 @transient_function_wrapper(this_module, "function")
 def incorrect_prototype_for_wrapper(
     wrapped: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]

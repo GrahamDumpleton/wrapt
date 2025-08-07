@@ -1,12 +1,5 @@
 """
 This example demonstrates the usage of post import hooks.
-
-It covers the following cases:
-- Normal use cases. (OKAY)
-- Hook function with incorrect prototype. (FAIL)
-- Discover post import hooks with incorrect args. (FAIL)
-- Notify module called with incorrect args. (FAIL)
-- When import decorator with incorrect prototype. (FAIL)
 """
 
 import sys
@@ -45,16 +38,20 @@ def callback_correct_prototype_1() -> None:
     return
 
 
+# Hook function with incorrect prototype. (FAIL)
 register_post_import_hook(callback_correct_prototype_1, "this")
 
 
 @when_imported("this")
-def callback_correct_prototype_2() -> None:
+def callback_correct_prototype_2(module: ModuleType) -> None:
     return
 
 
+# Discover post import hooks with incorrect args. (FAIL)
 discover_post_import_hooks(None)
 
+# Notify module called with incorrect args. (FAIL)
 notify_module_loaded(None)
 
+# When import decorator with incorrect prototype. (FAIL)
 when_imported(None)

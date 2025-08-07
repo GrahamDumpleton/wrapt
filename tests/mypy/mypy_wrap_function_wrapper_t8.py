@@ -1,13 +1,6 @@
 """
 This example demonstrates the incorrect usage of the wrap_function_wrapper()
 function.
-
-It covers the following cases:
-- No string value for attribute path name
-
-Target for wrapping is this module, referenced by name.
-
-Should fail mypy type checking for incorrect cases.
 """
 
 from typing import Any, Callable
@@ -29,4 +22,5 @@ def wrapper(
     return wrapped(*args, **kwargs)
 
 
+# No string value for attribute path name. (FAIL)
 wrapped_function = wrap_function_wrapper(__name__, None, wrapper)

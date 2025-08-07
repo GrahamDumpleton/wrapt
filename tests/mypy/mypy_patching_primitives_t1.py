@@ -1,12 +1,5 @@
 """
 This example demonstrates the usage of primitive functions for object patching.
-
-It covers the following cases:
-- Normal use cases, target module directly. (OKAY)
-- Normal use cases, target module by name. (OKAY)
-- Wrong args/result for `resolve_path()`. (FAIL)
-- Wrong attribute path for `apply_patch()`. (FAIL)
-- Wrong args for `wrap_object()`. (FAIL)
 """
 
 import sys
@@ -60,8 +53,11 @@ wrapper_3b = wrap_object(
     this_module, "function", factory_instance, (1, 2), {"a": 3, "b": 4}
 )
 
+# Wrong args/result for `resolve_path()`. (FAIL)
 (dummy_1a, dummy_2a) = resolve_path(this_module, None)
 
+# Wrong attribute path for `apply_patch()`. (FAIL)
 apply_patch(parent_1a, None, wrapper_1a)
 
+# Wrong args for `wrap_object()`. (FAIL)
 wrap_object(this_module, None, None, None, None)
