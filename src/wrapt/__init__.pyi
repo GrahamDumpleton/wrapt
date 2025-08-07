@@ -50,9 +50,23 @@ if sys.version_info >= (3, 10):
 
     WrappedFunction = Callable[P, R]
 
-    WrapperFunction = Callable[
-        [WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], Any
+    GenericCallableWrapperFunction = Callable[
+        [WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], R
     ]
+
+    InstanceMethodWrapperFunction = Callable[
+        [Any, WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], R
+    ]
+
+    ClassMethodWrapperFunction = Callable[
+        [type[Any], WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], R
+    ]
+
+    WrapperFunction = (
+        GenericCallableWrapperFunction[P, R]
+        | InstanceMethodWrapperFunction[P, R]
+        | ClassMethodWrapperFunction[P, R]
+    )
 
     class _FunctionWrapperBase(ObjectProxy[WrappedFunction[P, R]]):
         _self_instance: Any
@@ -88,8 +102,6 @@ if sys.version_info >= (3, 10):
     P2 = ParamSpec("P2")
     R2 = TypeVar("R2", covariant=True)
 
-    FW = TypeVar("FW", bound=FunctionWrapper[Any, Any])
-
     class AdapterFactory:
         def __call__(
             self, wrapped: WrappedFunction[P1, R1]
@@ -97,8 +109,8 @@ if sys.version_info >= (3, 10):
 
     def adapter_factory(wrapped: WrappedFunction[P1, R1]) -> AdapterFactory: ...
 
-    class FunctionDecorator(Generic[P1, R1, FW]):
-        def __call__(self, callable: Callable[P1, R1]) -> FW: ...
+    class FunctionDecorator(Generic[P1, R1]):
+        def __call__(self, callable: Callable[..., R1]) -> FunctionWrapper[P1, R1]: ...
 
     @overload
     def decorator(
@@ -108,7 +120,7 @@ if sys.version_info >= (3, 10):
         enabled: bool | Boolean | Callable[[], bool] | None = None,
         adapter: None = None,
         proxy: type[FunctionWrapper[Any, Any]] = ...,
-    ) -> FunctionDecorator[P1, R1, FunctionWrapper[P1, R1]]: ...
+    ) -> FunctionDecorator[Any, Any]: ...
     @overload
     def decorator(
         wrapper: WrapperFunction[P1, R1] | None = None,
@@ -117,7 +129,7 @@ if sys.version_info >= (3, 10):
         enabled: bool | Boolean | Callable[[], bool] | None = None,
         adapter: None = None,
         proxy: type[FunctionWrapper[P1, R1]] = ...,
-    ) -> FunctionDecorator[P1, R1, FunctionWrapper[P1, R1]]: ...
+    ) -> FunctionDecorator[P1, R1]: ...
     @overload
     def decorator(
         wrapper: WrapperFunction[P1, R1] | None = None,
@@ -126,13 +138,22 @@ if sys.version_info >= (3, 10):
         enabled: bool | Boolean | Callable[[], bool] | None = None,
         adapter: str | FullArgSpec | Callable[[Callable[P1, R1]], Callable[P2, R2]],
         proxy: type[FunctionWrapper[P2, R2]] = ...,
-    ) -> FunctionDecorator[P2, R2, FunctionWrapper[Any, Any]]: ...
+    ) -> FunctionDecorator[P2, R2]: ...
 
     # function_wrapper()
 
+    @overload
     def function_wrapper(
-        wrapper: WrapperFunction[P, R],
-    ) -> FunctionDecorator[P, R, FunctionWrapper[P, R]]: ...
+        wrapper: GenericCallableWrapperFunction[P, R],
+    ) -> FunctionDecorator[P, R]: ...
+    @overload
+    def function_wrapper(
+        wrapper: InstanceMethodWrapperFunction[P, R],
+    ) -> FunctionDecorator[P, R]: ...
+    @overload
+    def function_wrapper(
+        wrapper: ClassMethodWrapperFunction[P, R],
+    ) -> FunctionDecorator[P, R]: ...
 
     # wrap_function_wrapper()
 
@@ -158,7 +179,7 @@ if sys.version_info >= (3, 10):
     class TransientDecorator:
         def __call__(
             self, wrapper: WrapperFunction[P, R]
-        ) -> FunctionDecorator[P, R, FunctionWrapper[P, R]]: ...
+        ) -> FunctionDecorator[P, R]: ...
 
     def transient_function_wrapper(
         target: ModuleType | type[Any] | Any | str, name: str
@@ -236,6 +257,6 @@ if sys.version_info >= (3, 10):
         ) -> bool | None: ...
 
     @overload
-    def synchronized(wrapped: Callable[P, R]) -> Callable[P, R]: ...
+    def synchronized(wrapped: Callable[P, R]) -> Callable[P, R]: ...  # type: ignore
     @overload
     def synchronized(wrapped: Any) -> SynchronizedObject: ...
