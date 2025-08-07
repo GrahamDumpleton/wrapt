@@ -1,3 +1,4 @@
 tests/mypy/mypy_function_wrapper_fn_t6.py:15: error: Argument 1 to "function_wrapper" has incompatible type "Callable[[str, Any, tuple[Any, ...], dict[str, Any]], str]"; expected "Callable[[Callable[[VarArg(Never), KwArg(Never)], str], Any, tuple[Any, ...], dict[str, Any]], str]"  [arg-type]
-tests/mypy/mypy_function_wrapper_fn_t6.py:22: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "type[function]"; expected "Callable[[VarArg(Never), KwArg(Never)], str]"  [arg-type]
-Found 2 errors in 1 file (checked 1 source file)
+tests/mypy/mypy_function_wrapper_fn_t6.py:22: error: Need type annotation for "wrapped_function"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t6.py:22: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "type[function]"; expected "Callable[..., str]"  [arg-type]
+Found 3 errors in 1 file (checked 1 source file)
