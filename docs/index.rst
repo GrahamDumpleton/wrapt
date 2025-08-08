@@ -51,6 +51,7 @@ Documentation
    quick-start
    decorators
    wrappers
+   typing
    examples
    benchmarks
    changes
