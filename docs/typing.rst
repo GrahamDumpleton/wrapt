@@ -122,7 +122,7 @@ call will work fine at runtime.
 
     result1: int = add(2, 3)
 
-    # Error: type checkers doesn't recognise default arguments.
+    # Error: type checker doesn't recognise default arguments.
 
     result2: int = add(2) # <-- Invalid error warning.
 
