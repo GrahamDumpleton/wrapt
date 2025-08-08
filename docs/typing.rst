@@ -21,7 +21,7 @@ Function Decorators
 -------------------
 
 The **wrapt** module exposes two helpers for authoring function decorators:
-```@decorator``` and ``@function_wrapper``. ``@function_wrapper`` is a lightweight
+``@decorator`` and ``@function_wrapper``. ``@function_wrapper`` is a lightweight
 subset of ``@decorator`` intended for straightforward function wrapping; it
 omits the advanced extension points in exchange for a smaller, simpler
 surface. We will use ``@decorator`` in this discussion of type hints, but
@@ -65,7 +65,7 @@ Adding type hints, the example becomes:
 
     result: int = add(2, 3)  # <-- Type checking applied here.
 
-Annotate ``wrapped`` with a ```Callable`` whose signature matches the functions you
+Annotate ``wrapped`` with a ``Callable`` whose signature matches the functions you
 intend to decorate. Leave ``instance`` as ``Any`` in most cases; if you need to be
 stricter you can use ``Any | type[Any] | None``. You can narrow ``args`` / ``kwargs``
 based on the accepted parameter types, but doing so rarely improves type
