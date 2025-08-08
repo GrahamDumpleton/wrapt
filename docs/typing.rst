@@ -2,7 +2,7 @@ Type Hinting
 ============
 
 As of version 2.0.0, **wrapt** provides inline type hints for its public APIs to
-improve interoperability with static type checkers (e.g. `mypy`). The type
+improve interoperability with static type checkers (e.g. ``mypy``). The type
 metadata is available when running on Python 3.10 or later (the minimum version
 the annotations target).
 
@@ -21,11 +21,11 @@ Function Decorators
 -------------------
 
 The **wrapt** module exposes two helpers for authoring function decorators:
-`@decorator` and `@function_wrapper`. `@function_wrapper` is a lightweight
-subset of `@decorator` intended for straightforward function wrapping; it
+```@decorator``` and ``@function_wrapper``. ``@function_wrapper`` is a lightweight
+subset of ``@decorator`` intended for straightforward function wrapping; it
 omits the advanced extension points in exchange for a smaller, simpler
-surface. We will use `@decorator` in this discussion of type hints, but
-`@function_wrapper` is also fully type hinted and can be used in a similar way.
+surface. We will use ``@decorator`` in this discussion of type hints, but
+``@function_wrapper`` is also fully type hinted and can be used in a similar way.
 
 The most basic example of a function decorator is:
 
@@ -65,12 +65,12 @@ Adding type hints, the example becomes:
 
     result: int = add(2, 3)  # <-- Type checking applied here.
 
-Annotate `wrapped` with a `Callable` whose signature matches the functions you
-intend to decorate. Leave `instance` as `Any` in most cases; if you need to be
-stricter you can use `Any | type[Any] | None`. You can narrow `args` / `kwargs`
+Annotate ``wrapped`` with a ```Callable`` whose signature matches the functions you
+intend to decorate. Leave ``instance`` as ``Any`` in most cases; if you need to be
+stricter you can use ``Any | type[Any] | None``. You can narrow ``args`` / ``kwargs``
 based on the accepted parameter types, but doing so rarely improves type
-checking and usually adds noise, so the generic `tuple[Any, ...]` and
-`dict[str, Any]` forms are normally sufficient.
+checking and usually adds noise, so the generic ``tuple[Any, ...]`` and
+``dict[str, Any]`` forms are normally sufficient.
 
 The wrapper's return type annotation should mirror the return type of the
 wrapped function.
@@ -86,9 +86,9 @@ types or an incompatible assigned result as in the following.
 
 Because a single **wrapt** decorator can be applied to both plain functions
 and bound or class methods, there are practical limits to how precisely we can
-match the call signatures. In particular, the implicit `self` / `cls` binding
+match the call signatures. In particular, the implicit ``self`` / ``cls`` binding
 for methods cannot be reconciled reliably with the standalone function
-signature you must supply for `wrapped`. While partial workarounds are
+signature you must supply for ``wrapped``. While partial workarounds are
 possible, they introduce fragility and false positives, so for now type
 checking has been disabled at the point where the decorator is being applied
 to a method or function.
@@ -136,8 +136,8 @@ wrongly flag use of keyword arguments even though at runtime it still works.
     result3: int = add(2, b=3) # <-- Invalid error warning.
 
 If using these patterns and you don't like see the errors, you will need to
-flag the type checker to ignore them. For example, with `mypy` you can use
-`# type: ignore` comments to suppress the warnings:
+flag the type checker to ignore them. For example, with ``mypy`` you can use
+``# type: ignore`` comments to suppress the warnings:
 
 Signature Adapters
 ------------------
@@ -168,13 +168,13 @@ like this:
 
     result = function(1)
 
-In this example we passed the prototype function itself via the `adapter`
+In this example we passed the prototype function itself via the ``adapter``
 argument. **wrapt** also supports alternative forms: you can supply the
 prototype as a string, or return a pre-formatted argument spec instead of a
 callable.
 
 Declaring the adapter explicitly ensures that runtime introspection
-(`inspect.signature`, `help()`, IDE tooling, etc.) reports the adapted
+(``inspect.signature``, ``help()``, IDE tooling, etc.) reports the adapted
 signature rather than the underlying implementation detail. Because the
 adaptation is applied dynamically (and the prototype may itself be generated
 at runtime), **wrapt** cannot reliably infer the target signature from the
@@ -209,8 +209,8 @@ added explicit type hints to its parameters and return type. This allows the
 type checker to validate calls to the decorated function and propagate the
 correct return type.
 
-Note that inside the decorator body the `wrapped` callable is annotated
-as accepting any arguments and returning `Any`. You could just as well omit
+Note that inside the decorator body the ``wrapped`` callable is annotated
+as accepting any arguments and returning ``Any``. You could just as well omit
 those inner annotations as what matters for most static checking is the
 user facing signature exposed by the outer wrapper.
 
@@ -248,8 +248,8 @@ Class as Decorator
 ------------------
 
 Normally decorators are functions, but it is also possible to use a class as a
-decorator. In this situation the wrapper function (`__call__()` method of class)
-is not type checked as it would be if the `@decorator` were being applied to it
+decorator. In this situation the wrapper function (``__call__()`` method of class)
+is not type checked as it would be if the ``@decorator`` were being applied to it
 directly. Further, the type checker cannot match the arguments for the
 constructor of the class at the point it it is being created.
 
@@ -271,7 +271,7 @@ constructor of the class at the point it it is being created.
 # Object Proxy
 --------------
 
-Due to the magic of how the `ObjectProxy` class in **wrapt** works, you may find
+Due to the magic of how the ``ObjectProxy`` class in **wrapt** works, you may find
 that the type checker will generate errors about using it and the above are not
 all the possible issues you may encounter. To allow for further investigation
 and improvement of the type hints, please report any issues you find with
