@@ -268,8 +268,8 @@ constructor of the class at the point it it is being created.
     @ClassDecorator("string") # <-- Invalid error warning.
     def function(): ...
 
-# Object Proxy
---------------
+Object Proxy
+------------
 
 Due to the magic of how the ``ObjectProxy`` class in **wrapt** works, you may find
 that the type checker will generate errors about using it and the above are not
