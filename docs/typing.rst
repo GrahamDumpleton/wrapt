@@ -186,7 +186,7 @@ checking.
     def adapter_prototype(i: int) -> str: ...
 
     def int_to_str(wrapped: Callable[[int], int]) -> Callable[[int], str]:
-        @wrapt.decorator(adapter=wrapt.adapter_factory(adapter_prototype))
+        @wrapt.decorator(adapter=adapter_prototype)
         def wrapper(
             wrapped: Callable[..., Any],
             instance: Any,
