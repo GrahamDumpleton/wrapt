@@ -105,6 +105,9 @@ if sys.version_info >= (3, 10):
 
     # decorator()
 
+    class Descriptor(Protocol):
+        def __get__(self, instance: Any, owner: type[Any] | None = None) -> Any: ...
+
     class FunctionDecorator(Generic[P, R]):
         # @overload
         # def __call__(
