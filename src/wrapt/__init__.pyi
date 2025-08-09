@@ -54,18 +54,18 @@ if sys.version_info >= (3, 10):
         [WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], R
     ]
 
-    InstanceMethodWrapperFunction = Callable[
-        [Any, WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], R
-    ]
-
     ClassMethodWrapperFunction = Callable[
         [type[Any], WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], R
     ]
 
+    InstanceMethodWrapperFunction = Callable[
+        [Any, WrappedFunction[P, R], Any, tuple[Any, ...], dict[str, Any]], R
+    ]
+
     WrapperFunction = (
         GenericCallableWrapperFunction[P, R]
-        | InstanceMethodWrapperFunction[P, R]
         | ClassMethodWrapperFunction[P, R]
+        | InstanceMethodWrapperFunction[P, R]
     )
 
     class _FunctionWrapperBase(ObjectProxy[WrappedFunction[P, R]]):
@@ -115,18 +115,21 @@ if sys.version_info >= (3, 10):
         # ) -> FunctionWrapper[P, R]: ...
         # @overload
         # def __call__(
-        #     self, callable: Callable[Concatenate[T, P], R]
+        #     self, callable: Callable[Concatenate[type[T], P], R]
         # ) -> FunctionWrapper[P, R]: ...
         # @overload
         # def __call__(
-        #     self, callable: Callable[Concatenate[type[T], P], R]
+        #     self, callable: Callable[Concatenate[T, P], R]
         # ) -> FunctionWrapper[P, R]: ...
         # @overload
         # def __call__(
         #     self, callable: Callable[[type[T]], R]
         # ) -> FunctionWrapper[Any, R]: ...
 
+        @overload
         def __call__(self, callable: Callable[..., R]) -> FunctionWrapper[P, R]: ...
+        @overload
+        def __call__(self, callable: Descriptor) -> FunctionWrapper[Any, R]: ...
 
     class PartialFunctionDecorator:
         @overload
@@ -135,11 +138,11 @@ if sys.version_info >= (3, 10):
         ) -> FunctionDecorator[P, R]: ...
         @overload
         def __call__(
-            self, wrapper: InstanceMethodWrapperFunction[P, R], /
+            self, wrapper: ClassMethodWrapperFunction[P, R], /
         ) -> FunctionDecorator[P, R]: ...
         @overload
         def __call__(
-            self, wrapper: ClassMethodWrapperFunction[P, R], /
+            self, wrapper: InstanceMethodWrapperFunction[P, R], /
         ) -> FunctionDecorator[P, R]: ...
 
     # ... Decorator applied to class type.
@@ -155,11 +158,11 @@ if sys.version_info >= (3, 10):
     ) -> FunctionDecorator[P, R]: ...
     @overload
     def decorator(
-        wrapper: InstanceMethodWrapperFunction[P, R], /
+        wrapper: ClassMethodWrapperFunction[P, R], /
     ) -> FunctionDecorator[P, R]: ...
     @overload
     def decorator(
-        wrapper: ClassMethodWrapperFunction[P, R], /
+        wrapper: InstanceMethodWrapperFunction[P, R], /
     ) -> FunctionDecorator[P, R]: ...
 
     # ... Positional arguments.
@@ -180,11 +183,11 @@ if sys.version_info >= (3, 10):
     ) -> FunctionDecorator[P, R]: ...
     @overload
     def function_wrapper(
-        wrapper: InstanceMethodWrapperFunction[P, R],
+        wrapper: ClassMethodWrapperFunction[P, R],
     ) -> FunctionDecorator[P, R]: ...
     @overload
     def function_wrapper(
-        wrapper: ClassMethodWrapperFunction[P, R],
+        wrapper: InstanceMethodWrapperFunction[P, R],
     ) -> FunctionDecorator[P, R]: ...
 
     # wrap_function_wrapper()

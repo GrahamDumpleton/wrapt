@@ -1,11 +1,11 @@
 tests/mypy/mypy_function_wrapper_fn_t5.py:14: error: No overload variant of "function_wrapper" matches argument type "str"  [call-overload]
 tests/mypy/mypy_function_wrapper_fn_t5.py:14: note: Possible overload variants:
 tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator[P, R]
-tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Any, Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator[P, R]
 tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[type[Any], Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator[P, R]
+tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Any, Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator[P, R]
 tests/mypy/mypy_function_wrapper_fn_t5.py:15: error: No overload variant of "function_wrapper" matches argument type "None"  [call-overload]
 tests/mypy/mypy_function_wrapper_fn_t5.py:15: note: Possible overload variants:
 tests/mypy/mypy_function_wrapper_fn_t5.py:15: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator[P, R]
-tests/mypy/mypy_function_wrapper_fn_t5.py:15: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Any, Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator[P, R]
 tests/mypy/mypy_function_wrapper_fn_t5.py:15: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[type[Any], Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator[P, R]
+tests/mypy/mypy_function_wrapper_fn_t5.py:15: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Any, Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator[P, R]
 Found 2 errors in 1 file (checked 1 source file)
