@@ -135,7 +135,7 @@ wrongly flag use of keyword arguments even though at runtime it still works.
 
     result3: int = add(2, b=3) # <-- Invalid error warning.
 
-If using these patterns and you don't like see the errors, you will need to
+If using these patterns and you don't like seeing the errors, you will need to
 flag the type checker to ignore them. For example, with ``mypy`` you can use
 ``# type: ignore`` comments to suppress the warnings:
 
@@ -177,9 +177,9 @@ Declaring the adapter explicitly ensures that runtime introspection
 (``inspect.signature``, ``help()``, IDE tooling, etc.) reports the adapted
 signature rather than the underlying implementation detail. Because the
 adaptation is applied dynamically (and the prototype may itself be generated
-at runtime), **wrapt** cannot reliably infer the target signature from the
-wrapped function alone, and so you must provide it if you want accurate type
-checking.
+at runtime), the **wrapt** type hints cannot reliably expose the target
+signature from the wrapped function alone, and so you must provide it if you
+want accurate type checking.
 
 ::
 
@@ -235,7 +235,7 @@ confuses the type checker.
         def __init__(self): ...
 
 The type checker can also give invalid error warnings when using functions
-such as `issubclass()` due to not recognising the decorated class as a
+such as ``issubclass()`` due to not recognising the decorated class as a
 class type.
 
 ::
