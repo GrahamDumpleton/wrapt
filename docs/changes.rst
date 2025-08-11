@@ -19,6 +19,12 @@ these reasons a major version bump is being made.
   alias `wrapt.partial`, which is a convenience for users who are used to using
   `functools.partial` and want to use the `wrapt` version of it.
 
+* Type hints have been added to the `wrapt` module. The type hints are
+  available when using Python 3.10 or later, and can be used with static type
+  checkers such as `mypy`. Note that due to limitations in Python's type hinting
+  system, not all parts of the API are fully typed. See the documentation for
+  more details on limitations and workarounds.
+
 **Features Changed**
 
 * The `ObjectProxy` class now raises a `WrapperNotInitializedError` exception
