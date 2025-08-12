@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-20.04
+          - ubuntu-latest
         python-version:
           - 3.8
           - 3.9
@@ -53,7 +53,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-20.04
+          - ubuntu-latest
         python-version: [3.13]
     steps:
     - name: Checkout code
@@ -81,10 +81,10 @@ jobs:
   #   strategy:
   #     matrix:
   #       python:
-  #         #- {os: ubuntu-20.04,  python-version: 3.7, pyver: py37}
-  #         #- {os: ubuntu-20.04,  python-version: 3.8, pyver: py38}
-  #         #- {os: ubuntu-20.04,  python-version: 3.9, pyver: py39}
-  #         - {os: ubuntu-20.04,  python-version: "3.10", pyver: py310}
+  #         #- {os: ubuntu-latest,  python-version: 3.7, pyver: py37}
+  #         #- {os: ubuntu-latest,  python-version: 3.8, pyver: py38}
+  #         #- {os: ubuntu-latest,  python-version: 3.9, pyver: py39}
+  #         - {os: ubuntu-latest,  python-version: "3.10", pyver: py310}
   #   env:
   #     py: python${{ matrix.python.python-version }}
   #   steps:
@@ -182,7 +182,7 @@ jobs:
     - test_linux
     - test_macos
     - test_windows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -215,10 +215,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
         arch: [auto]
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             arch: aarch64
           - os: macos-13
             arch: universal2
@@ -252,7 +252,7 @@ jobs:
   #   - test_linux_no_gil
   #   - test_macos
   #   - test_windows
-  #   runs-on: ubuntu-20.04
+  #   runs-on: ubuntu-latest
   #   steps:
   #   - name: Checkout code
   #     uses: actions/checkout@v3
