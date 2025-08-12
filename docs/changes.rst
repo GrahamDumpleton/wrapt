@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 1.17.3
+--------------
+
+**Bug Fixes**
+
+* Reference count was not being incremented on type object for C implementation
+  of the partial callable object proxy when module was initialized. If wrapt was
+  being used in Python sub interpreters which were deleted it could lead to the
+  process crashing.
+
 Version 1.17.2
 --------------
 
