@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-20.04
+          - ubuntu-latest
         python-version:
           # - 2.7
           # - 3.5
@@ -54,10 +54,10 @@ jobs:
   #   strategy:
   #     matrix:
   #       python:
-  #         #- {os: ubuntu-20.04,  python-version: 3.7, pyver: py37}
-  #         #- {os: ubuntu-20.04,  python-version: 3.8, pyver: py38}
-  #         #- {os: ubuntu-20.04,  python-version: 3.9, pyver: py39}
-  #         - {os: ubuntu-20.04,  python-version: "3.10", pyver: py310}
+  #         #- {os: ubuntu-latest,  python-version: 3.7, pyver: py37}
+  #         #- {os: ubuntu-latest,  python-version: 3.8, pyver: py38}
+  #         #- {os: ubuntu-latest,  python-version: 3.9, pyver: py39}
+  #         - {os: ubuntu-latest,  python-version: "3.10", pyver: py310}
   #   env:
   #     py: python${{ matrix.python.python-version }}
   #   steps:
@@ -183,7 +183,7 @@ jobs:
     - test_linux
     - test_macos
     - test_windows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -215,7 +215,7 @@ jobs:
   #   runs-on: ${{ matrix.os }}
   #   strategy:
   #     matrix:
-  #       os: [ubuntu-20.04, windows-latest, macos-latest]
+  #       os: [ubuntu-latest, windows-latest, macos-latest]
   #   steps:
   #     - uses: actions/checkout@v3
   #     - name: Build wheels
@@ -243,10 +243,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         arch: [auto]
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             arch: aarch64
           - os: macos-latest
             arch: arm64
@@ -277,7 +277,7 @@ jobs:
     - test_macos
     # - test_windows_py27
     - test_windows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
