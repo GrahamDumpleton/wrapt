@@ -176,6 +176,8 @@ if sys.version_info >= (3, 10):
     # function_wrapper()
 
     @overload
+    def function_wrapper(wrapper: type[Any]) -> FunctionDecorator[Any, Any]: ...
+    @overload
     def function_wrapper(
         wrapper: GenericCallableWrapperFunction[P, R],
     ) -> FunctionDecorator[P, R]: ...
@@ -187,6 +189,8 @@ if sys.version_info >= (3, 10):
     def function_wrapper(
         wrapper: InstanceMethodWrapperFunction[P, R],
     ) -> FunctionDecorator[P, R]: ...
+    @overload
+    def function_wrapper(wrapper: Any) -> FunctionDecorator[Any, Any]: ...
 
     # wrap_function_wrapper()
 
