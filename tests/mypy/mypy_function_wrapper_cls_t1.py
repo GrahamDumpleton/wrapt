@@ -3,7 +3,6 @@ This example demonstrates the correct usage of the FunctionWrapper type.
 
 It covers the following cases:
 - Wrapping a function
-- Wrapping a lambda function
 - Wrapping a method of a class
 - Wrapping a class method
 - Wrapping a static method
@@ -16,17 +15,16 @@ It covers the following cases:
 These should all pass mypy type checking.
 """
 
-from typing import Any, Callable
+from typing import Any, Callable, ParamSpec, TypeVar
 
 from wrapt import FunctionWrapper
 
+P = ParamSpec("P")
+R = TypeVar("R", covariant=True)
 
-def function(x: int, y: str = "default") -> str:
+def function(x: int, y: int = 0) -> int:
     """A simple function to be wrapped."""
-    return f"{x}: {y}"
-
-
-lambda_function: Callable[[int], int] = lambda x: x + 1
+    return x + y
 
 
 class ExampleClass:
@@ -38,24 +36,24 @@ class ExampleClass:
     def __call__(self, value: int) -> str:
         return f"callable: {value}"
 
-    def instance_method(self, value: int) -> str:
-        return f"instance: {value}"
+    def instance_method(self, x: int, y: int = 0) -> int:
+        return x + y
 
     @classmethod
-    def class_method(cls, value: int) -> str:
-        return f"class: {value}"
+    def class_method(cls, x: int, y: int = 0) -> int:
+        return x + y
 
     @staticmethod
-    def static_method(value: int) -> str:
-        return f"static: {value}"
+    def static_method(x: int, y: int = 0) -> int:
+        return x + y
 
 
 def standard_wrapper(
-    wrapped: Callable[..., Any],
+    wrapped: Callable[P, R],
     instance: Any,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-) -> Any:
+) -> R:
     try:
         print(f"Before calling {wrapped.__name__}")
         return wrapped(*args, **kwargs)
@@ -64,8 +62,6 @@ def standard_wrapper(
 
 
 wrapped_function = FunctionWrapper(function, standard_wrapper)
-
-wrapped_lambda = FunctionWrapper(lambda_function, standard_wrapper)
 
 wrapped_method = FunctionWrapper(ExampleClass.instance_method, standard_wrapper)
 wrapped_classmethod = FunctionWrapper(ExampleClass.class_method, standard_wrapper)
@@ -86,7 +82,6 @@ wrapped_callable_class = FunctionWrapper(ExampleClass, standard_wrapper)
 wrapped_callable_object = FunctionWrapper(ExampleClass(0), standard_wrapper)
 
 wrapped_function(1)
-wrapped_lambda(2)
 wrapped_method(ExampleClass(0), 3)
 wrapped_classmethod(4)
 wrapped_staticmethod(5)

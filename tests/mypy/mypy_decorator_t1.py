@@ -9,7 +9,6 @@ import wrapt
 P = ParamSpec("P")
 R = TypeVar("R")
 
-
 @wrapt.decorator
 def wrapper1(
     wrapped: Callable[[int], int],
