@@ -16,65 +16,65 @@ It covers the following cases:
 These should all pass mypy type checking.
 """
 
-from typing import Any, Callable
+from typing import Any, Callable, ParamSpec, TypeVar
 
 from wrapt import function_wrapper
 
+P = ParamSpec("P")
+R = TypeVar("R", covariant=True)
 
-def function(x: int, y: str = "default") -> str:
+
+def function(x: int, y: int = 0) -> int:
     """A simple function to be wrapped."""
-    return f"{x}: {y}"
-
-
-lambda_function: Callable[[int], int] = lambda x: x + 1
+    return x + y
 
 
 class ExampleClass1:
     """A class with methods to be wrapped."""
 
-    def __call__(self, value: int) -> str:
-        return f"callable: {value}"
+    def __init__(self, value: int) -> None:
+        self.value = value
 
-    def instance_method(self, value: int) -> str:
-        return f"instance: {value}"
+    def __call__(self, x: int, y: int = 0) -> int:
+        return x + y
+
+    def instance_method(self, x: int, y: int = 0) -> int:
+        return x + y
 
     @classmethod
-    def class_method(cls, value: int) -> str:
-        return f"class: {value}"
+    def class_method(cls, x: int, y: int = 0) -> int:
+        return x + y
 
     @staticmethod
-    def static_method(value: int) -> str:
-        return f"static: {value}"
+    def static_method(x: int, y: int = 0) -> int:
+        return x + y
 
 
 @function_wrapper
 def wrapper(
-    wrapped: Callable[..., Any],
+    wrapped: Callable[P, R],
     instance: Any,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-) -> Any:
+) -> R:
     return wrapped(*args, **kwargs)
 
 
 wrapped_function = wrapper(function)
 
-wrapped_lambda = wrapper(lambda_function)
-
 wrapped_method = wrapper(ExampleClass1.instance_method)
 wrapped_classmethod = wrapper(ExampleClass1.class_method)
 wrapped_staticmethod = wrapper(ExampleClass1.static_method)
 
-wrapped_method_instance = wrapper(ExampleClass1().instance_method)
-wrapped_classmethod_instance = wrapper(ExampleClass1().class_method)
-wrapped_staticmethod_instance = wrapper(ExampleClass1().static_method)
+wrapped_method_instance = wrapper(ExampleClass1(0).instance_method)
+wrapped_classmethod_instance = wrapper(ExampleClass1(0).class_method)
+wrapped_staticmethod_instance = wrapper(ExampleClass1(0).static_method)
 
 wrapped_callable_class = wrapper(ExampleClass1)
-wrapped_callable_object = wrapper(ExampleClass1())
+wrapped_callable_object = wrapper(ExampleClass1(0))
 
 wrapped_function(1)
-wrapped_lambda(2)
-wrapped_method(ExampleClass1(), 3)
+wrapped_method(ExampleClass1(0), 3)
 wrapped_classmethod(4)
 wrapped_staticmethod(5)
 wrapped_method_instance(6)
@@ -90,22 +90,22 @@ class ExampleClass2:
         self.value = value
 
     @wrapper
-    def __call__(self, value: int) -> str:
-        return f"callable: {value}"
+    def __call__(self, x: int, y: int = 0) -> int:
+        return x + y
 
     @wrapper
-    def instance_method(self, value: int) -> str:
-        return f"instance: {value}"
+    def instance_method(self, x: int, y: int = 0) -> int:
+        return x + y
 
     @wrapper
     @classmethod
-    def class_method(cls, value: int) -> str:
-        return f"class: {value}"
+    def class_method(cls, x: int, y: int = 0) -> int:
+        return x + y
 
     @wrapper
     @staticmethod
-    def static_method(value: int) -> str:
-        return f"static: {value}"
+    def static_method(x: int, y: int = 0) -> int:
+        return x + y
 
 
 example_instance = ExampleClass2(0)

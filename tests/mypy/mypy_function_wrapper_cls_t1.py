@@ -33,8 +33,8 @@ class ExampleClass:
     def __init__(self, value: int) -> None:
         self.value = value
 
-    def __call__(self, value: int) -> str:
-        return f"callable: {value}"
+    def __call__(self, x: int, y: int = 0) -> int:
+        return x + y
 
     def instance_method(self, x: int, y: int = 0) -> int:
         return x + y
