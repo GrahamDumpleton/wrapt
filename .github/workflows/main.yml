@@ -43,7 +43,7 @@ jobs:
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage
         path: .coverage.*
@@ -116,7 +116,7 @@ jobs:
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage
         path: .coverage.*
@@ -200,7 +200,7 @@ jobs:
     - name: Build pure Python source wheel
       run: WRAPT_INSTALL_EXTENSIONS=false python setup.py bdist_wheel
     - name: Store built wheels
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist
         path: dist/*
@@ -227,7 +227,7 @@ jobs:
   #           CIBW_BUILD: cp27* cp35*
   #           CIBW_SKIP: cp27-win*
   #           CIBW_BUILD_VERBOSITY: 1
-  #     - uses: actions/upload-artifact@v3
+  #     - uses: actions/upload-artifact@v4
   #       with:
   #         name: dist
   #         path: dist/*.whl
@@ -264,9 +264,9 @@ jobs:
             CIBW_SKIP: pp*
             CIBW_BUILD_VERBOSITY: 1
             CIBW_ARCHS: ${{ matrix.arch }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
 
   coveralls:
