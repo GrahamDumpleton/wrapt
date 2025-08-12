@@ -1,3 +1,5 @@
+name: Build, test and create release packages.
+
 on:
   workflow_dispatch:
   pull_request:
