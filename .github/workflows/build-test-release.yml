@@ -241,7 +241,7 @@ jobs:
             CIBW_FREE_THREADED_SUPPORT: 1
       - uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
 
   # coveralls:
