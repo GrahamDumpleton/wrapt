@@ -3049,6 +3049,7 @@ static PyObject *moduleinit(void) {
   Py_INCREF(&WraptCallableObjectProxy_Type);
   PyModule_AddObject(module, "CallableObjectProxy",
                      (PyObject *)&WraptCallableObjectProxy_Type);
+  Py_INCREF(&WraptPartialCallableObjectProxy_Type);
   PyModule_AddObject(module, "PartialCallableObjectProxy",
                      (PyObject *)&WraptPartialCallableObjectProxy_Type);
   Py_INCREF(&WraptFunctionWrapper_Type);

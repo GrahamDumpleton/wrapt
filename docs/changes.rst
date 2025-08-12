@@ -64,6 +64,13 @@ these reasons a major version bump is being made.
   are now marked as positional and keyword only parameters in the function
   signature as appropriate.
 
+**Bugs Fixed**
+
+* Reference count was not being incremented on type object for C implementation
+  of the partial callable object proxy when module was initialized. If `wrapt`
+  was being used in Python sub interpreters which were deleted it could lead
+  to the process crashing.
+
 Version 1.17.2
 --------------
 
