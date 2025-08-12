@@ -1,10 +1,14 @@
 """
-This example demonstrates the incorrect usage of the decorator() function.
+This example demonstrates usage of the decorator() function.
 """
 
-from typing import Any, Callable
+from typing import Any, Callable, ParamSpec, TypeVar
 
 import wrapt
+from check import Three
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 @wrapt.decorator
@@ -73,7 +77,7 @@ def adapter1(i: int) -> str:
 
 
 def wrapper3(wrapped: Callable[[int], int]) -> Callable[[int], str]:
-    @wrapt.decorator(adapter=wrapt.adapter_factory(adapter1))
+    @wrapt.decorator(adapter=adapter1)
     def _wrapper3(
         wrapped: Callable[..., Any],
         instance: Any,
@@ -108,7 +112,7 @@ function3("x")
 function3(1, 2)
 
 
-@wrapt.decorator(adapter=wrapt.adapter_factory(adapter1))
+@wrapt.decorator(adapter=adapter1)
 def wrapper4(
     wrapped: Callable[[int], int],
     instance: Any,
@@ -146,7 +150,7 @@ def adapter2(a: int, b: int) -> str:
 
 
 def wrapper5(wrapped: Callable[[int], int]) -> Callable[[int, int], str]:
-    @wrapt.decorator(adapter=wrapt.adapter_factory(adapter2))
+    @wrapt.decorator(adapter=adapter2)
     def _wrapper5(
         wrapped: Callable[..., Any],
         instance: Any,
@@ -170,3 +174,72 @@ def function5(x: int) -> int:
 
 
 result5: str = function5(1, 2)
+
+
+class Example:
+    @wrapt.decorator
+    def pass_through_im(
+        self: Any,
+        wrapped: Callable[P, R],
+        instance: Any,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> R:
+        return wrapped(*args, **kwargs)
+
+    @wrapt.decorator
+    @classmethod
+    def pass_through_cm(
+        cls: Any,
+        wrapped: Callable[P, R],
+        instance: Any,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> R:
+        return wrapped(*args, **kwargs)
+
+    @wrapt.decorator
+    @staticmethod
+    def pass_through_sm(
+        wrapped: Callable[P, R],
+        instance: Any,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> R:
+        return wrapped(*args, **kwargs)
+
+
+example_instance = Example()
+
+
+@example_instance.pass_through_im
+def function6(a: int, b: int = 0) -> int:
+    return a + b
+
+
+result6: int = function6(1, 2)
+
+function6(1)
+function6(1, b=2)
+
+
+@example_instance.pass_through_cm
+def function7(a: int, b: int = 0) -> int:
+    return a + b
+
+
+result7: int = function7(1, 2)
+
+function7(1)
+function7(1, b=2)
+
+
+@example_instance.pass_through_sm
+def function8(a: int, b: int = 0) -> int:
+    return a + b
+
+
+result8: int = function8(1, 2)
+
+function8(1)
+function8(1, b=2)

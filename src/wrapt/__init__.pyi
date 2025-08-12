@@ -3,7 +3,16 @@ import sys
 if sys.version_info >= (3, 10):
     from inspect import FullArgSpec
     from types import ModuleType, TracebackType
-    from typing import Any, Callable, Generic, ParamSpec, Protocol, TypeVar, overload
+    from typing import (
+        Any,
+        Callable,
+        Concatenate,
+        Generic,
+        ParamSpec,
+        Protocol,
+        TypeVar,
+        overload,
+    )
 
     P = ParamSpec("P")
     R = TypeVar("R", covariant=True)
@@ -109,27 +118,16 @@ if sys.version_info >= (3, 10):
         def __get__(self, instance: Any, owner: type[Any] | None = None) -> Any: ...
 
     class FunctionDecorator(Generic[P, R]):
-        # @overload
-        # def __call__(
-        #     self, callable: Callable[P, R]
-        # ) -> FunctionWrapper[P, R]: ...
-        # @overload
-        # def __call__(
-        #     self, callable: Callable[Concatenate[type[T], P], R]
-        # ) -> FunctionWrapper[P, R]: ...
-        # @overload
-        # def __call__(
-        #     self, callable: Callable[Concatenate[T, P], R]
-        # ) -> FunctionWrapper[P, R]: ...
-        # @overload
-        # def __call__(
-        #     self, callable: Callable[[type[T]], R]
-        # ) -> FunctionWrapper[Any, R]: ...
-
-        @overload
-        def __call__(self, callable: Callable[..., R]) -> FunctionWrapper[P, R]: ...
-        @overload
-        def __call__(self, callable: Descriptor) -> FunctionWrapper[Any, R]: ...
+        def __call__(
+            self,
+            callable: (
+                Callable[P, R]
+                | Callable[Concatenate[type[T], P], R]
+                # | Callable[Concatenate[Any, P], R] # Don't use, breaks stuff.
+                | Callable[[type[T]], R]
+                | Descriptor
+            ),
+        ) -> FunctionWrapper[P, R]: ...
 
     class PartialFunctionDecorator:
         @overload

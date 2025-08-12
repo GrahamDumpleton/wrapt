@@ -1,7 +1,7 @@
 import os
+import pathlib
 import re
 import sys
-import pathlib
 
 import pytest
 
@@ -67,8 +67,8 @@ def run_custom_action(py_file: pathlib.Path) -> str:
     Run mypy on the given file with the current interpreter's major.minor version
     and return the combined stdout/stderr output as text.
     """
-    import subprocess
     import platform
+    import subprocess
 
     major, minor = version
     cmd = [

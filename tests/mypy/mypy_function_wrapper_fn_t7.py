@@ -2,18 +2,21 @@
 This example demonstrates usage of the function_wrapper() function.
 """
 
-from typing import Any, Callable
+from typing import Any, Callable, Concatenate, ParamSpec, TypeVar
 
 from wrapt import function_wrapper
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 @function_wrapper
 def wrapper1(
-    wrapped: Callable[[int, str], str],
+    wrapped: Callable[P, R],
     instance: Any,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-) -> str:
+) -> R:
     return wrapped(*args, **kwargs)
 
 
@@ -27,11 +30,7 @@ def function1(x: int, y: str = "string") -> str:
 function1()
 
 function1(1, "test")
-
-# Doesn't handle default arguments. (MYPY LIMITATION)
 function1(2)
-
-# Doesn't handle keyword arguments. (MYPY LIMITATION)
 function1(3, y="override")
 
 
@@ -161,11 +160,11 @@ class DecoratorClass:
     @function_wrapper
     def wrapper(
         self,
-        wrapped: Callable[[int, str], str],
+        wrapped: Callable[P, R],
         instance: Any,
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
-    ) -> Any:
+    ) -> R:
         return wrapped(*args, **kwargs)
 
 
@@ -184,9 +183,5 @@ def function3(x: int, y: str | None = None) -> str:
 function3()
 
 function3(1, "test")
-
-# Doesn't handle default arguments. (MYPY LIMITATION)
 function3(2)
-
-# Doesn't handle keyword arguments. (MYPY LIMITATION)
 function3(3, y="override")
