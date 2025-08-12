@@ -5,7 +5,6 @@ This example demonstrates usage of the decorator() function.
 from typing import Any, Callable, ParamSpec, TypeVar
 
 import wrapt
-from check import Three
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -19,7 +18,6 @@ def wrapper1(
     kwargs: dict[str, Any],
 ) -> int:
     return wrapped(*args, **kwargs)
-
 
 @wrapper1
 def function1(x: int) -> int:
