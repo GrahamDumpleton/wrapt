@@ -67,7 +67,7 @@ these reasons a major version bump is being made.
 **Bugs Fixed**
 
 * Reference count was not being incremented on type object for C implementation
-  of the partial callable object proxy when module was initialized. If `wrapt`
+  of the partial callable object proxy when module was initialized. If ``wrapt``
   was being used in Python sub interpreters which were deleted it could lead
   to the process crashing. Note that this change was also back ported and
   included in version 1.17.3 and 1.14.2 releases.
