@@ -5,7 +5,7 @@ Version 2.0.0
 --------------
 
 There have been subtle changes in a corner case of the behaviour of the
-`ObjectProxy` class, which although not expected to cause problems, still has
+``ObjectProxy`` class, which although not expected to cause problems, still has
 the potential for causing issues if code was for some reason dependent on prior
 behaviour. All existing code related to Python 2.X has also been removed.
 Finally it has also been a while since the last significant release. For all
@@ -13,52 +13,52 @@ these reasons a major version bump is being made.
 
 **New Features**
 
-* Added `__all__` attribute to `wrapt` module to expose the public API.
+* Added ``__all__`` attribute to ``wrapt`` module to expose the public API.
 
-* The `wrapt.PartialCallableObjectProxy` class can now be accessed via the
-  alias `wrapt.partial`, which is a convenience for users who are used to using
-  `functools.partial` and want to use the `wrapt` version of it.
+* The ``wrapt.PartialCallableObjectProxy`` class can now be accessed via the
+  alias ``wrapt.partial``, which is a convenience for users who are used to using
+  ``functools.partial`` and want to use the ``wrapt`` version of it.
 
-* Type hints have been added to the `wrapt` module. The type hints are
+* Type hints have been added to the ``wrapt`` module. The type hints are
   available when using Python 3.10 or later, and can be used with static type
-  checkers such as `mypy`. Note that due to limitations in Python's type hinting
+  checkers such as ``mypy``. Note that due to limitations in Python's type hinting
   system, not all parts of the API are fully typed. See the documentation for
   more details on limitations and workarounds.
 
 **Features Changed**
 
-* The `ObjectProxy` class now raises a `WrapperNotInitializedError` exception
-  rather than Python builtin `ValueError` exception when an attempt is made
+* The ``ObjectProxy`` class now raises a ``WrapperNotInitializedError`` exception
+  rather than Python builtin ``ValueError`` exception when an attempt is made
   to access an attribute of the wrapped object before the wrapper has been
-  initialized. The `WrapperNotInitializedError` exception inherits from both
-  `ValueError` and `AttributeError` so that it can be caught by code which
+  initialized. The ``WrapperNotInitializedError`` exception inherits from both
+  ``ValueError`` and ``AttributeError`` so that it can be caught by code which
   wants to handle both cases. This is being done to allow IDEs such as PyCharm
   to give a live view of Python objects and their attributes. Previously a
-  `ValueError` exception was being raised, which was problematic because
+  ``ValueError`` exception was being raised, which was problematic because
   PyCharm would see it as an actual error and fail. By using a custom exception
-  that also inherits from `AttributeError` it is hoped the IDE will see it as
+  that also inherits from ``AttributeError`` it is hoped the IDE will see it as
   a normal attribute access error rather than an actual error and so just not
   attempt to show the attribute within the IDE.
 
 * Code related to Python 2.X and workarounds for older Python 3.X versions has
   been removed.
 
-* Dependency at runtime on `setuptools` for calculating package entry points
-  has been removed. Instead the `importlib.metadata` module is now used for
-  this purpose. The `wrapt` package no longer requires `setuptools` to be
+* Dependency at runtime on ``setuptools`` for calculating package entry points
+  has been removed. Instead the ``importlib.metadata`` module is now used for
+  this purpose. The ``wrapt`` package no longer requires ``setuptools`` to be
   installed at runtime. It is still required for building and installing the
   package, but not for using it.
 
-* For reasons to do with backward/forward compatibility the `wrapt` module
-  included references to `getcallargs()` and `formatargspec()` functions which
-  were part of the `inspect` module at one time or another. These were provided
-  as convenience for users of the `wrapt` module, but were not actually part of
-  the public API. They have now been removed from the `wrapt` module and are
+* For reasons to do with backward/forward compatibility the ``wrapt`` module
+  included references to ``getcallargs()`` and ``formatargspec()`` functions which
+  were part of the ``inspect`` module at one time or another. These were provided
+  as convenience for users of the ``wrapt`` module, but were not actually part of
+  the public API. They have now been removed from the ``wrapt`` module and are
   no longer available. If you need these functions, you should use the
-  `inspect` module directly.
+  ``inspect`` module directly.
 
-* The `enabled`, `adapter` and `proxy` arguments to the `@decorator` decorator
-  had to be keyword parameters, and the initial `wrapped` argument had to be
+* The ``enabled``, ``adapter`` and ``proxy`` arguments to the ``@decorator`` decorator
+  had to be keyword parameters, and the initial ``wrapped`` argument had to be
   positional only. Because though Python 2.X was still being supported it was
   not possible to use appropriate syntax to mark them as such. These arguments
   are now marked as positional and keyword only parameters in the function
@@ -97,8 +97,8 @@ Version 1.17.1
 
 * Due to GitHub actions changes, binary wheels were missing for macOS Intel.
 
-* Not implemented error for `__reduce__()` on `ObjectProxy` was incorrectly
-  displaying the error as being on `__reduce_ex__()`.
+* Not implemented error for ``__reduce__()`` on ``ObjectProxy`` was incorrectly
+  displaying the error as being on ``__reduce_ex__()``.
 
 Version 1.17.0
 --------------
@@ -108,17 +108,17 @@ Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
 
 **New Features**
 
-* Add `__format__()` method to `ObjectProxy` class to allow formatting of
+* Add ``__format__()`` method to ``ObjectProxy`` class to allow formatting of
   wrapped object.
 
-* Added C extension internal flag to indicate that `wrapt` should be safe for
+* Added C extension internal flag to indicate that ``wrapt`` should be safe for
   Python 3.13 free threading mode. Releases will include free threading variants
   of Python wheels. Note that as free threading is new, one should be cautious
   about using it in production until it has been more widely tested.
 
 **Bugs Fixed**
 
-* When a normal function or builtin function which had `wrapt.decorator` or a
+* When a normal function or builtin function which had ``wrapt.decorator`` or a
   function wrapper applied, was assigned as a class attribute, and the function
   attribute called via the class or an instance of the class, an additional
   argument was being passed, inserted as the first argument, which was the class
@@ -126,12 +126,12 @@ Note that version 1.17.0 drops support for Python 3.6 and 3.7. Python version
   should not have been passed as the first argument.
 
 * When an instance of a callable class object was wrapped which didn't not have
-  a `__get__()` method for binding, and it was called in context whhere binding
-  would be attempted, it would fail with error that `__get__()` did not exist
+  a ``__get__()`` method for binding, and it was called in context where binding
+  would be attempted, it would fail with error that ``__get__()`` did not exist
   when instead it should have been called directly, ignoring that binding was
   not possible.
 
-* The `__round__` hook for the object proxy didn't accept `ndigits` argument.
+* The ``__round__`` hook for the object proxy didn't accept ``ndigits`` argument.
 
 Version 1.16.0
 --------------
