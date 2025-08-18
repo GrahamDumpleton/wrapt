@@ -222,6 +222,16 @@ Version 1.15.0
   function via the proxy object, it was not possible to pass a keyword argument
   named ``self``.
 
+Version 1.14.2
+--------------
+
+**Bugs Fixed**
+
+* Reference count was not being incremented on type object for C implementation
+  of the partial callable object proxy when module was initialized. If wrapt was
+  being used in Python sub interpreters which were deleted it could lead to the
+  process crashing.
+
 Version 1.14.1
 --------------
 
