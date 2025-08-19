@@ -2,11 +2,11 @@ Type Hinting
 ============
 
 As of version 2.0.0, **wrapt** provides inline type hints for its public APIs to
-improve interoperability with static type checkers (e.g. ``mypy``). The type
-metadata is available when running on Python 3.10 or later (the minimum version
-the annotations target).
+improve interoperability with static type checkers (e.g. ``pylance``, `mypy``).
+The type metadata is available when running on Python 3.10 or later (the minimum
+version the annotations target).
 
-The annotations aim to be as precise as practical in order to maximise
+The type annotations aim to be as helpful as possible in order to maximise
 inference quality and surface errors early. In some situations you may still
 need to add explicit annotations yourself, sometimes by introducing small
 helper wrapper functions to guide the type checker.
@@ -16,6 +16,12 @@ too dynamic to express exactly in today's static type systems, so exhaustive
 type checking cannot be applied there. The principal categories of limitations,
 their underlying causes, and recommended workarounds are described in the
 sections which follow.
+
+As much as have tried to make the type hints work, you may find that the type
+checker will still generate unexpected errors or doesn't work in some situations.
+To allow for further investigation and improvement of the type hints, please
+report any issues you find with using **wrapt**. For more notable cases we can
+at least add additional documentation here with warnings or workarounds.
 
 Function Decorators
 -------------------
@@ -50,7 +56,7 @@ Adding type hints, the example becomes:
 
     from typing import Any, Callable
 
-    @wrapt.decorator  # <-- Type checking applied here.
+    @wrapt.decorator  # <-- Limited type checking applied here (see note #1).
     def pass_through(
         wrapped: Callable[[int, int], int],
         instance: Any,
@@ -59,7 +65,7 @@ Adding type hints, the example becomes:
     ) -> int:
         return wrapped(*args, **kwargs)
 
-    @pass_through  # <-- Type checking not applied here (see below).
+    @pass_through  # <-- Type checking not applied here (see note #2).
     def add(a: int, b: int) -> int:
         return a + b
 
@@ -84,60 +90,18 @@ types or an incompatible assigned result as in the following.
 
     result: str = add("hello", "world")  # Error: incompatible types
 
-Because a single **wrapt** decorator can be applied to both plain functions
-and bound or class methods, there are practical limits to how precisely we can
-match the call signatures. In particular, the implicit ``self`` / ``cls`` binding
-for methods cannot be reconciled reliably with the standalone function
-signature you must supply for ``wrapped``. While partial workarounds are
-possible, they introduce fragility and false positives, so for now type
-checking has been disabled at the point where the decorator is being applied
-to a method or function.
+**Note #1**: When ``@decorator`` or ``@function_wrapper`` are applied to a
+wrapper function, the type checker should give an error when the return type
+of the wrapper function is incompatible with the returned type given for the
+wrapped function. The type checker is unable to verify that the number and type
+of arguments of the wrapper function itself are what is expected because of the
+decorators being able to be applied to a class, a class instance, instance
+methods, class methods and normal functions.
 
-Argument Matching
------------------
-
-Functions being decorated can have default arguments, and so long as the
-decorator is aware of them, it can handle them correctly at runtime.
-Unfortunately due to limitations in the type system, a type checker doesn't
-recognise the default arguments of the wrapped function and so will indicate
-an error when you don't still explicitly provide the argument, even though the
-call will work fine at runtime.
-
-::
-
-    from typing import Any, Callable
-
-    @wrapt.decorator
-    def pass_through(
-        wrapped: Callable[[int, int], int],
-        instance: Any,
-        args: tuple[Any, ...],
-        kwargs: dict[str, Any],
-    ) -> int:
-        return wrapped(*args, **kwargs)
-
-    @pass_through
-    def add(a: int, b: int = 0) -> int:
-        return a + b
-
-    result1: int = add(2, 3)
-
-    # Error: type checker doesn't recognise default arguments.
-
-    result2: int = add(2) # <-- Invalid error warning.
-
-Type checkers also have issue with using keyword parameters, thus they will
-wrongly flag use of keyword arguments even though at runtime it still works.
-
-::
-
-     # Error: type checker doesn't recognise keyword arguments.
-
-    result3: int = add(2, b=3) # <-- Invalid error warning.
-
-If using these patterns and you don't like seeing the errors, you will need to
-flag the type checker to ignore them. For example, with ``mypy`` you can use
-``# type: ignore`` comments to suppress the warnings:
+**Note #2**: The type checker is unable to verify that the argument to a
+generated decorator matches the signature of the expected wrapped function
+because of the decorators being able to be applied to a class, a class instance,
+instance methods, class methods and normal functions.
 
 Signature Adapters
 ------------------
@@ -267,13 +231,3 @@ constructor of the class at the point it it is being created.
 
     @ClassDecorator("string") # <-- Invalid error warning.
     def function(): ...
-
-Object Proxy
-------------
-
-Due to the magic of how the ``ObjectProxy`` class in **wrapt** works, you may find
-that the type checker will generate errors about using it and the above are not
-all the possible issues you may encounter. To allow for further investigation
-and improvement of the type hints, please report any issues you find with
-using **wrapt**. For more notable cases we can add at least add additional
-documentation here with warnings or workarounds.
