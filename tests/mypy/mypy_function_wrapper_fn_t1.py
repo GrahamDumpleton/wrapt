@@ -81,6 +81,9 @@ wrapped_method_instance(6)
 wrapped_classmethod_instance(7)
 wrapped_staticmethod_instance(8)
 
+wrapped_callable_class(9)
+wrapped_callable_object(10)
+
 
 @wrapper
 class ExampleClass2:

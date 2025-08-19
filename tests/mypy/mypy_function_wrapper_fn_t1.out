@@ -1,1 +1,17 @@
-Success: no issues found in 1 source file
+tests/mypy/mypy_function_wrapper_fn_t1.py:63: error: Need type annotation for "wrapped_function"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:65: error: Need type annotation for "wrapped_method"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:66: error: Need type annotation for "wrapped_classmethod"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:67: error: Need type annotation for "wrapped_staticmethod"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:69: error: Need type annotation for "wrapped_method_instance"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:70: error: Need type annotation for "wrapped_classmethod_instance"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:71: error: Need type annotation for "wrapped_staticmethod_instance"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:73: error: Need type annotation for "wrapped_callable_class"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:73: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "type[ExampleClass1]"; expected "Callable[[VarArg(Never), KwArg(Never)], Never] | Callable[[type[Never], VarArg(Never), KwArg(Never)], Never] | Callable[[type[Never]], Never] | Descriptor"  [arg-type]
+tests/mypy/mypy_function_wrapper_fn_t1.py:74: error: Need type annotation for "wrapped_callable_object"  [var-annotated]
+tests/mypy/mypy_function_wrapper_fn_t1.py:74: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "ExampleClass1"; expected "Callable[[VarArg(Never), KwArg(Never)], Never] | Callable[[type[Never], VarArg(Never), KwArg(Never)], Never] | Callable[[type[Never]], Never] | Descriptor"  [arg-type]
+tests/mypy/mypy_function_wrapper_fn_t1.py:88: error: Argument 1 to "__call__" of "FunctionDecorator" has incompatible type "type[ExampleClass2]"; expected "Callable[[VarArg(Never), KwArg(Never)], Never] | Callable[[type[Never], VarArg(Never), KwArg(Never)], Never] | Callable[[type[Never]], Never] | Descriptor"  [arg-type]
+tests/mypy/mypy_function_wrapper_fn_t1.py:116: error: Argument 1 to "__call__" of "BoundFunctionWrapper" has incompatible type "int"; expected "Never"  [arg-type]
+tests/mypy/mypy_function_wrapper_fn_t1.py:117: error: Argument 1 to "__call__" of "BoundFunctionWrapper" has incompatible type "int"; expected "Never"  [arg-type]
+tests/mypy/mypy_function_wrapper_fn_t1.py:118: error: Argument 1 to "__call__" of "BoundFunctionWrapper" has incompatible type "int"; expected "Never"  [arg-type]
+tests/mypy/mypy_function_wrapper_fn_t1.py:120: error: Argument 1 to "__call__" of "BoundFunctionWrapper" has incompatible type "int"; expected "Never"  [arg-type]
+Found 16 errors in 1 file (checked 1 source file)
