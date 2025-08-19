@@ -21,9 +21,9 @@ these reasons a major version bump is being made.
 
 * Type hints have been added to the ``wrapt`` module. The type hints are
   available when using Python 3.10 or later, and can be used with static type
-  checkers such as ``mypy``. Note that due to limitations in Python's type hinting
-  system, not all parts of the API are fully typed. See the documentation for
-  more details on limitations and workarounds.
+  checkers such as ``pylance`` or ``mypy``. Note that due to limitations in
+  Python's type hinting system, type checking is not always able to be applied.
+  See the documentation for more details on limitations and workarounds.
 
 **Features Changed**
 
