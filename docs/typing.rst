@@ -2,7 +2,7 @@ Type Hinting
 ============
 
 As of version 2.0.0, **wrapt** provides inline type hints for its public APIs to
-improve interoperability with static type checkers (e.g. ``pylance``, `mypy``).
+improve interoperability with static type checkers (e.g. ``pylance``, ``mypy``).
 The type metadata is available when running on Python 3.10 or later (the minimum
 version the annotations target).
 
