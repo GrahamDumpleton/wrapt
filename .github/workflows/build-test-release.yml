@@ -10,7 +10,6 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+dev[0-9]+"
 
 jobs:
-
   test_linux:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
@@ -41,7 +40,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.17.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -102,7 +101,7 @@ jobs:
       - name: Install tox
         run: docker exec python_rv64  bash -c "source /src/venv/bin/activate && python -m pip install 'tox<4.0.0' 'tox-gh-actions<3.0.0'"
       - name: Install mypy
-        run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install 'mypy'"
+        run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install 'mypy==1.17.1'"
       - name: Test with tox
         run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && cd /src && python -m tox -e '${{ matrix.python-version.tox_e }}'"
 
@@ -139,7 +138,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.17.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -178,7 +177,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.17.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -232,7 +231,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.17.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
 
@@ -264,8 +263,8 @@ jobs:
         name: sdist
         path: dist/*
 
-  bdist_wheel:
-    name: Build wheels (3.8+) on ${{ matrix.os }} for ${{ matrix.arch }}
+  bdist_wheel_py38:
+    name: Build wheels (3.8) on ${{ matrix.os }} for ${{ matrix.arch }}
     needs:
     - test_linux
     - test_linux_no_gil
@@ -275,7 +274,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, windows-11-arm, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
         arch: [auto]
         include:
           - os: ubuntu-latest
@@ -299,23 +298,38 @@ jobs:
             CIBW_BUILD_VERBOSITY: 1
             CIBW_ARCHS: ${{ matrix.arch }}
             CIBW_FREE_THREADED_SUPPORT: 1
+            CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8,<3.9"
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
 
-  bdist_riscv64_wheel:
+  bdist_wheel:
     name: Build wheels (3.9+) on ${{ matrix.os }} for ${{ matrix.arch }}
     needs:
-      - test_linux_riscv64
+    - test_linux
+    - test_linux_no_gil
+    #- test_aarch64_linux
+    - test_macos
+    - test_windows
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        arch: [riscv64]
+        os: [ubuntu-latest, windows-latest, windows-11-arm, macos-13, macos-14]
+        arch: [auto]
+        include:
+          - os: ubuntu-latest
+            arch: aarch64
+          - os: macos-13
+            arch: universal2
+          - os: macos-14
+            arch: universal2
+          - os: ubuntu-latest
+            arch: riscv64
     steps:
       - uses: actions/checkout@v5
       - name: Set up QEMU
+        if: ${{ matrix.arch == 'aarch64' || matrix.arch == 'riscv64' }}
         uses: docker/setup-qemu-action@v3
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.4
