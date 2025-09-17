@@ -123,7 +123,7 @@ if sys.version_info >= (3, 10):
             callable: (
                 Callable[P, R]
                 | Callable[Concatenate[type[T], P], R]
-                # | Callable[Concatenate[Any, P], R] # Don't use, breaks stuff.
+                | Callable[Concatenate[Any, P], R]
                 | Callable[[type[T]], R]
                 | Descriptor
             ),

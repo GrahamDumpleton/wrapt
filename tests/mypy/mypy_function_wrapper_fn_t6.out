@@ -1,2 +1,2 @@
-tests/mypy/mypy_function_wrapper_fn_t6.py:15: error: Cannot infer type argument 2 of "function_wrapper"  [misc]
+tests/mypy/mypy_function_wrapper_fn_t6.py:15: error: Cannot infer value of type parameter "R" of "function_wrapper"  [misc]
 Found 1 error in 1 file (checked 1 source file)
