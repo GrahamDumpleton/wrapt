@@ -10,7 +10,6 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+dev[0-9]+"
 
 jobs:
-
   test_linux:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
@@ -41,7 +40,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -49,6 +48,73 @@ jobs:
       with:
         name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
         path: .coverage.*
+
+  test_linux_riscv64:
+    name: Test (${{ matrix.os }} riscv64-${{ matrix.python-version.tox_e }})
+    runs-on: ${{ matrix.os }}
+    if: false
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - {
+              "python_image": 3.9.23,
+              "tox_e": "py39, py39-without-extensions, py39-install-extensions, py39-disable-extensions",
+            }
+          - {
+              "python_image": 3.10.18,
+              "tox_e": "py310, py310-without-extensions, py310-install-extensions, py310-disable-extensions",
+            }
+          - {
+              "python_image": 3.11.13,
+              "tox_e": "py311, py311-without-extensions, py311-install-extensions, py311-disable-extensions",
+            }
+          - {
+              "python_image": 3.12.11,
+              "tox_e": "py312, py312-without-extensions, py312-install-extensions, py312-disable-extensions",
+            }
+          - {
+              "python_image": 3.13.7,
+              "tox_e": "py313, py313-without-extensions, py313-install-extensions, py313-disable-extensions",
+            }
+          - {
+              "python_image": 3.14.0rc2,
+              "tox_e": "py314, py314-without-extensions, py314-install-extensions, py314-disable-extensions",
+            }
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup docker/setup-qemu-action
+        uses: docker/setup-qemu-action@v3
+
+      - name: start python_rv64
+        run: docker run --platform linux/riscv64 -d --name python_rv64 -v ./:/src python:${{ matrix.python-version.python_image }} bash -c "while true; do sleep 30; done"
+
+      - name: show uname
+        run: docker exec python_rv64 uname -a
+
+      - name: setup venv
+        run: docker exec python_rv64 python -m venv /src/venv
+      - name: Update pip
+        run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install -U pip wheel setuptools"
+      - name: Install tox
+        run: docker exec python_rv64  bash -c "source /src/venv/bin/activate && python -m pip install 'tox<4.0.0' 'tox-gh-actions<3.0.0'"
+      - name: Install mypy
+        run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install 'mypy==1.18.1'"
+      - name: Test with tox
+        run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && cd /src && python -m tox -e '${{ matrix.python-version.tox_e }}'"
+
+      - name: ls -al
+        run: ls -al | grep .coverage
+
+      - name: Store partial coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}-${{ matrix.python-version.python_image }}
+          path: .coverage.*
+          include-hidden-files: true
 
   test_linux_no_gil:
     name: Test - NO GIL (${{ matrix.os }}, ${{ matrix.python-version }})
@@ -73,7 +139,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -112,7 +178,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -166,7 +232,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
 
@@ -198,18 +264,17 @@ jobs:
         name: sdist
         path: dist/*
 
-  bdist_wheel:
-    name: Build wheels (3.8+) on ${{ matrix.os }} for ${{ matrix.arch }}
+  bdist_wheel_py38:
+    name: Build wheels (3.8) on ${{ matrix.os }} for ${{ matrix.arch }}
     needs:
     - test_linux
     - test_linux_no_gil
-    #- test_aarch64_linux
     - test_macos
     - test_windows
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, windows-11-arm, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
         arch: [auto]
         include:
           - os: ubuntu-latest
@@ -233,6 +298,49 @@ jobs:
             CIBW_BUILD_VERBOSITY: 1
             CIBW_ARCHS: ${{ matrix.arch }}
             CIBW_FREE_THREADED_SUPPORT: 1
+            CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8,<3.9"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-py3.8-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*.whl
+
+  bdist_wheel:
+    name: Build wheels (3.9+) on ${{ matrix.os }} for ${{ matrix.arch }}
+    needs:
+    - test_linux
+    - test_linux_no_gil
+    # - test_linux_riscv64
+    - test_macos
+    - test_windows
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, windows-11-arm, macos-13, macos-14]
+        arch: [auto]
+        include:
+          - os: ubuntu-latest
+            arch: aarch64
+          - os: macos-13
+            arch: universal2
+          - os: macos-14
+            arch: universal2
+          - os: ubuntu-latest
+            arch: riscv64
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up QEMU
+        if: ${{ matrix.arch == 'aarch64' || matrix.arch == 'riscv64' }}
+        uses: docker/setup-qemu-action@v3
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.1.4
+        with:
+          output-dir: dist
+        env:
+          WRAPT_INSTALL_EXTENSIONS: true
+          CIBW_BUILD_VERBOSITY: 1
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_ENABLE: cpython-freethreading
+          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}-${{ matrix.arch }}
