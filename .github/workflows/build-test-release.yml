@@ -301,7 +301,7 @@ jobs:
             CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8,<3.9"
       - uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}-${{ matrix.arch }}
+          name: dist-py3.8-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
 
   bdist_wheel:
