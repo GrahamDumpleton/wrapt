@@ -40,7 +40,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy==1.17.1; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -101,7 +101,7 @@ jobs:
       - name: Install tox
         run: docker exec python_rv64  bash -c "source /src/venv/bin/activate && python -m pip install 'tox<4.0.0' 'tox-gh-actions<3.0.0'"
       - name: Install mypy
-        run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install 'mypy==1.17.1'"
+        run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install 'mypy==1.18.1'"
       - name: Test with tox
         run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && cd /src && python -m tox -e '${{ matrix.python-version.tox_e }}'"
 
@@ -138,7 +138,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy==1.17.1; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -177,7 +177,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy==1.17.1; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
     - name: Store partial coverage reports
@@ -231,7 +231,7 @@ jobs:
     - name: Install tox
       run: python -m pip install "tox<4.0.0" "tox-gh-actions<3.0.0"
     - name: Install mypy
-      run: python -m pip install "mypy==1.17.1; python_version >= '3.9'"
+      run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
 
