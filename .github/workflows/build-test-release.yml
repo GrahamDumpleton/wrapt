@@ -268,7 +268,6 @@ jobs:
     needs:
     - test_linux
     - test_linux_no_gil
-    #- test_aarch64_linux
     - test_macos
     - test_windows
     runs-on: ${{ matrix.os }}
@@ -309,7 +308,7 @@ jobs:
     needs:
     - test_linux
     - test_linux_no_gil
-    #- test_aarch64_linux
+    - test_linux_riscv64
     - test_macos
     - test_windows
     runs-on: ${{ matrix.os }}
