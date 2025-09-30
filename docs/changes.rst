@@ -59,9 +59,9 @@ these reasons a major version bump is being made.
   Python or C extension variant of the object proxy depending on whether the
   C extension is available. The ``AutoObjectProxy`` type is a minimal Python
   subclass of ``BaseObjectProxy`` which overrides the ``__new__()`` method to
-  dynamically generate a custom subclass which includes methods for callable,
-  iterable and async dunder methods which the wrapped object has. This is done
-  using a dynamically generated subclass as Python requires such special methods
+  dynamically generate a custom subclass which includes methods for callable and
+  iterator dunder methods which the wrapped object has. This is done using a
+  dynamically generated subclass as Python requires such special methods
   to be defined on the class itself and not on instances of the class. You
   should continue to use ``wrapt.ObjectProxy`` as before and ``BaseObjectProxy``
   would only be used in special circumstances where you need to bypass the
@@ -77,19 +77,18 @@ these reasons a major version bump is being made.
   either the pure Python or C extension variant of the class directly.
 
 * The ``AutoObjectProxy`` class now automatically adds proxy implementations
-  for the ``__call__()``, ``__iter__()``, ``__next__()``, ``__aiter__()``,
-  ``__anext__()``, and ``__await__()`` special methods if the wrapped object
-  implements them. This is done using a dynamically generated subclass as Python
-  requires such special methods to be defined on the class itself and not on
-  instances of the class. That this is done for ``__call__()`` means that it
-  should not be necessary to use the ``CallableObjectProxy`` class directly as the
-  ``ObjectProxy`` class will now automatically support wrapping callable
-  objects. Do note though that if binding behaviour is required when wrapping
-  functions (eg., methods of classes), then ``FunctionWrapper`` should be used
-  instead.
+  for the ``__call__()``, ``__iter__()``, ``__next__()``, ``__aiter__()`` and
+  ``__anext__()`` special methods if the wrapped object implements them. This
+  is done using a dynamically generated subclass as Python requires such special
+  methods to be defined on the class itself and not on instances of the class.
+  That this is done for ``__call__()`` means that it should not be necessary to
+  use the ``CallableObjectProxy`` class directly as the ``ObjectProxy`` class
+  will now automatically support wrapping callable objects. Do note though that 
+  if binding behaviour is required when wrapping functions (eg., methods of
+  classes), then ``FunctionWrapper`` should be used instead.
 
-* The ``BaseObjectProxy`` now provides proxy implementations for ``__aenter__()``
-  and ``__aexit__()`` special methods.
+* The ``BaseObjectProxy`` now provides proxy implementations for
+  ``__aenter__()``, ``__aexit__()`` and ``__await__()`` special methods.
 
 * The object proxy classes now raise a ``WrapperNotInitializedError`` exception
   rather than Python builtin ``ValueError`` exception when an attempt is made
