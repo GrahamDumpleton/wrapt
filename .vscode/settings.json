@@ -12,5 +12,11 @@
         }
     },
     "isort.args": ["--profile", "black"],
-    "python.sortImports.args": ["--profile", "black"]
+    "python.sortImports.args": [
+        "--profile",
+        "black"
+    ],
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    }
 }
