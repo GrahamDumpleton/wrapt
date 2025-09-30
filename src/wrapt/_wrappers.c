@@ -2024,12 +2024,7 @@ PyTypeObject WraptPartialCallableObjectProxy_Type = {
     0,                                                   /*tp_getattro*/
     0,                                                   /*tp_setattro*/
     0,                                                   /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC |
-        Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-#endif
     0,                                                      /*tp_doc*/
     (traverseproc)WraptPartialCallableObjectProxy_traverse, /*tp_traverse*/
     (inquiry)WraptPartialCallableObjectProxy_clear,         /*tp_clear*/
@@ -2130,11 +2125,7 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
                           "binding", "parent",   "owner",   NULL};
 
   if (!callable_str) {
-#if PY_MAJOR_VERSION >= 3
     callable_str = PyUnicode_InternFromString("callable");
-#else
-    callable_str = PyString_InternFromString("callable");
-#endif
   }
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO|OOOO:FunctionWrapperBase",
@@ -2205,17 +2196,10 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   static PyObject *instancemethod_str = NULL;
 
   if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
     function_str = PyUnicode_InternFromString("function");
     callable_str = PyUnicode_InternFromString("callable");
     classmethod_str = PyUnicode_InternFromString("classmethod");
     instancemethod_str = PyUnicode_InternFromString("instancemethod");
-#else
-    function_str = PyString_InternFromString("function");
-    callable_str = PyString_InternFromString("callable");
-    classmethod_str = PyString_InternFromString("classmethod");
-    instancemethod_str = PyString_InternFromString("instancemethod");
-#endif
   }
 
   if (self->enabled != Py_None) {
@@ -2298,27 +2282,15 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
   static PyObject *instancemethod_str = NULL;
 
   if (!bound_type_str) {
-#if PY_MAJOR_VERSION >= 3
     bound_type_str = PyUnicode_InternFromString("__bound_function_wrapper__");
-#else
-    bound_type_str = PyString_InternFromString("__bound_function_wrapper__");
-#endif
   }
 
   if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
     function_str = PyUnicode_InternFromString("function");
     callable_str = PyUnicode_InternFromString("callable");
     builtin_str = PyUnicode_InternFromString("builtin");
     class_str = PyUnicode_InternFromString("class");
     instancemethod_str = PyUnicode_InternFromString("instancemethod");
-#else
-    function_str = PyString_InternFromString("function");
-    callable_str = PyString_InternFromString("callable");
-    builtin_str = PyString_InternFromString("builtin");
-    class_str = PyString_InternFromString("class");
-    instancemethod_str = PyString_InternFromString("instancemethod");
-#endif
   }
 
   if (self->parent == Py_None) {
@@ -2380,11 +2352,7 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
     static PyObject *wrapped_str = NULL;
 
     if (!wrapped_str) {
-#if PY_MAJOR_VERSION >= 3
       wrapped_str = PyUnicode_InternFromString("__wrapped__");
-#else
-      wrapped_str = PyString_InternFromString("__wrapped__");
-#endif
     }
 
     wrapped = PyObject_GetAttr(self->parent, wrapped_str);
@@ -2662,12 +2630,7 @@ PyTypeObject WraptFunctionWrapperBase_Type = {
     0,                                            /*tp_getattro*/
     0,                                            /*tp_setattro*/
     0,                                            /*tp_as_buffer*/
-#if PY_MAJOR_VERSION < 3
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC |
-        Py_TPFLAGS_CHECKTYPES, /*tp_flags*/
-#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-#endif
     0,                                                /*tp_doc*/
     (traverseproc)WraptFunctionWrapperBase_traverse,  /*tp_traverse*/
     (inquiry)WraptFunctionWrapperBase_clear,          /*tp_clear*/
@@ -2727,13 +2690,8 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   }
 
   if (!function_str) {
-#if PY_MAJOR_VERSION >= 3
     function_str = PyUnicode_InternFromString("function");
     callable_str = PyUnicode_InternFromString("callable");
-#else
-    function_str = PyString_InternFromString("function");
-    callable_str = PyString_InternFromString("callable");
-#endif
   }
 
   /*
