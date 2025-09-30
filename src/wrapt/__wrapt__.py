@@ -112,29 +112,29 @@ class AutoObjectProxy(BaseObjectProxy):
         if callable(self.__wrapped__):
             if "__call__" not in class_attrs:
                 cls.__call__ = __wrapper_call__
-        elif getattr(cls, "__call__", None) == __wrapper_call__:
+        elif getattr(cls, "__call__", None) is __wrapper_call__:
             delattr(cls, "__call__")
 
         if hasattr(self.__wrapped__, "__iter__"):
             if "__iter__" not in class_attrs:
                 cls.__iter__ = __wrapper_iter__
-        elif getattr(cls, "__iter__", None) == __wrapper_iter__:
+        elif getattr(cls, "__iter__", None) is __wrapper_iter__:
             delattr(cls, "__iter__")
 
         if hasattr(self.__wrapped__, "__next__"):
             if "__next__" not in class_attrs:
                 cls.__next__ = __wrapper_next__
-        elif getattr(cls, "__next__", None) == __wrapper_next__:
+        elif getattr(cls, "__next__", None) is __wrapper_next__:
             delattr(cls, "__next__")
 
         if hasattr(self.__wrapped__, "__aiter__"):
             if "__aiter__" not in class_attrs:
                 cls.__aiter__ = __wrapper_aiter__
-        elif getattr(cls, "__aiter__", None) == __wrapper_aiter__:
+        elif getattr(cls, "__aiter__", None) is __wrapper_aiter__:
             delattr(cls, "__aiter__")
 
         if hasattr(self.__wrapped__, "__anext__"):
             if "__anext__" not in class_attrs:
                 cls.__anext__ = __wrapper_anext__
-        elif getattr(cls, "__anext__", None) == __wrapper_anext__:
+        elif getattr(cls, "__anext__", None) is __wrapper_anext__:
             delattr(cls, "__anext__")
