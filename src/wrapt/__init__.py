@@ -11,6 +11,7 @@ from .__wrapt__ import (
     BoundFunctionWrapper,
     CallableObjectProxy,
     FunctionWrapper,
+    LazyObjectProxy,
     PartialCallableObjectProxy,
     partial,
 )

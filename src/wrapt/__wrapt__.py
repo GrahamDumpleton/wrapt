@@ -103,7 +103,7 @@ class AutoObjectProxy(BaseObjectProxy):
 
     def __wrapped_setattr_fixups__(self):
         """Adjusts special dunder methods on the class as needed based on the
-        wrapped object, when ``__wrapped__`` is changed.
+        wrapped object, when `__wrapped__` is changed.
         """
 
         cls = type(self)
@@ -138,3 +138,27 @@ class AutoObjectProxy(BaseObjectProxy):
                 cls.__anext__ = __wrapper_anext__
         elif getattr(cls, "__anext__", None) is __wrapper_anext__:
             delattr(cls, "__anext__")
+
+
+class LazyObjectProxy(AutoObjectProxy):
+    """An object proxy which can generate/create the wrapped object on demand
+    when it is first needed.
+    """
+
+    def __new__(cls, callback=None):
+        return super().__new__(cls, None)
+
+    def __init__(self, callback=None):
+        """Initialize the object proxy with wrapped object as `None` but due
+        to presence of special `__wrapped_callback__` attribute addded first,
+        this will actually trigger the deferred creation of the wrapped object
+        when first needed.
+        """
+
+        if callback is not None:
+            self.__wrapped_callback__ = callback
+
+        super().__init__(None)
+
+    def __wrapped_callback__(self):
+        return None

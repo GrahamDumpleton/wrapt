@@ -87,7 +87,26 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     __slots__ = "__wrapped__"
 
     def __init__(self, wrapped):
-        object.__setattr__(self, "__wrapped__", wrapped)
+        """Create an object proxy around the given object."""
+
+        if wrapped is None:
+            try:
+                callback = object.__getattribute__(self, "__wrapped_callback__")
+            except AttributeError:
+                callback = None
+
+            if callback is not None:
+                # If wrapped is none and class has a __wrapped_callback__
+                # method, then we don't set __wrapped__ yet and instead will
+                # defer creation of the wrapped object until it is first
+                # needed.
+
+                pass
+
+            else:
+                object.__setattr__(self, "__wrapped__", wrapped)
+        else:
+            object.__setattr__(self, "__wrapped__", wrapped)
 
         # Python 3.2+ has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
@@ -222,11 +241,22 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             setattr(self.__wrapped__, name, value)
 
     def __getattr__(self, name):
-        # If we are being to lookup '__wrapped__' then the
-        # '__init__()' method cannot have been called.
+        # If we need to lookup '__wrapped__' then the '__init__()' method
+        # cannot have been called, or this is a lazy object proxy which is
+        # deferring creation of the wrapped object until it is first needed.
 
         if name == "__wrapped__":
-            raise WrapperNotInitializedError("wrapper has not been initialised")
+            try:
+                callback = object.__getattribute__(self, "__wrapped_callback__")
+            except AttributeError:
+                callback = None
+
+            if callback is not None:
+                value = callback()
+                object.__setattr__(self, "__wrapped__", value)
+                return value
+
+            raise WrapperNotInitializedError("wrapper has not been initialized")
 
         return getattr(self.__wrapped__, name)
 
@@ -235,7 +265,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             object.__delattr__(self, name)
 
         elif name == "__wrapped__":
-            raise TypeError("__wrapped__ must be an object")
+            raise TypeError("__wrapped__ attribute cannot be deleted")
 
         elif name == "__qualname__":
             object.__delattr__(self, name)

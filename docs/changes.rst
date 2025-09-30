@@ -26,6 +26,12 @@ these reasons a major version bump is being made.
   or details such as default values may not be available. See the documentation
   for more details on limitations and workarounds.
 
+* Added ``wrapt.LazyObjectProxy`` class which is a variant of ``ObjectProxy``
+  which takes a callable which returns the object to be wrapped. The callable is
+  only invoked the first time an attribute of the wrapped object is accessed.
+  This can be useful for deferring creation of expensive objects until they are
+  actually needed.
+
 **Features Changed**
 
 * Code related to Python 2.X and workarounds for older Python 3.X versions has
