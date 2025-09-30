@@ -4,17 +4,9 @@ wrappers.
 
 import os
 
-from .wrappers import (
-    BoundFunctionWrapper,
-    CallableObjectProxy,
-    FunctionWrapper,
-    ObjectProxy,
-    PartialCallableObjectProxy,
-    _FunctionWrapperBase,
-)
-
-# Import Python fallbacks.
-
+from .wrappers import BoundFunctionWrapper, CallableObjectProxy, FunctionWrapper
+from .wrappers import ObjectProxy as BaseObjectProxy
+from .wrappers import PartialCallableObjectProxy, _FunctionWrapperBase
 
 # Try to use C extensions if not disabled.
 
@@ -26,15 +18,17 @@ if _use_extensions:
             BoundFunctionWrapper,
             CallableObjectProxy,
             FunctionWrapper,
-            ObjectProxy,
+        )
+        from ._wrappers import (
+            ObjectProxy as BaseObjectProxy,  # type: ignore[no-redef,import-not-found]
+        )
+        from ._wrappers import (  # type: ignore[no-redef,import-not-found]
             PartialCallableObjectProxy,
             _FunctionWrapperBase,
         )
     except ImportError:
         # C extensions not available, using Python implementations
         pass
-
-# Provide an alias for partial().
 
 
 def partial(*args, **kwargs):
@@ -44,3 +38,61 @@ def partial(*args, **kwargs):
     introspection.
     """
     return PartialCallableObjectProxy(*args, **kwargs)
+
+
+# Define variant of ObjectProxy which can automatically adjust to the wrapped
+# object and add special dunder methods.
+
+
+def __wrapper_call__(self, *args, **kwargs):
+    return self.__wrapped__(*args, **kwargs)
+
+
+def __wrapper_iter__(self):
+    return iter(self.__wrapped__)
+
+
+def __wrapper_next__(self):
+    return self.__wrapped__.__next__()
+
+
+def __wrapper_aiter__(self):
+    return self.__wrapped__.__aiter__()
+
+
+def __wrapper_anext__(self):
+    return self.__wrapped__.__anext__()
+
+
+class AutoObjectProxy(BaseObjectProxy):
+    """An object proxy which can automatically adjust to the wrapped object
+    and add special dunder methods as needed.
+    """
+
+    def __new__(cls, wrapped):
+        namespace = {}
+
+        wrapped_attrs = dir(wrapped)
+        class_attrs = dir(cls)
+
+        if callable(wrapped) and "__call__" not in class_attrs:
+            namespace["__call__"] = __wrapper_call__
+
+        if "__iter__" in wrapped_attrs and "__iter__" not in class_attrs:
+            namespace["__iter__"] = __wrapper_iter__
+
+        if "__next__" in wrapped_attrs and "__next__" not in class_attrs:
+            namespace["__next__"] = __wrapper_next__
+
+        if "__aiter__" in wrapped_attrs and "__aiter__" not in class_attrs:
+            namespace["__aiter__"] = __wrapper_aiter__
+
+        if "__anext__" in wrapped_attrs and "__anext__" not in class_attrs:
+            namespace["__anext__"] = __wrapper_anext__
+
+        name = cls.__name__
+
+        if cls is AutoObjectProxy:
+            name = BaseObjectProxy.__name__
+
+        return super().__new__(type(name, (cls,), namespace))

@@ -8,12 +8,7 @@ from functools import partial
 from inspect import isclass, signature
 from threading import Lock, RLock
 
-from .__wrapt__ import (
-    BoundFunctionWrapper,
-    CallableObjectProxy,
-    FunctionWrapper,
-    ObjectProxy,
-)
+from .__wrapt__ import BoundFunctionWrapper, CallableObjectProxy, FunctionWrapper
 from .arguments import formatargspec
 
 # Adapter wrapper for the wrapped function which will overlay certain

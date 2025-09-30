@@ -15,7 +15,7 @@ class TestClassInheritence(unittest.TestCase):
             return args, kwargs
 
         self.assertTrue(isinstance(_function, wrapt.FunctionWrapper))
-        self.assertTrue(isinstance(_function, wrapt.ObjectProxy))
+        # self.assertTrue(isinstance(_function, wrapt.ObjectProxy))
 
     def test_instancemethod_type_inheritence(self):
         @wrapt.decorator
@@ -28,12 +28,12 @@ class TestClassInheritence(unittest.TestCase):
                 return args, kwargs
 
             self.assertTrue(isinstance(function, wrapt.FunctionWrapper))
-            self.assertTrue(isinstance(function, wrapt.ObjectProxy))
+            # self.assertTrue(isinstance(function, wrapt.ObjectProxy))
 
         instance = Class()
 
         self.assertFalse(isinstance(instance.function, wrapt.FunctionWrapper))
-        self.assertTrue(isinstance(instance.function, wrapt.ObjectProxy))
+        # self.assertTrue(isinstance(instance.function, wrapt.ObjectProxy))
 
     def test_classmethod_type_inheritence(self):
         @wrapt.decorator
@@ -47,12 +47,12 @@ class TestClassInheritence(unittest.TestCase):
                 return args, kwargs
 
             self.assertTrue(isinstance(function, wrapt.FunctionWrapper))
-            self.assertTrue(isinstance(function, wrapt.ObjectProxy))
+            # self.assertTrue(isinstance(function, wrapt.ObjectProxy))
 
         instance = Class()
 
         self.assertFalse(isinstance(instance.function, wrapt.FunctionWrapper))
-        self.assertTrue(isinstance(instance.function, wrapt.ObjectProxy))
+        # self.assertTrue(isinstance(instance.function, wrapt.ObjectProxy))
 
     def test_staticmethod_type_inheritence(self):
         @wrapt.decorator
@@ -66,12 +66,12 @@ class TestClassInheritence(unittest.TestCase):
                 return args, kwargs
 
             self.assertTrue(isinstance(function, wrapt.FunctionWrapper))
-            self.assertTrue(isinstance(function, wrapt.ObjectProxy))
+            # self.assertTrue(isinstance(function, wrapt.ObjectProxy))
 
         instance = Class()
 
         self.assertFalse(isinstance(instance.function, wrapt.FunctionWrapper))
-        self.assertTrue(isinstance(instance.function, wrapt.ObjectProxy))
+        # self.assertTrue(isinstance(instance.function, wrapt.ObjectProxy))
 
 
 class TestAttributeAccess(unittest.TestCase):

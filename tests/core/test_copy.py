@@ -1,6 +1,5 @@
-import unittest
-
 import copy
+import unittest
 
 import wrapt
 
@@ -38,7 +37,8 @@ class TestObjectCopy(unittest.TestCase):
         proxy1 = CustomObjectProxy([1])
         proxy2 = copy.copy(proxy1)
 
-        self.assertTrue(type(proxy1) == type(proxy2))
+        # self.assertTrue(type(proxy1) == type(proxy2))
+        self.assertTrue(isinstance(proxy2, CustomObjectProxy))
         self.assertEqual(proxy1, proxy2)
         self.assertEqual(proxy1.__wrapped__, proxy2.__wrapped__)
 
@@ -46,7 +46,8 @@ class TestObjectCopy(unittest.TestCase):
         proxy1 = CustomObjectProxy([1])
         proxy2 = copy.deepcopy(proxy1)
 
-        self.assertTrue(type(proxy1) == type(proxy2))
+        # self.assertTrue(type(proxy1) == type(proxy2))
+        self.assertTrue(isinstance(proxy2, CustomObjectProxy))
         self.assertEqual(proxy1, proxy2)
         self.assertEqual(proxy1.__wrapped__, proxy2.__wrapped__)
 

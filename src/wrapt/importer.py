@@ -9,7 +9,7 @@ import threading
 from importlib.util import find_spec
 from typing import Callable, Dict, List
 
-from .__wrapt__ import ObjectProxy
+from .__wrapt__ import BaseObjectProxy
 
 # The dictionary registering any post import hooks to be triggered once
 # the target module has been imported. Once a module has been imported
@@ -166,7 +166,7 @@ class _ImportHookLoader:
         return module
 
 
-class _ImportHookChainedLoader(ObjectProxy):
+class _ImportHookChainedLoader(BaseObjectProxy):
 
     def __init__(self, loader):
         super(_ImportHookChainedLoader, self).__init__(loader)

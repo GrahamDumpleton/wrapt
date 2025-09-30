@@ -4,7 +4,7 @@ Release Notes
 Version 2.0.0
 --------------
 
-There have been subtle changes in a corner case of the behaviour of the
+There have been subtle changes in various corner cases of the behaviour of the
 ``ObjectProxy`` class, which although not expected to cause problems, still has
 the potential for causing issues if code was for some reason dependent on prior
 behaviour. All existing code related to Python 2.X has also been removed.
@@ -22,12 +22,76 @@ these reasons a major version bump is being made.
 * Type hints have been added to the ``wrapt`` module. The type hints are
   available when using Python 3.10 or later, and can be used with static type
   checkers such as ``pylance`` or ``mypy``. Note that due to limitations in
-  Python's type hinting system, type checking is not always able to be applied.
-  See the documentation for more details on limitations and workarounds.
+  Python's type hinting system, type checking is not always able to be applied
+  or details such as default values may not be available. See the documentation
+  for more details on limitations and workarounds.
 
 **Features Changed**
 
-* The ``ObjectProxy`` class now raises a ``WrapperNotInitializedError`` exception
+* Code related to Python 2.X and workarounds for older Python 3.X versions has
+  been removed.
+
+* Dependency at runtime on ``setuptools`` for calculating package entry points
+  has been removed. Instead the ``importlib.metadata`` module is now used for
+  this purpose. The ``wrapt`` package no longer requires ``setuptools`` to be
+  installed at runtime. It is still required for building and installing the
+  package from source, but not for installation using Python wheels, and not
+  for using it.
+
+* For reasons to do with backward/forward compatibility the ``wrapt`` module
+  included references to ``getcallargs()`` and ``formatargspec()`` functions which
+  were part of the ``inspect`` module at one time or another. These were provided
+  as convenience for users of the ``wrapt`` module, but were not actually part of
+  the public API. They have now been removed from the ``wrapt`` module and are
+  no longer available. If you need these functions, you should use the
+  ``inspect`` module directly.
+
+* The ``enabled``, ``adapter`` and ``proxy`` arguments to the ``@decorator``
+  decorator had to be keyword parameters, and the initial ``wrapped`` argument
+  had to be positional only. Because though Python 2.X was still being supported
+  it was not possible to use appropriate syntax to mark them as such. These
+  arguments are now marked as positional and keyword only parameters in the
+  function signature as appropriate.
+
+* The ``ObjectProxy`` type is now an alias to the internal ``AutoObjectProxy``
+  type and the original ``ObjectProxy`` type has been renamed to
+  ``BaseObjectProxy``. The ``BaseObjectProxy`` type will be either the pure
+  Python or C extension variant of the object proxy depending on whether the
+  C extension is available. The ``AutoObjectProxy`` type is a minimal Python
+  subclass of ``BaseObjectProxy`` which overrides the ``__new__()`` method to
+  dynamically generate a custom subclass which includes methods for callable,
+  iterable and async dunder methods which the wrapped object has. This is done
+  using a dynamically generated subclass as Python requires such special methods
+  to be defined on the class itself and not on instances of the class. You
+  should continue to use ``wrapt.ObjectProxy`` as before and ``BaseObjectProxy``
+  would only be used in special circumstances where you need to bypass the
+  ``AutoObjectProxy`` behaviour.
+
+* The ``BaseObjectProxy`` (previously ``ObjectProxy``), now no longer provides
+  a proxy wrapper implementation for the ``__iter__()`` special method. This is
+  because the ``AutoObjectProxy`` subclass will automatically add this method.
+  This change was made as it was originally a mistake to include it in the
+  ``ObjectProxy`` class as its presence could cause issues when the wrapped
+  object didn't actually implement the ``__iter__()`` method. This change should
+  not cause any issues unless you were bypassing ``wrapt.ObjectProxy`` and using
+  either the pure Python or C extension variant of the class directly.
+
+* The ``AutoObjectProxy`` class now automatically adds proxy implementations
+  for the ``__call__()``, ``__iter__()``, ``__next__()``, ``__aiter__()``,
+  ``__anext__()``, and ``__await__()`` special methods if the wrapped object
+  implements them. This is done using a dynamically generated subclass as Python
+  requires such special methods to be defined on the class itself and not on
+  instances of the class. That this is done for ``__call__()`` means that it
+  should not be necessary to use the ``CallableObjectProxy`` class directly as the
+  ``ObjectProxy`` class will now automatically support wrapping callable
+  objects. Do note though that if binding behaviour is required when wrapping
+  functions (eg., methods of classes), then ``FunctionWrapper`` should be used
+  instead.
+
+* The ``BaseObjectProxy`` now provides proxy implementations for ``__aenter__()``
+  and ``__aexit__()`` special methods.
+
+* The object proxy classes now raise a ``WrapperNotInitializedError`` exception
   rather than Python builtin ``ValueError`` exception when an attempt is made
   to access an attribute of the wrapped object before the wrapper has been
   initialized. The ``WrapperNotInitializedError`` exception inherits from both
@@ -39,30 +103,6 @@ these reasons a major version bump is being made.
   that also inherits from ``AttributeError`` it is hoped the IDE will see it as
   a normal attribute access error rather than an actual error and so just not
   attempt to show the attribute within the IDE.
-
-* Code related to Python 2.X and workarounds for older Python 3.X versions has
-  been removed.
-
-* Dependency at runtime on ``setuptools`` for calculating package entry points
-  has been removed. Instead the ``importlib.metadata`` module is now used for
-  this purpose. The ``wrapt`` package no longer requires ``setuptools`` to be
-  installed at runtime. It is still required for building and installing the
-  package, but not for using it.
-
-* For reasons to do with backward/forward compatibility the ``wrapt`` module
-  included references to ``getcallargs()`` and ``formatargspec()`` functions which
-  were part of the ``inspect`` module at one time or another. These were provided
-  as convenience for users of the ``wrapt`` module, but were not actually part of
-  the public API. They have now been removed from the ``wrapt`` module and are
-  no longer available. If you need these functions, you should use the
-  ``inspect`` module directly.
-
-* The ``enabled``, ``adapter`` and ``proxy`` arguments to the ``@decorator`` decorator
-  had to be keyword parameters, and the initial ``wrapped`` argument had to be
-  positional only. Because though Python 2.X was still being supported it was
-  not possible to use appropriate syntax to mark them as such. These arguments
-  are now marked as positional and keyword only parameters in the function
-  signature as appropriate.
 
 **Bugs Fixed**
 

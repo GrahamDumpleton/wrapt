@@ -1085,6 +1085,79 @@ static PyObject *WraptObjectProxy_exit(WraptObjectProxyObject *self,
   return result;
 }
 
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_aenter(WraptObjectProxyObject *self,
+                                        PyObject *args, PyObject *kwds) {
+  PyObject *method = NULL;
+  PyObject *result = NULL;
+
+  if (!self->wrapped) {
+    raise_uninitialized_wrapper_error();
+    return NULL;
+  }
+
+  method = PyObject_GetAttrString(self->wrapped, "__aenter__");
+
+  if (!method)
+    return NULL;
+
+  result = PyObject_Call(method, args, kwds);
+
+  Py_DECREF(method);
+
+  return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_aexit(WraptObjectProxyObject *self,
+                                       PyObject *args, PyObject *kwds) {
+  PyObject *method = NULL;
+  PyObject *result = NULL;
+
+  if (!self->wrapped) {
+    raise_uninitialized_wrapper_error();
+    return NULL;
+  }
+
+  method = PyObject_GetAttrString(self->wrapped, "__aexit__");
+
+  if (!method)
+    return NULL;
+
+  result = PyObject_Call(method, args, kwds);
+
+  Py_DECREF(method);
+
+  return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_await(WraptObjectProxyObject *self,
+                                        PyObject *args, PyObject *kwds) {
+  PyObject *method = NULL;
+  PyObject *result = NULL;
+
+  if (!self->wrapped) {
+    raise_uninitialized_wrapper_error();
+    return NULL;
+  }
+
+  method = PyObject_GetAttrString(self->wrapped, "__await__");
+
+  if (!method)
+    return NULL;
+
+  result = PyObject_Call(method, args, kwds);
+
+  Py_DECREF(method);
+
+  return result;
+}
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_copy(WraptObjectProxyObject *self,
@@ -1596,6 +1669,12 @@ static PyMethodDef WraptObjectProxy_methods[] = {
      METH_VARARGS | METH_KEYWORDS, 0},
     {"__exit__", (PyCFunction)WraptObjectProxy_exit,
      METH_VARARGS | METH_KEYWORDS, 0},
+    {"__aenter__", (PyCFunction)WraptObjectProxy_aenter,
+     METH_VARARGS | METH_KEYWORDS, 0},
+    {"__aexit__", (PyCFunction)WraptObjectProxy_aexit,
+     METH_VARARGS | METH_KEYWORDS, 0},
+    {"__await__", (PyCFunction)WraptObjectProxy_await,
+     METH_VARARGS | METH_KEYWORDS, 0},
     {"__copy__", (PyCFunction)WraptObjectProxy_copy, METH_NOARGS, 0},
     {"__deepcopy__", (PyCFunction)WraptObjectProxy_deepcopy,
      METH_VARARGS | METH_KEYWORDS, 0},
@@ -1658,7 +1737,7 @@ PyTypeObject WraptObjectProxy_Type = {
     (inquiry)WraptObjectProxy_clear,               /*tp_clear*/
     (richcmpfunc)WraptObjectProxy_richcompare,     /*tp_richcompare*/
     offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
-    (getiterfunc)WraptObjectProxy_iter,            /*tp_iter*/
+    0, /* (getiterfunc)WraptObjectProxy_iter, */   /*tp_iter*/
     0,                                             /*tp_iternext*/
     WraptObjectProxy_methods,                      /*tp_methods*/
     0,                                             /*tp_members*/

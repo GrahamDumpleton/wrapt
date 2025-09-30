@@ -1,7 +1,7 @@
 import functools
 import weakref
 
-from .__wrapt__ import ObjectProxy, _FunctionWrapperBase
+from .__wrapt__ import BaseObjectProxy, _FunctionWrapperBase
 
 # A weak function proxy. This will work on instance methods, class
 # methods, static methods and regular functions. Special treatment is
@@ -27,7 +27,7 @@ def _weak_function_proxy_callback(ref, proxy, callback):
         callback(proxy)
 
 
-class WeakFunctionProxy(ObjectProxy):
+class WeakFunctionProxy(BaseObjectProxy):
     """A weak function proxy."""
 
     __slots__ = ("_self_expired", "_self_instance")

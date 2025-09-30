@@ -425,8 +425,14 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     def __exit__(self, *args, **kwargs):
         return self.__wrapped__.__exit__(*args, **kwargs)
 
-    def __iter__(self):
-        return iter(self.__wrapped__)
+    def __aenter__(self):
+        return self.__wrapped__.__aenter__()
+
+    def __aexit__(self, *args, **kwargs):
+        return self.__wrapped__.__aexit__(*args, **kwargs)
+
+    def __await__(self):
+        return self.__wrapped__.__await__()
 
     def __copy__(self):
         raise NotImplementedError("object proxy must define __copy__()")

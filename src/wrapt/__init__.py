@@ -5,11 +5,12 @@ Wrapt is a library for decorators, wrappers and monkey patching.
 __version_info__ = ("2", "0", "0", "rc3")
 __version__ = ".".join(__version_info__)
 
+from .__wrapt__ import AutoObjectProxy as ObjectProxy
 from .__wrapt__ import (
+    BaseObjectProxy,
     BoundFunctionWrapper,
     CallableObjectProxy,
     FunctionWrapper,
-    ObjectProxy,
     PartialCallableObjectProxy,
     partial,
 )
