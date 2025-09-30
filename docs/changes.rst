@@ -30,7 +30,10 @@ these reasons a major version bump is being made.
   which takes a callable which returns the object to be wrapped. The callable is
   only invoked the first time an attribute of the wrapped object is accessed.
   This can be useful for deferring creation of expensive objects until they are
-  actually needed.
+  actually needed. Note that currently there is no thread locks to prevent
+  multiple threads from triggering creation of the wrapped object at the same
+  time. If this is a concern, if using callback defined in sub class of
+  ``LazyObjectProxy``, you can add your own locking and checks as necessary.
 
 **Features Changed**
 
