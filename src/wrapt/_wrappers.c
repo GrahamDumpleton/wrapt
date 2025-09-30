@@ -1472,6 +1472,10 @@ static PyObject *WraptObjectProxy_get_wrapped(WraptObjectProxyObject *self) {
 
 static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
                                         PyObject *value) {
+  static PyObject *fixups_str = NULL;
+  
+  PyObject *fixups = NULL;
+
   if (!value) {
     PyErr_SetString(PyExc_TypeError, "__wrapped__ must be an object");
     return -1;
@@ -1481,6 +1485,26 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
   Py_XDECREF(self->wrapped);
 
   self->wrapped = value;
+
+  if (!fixups_str) {
+    fixups_str = PyUnicode_InternFromString("__wrapped_setattr_fixups__");
+  }
+
+  fixups = PyObject_GetAttr((PyObject *)self, fixups_str);
+
+  if (fixups) {
+    PyObject *result = NULL;
+
+    result = PyObject_CallObject(fixups, NULL);
+    Py_DECREF(fixups);
+
+    if (!result)
+      return -1;
+
+    Py_DECREF(result);
+  }
+  else
+    PyErr_Clear();
 
   return 0;
 }
@@ -1542,7 +1566,6 @@ static PyObject *WraptObjectProxy_getattr(WraptObjectProxyObject *self,
 static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
                                      PyObject *name, PyObject *value) {
   static PyObject *self_str = NULL;
-  static PyObject *wrapped_str = NULL;
   static PyObject *startswith_str = NULL;
 
   PyObject *match = NULL;
@@ -1565,10 +1588,6 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
     PyErr_Clear();
 
   Py_XDECREF(match);
-
-  if (!wrapped_str) {
-    wrapped_str = PyUnicode_InternFromString("__wrapped__");
-  }
 
   if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
     return PyObject_GenericSetAttr((PyObject *)self, name, value);

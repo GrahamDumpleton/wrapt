@@ -182,6 +182,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
 
         elif name == "__wrapped__":
             object.__setattr__(self, name, value)
+
             try:
                 object.__delattr__(self, "__qualname__")
             except AttributeError:
@@ -198,6 +199,13 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
                 object.__setattr__(self, "__annotations__", value.__annotations__)
             except AttributeError:
                 pass
+
+            __wrapped_setattr_fixups__ = getattr(
+                self, "__wrapped_setattr_fixups__", None
+            )
+
+            if __wrapped_setattr_fixups__ is not None:
+                __wrapped_setattr_fixups__()
 
         elif name == "__qualname__":
             setattr(self.__wrapped__, name, value)
