@@ -87,6 +87,9 @@ test-version version:
     rm -rf .mypy_cache
     rm -rf .pytest_cache
 
+    rm -rf src/wrapt/__pycache__
+    rm -rf src/wrapt/_wrappers.*.so
+
     rm -rf .venv-test-tmp
     uv venv .venv-test-tmp --python {{version}}
     source .venv-test-tmp/bin/activate
@@ -98,7 +101,7 @@ test-version version:
 
     export WRAPT_INSTALL_EXTENSIONS=false
 
-    uv pip install -e .
+    uv pip install -e . --no-cache
     uv run pytest
 
     uv pip uninstall wrapt
@@ -107,7 +110,7 @@ test-version version:
 
     export WRAPT_INSTALL_EXTENSIONS=true
 
-    uv pip install -e .
+    uv pip install -e . --no-cache
     uv run pytest
 
     echo "=== Testing Python {{version}} - with C extensions disabled at runtime ==="
