@@ -59,7 +59,7 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
   // that as the wrapped object and continue and return without raising an error.
 
   static PyObject *wrapped_str = NULL;
-  static PyObject *wrapped_callback_str = NULL;
+  static PyObject *wrapped_factory_str = NULL;
 
   PyObject *callback = NULL;
   PyObject *value = NULL;
@@ -67,10 +67,10 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
   if (!wrapped_str)
   {
     wrapped_str = PyUnicode_InternFromString("__wrapped__");
-    wrapped_callback_str = PyUnicode_InternFromString("__wrapped_callback__");
+    wrapped_factory_str = PyUnicode_InternFromString("__wrapped_factory__");
   }
 
-  callback = PyObject_GenericGetAttr(object, wrapped_callback_str);
+  callback = PyObject_GenericGetAttr(object, wrapped_factory_str);
 
   if (callback)
   {
@@ -182,23 +182,23 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
 {
   static PyObject *module_str = NULL;
   static PyObject *doc_str = NULL;
-  static PyObject *wrapped_callback_str = NULL;
+  static PyObject *wrapped_factory_str = NULL;
 
   PyObject *object = NULL;
 
-  // If wrapped is Py_None and we have a __wrapped_callback__ attribute
+  // If wrapped is Py_None and we have a __wrapped_factory__ attribute
   // then we defer initialization of the wrapped object until it is first needed.
 
-  if (!wrapped_callback_str)
+  if (!wrapped_factory_str)
   {
-    wrapped_callback_str = PyUnicode_InternFromString("__wrapped_callback__");
+    wrapped_factory_str = PyUnicode_InternFromString("__wrapped_factory__");
   }
 
   if (wrapped == Py_None)
   {
     PyObject *callback = NULL;
 
-    callback = PyObject_GenericGetAttr((PyObject *)self, wrapped_callback_str);
+    callback = PyObject_GenericGetAttr((PyObject *)self, wrapped_factory_str);
 
     if (callback)
     {

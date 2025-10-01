@@ -112,15 +112,15 @@ class LazyObjectProxy(AutoObjectProxy):
 
     def __init__(self, callback=None):
         """Initialize the object proxy with wrapped object as `None` but due
-        to presence of special `__wrapped_callback__` attribute addded first,
+        to presence of special `__wrapped_factory__` attribute addded first,
         this will actually trigger the deferred creation of the wrapped object
         when first needed.
         """
 
         if callback is not None:
-            self.__wrapped_callback__ = callback
+            self.__wrapped_factory__ = callback
 
         super().__init__(None)
 
-    def __wrapped_callback__(self):
+    def __wrapped_factory__(self):
         return None

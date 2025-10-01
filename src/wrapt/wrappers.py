@@ -91,12 +91,12 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
 
         if wrapped is None:
             try:
-                callback = object.__getattribute__(self, "__wrapped_callback__")
+                callback = object.__getattribute__(self, "__wrapped_factory__")
             except AttributeError:
                 callback = None
 
             if callback is not None:
-                # If wrapped is none and class has a __wrapped_callback__
+                # If wrapped is none and class has a __wrapped_factory__
                 # method, then we don't set __wrapped__ yet and instead will
                 # defer creation of the wrapped object until it is first
                 # needed.
@@ -247,7 +247,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
 
         if name == "__wrapped__":
             try:
-                callback = object.__getattribute__(self, "__wrapped_callback__")
+                callback = object.__getattribute__(self, "__wrapped_factory__")
             except AttributeError:
                 callback = None
 
