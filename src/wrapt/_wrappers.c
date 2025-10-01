@@ -60,6 +60,7 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
 
   static PyObject *wrapped_str = NULL;
   static PyObject *wrapped_factory_str = NULL;
+  static PyObject *wrapped_get_str = NULL;
 
   PyObject *callback = NULL;
   PyObject *value = NULL;
@@ -68,7 +69,15 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
   {
     wrapped_str = PyUnicode_InternFromString("__wrapped__");
     wrapped_factory_str = PyUnicode_InternFromString("__wrapped_factory__");
+    wrapped_get_str = PyUnicode_InternFromString("__wrapped_get__");
   }
+
+  // Note that we use existance of __wrapped_factory__ to gate whether we can
+  // attempt to initialize the wrapped object lazily, but it is __wrapped_get__
+  // that we actually call to do the initialization. This is so that we can
+  // handle multithreading correctly by having __wrapped_get__ use a lock to
+  // protect against multiple threads trying to initialize the wrapped object
+  // at the same time.
 
   callback = PyObject_GenericGetAttr(object, wrapped_factory_str);
 
@@ -76,6 +85,13 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
   {
     if (callback != Py_None)
     {
+      Py_DECREF(callback);
+
+      callback = PyObject_GenericGetAttr(object, wrapped_get_str);
+
+      if (!callback)
+        return -1;
+
       value = PyObject_CallObject(callback, NULL);
 
       Py_DECREF(callback);

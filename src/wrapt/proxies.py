@@ -1,6 +1,7 @@
 """Variants of ObjectProxy for different use cases."""
 
 from .__wrapt__ import BaseObjectProxy
+from .decorators import synchronized
 
 # Define variant of ObjectProxy which can automatically adjust to the wrapped
 # object and add special dunder methods.
@@ -124,3 +125,27 @@ class LazyObjectProxy(AutoObjectProxy):
 
     def __wrapped_factory__(self):
         return None
+
+    def __wrapped_get__(self):
+        """Gets the wrapped object, creating it if necessary."""
+
+        # We synchronize on the class type, which will be unique to this instance
+        # since we inherit from `AutoObjectProxy` which creates a new class
+        # for each instance. If we synchronize on `self` or the method then
+        # we can end up in infinite recursion via `__getattr__()`.
+
+        with synchronized(type(self)):
+            # We were called because `__wrapped__` was not set, but because of
+            # multiple threads we may find that it has been set by the time
+            # we get the lock. So check again now whether `__wrapped__` is set.
+            # If it is then just return it, otherwise call the factory to
+            # create it.
+
+            try:
+                return object.__getattribute__(self, "__wrapped__")
+            except AttributeError:
+                pass
+
+            self.__wrapped__ = self.__wrapped_factory__()
+
+            return self.__wrapped__

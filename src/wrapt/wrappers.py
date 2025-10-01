@@ -241,20 +241,24 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             setattr(self.__wrapped__, name, value)
 
     def __getattr__(self, name):
-        # If we need to lookup '__wrapped__' then the '__init__()' method
+        # If we need to lookup `__wrapped__` then the `__init__()` method
         # cannot have been called, or this is a lazy object proxy which is
         # deferring creation of the wrapped object until it is first needed.
 
         if name == "__wrapped__":
-            try:
-                callback = object.__getattribute__(self, "__wrapped_factory__")
-            except AttributeError:
-                callback = None
+            # Note that we use existance of `__wrapped_factory__` to gate whether
+            # we can attempt to initialize the wrapped object lazily, but it is
+            # `__wrapped_get__` that we actually call to do the initialization.
+            # This is so that we can handle multithreading correctly by having
+            # `__wrapped_get__` use a lock to protect against multiple threads
+            # trying to initialize the wrapped object at the same time.
 
-            if callback is not None:
-                value = callback()
-                object.__setattr__(self, "__wrapped__", value)
-                return value
+            try:
+                object.__getattribute__(self, "__wrapped_factory__")
+            except AttributeError:
+                pass
+            else:
+                return object.__getattribute__(self, "__wrapped_get__")()
 
             raise WrapperNotInitializedError("wrapper has not been initialized")
 
