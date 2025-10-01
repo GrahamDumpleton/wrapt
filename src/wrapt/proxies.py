@@ -23,8 +23,8 @@ def __wrapper_aiter__(self):
     return self.__wrapped__.__aiter__()
 
 
-def __wrapper_anext__(self):
-    return self.__wrapped__.__anext__()
+async def __wrapper_anext__(self):
+    return await self.__wrapped__.__anext__()
 
 
 def __wrapped_await__(self):
