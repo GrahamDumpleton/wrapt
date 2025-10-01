@@ -79,7 +79,7 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
   // protect against multiple threads trying to initialize the wrapped object
   // at the same time.
 
-  callback = PyObject_GenericGetAttr(object, wrapped_factory_str);
+  callback = PyObject_GenericGetAttr((PyObject *)object, wrapped_factory_str);
 
   if (callback)
   {
@@ -87,7 +87,7 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
     {
       Py_DECREF(callback);
 
-      callback = PyObject_GenericGetAttr(object, wrapped_get_str);
+      callback = PyObject_GenericGetAttr((PyObject *)object, wrapped_get_str);
 
       if (!callback)
         return -1;
@@ -100,7 +100,7 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
       {
         // We use setattr so that special dunder methods will be properly set.
 
-        if (PyObject_SetAttr(object, wrapped_str, value) == -1)
+        if (PyObject_SetAttr((PyObject *)object, wrapped_str, value) == -1)
         {
           Py_DECREF(value);
           return -1;
