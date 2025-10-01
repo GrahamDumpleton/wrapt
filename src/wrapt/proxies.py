@@ -61,6 +61,10 @@ class AutoObjectProxy(BaseObjectProxy):
         if "__anext__" in wrapped_attrs and "__anext__" not in class_attrs:
             namespace["__anext__"] = __wrapper_anext__
 
+        # Note that not providing compatibility with generator-based coroutines
+        # (PEP 342) here as they are removed in Python 3.11+ and were deprecated
+        # in 3.8.
+
         if "__await__" in wrapped_attrs and "__await__" not in class_attrs:
             namespace["__await__"] = __wrapped_await__
 
