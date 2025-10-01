@@ -113,6 +113,12 @@ class AutoObjectProxy(BaseObjectProxy):
         elif getattr(cls, "__anext__", None) is __wrapper_anext__:
             delattr(cls, "__anext__")
 
+        if hasattr(self.__wrapped__, "__await__"):
+            if "__await__" not in class_attrs:
+                cls.__await__ = __wrapped_await__
+        elif getattr(cls, "__await__", None) is __wrapped_await__:
+            delattr(cls, "__await__")
+
 
 class LazyObjectProxy(AutoObjectProxy):
     """An object proxy which can generate/create the wrapped object on demand
