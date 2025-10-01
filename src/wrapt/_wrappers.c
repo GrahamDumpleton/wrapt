@@ -1489,7 +1489,6 @@ static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
   PyObject *ndigits = NULL;
 
   PyObject *module = NULL;
-  PyObject *dict = NULL;
   PyObject *round = NULL;
 
   PyObject *result = NULL;
