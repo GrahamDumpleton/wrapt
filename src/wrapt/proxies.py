@@ -31,6 +31,18 @@ def __wrapped_await__(self):
     return (yield from self.__wrapped__.__await__())
 
 
+def __wrapper_get__(self, instance, owner):
+    return self.__wrapped__.__get__(instance, owner)
+
+
+def __wrapper_set__(self, instance, value):
+    return self.__wrapped__.__set__(instance, value)
+
+
+def __wrapper_delete__(self, instance):
+    return self.__wrapped__.__delete__(instance)
+
+
 class AutoObjectProxy(BaseObjectProxy):
     """An object proxy which can automatically adjust to the wrapped object
     and add special dunder methods as needed.
@@ -44,7 +56,7 @@ class AutoObjectProxy(BaseObjectProxy):
         namespace = {}
 
         wrapped_attrs = dir(wrapped)
-        class_attrs = dir(cls)
+        class_attrs = set(dir(cls))
 
         if callable(wrapped) and "__call__" not in class_attrs:
             namespace["__call__"] = __wrapper_call__
@@ -68,6 +80,15 @@ class AutoObjectProxy(BaseObjectProxy):
         if "__await__" in wrapped_attrs and "__await__" not in class_attrs:
             namespace["__await__"] = __wrapped_await__
 
+        if "__get__" in wrapped_attrs and "__get__" not in class_attrs:
+            namespace["__get__"] = __wrapper_get__
+
+        if "__set__" in wrapped_attrs and "__set__" not in class_attrs:
+            namespace["__set__"] = __wrapper_set__
+
+        if "__delete__" in wrapped_attrs and "__delete__" not in class_attrs:
+            namespace["__delete__"] = __wrapper_delete__
+
         name = cls.__name__
 
         if cls is AutoObjectProxy:
@@ -81,7 +102,7 @@ class AutoObjectProxy(BaseObjectProxy):
         """
 
         cls = type(self)
-        class_attrs = dir(cls)
+        class_attrs = set(dir(cls))
 
         if callable(self.__wrapped__):
             if "__call__" not in class_attrs:
@@ -118,6 +139,24 @@ class AutoObjectProxy(BaseObjectProxy):
                 cls.__await__ = __wrapped_await__
         elif getattr(cls, "__await__", None) is __wrapped_await__:
             delattr(cls, "__await__")
+
+        if hasattr(self.__wrapped__, "__get__"):
+            if "__get__" not in class_attrs:
+                cls.__get__ = __wrapper_get__
+        elif getattr(cls, "__get__", None) is __wrapper_get__:
+            delattr(cls, "__get__")
+
+        if hasattr(self.__wrapped__, "__set__"):
+            if "__set__" not in class_attrs:
+                cls.__set__ = __wrapper_set__
+        elif getattr(cls, "__set__", None) is __wrapper_set__:
+            delattr(cls, "__set__")
+
+        if hasattr(self.__wrapped__, "__delete__"):
+            if "__delete__" not in class_attrs:
+                cls.__delete__ = __wrapper_delete__
+        elif getattr(cls, "__delete__", None) is __wrapper_delete__:
+            delattr(cls, "__delete__")
 
 
 class LazyObjectProxy(AutoObjectProxy):
