@@ -89,13 +89,6 @@ class AutoObjectProxy(BaseObjectProxy):
         if "__delete__" in wrapped_attrs and "__delete__" not in class_attrs:
             namespace["__delete__"] = __wrapper_delete__
 
-        # If namespace is empty then we can use the original `cls` class
-        # otherwise we need to create a new subclass with the extra
-        # attributes added.
-
-        if not namespace:
-            return super().__new__(cls)
-
         name = cls.__name__
 
         if cls is AutoObjectProxy:
