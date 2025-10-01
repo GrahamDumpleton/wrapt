@@ -437,6 +437,16 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     def __index__(self):
         return operator.index(self.__wrapped__)
 
+    def __matmul__(self, other):
+        return self.__wrapped__ @ other
+
+    def __rmatmul__(self, other):
+        return other @ self.__wrapped__
+
+    def __imatmul__(self, other):
+        self.__wrapped__ @= other
+        return self
+
     def __len__(self):
         return len(self.__wrapped__)
 

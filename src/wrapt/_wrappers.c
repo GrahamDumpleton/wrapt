@@ -1195,6 +1195,63 @@ static PyObject *WraptObjectProxy_index(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_matrix_multiply(PyObject *o1, PyObject *o2)
+{
+  if (PyObject_IsInstance(o1, (PyObject *)&WraptObjectProxy_Type))
+  {
+    if (!((WraptObjectProxyObject *)o1)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
+        return NULL;
+    }
+
+    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  }
+
+  if (PyObject_IsInstance(o2, (PyObject *)&WraptObjectProxy_Type))
+  {
+    if (!((WraptObjectProxyObject *)o2)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
+        return NULL;
+    }
+
+    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
+  }
+
+  return PyNumber_MatrixMultiply(o1, o2);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_inplace_matrix_multiply(
+    WraptObjectProxyObject *self, PyObject *other)
+{
+  PyObject *object = NULL;
+
+  if (!self->wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(self) == -1)
+      return NULL;
+  }
+
+  if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
+    other = ((WraptObjectProxyObject *)other)->wrapped;
+
+  object = PyNumber_InPlaceMatrixMultiply(self->wrapped, other);
+
+  if (!object)
+    return NULL;
+
+  Py_DECREF(self->wrapped);
+  self->wrapped = object;
+
+  Py_INCREF(self);
+  return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static Py_ssize_t WraptObjectProxy_length(WraptObjectProxyObject *self)
 {
   if (!self->wrapped)
@@ -1950,9 +2007,11 @@ static PyNumberMethods WraptObjectProxy_as_number = {
     (binaryfunc)WraptObjectProxy_floor_divide,      /*nb_floor_divide*/
     (binaryfunc)WraptObjectProxy_true_divide,       /*nb_true_divide*/
     (binaryfunc)
-        WraptObjectProxy_inplace_floor_divide,        /*nb_inplace_floor_divide*/
-    (binaryfunc)WraptObjectProxy_inplace_true_divide, /*nb_inplace_true_divide*/
-    (unaryfunc)WraptObjectProxy_index,                /*nb_index*/
+        WraptObjectProxy_inplace_floor_divide,            /*nb_inplace_floor_divide*/
+    (binaryfunc)WraptObjectProxy_inplace_true_divide,     /*nb_inplace_true_divide*/
+    (unaryfunc)WraptObjectProxy_index,                    /*nb_index*/
+    (binaryfunc)WraptObjectProxy_matrix_multiply,         /*nb_matrix_multiply*/
+    (binaryfunc)WraptObjectProxy_inplace_matrix_multiply, /*nb_inplace_matrix_multiply*/
 };
 
 static PySequenceMethods WraptObjectProxy_as_sequence = {
