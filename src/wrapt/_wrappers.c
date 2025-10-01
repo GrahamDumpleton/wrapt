@@ -1391,32 +1391,6 @@ static PyObject *WraptObjectProxy_aexit(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptObjectProxy_await(WraptObjectProxyObject *self,
-                                        PyObject *args, PyObject *kwds)
-{
-  PyObject *method = NULL;
-  PyObject *result = NULL;
-
-  if (!self->wrapped)
-  {
-    if (raise_uninitialized_wrapper_error(self) == -1)
-      return NULL;
-  }
-
-  method = PyObject_GetAttrString(self->wrapped, "__await__");
-
-  if (!method)
-    return NULL;
-
-  result = PyObject_Call(method, args, kwds);
-
-  Py_DECREF(method);
-
-  return result;
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *WraptObjectProxy_copy(WraptObjectProxyObject *self,
                                        PyObject *args, PyObject *kwds)
 {
@@ -2010,8 +1984,6 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     {"__aenter__", (PyCFunction)WraptObjectProxy_aenter,
      METH_VARARGS | METH_KEYWORDS, 0},
     {"__aexit__", (PyCFunction)WraptObjectProxy_aexit,
-     METH_VARARGS | METH_KEYWORDS, 0},
-    {"__await__", (PyCFunction)WraptObjectProxy_await,
      METH_VARARGS | METH_KEYWORDS, 0},
     {"__copy__", (PyCFunction)WraptObjectProxy_copy, METH_NOARGS, 0},
     {"__deepcopy__", (PyCFunction)WraptObjectProxy_deepcopy,

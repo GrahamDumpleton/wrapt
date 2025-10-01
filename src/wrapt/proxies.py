@@ -27,6 +27,10 @@ def __wrapper_anext__(self):
     return self.__wrapped__.__anext__()
 
 
+def __wrapped_await__(self):
+    return (yield from self.__wrapped__.__await__())
+
+
 class AutoObjectProxy(BaseObjectProxy):
     """An object proxy which can automatically adjust to the wrapped object
     and add special dunder methods as needed.
@@ -56,6 +60,9 @@ class AutoObjectProxy(BaseObjectProxy):
 
         if "__anext__" in wrapped_attrs and "__anext__" not in class_attrs:
             namespace["__anext__"] = __wrapper_anext__
+
+        if "__await__" in wrapped_attrs and "__await__" not in class_attrs:
+            namespace["__await__"] = __wrapped_await__
 
         name = cls.__name__
 
