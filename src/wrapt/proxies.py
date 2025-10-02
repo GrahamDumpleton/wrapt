@@ -73,7 +73,7 @@ def __wrapper_set_name__(self, name):
 class AutoObjectProxy(BaseObjectProxy):
     """An object proxy which can automatically adjust to the wrapped object
     and add special dunder methods as needed. Note that this creates a new
-    class for each instance, so it is slightly less memory efficient than using
+    class for each instance, so it has much higher memory overhead than using
     `BaseObjectProxy` directly. If you know what special dunder methods you need
     then it is preferable to use `BaseObjectProxy` directly and add them to a
     subclass as needed. If you only need `__iter__()` support for backwards
