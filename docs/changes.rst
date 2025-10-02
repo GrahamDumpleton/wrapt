@@ -26,14 +26,45 @@ these reasons a major version bump is being made.
   or details such as default values may not be available. See the documentation
   for more details on limitations and workarounds.
 
-* Added ``wrapt.LazyObjectProxy`` class which is a variant of ``ObjectProxy``
+* Added ``wrapt.BaseObjectProxy`` class which is the base class for all object
+  proxy classes. This class is either the pure Python or C extension variant of
+  the object proxy depending on whether the C extension is available. This used
+  to be the ``ObjectProxy`` class, but has been renamed to ``BaseObjectProxy``
+  to better reflect its role as the foundational class for all object proxies.
+  This variant does though no longer provide a proxy implementation for the
+  ``__iter__()`` special method as it was originally a mistake to include it
+  in the ``ObjectProxy`` class as its presence could cause issues when the
+  wrapped object is not iterable. A ``wrapt.ObjectProxy`` class is still
+  provided but this is now a pure Python subclass of ``BaseObjectProxy`` which
+  adds a proxy implementation for the ``__iter__()`` special method. This is
+  done for backwards compatibility reasons as ``ObjectProxy`` with the
+  ``__iter__()`` special method has been part of the public API for a long time.
+
+* Added ``wrapt.AutoObjectProxy`` class which is a pure Python subclass of
+  ``BaseObjectProxy`` which overrides the ``__new__()`` method to dynamically
+  generate a custom subclass which includes methods for callable, descriptor and
+  iterator protocols, as well as other select special methods. This is done using
+  a dynamically generated subclass as the special methods for these protocols
+  must be defined on the class itself and not on the instance. Because
+  ``AutoObjectProxy`` dynamically generates a custom subclass for each instance,
+  it has a notable memory overhead for every instance created, and thus should
+  only be used where you know you will not be needing many instances of it.
+  If you know what additional special methods you need, it is preferable to use
+  ``BaseObjectProxy`` directly and add them to a subclass as needed. If you only
+  need ``__iter__()`` support for backwards compatibility then use ``ObjectProxy``
+  instead.
+
+* Added ``wrapt.LazyObjectProxy`` class which is a variant of ``AutoObjectProxy``
   which takes a callable which returns the object to be wrapped. The callable is
   only invoked the first time an attribute of the wrapped object is accessed.
   This can be useful for deferring creation of expensive objects until they are
   actually needed. Note that the callable is only invoked once and protection
   is in place to ensure that if multiple threads try to access the wrapped object
   at the same time, only one thread will invoke the callable and the other
-  threads will wait for the result.
+  threads will wait for the result. Because ``LazyObjectProxy`` is a subclass of
+  ``AutoObjectProxy``, it has the same memory overhead considerations as
+  ``AutoObjectProxy`` and should only be used where you know you will not be
+  needing many instances of it.
 
 **Features Changed**
 
@@ -61,43 +92,6 @@ these reasons a major version bump is being made.
   it was not possible to use appropriate syntax to mark them as such. These
   arguments are now marked as positional and keyword only parameters in the
   function signature as appropriate.
-
-* The ``ObjectProxy`` type is now an alias to the internal ``AutoObjectProxy``
-  type and the original ``ObjectProxy`` type has been renamed to
-  ``BaseObjectProxy``. The ``BaseObjectProxy`` type will be either the pure
-  Python or C extension variant of the object proxy depending on whether the
-  C extension is available. The ``AutoObjectProxy`` type is a minimal Python
-  subclass of ``BaseObjectProxy`` which overrides the ``__new__()`` method to
-  dynamically generate a custom subclass which includes methods for callable and
-  iterator dunder methods which the wrapped object has. This is done using a
-  dynamically generated subclass as Python requires such special methods
-  to be defined on the class itself and not on instances of the class. You
-  should continue to use ``wrapt.ObjectProxy`` as before and ``BaseObjectProxy``
-  would only be used in special circumstances where you need to bypass the
-  ``AutoObjectProxy`` behaviour.
-
-* The ``BaseObjectProxy`` (previously ``ObjectProxy``), now no longer provides
-  a proxy wrapper implementation for the ``__iter__()`` special method. This is
-  because the ``AutoObjectProxy`` subclass will automatically add this method.
-  This change was made as it was originally a mistake to include it in the
-  ``ObjectProxy`` class as its presence could cause issues when the wrapped
-  object didn't actually implement the ``__iter__()`` method. This change should
-  not cause any issues unless you were bypassing ``wrapt.ObjectProxy`` and using
-  either the pure Python or C extension variant of the class directly.
-
-* The ``AutoObjectProxy`` class now automatically adds proxy implementations
-  for the ``__call__()``, ``__iter__()``, ``__next__()``, ``__aiter__()`` and
-  ``__anext__()`` special methods if the wrapped object implements them. This
-  is done using a dynamically generated subclass as Python requires such special
-  methods to be defined on the class itself and not on instances of the class.
-  That this is done for ``__call__()`` means that it should not be necessary to
-  use the ``CallableObjectProxy`` class directly as the ``ObjectProxy`` class
-  will now automatically support wrapping callable objects. Do note though that 
-  if binding behaviour is required when wrapping functions (eg., methods of
-  classes), then ``FunctionWrapper`` should be used instead.
-
-* The ``BaseObjectProxy`` now provides proxy implementations for
-  ``__aenter__()``, ``__aexit__()`` and ``__await__()`` special methods.
 
 * The object proxy classes now raise a ``WrapperNotInitializedError`` exception
   rather than Python builtin ``ValueError`` exception when an attempt is made

@@ -28,18 +28,20 @@ if sys.version_info >= (3, 10):
         __wrapped__: T
         def __init__(self, wrapped: T) -> None: ...
 
-    class ObjectProxy(Generic[T]):
-        __wrapped__: T
+    class ObjectProxy(BaseObjectProxy[T]):
+        def __init__(self, wrapped: T) -> None: ...
+
+    class AutoObjectProxy(BaseObjectProxy[T]):
         def __init__(self, wrapped: T) -> None: ...
 
     # LazyObjectProxy
 
-    class LazyObjectProxy(ObjectProxy[T]):
+    class LazyObjectProxy(AutoObjectProxy[T]):
         def __init__(self, callback: Callable[[], T] | None) -> None: ...
 
     # CallableObjectProxy
 
-    class CallableObjectProxy(ObjectProxy[T]):
+    class CallableObjectProxy(BaseObjectProxy[T]):
         def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
     # PartialCallableObjectProxy

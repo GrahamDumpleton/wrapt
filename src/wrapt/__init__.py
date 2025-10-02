@@ -30,14 +30,16 @@ from .patches import (
     wrap_object,
     wrap_object_attribute,
 )
-from .proxies import AutoObjectProxy as ObjectProxy
-from .proxies import LazyObjectProxy
+from .proxies import AutoObjectProxy, LazyObjectProxy, ObjectProxy
 from .weakrefs import WeakFunctionProxy
 
 __all__ = (
+    "AutoObjectProxy",
+    "BaseObjectProxy",
     "BoundFunctionWrapper",
     "CallableObjectProxy",
     "FunctionWrapper",
+    "LazyObjectProxy",
     "ObjectProxy",
     "PartialCallableObjectProxy",
     "partial",

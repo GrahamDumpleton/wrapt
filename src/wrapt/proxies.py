@@ -3,6 +3,25 @@
 from .__wrapt__ import BaseObjectProxy
 from .decorators import synchronized
 
+# Define ObjectProxy which for compatibility adds `__iter__()` support which
+# has been removed from `BaseObjectProxy`.
+
+
+class ObjectProxy(BaseObjectProxy):
+    """A generic object proxy which forwards special methods as needed.
+    For backwards compatibility this class adds support for `__iter__()`. If
+    you don't need backward compatibility for `__iter__()` support then it is
+    preferable to use `BaseObjectProxy` directly. If you want automatic
+    support for special dunder methods for callables, iterators, and async,
+    then use `AutoObjectProxy`."""
+
+    def __new__(cls, wrapped):
+        return super().__new__(cls)
+
+    def __iter__(self):
+        return iter(self.__wrapped__)
+
+
 # Define variant of ObjectProxy which can automatically adjust to the wrapped
 # object and add special dunder methods.
 
@@ -45,7 +64,12 @@ def __wrapper_delete__(self, instance):
 
 class AutoObjectProxy(BaseObjectProxy):
     """An object proxy which can automatically adjust to the wrapped object
-    and add special dunder methods as needed.
+    and add special dunder methods as needed. Note that this creates a new
+    class for each instance, so it is slightly less memory efficient than using
+    `BaseObjectProxy` directly. If you know what special dunder methods you need
+    then it is preferable to use `BaseObjectProxy` directly and add them to a
+    subclass as needed. If you only need `__iter__()` support for backwards
+    compatibility then use `ObjectProxy` instead.
     """
 
     def __new__(cls, wrapped):

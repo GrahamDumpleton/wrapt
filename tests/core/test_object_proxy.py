@@ -800,7 +800,7 @@ class TestCallingObjectAuto(unittest.TestCase):
         def function(*args, **kwargs):
             return args, kwargs
 
-        wrapper = wrapt.ObjectProxy(function)
+        wrapper = wrapt.AutoObjectProxy(function)
 
         self.assertTrue(callable(wrapper))
 
