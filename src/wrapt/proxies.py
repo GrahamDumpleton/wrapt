@@ -46,7 +46,7 @@ async def __wrapper_anext__(self):
     return await self.__wrapped__.__anext__()
 
 
-def __wrapped_await__(self):
+def __wrapper_await__(self):
     return (yield from self.__wrapped__.__await__())
 
 
@@ -106,7 +106,7 @@ class AutoObjectProxy(BaseObjectProxy):
         # in 3.8.
 
         if "__await__" in wrapped_attrs and "__await__" not in class_attrs:
-            namespace["__await__"] = __wrapped_await__
+            namespace["__await__"] = __wrapper_await__
 
         if "__get__" in wrapped_attrs and "__get__" not in class_attrs:
             namespace["__get__"] = __wrapper_get__
@@ -167,8 +167,8 @@ class AutoObjectProxy(BaseObjectProxy):
 
         if hasattr(self.__wrapped__, "__await__"):
             if "__await__" not in class_attrs:
-                cls.__await__ = __wrapped_await__
-        elif getattr(cls, "__await__", None) is __wrapped_await__:
+                cls.__await__ = __wrapper_await__
+        elif getattr(cls, "__await__", None) is __wrapper_await__:
             delattr(cls, "__await__")
 
         if hasattr(self.__wrapped__, "__get__"):
