@@ -62,6 +62,10 @@ def __wrapper_delete__(self, instance):
     return self.__wrapped__.__delete__(instance)
 
 
+def __wrapper_set_name__(self, name):
+    return self.__wrapped__.__set_name__(name)
+
+
 class AutoObjectProxy(BaseObjectProxy):
     """An object proxy which can automatically adjust to the wrapped object
     and add special dunder methods as needed. Note that this creates a new
@@ -112,6 +116,9 @@ class AutoObjectProxy(BaseObjectProxy):
 
         if "__delete__" in wrapped_attrs and "__delete__" not in class_attrs:
             namespace["__delete__"] = __wrapper_delete__
+
+        if "__set_name__" in wrapped_attrs and "__set_name__" not in class_attrs:
+            namespace["__set_name__"] = __wrapper_set_name__
 
         name = cls.__name__
 
@@ -181,6 +188,12 @@ class AutoObjectProxy(BaseObjectProxy):
                 cls.__delete__ = __wrapper_delete__
         elif getattr(cls, "__delete__", None) is __wrapper_delete__:
             delattr(cls, "__delete__")
+
+        if hasattr(self.__wrapped__, "__set_name__"):
+            if "__set_name__" not in class_attrs:
+                cls.__set_name__ = __wrapper_set_name__
+        elif getattr(cls, "__set_name__", None) is __wrapper_set_name__:
+            delattr(cls, "__set_name__")
 
 
 class LazyObjectProxy(AutoObjectProxy):
