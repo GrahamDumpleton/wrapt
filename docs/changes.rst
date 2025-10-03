@@ -66,6 +66,11 @@ these reasons a major version bump is being made.
   ``AutoObjectProxy`` and should only be used where you know you will not be
   needing many instances of it.
 
+* Added ``wrapt.lazy_import()`` function which takes a module name and returns a
+  ``LazyObjectProxy`` which will import the module when it is first needed.
+  This can be useful for deferring import of modules until they are actually
+  needed.
+
 **Features Changed**
 
 * Code related to Python 2.X and workarounds for older Python 3.X versions has
