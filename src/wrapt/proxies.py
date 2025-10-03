@@ -255,3 +255,11 @@ class LazyObjectProxy(AutoObjectProxy):
             self.__wrapped__ = self.__wrapped_factory__()
 
             return self.__wrapped__
+
+
+def lazy_import(name):
+    """Lazily imports a module, returning a `LazyObjectProxy` which will
+    import the module when it is first needed.
+    """
+
+    return LazyObjectProxy(lambda: __import__(name))

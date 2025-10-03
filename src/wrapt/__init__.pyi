@@ -39,6 +39,8 @@ if sys.version_info >= (3, 10):
     class LazyObjectProxy(AutoObjectProxy[T]):
         def __init__(self, callback: Callable[[], T] | None) -> None: ...
 
+    def lazy_import(name: str) -> LazyObjectProxy[ModuleType]: ...
+
     # CallableObjectProxy
 
     class CallableObjectProxy(BaseObjectProxy[T]):

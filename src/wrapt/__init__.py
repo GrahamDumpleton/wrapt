@@ -30,7 +30,7 @@ from .patches import (
     wrap_object,
     wrap_object_attribute,
 )
-from .proxies import AutoObjectProxy, LazyObjectProxy, ObjectProxy
+from .proxies import AutoObjectProxy, LazyObjectProxy, ObjectProxy, lazy_import
 from .weakrefs import WeakFunctionProxy
 
 __all__ = (
