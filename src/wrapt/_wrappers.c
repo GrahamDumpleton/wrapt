@@ -1607,13 +1607,46 @@ static PyObject *WraptObjectProxy_complex(WraptObjectProxyObject *self,
 static PyObject *WraptObjectProxy_mro_entries(WraptObjectProxyObject *self,
                                               PyObject *args, PyObject *kwds)
 {
+  PyObject *wrapped = NULL;
+  PyObject *mro_entries_method = NULL;
+  PyObject *result = NULL;
+  int is_type = 0;
+
   if (!self->wrapped)
   {
     if (raise_uninitialized_wrapper_error(self) == -1)
       return NULL;
   }
 
-  return Py_BuildValue("(O)", self->wrapped);
+  wrapped = self->wrapped;
+
+  // Check if wrapped is a type (class).
+
+  is_type = PyType_Check(wrapped);
+
+  // If wrapped is not a type and has __mro_entries__, forward to it.
+
+  if (!is_type)
+  {
+    mro_entries_method = PyObject_GetAttrString(wrapped, "__mro_entries__");
+
+    if (mro_entries_method)
+    {
+      // Call wrapped.__mro_entries__(bases).
+
+      result = PyObject_Call(mro_entries_method, args, kwds);
+
+      Py_DECREF(mro_entries_method);
+
+      return result;
+    }
+    else
+    {
+      PyErr_Clear();
+    }
+  }
+
+  return Py_BuildValue("(O)", wrapped);
 }
 
 /* ------------------------------------------------------------------------- */

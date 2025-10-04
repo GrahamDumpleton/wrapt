@@ -166,6 +166,10 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
         return round(self.__wrapped__, ndigits)
 
     def __mro_entries__(self, bases):
+        if not isinstance(self.__wrapped__, type) and hasattr(
+            self.__wrapped__, "__mro_entries__"
+        ):
+            return self.__wrapped__.__mro_entries__(bases)
         return (self.__wrapped__,)
 
     def __lt__(self, other):

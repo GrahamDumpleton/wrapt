@@ -119,6 +119,11 @@ these reasons a major version bump is being made.
   to the process crashing. Note that this change was also back ported and
   included in version 1.17.3 and 1.14.2 releases.
 
+* Wasn't chaining ``__mro_entries__()`` calls when the wrapped object was not a
+  type (class) and itself had a ``__mro_entries__()`` method. This meant that if
+  using the object proxy as a base class for a generic class, the generic
+  parameters were being ignored.
+
 Version 1.17.3
 --------------
 
