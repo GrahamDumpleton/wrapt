@@ -15,7 +15,7 @@ class ObjectProxy(BaseObjectProxy):
     support for special dunder methods for callables, iterators, and async,
     then use `AutoObjectProxy`."""
 
-    def __new__(cls, wrapped):
+    def __new__(cls, *args, **kwargs):
         return super().__new__(cls)
 
     def __iter__(self):
