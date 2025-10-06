@@ -1,27 +1,28 @@
 Type Hinting
 ============
 
-As of version 2.0.0, **wrapt** provides inline type hints for its public APIs to
-improve interoperability with static type checkers (e.g. ``pylance``, ``mypy``).
+As of version 2.0.0, **wrapt** includes type hints for its public APIs to
+improve interoperability with static type checkers (e.g. ``pyright``, ``mypy``).
 The type metadata is available when running on Python 3.10 or later (the minimum
 version the annotations target).
 
-The type annotations aim to be as helpful as possible in order to maximise
-inference quality and surface errors early. In some situations you may still
+The type annotations aim to ensure type inference works correctly in the common
+cases, but the dynamic nature of decorators and wrappers means that some
+patterns cannot be expressed precisely. The type hints are designed to be
+broadly compatible with the major type checkers, but there are some differences
+in how they interpret certain constructs, so you may find that some things work
+in one type checker but not another. In some situations you may still
 need to add explicit annotations yourself, sometimes by introducing small
-helper wrapper functions to guide the type checker.
+helper functions to guide the type checker.
 
-Certain advanced decorator and wrapper patterns enabled by **wrapt** are simply
-too dynamic to express exactly in today's static type systems, so exhaustive
-type checking cannot be applied there. The principal categories of limitations,
-their underlying causes, and recommended workarounds are described in the
-sections which follow.
+Of the type checkers, ``pyright`` used within VS Code Pylance extension gives
+the best experience, and ``mypy`` fails to work correctly in many situations.
+This appears to be due to limitations in ``mypy`` rather than issues with the
+**wrapt** type hints.
 
-As much as have tried to make the type hints work, you may find that the type
-checker will still generate unexpected errors or doesn't work in some situations.
-To allow for further investigation and improvement of the type hints, please
-report any issues you find with using **wrapt**. For more notable cases we can
-at least add additional documentation here with warnings or workarounds.
+Always ensure you are using the most up to date version of a type checking tool.
+If you encounter any issues, please report them on the **wrapt** issue tracker
+so they can be investigated and suggested workarounds or fixes can be provided.
 
 Function Decorators
 -------------------
@@ -54,34 +55,37 @@ Adding type hints, the example becomes:
 
 ::
 
-    from typing import Any, Callable
+    from typing import Any, Callable, ParamSpec, TypeVar
 
-    @wrapt.decorator  # <-- Limited type checking applied here (see note #1).
+    P = ParamSpec("P")
+    R = TypeVar("R")
+
+    @wrapt.decorator
     def pass_through(
-        wrapped: Callable[[int, int], int],
+        wrapped: Callable[P, R],
         instance: Any,
         args: tuple[Any, ...],
         kwargs: dict[str, Any],
-    ) -> int:
+    ) -> R:
         return wrapped(*args, **kwargs)
 
-    @pass_through  # <-- Type checking not applied here (see note #2).
+    @pass_through
     def add(a: int, b: int) -> int:
         return a + b
 
-    result: int = add(2, 3)  # <-- Type checking applied here.
+    result: int = add(2, 3)
 
-Annotate ``wrapped`` with a ``Callable`` whose signature matches the functions you
-intend to decorate. Leave ``instance`` as ``Any`` in most cases; if you need to be
-stricter you can use ``Any | type[Any] | None``. You can narrow ``args`` / ``kwargs``
-based on the accepted parameter types, but doing so rarely improves type
-checking and usually adds noise, so the generic ``tuple[Any, ...]`` and
-``dict[str, Any]`` forms are normally sufficient.
+In this example, because the decorator simply passes through the call to the
+wrapped function and is intended to be generic, it is necessary to use
+``ParamSpec`` and ``TypeVar`` to express that the decorator can be applied to
+functions with any signature and return type. The ``wrapped`` parameter is
+annotated with ``Callable[P, R]`` to indicate that it accepts the same parameters
+as the decorated function and returns the same type. The ``instance``, ``args``,
+and ``kwargs`` parameters are annotated with appropriate generic types. The
+return type of the decorator is annotated as ``R`` to match the return type of
+the wrapped function.
 
-The wrapper's return type annotation should mirror the return type of the
-wrapped function.
-
-With the type hints added, the type checker can now validate both the
+With the type hints as shown, the type checker should be able to validate both the
 arguments supplied to the decorated function and its return value at the point
 it is being called. For example, the type checker will flag incorrect argument
 types or an incompatible assigned result as in the following.
@@ -90,18 +94,22 @@ types or an incompatible assigned result as in the following.
 
     result: str = add("hello", "world")  # Error: incompatible types
 
-**Note #1**: When ``@decorator`` or ``@function_wrapper`` are applied to a
-wrapper function, the type checker should give an error when the return type
-of the wrapper function is incompatible with the returned type given for the
-wrapped function. The type checker is unable to verify that the number and type
-of arguments of the wrapper function itself are what is expected because of the
-decorators being able to be applied to a class, a class instance, instance
-methods, class methods and normal functions.
+When ``@decorator`` or ``@function_wrapper`` are applied to a wrapper function,
+the type checker should give an error when the return type of the wrapper
+function is incompatible with the returned type given for the wrapped function.
 
-**Note #2**: The type checker is unable to verify that the argument to a
-generated decorator matches the signature of the expected wrapped function
-because of the decorators being able to be applied to a class, a class instance,
-instance methods, class methods and normal functions.
+The type checker will in some circumstances not appear to correctly verify that
+the number and type of arguments of the wrapper function itself are what is
+expected because of the decorators being able to be applied to a class, a class
+instance, instance methods, class methods and normal functions. Thus there are
+multiple valid signatures for the wrapper function depending on the context in
+which the decorator is applied. As such, it may look like it does not flag
+incorrect arguments as it matches a different but still valid signature.
+    
+No type checking is performed when the custom decorator is applied to a
+function. This is because the decorator can be applied to any callable with
+any signature, and the type checker cannot determine the correct signature
+to use for the decorated function.
 
 Signature Adapters
 ------------------
@@ -141,9 +149,8 @@ Declaring the adapter explicitly ensures that runtime introspection
 (``inspect.signature``, ``help()``, IDE tooling, etc.) reports the adapted
 signature rather than the underlying implementation detail. Because the
 adaptation is applied dynamically (and the prototype may itself be generated
-at runtime), the **wrapt** type hints cannot reliably expose the target
-signature from the wrapped function alone, and so you must provide it if you
-want accurate type checking.
+at runtime), the **wrapt** type hints will not work, and so you must use a
+helper function.
 
 ::
 
@@ -152,7 +159,7 @@ want accurate type checking.
     def int_to_str(wrapped: Callable[[int], int]) -> Callable[[int], str]:
         @wrapt.decorator(adapter=adapter_prototype)
         def wrapper(
-            wrapped: Callable[..., Any],
+            wrapped: Callable[[int], int],
             instance: Any,
             args: tuple[Any, ...],
             kwargs: dict[str, Any],
@@ -168,15 +175,16 @@ want accurate type checking.
 
     result: str = function(1)
 
-In this version we introduced an outer helper that constructs the decorator and
+In this version the outer helper function constructs the decorator and
 added explicit type hints to its parameters and return type. This allows the
 type checker to validate calls to the decorated function and propagate the
 correct return type.
 
 Note that inside the decorator body the ``wrapped`` callable is annotated
-as accepting any arguments and returning ``Any``. You could just as well omit
+with signature of the functions to be wrapped. The return type of the wrapper
+function does however need to be ``Any``. You could just as well omit
 those inner annotations as what matters for most static checking is the
-user facing signature exposed by the outer wrapper.
+user facing signature exposed by the outer helper function.
 
 Decorating Classes
 ------------------
