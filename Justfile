@@ -94,6 +94,7 @@ test-version version:
     uv venv .venv-test-tmp --python {{version}}
     source .venv-test-tmp/bin/activate
     python -m ensurepip --upgrade
+    python -m pip install --upgrade pip
 
     pip3 install pytest
 
