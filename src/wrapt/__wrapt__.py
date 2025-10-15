@@ -10,6 +10,8 @@ from .wrappers import PartialCallableObjectProxy, _FunctionWrapperBase
 
 # Try to use C extensions if not disabled.
 
+_using_c_extension = False
+
 _use_extensions = not os.environ.get("WRAPT_DISABLE_EXTENSIONS")
 
 if _use_extensions:
@@ -26,6 +28,8 @@ if _use_extensions:
             PartialCallableObjectProxy,
             _FunctionWrapperBase,
         )
+
+        _using_c_extension = True
     except ImportError:
         # C extensions not available, using Python implementations
         pass
