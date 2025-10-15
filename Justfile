@@ -93,31 +93,41 @@ test-version version:
     rm -rf .venv-test-tmp
     uv venv .venv-test-tmp --python {{version}}
     source .venv-test-tmp/bin/activate
-    uv pip install pytest
+    python -m ensurepip --upgrade
 
-    export PYTHONPATH=src
+    pip3 install pytest
+
+    # export PYTHONPATH=src
 
     echo "=== Testing Python {{version}} - without C extensions ==="
 
     export WRAPT_INSTALL_EXTENSIONS=false
 
-    uv pip install -e . --no-cache
-    uv run pytest
+    pip3 install -e . --no-cache
 
-    uv pip uninstall wrapt
+    python -c "import wrapt.__wrapt__; assert not wrapt.__wrapt__._using_c_extension, 'wrongly using C extension'"
+
+    pytest
+
+    pip3 uninstall wrapt -y
 
     echo "=== Testing Python {{version}} - with C extensions ==="
 
     export WRAPT_INSTALL_EXTENSIONS=true
 
-    uv pip install -e . --no-cache
-    uv run pytest
+    pip3 install -e . --no-cache
+
+    python -c "import wrapt.__wrapt__; assert wrapt.__wrapt__._using_c_extension, 'C extension not loaded'"
+
+    pytest
 
     echo "=== Testing Python {{version}} - with C extensions disabled at runtime ==="
 
     export WRAPT_DISABLE_EXTENSIONS=true
  
-    uv run pytest
+    python -c "import wrapt.__wrapt__; assert not wrapt.__wrapt__._using_c_extension, 'wrongly using C extension'"
+
+    pytest
 
     deactivate
 
