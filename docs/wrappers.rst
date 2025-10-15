@@ -709,7 +709,7 @@ It can be used in place of standard ``import`` as follows:
     print(graphlib.TopologicalSorter)
 
 The ``lazy_import()`` function can be seen as an alternative to
-[PEP 810 - Explicit lazy imports](https://peps.python.org/pep-0810/) which
+`PEP 810 - Explicit lazy imports <https://peps.python.org/pep-0810/>`_ which
 proposes a new syntax in Python for lazy imports. The benefit of using
 ``wrapt.lazy_import()`` is that it works with all current versions of Python
 and does not require any changes to the Python language. As such you could
