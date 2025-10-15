@@ -69,7 +69,10 @@ these reasons a major version bump is being made.
 * Added ``wrapt.lazy_import()`` function which takes a module name and returns a
   ``LazyObjectProxy`` which will import the module when it is first needed.
   This can be useful for deferring import of modules until they are actually
-  needed.
+  needed. If the module name is a dotted name, then the full dotted name is
+  imported and the last component returned. An optional ``attribute`` argument
+  can be supplied which is the name of an attribute of the module to return
+  instead of the module itself.
 
 **Features Changed**
 

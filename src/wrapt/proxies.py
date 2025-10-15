@@ -257,10 +257,20 @@ class LazyObjectProxy(AutoObjectProxy):
             return self.__wrapped__
 
 
-def lazy_import(name):
-    """Lazily imports a module, returning a `LazyObjectProxy` which will
-    import the module when it is first needed. When name is a dotted name,
-    then the full dotted name is imported and the last component returned.
+def lazy_import(name, attribute=None):
+    """Lazily imports the module `name`, returning a `LazyObjectProxy` which
+    will import the module when it is first needed. When `name is a dotted name,
+    then the full dotted name is imported and the last module is taken as the
+    target. If `attribute` is provided then it is used to retrieve an attribute
+    from the module.
     """
 
-    return LazyObjectProxy(lambda: __import__(name, fromlist=[""]))
+    def _import():
+        module = __import__(name, fromlist=[""])
+
+        if attribute is not None:
+            return getattr(module, attribute)
+
+        return module
+
+    return LazyObjectProxy(_import)
