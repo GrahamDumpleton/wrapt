@@ -319,6 +319,57 @@ that then being overridden if necessary, with a specific value in the
 Just be aware that although the attribute can be deleted from the instance
 of the custom proxy, lookup will then fallback to using the class attribute.
 
+Special Object Methods
+----------------------
+
+The ``ObjectProxy`` class implements most of the special builtin methods of a
+Python object, such as ```__len__()``, ``__getitem__()``, ``__setitem__()``,
+``__delitem__()`` etc. This allows the proxy to be used in place of the
+original object with operations on the proxy being passed through to the
+wrapped object as appropriate.
+
+Some special methods are not implemented by the `ObjectProxy` class by default
+because their presence could affect the original code which interacted with the
+wrapped object. Examples of methods which are excluded are ``__get__()``,
+``__set__()`` and ``__delete__()``, as well as ``__call__()``, iterator methods
+and awaitable methods. If it is necessary for a custom proxy to implement
+one of these special methods, then it can be done by overriding the method in
+a derived custom object proxy class.
+
+That said, note that due to a bad design decision in the original ``ObjectProxy``
+class, the ``__iter__()`` method was implemented when it should not have been.
+That this should not have been was only realized some time after the original
+release. The presence of ``__iter__()`` means that the proxy will always
+appear to be iterable, even when the wrapped object is not. This can lead to
+confusion and bugs. If the wrapped object is not iterable, then attempting to
+iterate over the proxy will result in an exception, but if code checks for
+iterability using ``hasattr(proxy, '__iter__')`` then that will always return
+``True``. The presence of ``__iter__()`` in ``ObjectProxy`` is therefore
+considered a bug, but one which cannot be fixed without breaking backwards
+compatibility.
+
+If the presence of ``__iter__()`` is causing problems, rather than deriving
+from ``ObjectProxy``, from **wrapt** version 2.0.0, it is possible to create a
+custom proxy by deriving directly from ``wrapt.BaseObjectProxy`` which does not
+implement ``__iter__()``. To maintain backward compatibility, ``ObjectProxy``
+class derives from ``BaseObjectProxy`` and adds the existing ``__iter__()``
+method implementation.
+
+If you require the use of **wrapt** version 2.0.0 or later for any reasons,
+it is actually recommended to completely avoid using ``ObjectProxy`` and instead
+always derive from ``BaseObjectProxy``. Doing this will though mean your code
+will not work with prior versions of **wrapt**.
+
+If for some reason you feel needing to manually add the excluded special
+methods in a custom object proxy is annoying, you can instead use
+``wrapt.AutoObjectProxy`` as the base class. This class will automatically add
+the special methods which are excluded by default. Be aware though that this
+will result in a new class type being dynamically created on the fly for each
+instantiation of the custom proxy. This will result in the memory requirement
+for each object proxy instance being higher than normal. The ``AutoObjectProxy``
+class should therefore only be used when absolutely necessary and never in
+situations where a large number of proxy instances are being created.
+
 Function Wrappers
 -----------------
 
@@ -589,3 +640,76 @@ function wrapper it was created from, it can use ``self._self_parent``.
 
         return CustomFunctionWrapper
 
+Lazy Object Proxies
+-------------------
+
+The ``ObjectProxy`` and ``BaseObjectProxy`` classes require that the
+wrapped object be supplied at the time the proxy is created. In some
+situations this may not be possible or desirable. For example, if the
+wrapped object is expensive to create and may not be needed, or if the
+wrapped object is not available at the time the proxy must be created.
+
+To address this, the ``wrapt.LazyObjectProxy`` class is provided. This class
+derives from ``AutoObjectProxy`` and allows the wrapped object to be
+supplied at a later time via a callable which will only be called the first
+time the wrapped object is needed.
+
+The callable which is used to create the wrapped object is supplied as
+the ``factory`` argument to the constructor of ``LazyObjectProxy``. The
+``factory`` callable should accept no arguments and return the object to
+be wrapped.
+
+An example of using ``LazyObjectProxy`` is to lazily import a Python module,
+with the module only being imported when it is first needed. This can be
+done by using the built-in ``__import__()`` function with a factory function.
+One can even optionally specify an attribute of the module to be retrieved
+and used as the wrapped object instead of the module itself.
+
+::
+
+    def lazy_import(name, attribute=None):
+        """Lazily imports the module `name`, returning a `LazyObjectProxy` which
+        will import the module when it is first needed. When `name is a dotted name,
+        then the full dotted name is imported and the last module is taken as the
+        target. If `attribute` is provided then it is used to retrieve an attribute
+        from the module.
+        """
+
+        def _import():
+            module = __import__(name, fromlist=[""])
+
+            if attribute is not None:
+                return getattr(module, attribute)
+
+            return module
+
+        return LazyObjectProxy(_import)
+
+Since such a lazy import feature is generally useful, a convenience function
+``wrapt.lazy_import()`` is provided which implements the above example.
+
+This lazy import feature can be used to avoid the overhead of importing
+modules which may not be needed, or possibly to avoid circular import problems.
+It can be used in place of standard ``import`` as follows:
+
+::
+
+    import wrapt
+
+    @wrapt.when_imported("graphlib")
+    def module_imported(module):
+        print(f"{module.__name__} imported")
+
+    # Replaces "import graphlib".
+
+    graphlib = wrapt.lazy_import("graphlib")
+
+    print("waiting for import")
+
+    print(graphlib.TopologicalSorter)
+
+As `LazyObjectProxy` is derived from `AutoObjectProxy`, as already mentioned
+the memory requirement for each instance of `LazyObjectProxy` will be higher
+than that of a normal `ObjectProxy`. `LazyObjectProxy` should therefore only
+be used when absolutely necessary and never in situations where a large number
+of proxy instances are being created.
