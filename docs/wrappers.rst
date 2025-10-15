@@ -323,12 +323,12 @@ Special Object Methods
 ----------------------
 
 The ``ObjectProxy`` class implements most of the special builtin methods of a
-Python object, such as ```__len__()``, ``__getitem__()``, ``__setitem__()``,
+Python object, such as ``__len__()``, ``__getitem__()``, ``__setitem__()``,
 ``__delitem__()`` etc. This allows the proxy to be used in place of the
 original object with operations on the proxy being passed through to the
 wrapped object as appropriate.
 
-Some special methods are not implemented by the `ObjectProxy` class by default
+Some special methods are not implemented by the ``ObjectProxy`` class by default
 because their presence could affect the original code which interacted with the
 wrapped object. Examples of methods which are excluded are ``__get__()``,
 ``__set__()`` and ``__delete__()``, as well as ``__call__()``, iterator methods
@@ -661,7 +661,7 @@ be wrapped.
 
 An example of using ``LazyObjectProxy`` is to lazily import a Python module,
 with the module only being imported when it is first needed. This can be
-done by using the built-in ``__import__()`` function with a factory function.
+done by using the built-in ``__import__()`` function within a factory function.
 One can even optionally specify an attribute of the module to be retrieved
 and used as the wrapped object instead of the module itself.
 
@@ -708,8 +708,15 @@ It can be used in place of standard ``import`` as follows:
 
     print(graphlib.TopologicalSorter)
 
-As `LazyObjectProxy` is derived from `AutoObjectProxy`, as already mentioned
-the memory requirement for each instance of `LazyObjectProxy` will be higher
-than that of a normal `ObjectProxy`. `LazyObjectProxy` should therefore only
+The ``lazy_import()`` function can be seen as an alternative to
+[PEP 810 - Explicit lazy imports](https://peps.python.org/pep-0810/) which
+proposes a new syntax in Python for lazy imports. The benefit of using
+``wrapt.lazy_import()`` is that it works with all current versions of Python
+and does not require any changes to the Python language. As such you could
+start using it today.
+
+As ``LazyObjectProxy`` is derived from ``AutoObjectProxy``, as already mentioned
+the memory requirement for each instance of ``LazyObjectProxy`` will be higher
+than that of a normal ``ObjectProxy``. ``LazyObjectProxy`` should therefore only
 be used when absolutely necessary and never in situations where a large number
 of proxy instances are being created.
