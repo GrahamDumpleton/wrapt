@@ -15,6 +15,10 @@ class ObjectProxy(BaseObjectProxy):
     support for special dunder methods for callables, iterators, and async,
     then use `AutoObjectProxy`."""
 
+    @property
+    def __object_proxy__(self):
+        return ObjectProxy
+
     def __new__(cls, *args, **kwargs):
         return super().__new__(cls)
 

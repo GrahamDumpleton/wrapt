@@ -127,6 +127,12 @@ these reasons a major version bump is being made.
   using the object proxy as a base class for a generic class, the generic
   parameters were being ignored.
 
+* When an object proxy wrapped an immutable type, such as an integer, and the
+  object proxy had been assigned to a second variable, the result of an
+  in-place operation on the second variable was also affecting the first
+  variable, when instead the lifetime of the two variables should have been
+  independent to reflect what occurs for normal immutable types.
+
 Version 1.17.3
 --------------
 

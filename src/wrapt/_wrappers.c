@@ -798,16 +798,51 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceAdd(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__iadd__"))
+  {
+    object = PyNumber_InPlaceAdd(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Add(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -826,16 +861,51 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceSubtract(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__isub__"))
+  {
+    object = PyNumber_InPlaceSubtract(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Subtract(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -854,16 +924,51 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceMultiply(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__imul__"))
+  {
+    object = PyNumber_InPlaceMultiply(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Multiply(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -883,16 +988,51 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceRemainder(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__imod__"))
+  {
+    object = PyNumber_InPlaceRemainder(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Remainder(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -912,16 +1052,51 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlacePower(self->wrapped, other, modulo);
+  if (PyObject_HasAttrString(self->wrapped, "__ipow__"))
+  {
+    object = PyNumber_InPlacePower(self->wrapped, other, modulo);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Power(self->wrapped, other, modulo);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -940,16 +1115,51 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceLshift(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__ilshift__"))
+  {
+    object = PyNumber_InPlaceLshift(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Lshift(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -968,16 +1178,51 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceRshift(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__irshift__"))
+  {
+    object = PyNumber_InPlaceRshift(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Rshift(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -996,16 +1241,51 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceAnd(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__iand__"))
+  {
+    object = PyNumber_InPlaceAnd(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_And(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1024,16 +1304,51 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceXor(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__ixor__"))
+  {
+    object = PyNumber_InPlaceXor(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Xor(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1052,16 +1367,51 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceOr(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__ior__"))
+  {
+    object = PyNumber_InPlaceOr(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_Or(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1139,16 +1489,51 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceFloorDivide(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__ifloordiv__"))
+  {
+    object = PyNumber_InPlaceFloorDivide(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_FloorDivide(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1168,16 +1553,51 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceTrueDivide(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__itruediv__"))
+  {
+    object = PyNumber_InPlaceTrueDivide(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_TrueDivide(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1834,6 +2254,14 @@ static PyObject *WraptObjectProxy_get_wrapped(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_get_object_proxy(WraptObjectProxyObject *self)
+{
+  Py_INCREF(&WraptObjectProxy_Type);
+  return (PyObject *)&WraptObjectProxy_Type;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
                                         PyObject *value)
 {
@@ -2109,6 +2537,7 @@ static PyGetSetDef WraptObjectProxy_getset[] = {
      (setter)WraptObjectProxy_set_annotations, 0},
     {"__wrapped__", (getter)WraptObjectProxy_get_wrapped,
      (setter)WraptObjectProxy_set_wrapped, 0},
+    {"__object_proxy__", (getter)WraptObjectProxy_get_object_proxy, 0, 0},
     {NULL},
 };
 

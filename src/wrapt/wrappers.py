@@ -125,6 +125,10 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
         except AttributeError:
             pass
 
+    @property
+    def __object_proxy__(self):
+        return ObjectProxy
+
     def __self_setattr__(self, name, value):
         object.__setattr__(self, name, value)
 
@@ -364,52 +368,90 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
         return other | self.__wrapped__
 
     def __iadd__(self, other):
-        self.__wrapped__ += other
-        return self
+        if hasattr(self.__wrapped__, "__iadd__"):
+            self.__wrapped__ += other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ + other)
 
     def __isub__(self, other):
-        self.__wrapped__ -= other
-        return self
+        if hasattr(self.__wrapped__, "__isub__"):
+            self.__wrapped__ -= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ - other)
 
     def __imul__(self, other):
-        self.__wrapped__ *= other
-        return self
+        if hasattr(self.__wrapped__, "__imul__"):
+            self.__wrapped__ *= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ * other)
 
     def __itruediv__(self, other):
-        self.__wrapped__ = operator.itruediv(self.__wrapped__, other)
-        return self
+        if hasattr(self.__wrapped__, "__itruediv__"):
+            self.__wrapped__ /= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ / other)
 
     def __ifloordiv__(self, other):
-        self.__wrapped__ //= other
-        return self
+        if hasattr(self.__wrapped__, "__ifloordiv__"):
+            self.__wrapped__ //= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ // other)
 
     def __imod__(self, other):
-        self.__wrapped__ %= other
+        if hasattr(self.__wrapped__, "__imod__"):
+            self.__wrapped__ %= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ % other)
+
         return self
 
     def __ipow__(self, other):  # type: ignore[misc]
-        self.__wrapped__ **= other
-        return self
+        if hasattr(self.__wrapped__, "__ipow__"):
+            self.__wrapped__ **= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__**other)
 
     def __ilshift__(self, other):
-        self.__wrapped__ <<= other
-        return self
+        if hasattr(self.__wrapped__, "__ilshift__"):
+            self.__wrapped__ <<= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ << other)
 
     def __irshift__(self, other):
-        self.__wrapped__ >>= other
-        return self
+        if hasattr(self.__wrapped__, "__irshift__"):
+            self.__wrapped__ >>= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ >> other)
 
     def __iand__(self, other):
-        self.__wrapped__ &= other
-        return self
+        if hasattr(self.__wrapped__, "__iand__"):
+            self.__wrapped__ &= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ & other)
 
     def __ixor__(self, other):
-        self.__wrapped__ ^= other
-        return self
+        if hasattr(self.__wrapped__, "__ixor__"):
+            self.__wrapped__ ^= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ ^ other)
 
     def __ior__(self, other):
-        self.__wrapped__ |= other
-        return self
+        if hasattr(self.__wrapped__, "__ior__"):
+            self.__wrapped__ |= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ | other)
 
     def __neg__(self):
         return -self.__wrapped__
