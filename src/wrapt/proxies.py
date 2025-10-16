@@ -233,6 +233,8 @@ class LazyObjectProxy(AutoObjectProxy):
 
         super().__init__(None)
 
+    __wrapped_initialized__ = False
+
     def __wrapped_factory__(self):
         return None
 
@@ -251,12 +253,12 @@ class LazyObjectProxy(AutoObjectProxy):
             # If it is then just return it, otherwise call the factory to
             # create it.
 
-            try:
-                return object.__getattribute__(self, "__wrapped__")
-            except AttributeError:
-                pass
+            if self.__wrapped_initialized__:
+                return self.__wrapped__
 
             self.__wrapped__ = self.__wrapped_factory__()
+
+            self.__wrapped_initialized__ = True
 
             return self.__wrapped__
 
