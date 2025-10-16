@@ -50,7 +50,7 @@ async def __wrapper_anext__(self):
     return await self.__wrapped__.__anext__()
 
 
-def __wrapper_hint_length__(self):
+def __wrapper_length_hint__(self):
     return self.__wrapped__.__length_hint__()
 
 
@@ -110,7 +110,7 @@ class AutoObjectProxy(BaseObjectProxy):
             namespace["__anext__"] = __wrapper_anext__
 
         if "__length_hint__" in wrapped_attrs and "__length_hint__" not in class_attrs:
-            namespace["__length_hint__"] = __wrapper_hint_length__
+            namespace["__length_hint__"] = __wrapper_length_hint__
 
         # Note that not providing compatibility with generator-based coroutines
         # (PEP 342) here as they are removed in Python 3.11+ and were deprecated
@@ -178,8 +178,8 @@ class AutoObjectProxy(BaseObjectProxy):
 
         if hasattr(self.__wrapped__, "__length_hint__"):
             if "__length_hint__" not in class_attrs:
-                cls.__length_hint__ = __wrapper_hint_length__
-        elif getattr(cls, "__length_hint__", None) is __wrapper_hint_length__:
+                cls.__length_hint__ = __wrapper_length_hint__
+        elif getattr(cls, "__length_hint__", None) is __wrapper_length_hint__:
             delattr(cls, "__length_hint__")
 
         if hasattr(self.__wrapped__, "__await__"):
