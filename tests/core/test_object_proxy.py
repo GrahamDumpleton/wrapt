@@ -838,6 +838,29 @@ class TestContextManagerObjectProxy(unittest.TestCase):
         with wrapper:
             pass
 
+    def test_async_context_manager(self):
+        class Class:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(*args, **kwargs):
+                return
+
+        instance = Class()
+
+        wrapper = wrapt.ObjectProxy(instance)
+
+        async def run():
+            async with wrapper:
+                pass
+
+        import asyncio
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(run())
+        loop.close()
+
 
 class TestEqualityObjectProxy(unittest.TestCase):
 
