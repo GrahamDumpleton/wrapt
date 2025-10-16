@@ -2672,5 +2672,22 @@ class TestOverridingSpecialAttributes(unittest.TestCase):
         self.assertEqual(o2.__class__, type(o1))
 
 
+class TestClassGetItem(unittest.TestCase):
+
+    def test_class_getitem(self):
+        class Meta(type):
+            def __getitem__(cls, key):
+                return key
+
+        class Object(metaclass=Meta):
+            pass
+
+        self.assertEqual(Object["key"], "key")
+
+        proxy = wrapt.ObjectProxy(Object)
+
+        self.assertEqual(proxy["key"], "key")
+
+
 if __name__ == "__main__":
     unittest.main()
