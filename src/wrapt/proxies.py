@@ -70,8 +70,8 @@ def __wrapper_delete__(self, instance):
     return self.__wrapped__.__delete__(instance)
 
 
-def __wrapper_set_name__(self, name):
-    return self.__wrapped__.__set_name__(name)
+def __wrapper_set_name__(self, owner, name):
+    return self.__wrapped__.__set_name__(owner, name)
 
 
 class AutoObjectProxy(BaseObjectProxy):
