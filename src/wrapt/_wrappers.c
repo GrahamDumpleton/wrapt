@@ -1658,16 +1658,51 @@ static PyObject *WraptObjectProxy_inplace_matrix_multiply(
   if (PyObject_IsInstance(other, (PyObject *)&WraptObjectProxy_Type))
     other = ((WraptObjectProxyObject *)other)->wrapped;
 
-  object = PyNumber_InPlaceMatrixMultiply(self->wrapped, other);
+  if (PyObject_HasAttrString(self->wrapped, "__imatmul__"))
+  {
+    object = PyNumber_InPlaceMatrixMultiply(self->wrapped, other);
 
-  if (!object)
-    return NULL;
+    if (!object)
+      return NULL;
 
-  Py_DECREF(self->wrapped);
-  self->wrapped = object;
+    Py_DECREF(self->wrapped);
+    self->wrapped = object;
 
-  Py_INCREF(self);
-  return (PyObject *)self;
+    Py_INCREF(self);
+    return (PyObject *)self;
+  }
+  else
+  {
+    PyObject *result = PyNumber_MatrixMultiply(self->wrapped, other);
+
+    if (!result)
+      return NULL;
+
+    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+
+    if (!proxy_type)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_args = PyTuple_Pack(1, result);
+
+    Py_DECREF(result);
+
+    if (!proxy_args)
+    {
+      Py_DECREF(proxy_type);
+      return NULL;
+    }
+
+    PyObject *proxy_instance = PyObject_Call(proxy_type, proxy_args, NULL);
+
+    Py_DECREF(proxy_type);
+    Py_DECREF(proxy_args);
+
+    return proxy_instance;
+  }
 }
 
 /* ------------------------------------------------------------------------- */

@@ -490,8 +490,11 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
         return other @ self.__wrapped__
 
     def __imatmul__(self, other):
-        self.__wrapped__ @= other
-        return self
+        if hasattr(self.__wrapped__, "__imatmul__"):
+            self.__wrapped__ @= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ @ other)
 
     def __len__(self):
         return len(self.__wrapped__)

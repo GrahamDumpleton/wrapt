@@ -792,3 +792,33 @@ class InplaceOperatorsTests(unittest.TestCase):
         self.assertEqual(p2.value, 12)
 
         self.assertEqual(type(p1), wrapt.ObjectProxy)
+
+    def test_inplace_matmul_immutable(self):
+        class ImmutableMatrix:
+            def __init__(self, value):
+                self.value = value
+
+            def __matmul__(self, other):
+                return ImmutableMatrix(self.value * other.value)
+
+            def __repr__(self):
+                return f"ImmutableMatrix({self.value})"
+
+            def __eq__(self, other):
+                if isinstance(other, ImmutableMatrix):
+                    return self.value == other.value
+                return False
+
+        m1 = ImmutableMatrix(3)
+        m2 = ImmutableMatrix(4)
+
+        p1 = wrapt.ObjectProxy(m1)
+        p2 = p1
+
+        p1 @= m2
+
+        self.assertIsNot(p1, p2)
+        self.assertEqual(p1.value, 12)
+        self.assertEqual(p2.value, 3)
+
+        self.assertEqual(type(p1), wrapt.ObjectProxy)
