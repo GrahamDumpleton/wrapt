@@ -1,0 +1,6 @@
+tests/mypy/mypy_synchronized_lock_t1.py:93: error: All overload variants of "synchronized" require at least one argument  [call-overload]
+tests/mypy/mypy_synchronized_lock_t1.py:93: note: Possible overload variants:
+tests/mypy/mypy_synchronized_lock_t1.py:93: note:     def [P`-1, R] synchronized(wrapped: Callable[P, R]) -> Callable[P, R]
+tests/mypy/mypy_synchronized_lock_t1.py:93: note:     def synchronized(wrapped: Any) -> SynchronizedObject
+tests/mypy/mypy_synchronized_lock_t1.py:100: error: Too many arguments for "synchronized_function"  [call-arg]
+Found 2 errors in 1 file (checked 1 source file)

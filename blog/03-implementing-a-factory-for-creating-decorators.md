@@ -45,7 +45,7 @@ Just to refresh where we got to last time, we had an implementation of an
 object proxy as:
 
 ```python
-class object_proxy(object):
+class object_proxy:
 
     def __init__(self, wrapped):
         self.wrapped = wrapped
@@ -84,7 +84,7 @@ class function_wrapper(object_proxy):
        super(function_wrapper, self).__init__(wrapped)
 
     def __get__(self, instance, owner):
-        wrapped = self.wrapped.__get__( instance, owner)
+        wrapped = self.wrapped.__get__(instance, owner)
         return bound_function_wrapper(wrapped)
 
     def __call__(self, *args, **kwargs):
@@ -214,7 +214,7 @@ called are output.
 What about when wrapping an instance method?
 
 ```python
-class Class(object):
+class Class:
     @my_function_wrapper
     def function_im(self, a, b):
         pass
@@ -348,7 +348,7 @@ What about other method types that a class can have, specifically class
 method and static methods.
 
 ```python
-class Class(object):
+class Class:
 
     @my_function_wrapper
     @classmethod

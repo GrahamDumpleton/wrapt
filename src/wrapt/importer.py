@@ -3,19 +3,13 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 
 """
 
+import importlib.metadata
 import sys
 import threading
+from importlib.util import find_spec
+from typing import Callable, Dict, List
 
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    string_types = basestring,
-    find_spec = None
-else:
-    string_types = str,
-    from importlib.util import find_spec
-
-from .__wrapt__ import ObjectProxy
+from .__wrapt__ import BaseObjectProxy
 
 # The dictionary registering any post import hooks to be triggered once
 # the target module has been imported. Once a module has been imported
@@ -23,7 +17,7 @@ from .__wrapt__ import ObjectProxy
 # module will be truncated but the list left in the dictionary. This
 # acts as a flag to indicate that the module had already been imported.
 
-_post_import_hooks = {}
+_post_import_hooks: Dict[str, List[Callable]] = {}
 _post_import_hooks_init = False
 _post_import_hooks_lock = threading.RLock()
 
@@ -34,22 +28,36 @@ _post_import_hooks_lock = threading.RLock()
 # proxy callback being registered which will defer loading of the
 # specified module containing the callback function until required.
 
+
 def _create_import_hook_from_string(name):
     def import_hook(module):
-        module_name, function = name.split(':')
-        attrs = function.split('.')
+        module_name, function = name.split(":")
+        attrs = function.split(".")
         __import__(module_name)
         callback = sys.modules[module_name]
         for attr in attrs:
             callback = getattr(callback, attr)
         return callback(module)
+
     return import_hook
 
+
 def register_post_import_hook(hook, name):
+    """
+    Register a post import hook for the target module `name`. The `hook`
+    function will be called once the module is imported and will be passed the
+    module as argument. If the module is already imported, the `hook` will be
+    called immediately. If you also want to defer loading of the module containing
+    the `hook` function until required, you can specify the `hook` as a string in
+    the form 'module:function'. This will result in a proxy hook function being
+    registered which will defer loading of the specified module containing the
+    callback function until required.
+    """
+
     # Create a deferred import hook if hook is a string name rather than
     # a callable function.
 
-    if isinstance(hook, string_types):
+    if isinstance(hook, str):
         hook = _create_import_hook_from_string(hook)
 
     with _post_import_hooks_lock:
@@ -78,34 +86,59 @@ def register_post_import_hook(hook, name):
     if module is not None:
         hook(module)
 
+
 # Register post import hooks defined as package entry points.
+
 
 def _create_import_hook_from_entrypoint(entrypoint):
     def import_hook(module):
-        __import__(entrypoint.module_name)
-        callback = sys.modules[entrypoint.module_name]
-        for attr in entrypoint.attrs:
-            callback = getattr(callback, attr)
+        entrypoint_value = entrypoint.value.split(":")
+        module_name = entrypoint_value[0]
+        __import__(module_name)
+        callback = sys.modules[module_name]
+
+        if len(entrypoint_value) > 1:
+            attrs = entrypoint_value[1].split(".")
+            for attr in attrs:
+                callback = getattr(callback, attr)
         return callback(module)
+
     return import_hook
 
-def discover_post_import_hooks(group):
-    try:
-        import pkg_resources
-    except ImportError:
-        return
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
-        callback = _create_import_hook_from_entrypoint(entrypoint)
+def discover_post_import_hooks(group):
+    """
+    Discover and register post import hooks defined as package entry points
+    in the specified `group`. The group should be a string that matches the
+    entry point group name used in the package metadata.
+    """
+
+    try:
+        # Python 3.10+ style with select parameter
+        entrypoints = importlib.metadata.entry_points(group=group)
+    except TypeError:
+        # Python 3.8-3.9 style that returns a dict
+        entrypoints = importlib.metadata.entry_points().get(group, ())
+
+    for entrypoint in entrypoints:
+        callback = entrypoint.load()  # Use the loaded callback directly
         register_post_import_hook(callback, entrypoint.name)
+
 
 # Indicate that a module has been loaded. Any post import hooks which
 # were registered against the target module will be invoked. If an
 # exception is raised in any of the post import hooks, that will cause
 # the import of the target module to fail.
 
+
 def notify_module_loaded(module):
-    name = getattr(module, '__name__', None)
+    """
+    Notify that a `module` has been loaded and invoke any post import hooks
+    registered against the module. If the module is not registered, this
+    function does nothing.
+    """
+
+    name = getattr(module, "__name__", None)
 
     with _post_import_hooks_lock:
         hooks = _post_import_hooks.pop(name, ())
@@ -117,10 +150,12 @@ def notify_module_loaded(module):
     for hook in hooks:
         hook(module)
 
+
 # A custom module import finder. This intercepts attempts to import
 # modules and watches out for attempts to import target modules of
 # interest. When a module of interest is imported, then any post import
 # hooks which are registered will be invoked.
+
 
 class _ImportHookLoader:
 
@@ -130,17 +165,18 @@ class _ImportHookLoader:
 
         return module
 
-class _ImportHookChainedLoader(ObjectProxy):
+
+class _ImportHookChainedLoader(BaseObjectProxy):
 
     def __init__(self, loader):
         super(_ImportHookChainedLoader, self).__init__(loader)
 
         if hasattr(loader, "load_module"):
-          self.__self_setattr__('load_module', self._self_load_module)
+            self.__self_setattr__("load_module", self._self_load_module)
         if hasattr(loader, "create_module"):
-          self.__self_setattr__('create_module', self._self_create_module)
+            self.__self_setattr__("create_module", self._self_create_module)
         if hasattr(loader, "exec_module"):
-          self.__self_setattr__('exec_module', self._self_exec_module)
+            self.__self_setattr__("exec_module", self._self_exec_module)
 
     def _self_set_loader(self, module):
         # Set module's loader to self.__wrapped__ unless it's already set to
@@ -148,13 +184,14 @@ class _ImportHookChainedLoader(ObjectProxy):
         # None, so handle None as well. The module may not support attribute
         # assignment, in which case we simply skip it. Note that we also deal
         # with __loader__ not existing at all. This is to future proof things
-        # due to proposal to remove the attribue as described in the GitHub
+        # due to proposal to remove the attribute as described in the GitHub
         # issue at https://github.com/python/cpython/issues/77458. Also prior
         # to Python 3.3, the __loader__ attribute was only set if a custom
         # module loader was used. It isn't clear whether the attribute still
         # existed in that case or was set to None.
 
-        class UNDEFINED: pass
+        class UNDEFINED:
+            pass
 
         if getattr(module, "__loader__", UNDEFINED) in (None, self):
             try:
@@ -162,8 +199,10 @@ class _ImportHookChainedLoader(ObjectProxy):
             except AttributeError:
                 pass
 
-        if (getattr(module, "__spec__", None) is not None
-                and getattr(module.__spec__, "loader", None) is self):
+        if (
+            getattr(module, "__spec__", None) is not None
+            and getattr(module.__spec__, "loader", None) is self
+        ):
             module.__spec__.loader = self.__wrapped__
 
     def _self_load_module(self, fullname):
@@ -183,6 +222,7 @@ class _ImportHookChainedLoader(ObjectProxy):
         self._self_set_loader(module)
         self.__wrapped__.exec_module(module)
         notify_module_loaded(module)
+
 
 class ImportHookFinder:
 
@@ -213,32 +253,18 @@ class ImportHookFinder:
         # Now call back into the import system again.
 
         try:
-            if not find_spec:
-                # For Python 2 we don't have much choice but to
-                # call back in to __import__(). This will
-                # actually cause the module to be imported. If no
-                # module could be found then ImportError will be
-                # raised. Otherwise we return a loader which
-                # returns the already loaded module and invokes
-                # the post import hooks.
+            # For Python 3 we need to use find_spec().loader
+            # from the importlib.util module. It doesn't actually
+            # import the target module and only finds the
+            # loader. If a loader is found, we need to return
+            # our own loader which will then in turn call the
+            # real loader to import the module and invoke the
+            # post import hooks.
 
-                __import__(fullname)
+            loader = getattr(find_spec(fullname), "loader", None)
 
-                return _ImportHookLoader()
-
-            else:
-                # For Python 3 we need to use find_spec().loader
-                # from the importlib.util module. It doesn't actually
-                # import the target module and only finds the
-                # loader. If a loader is found, we need to return
-                # our own loader which will then in turn call the
-                # real loader to import the module and invoke the
-                # post import hooks.
-
-                loader = getattr(find_spec(fullname), "loader", None)
-
-                if loader and not isinstance(loader, _ImportHookChainedLoader):
-                    return _ImportHookChainedLoader(loader)
+            if loader and not isinstance(loader, _ImportHookChainedLoader):
+                return _ImportHookChainedLoader(loader)
 
         finally:
             del self.in_progress[fullname]
@@ -285,11 +311,22 @@ class ImportHookFinder:
         finally:
             del self.in_progress[fullname]
 
+
 # Decorator for marking that a function should be called as a post
 # import hook when the target module is imported.
 
+
 def when_imported(name):
+    """
+    Returns a decorator that registers the decorated function as a post import
+    hook for the module specified by `name`. The function will be called once
+    the module with the specified name is imported, and will be passed the
+    module as argument. If the module is already imported, the function will
+    be called immediately.
+    """
+
     def register(hook):
         register_post_import_hook(hook, name)
         return hook
+
     return register

@@ -1,0 +1,4 @@
+tests/mypy/mypy_patch_function_wrapper_t1.py:40: error: Argument 2 to "patch_function_wrapper" has incompatible type "None"; expected "str"  [arg-type]
+tests/mypy/mypy_patch_function_wrapper_t1.py:51: error: Argument 1 to "__call__" of "WrapperDecorator" has incompatible type "Callable[[Callable[..., Any], tuple[Any, ...], dict[str, Any]], Any]"; expected "Callable[[Callable[[VarArg(Never), KwArg(Never)], Never], Any, tuple[Any, ...], dict[str, Any]], Never] | Callable[[type[Any], Callable[[VarArg(Never), KwArg(Never)], Never], Any, tuple[Any, ...], dict[str, Any]], Never] | Callable[[Any, Callable[[VarArg(Never), KwArg(Never)], Never], Any, tuple[Any, ...], dict[str, Any]], Never]"  [arg-type]
+tests/mypy/mypy_patch_function_wrapper_t1.py:89: error: Argument "enabled" to "patch_function_wrapper" has incompatible type "str"; expected "bool | Boolean | Callable[[], bool] | None"  [arg-type]
+Found 3 errors in 1 file (checked 1 source file)

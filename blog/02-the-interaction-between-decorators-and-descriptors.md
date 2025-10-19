@@ -40,7 +40,7 @@ said to be a descriptor.
 * `obj.attribute`
     --> `attribute.__get__(obj, type(obj))`
 * `obj.attribute = value`
-     --> `attribute.__set__(obj, value)`
+    --> `attribute.__set__(obj, value)`
 *  `del obj.attribute`
     --> `attribute.__delete__(obj)`
 
@@ -81,7 +81,7 @@ You of course don't usually see all these intermediary steps and just see
 the outcome.
 
 ```pycon
->>> class Object(object):
+>>> class Object:
 ...   def f(self): pass
 
 >>> obj = Object()
@@ -94,7 +94,7 @@ Looking back now at the example given in the first blog post where we
 wrapped a decorator around a class method, we encountered the error:
 
 ```python
-class Class(object):
+class Class:
     @function_wrapper
     @classmethod
     def cmethod(cls):
@@ -145,17 +145,17 @@ descriptor protocol and performing binding on the wrapped object in the
 case of a method on a class, is for wrappers to also be descriptors.
 
 ```python
-class bound_function_wrapper(object):
+class bound_function_wrapper:
     def __init__(self, wrapped):
         self.wrapped = wrapped
     def __call__(self, *args, **kwargs):
         return self.wrapped(*args, **kwargs)
 
-class function_wrapper(object):
+class function_wrapper:
     def __init__(self, wrapped):
         self.wrapped = wrapped
     def __get__(self, instance, owner):
-        wrapped = self.wrapped.__get__( instance, owner)
+        wrapped = self.wrapped.__get__(instance, owner)
         return bound_function_wrapper(wrapped)
     def __call__(self, *args, **kwargs):
         return self.wrapped(*args, **kwargs)
@@ -224,12 +224,12 @@ With the wrapper being a descriptor though, it technically now also needs
 to be done in the bound wrapper.
 
 ```python
-class bound_function_wrapper(object):
+class bound_function_wrapper:
     def __init__(self, wrapped):
         self.wrapped = wrapped
         functools.update_wrapper(self, wrapped)
 
-class function_wrapper(object):
+class function_wrapper:
     def __init__(self, wrapped):
         self.wrapped = wrapped
         functools.update_wrapper(self, wrapped)
@@ -247,7 +247,7 @@ proxy. This is a special wrapper class which looks and behaves like what it
 wraps.
 
 ```python
-class object_proxy(object):
+class object_proxy:
 
     def __init__(self, wrapped):
         self.wrapped = wrapped
@@ -297,7 +297,7 @@ class function_wrapper(object_proxy):
        super(function_wrapper, self).__init__(wrapped)
 
     def __get__(self, instance, owner):
-        wrapped = self.wrapped.__get__( instance, owner)
+        wrapped = self.wrapped.__get__(instance, owner)
         return bound_function_wrapper(wrapped)
 
     def __call__(self, *args, **kwargs):

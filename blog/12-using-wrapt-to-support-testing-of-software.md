@@ -34,7 +34,7 @@ returned by a method of a class when called, one way is to use:
 ```python
 from mock import Mock, patch
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         print a, b, c, key
 
@@ -52,7 +52,7 @@ of doing this would be:
 ```python
 from wrapt import patch_function_wrapper
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         print a, b, c, key
 
@@ -82,7 +82,7 @@ the decorated function is applied to. We can therefore write the above as:
 ```python
 from wrapt import transient_function_wrapper
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         print a, b, c, key
 
@@ -109,7 +109,7 @@ general approach I came up with was the following.
 ```python
 from mock import Mock, patch
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         print a, b, c, key
 
@@ -147,7 +147,7 @@ which was wrapped, so no magic is needed to stash that away.
 ```python
 from wrapt import transient_function_wrapper
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         print a, b, c, key
 
@@ -190,7 +190,7 @@ from mock import Mock, patch
 def function():
     pass
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         return function
 
@@ -221,7 +221,7 @@ from wrapt import transient_function_wrapper, function_wrapper
 def function():
     pass
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         return function
 
@@ -269,13 +269,13 @@ wrapper which encapsulates the original method.
 ```python
 from wrapt import transient_function_wrapper, function_wrapper
 
-class StorageClass(object):
+class StorageClass:
     def run(self):
         pass
 
 storage = StorageClass()
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         return storage
 
@@ -326,13 +326,13 @@ For this example what we can therefore do is:
 ```python
 from wrapt import transient_function_wrapper, ObjectProxy
 
-class StorageClass(object):
+class StorageClass:
     def run(self):
         pass
 
 storage = StorageClass()
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         return storage
 
@@ -363,13 +363,13 @@ object by adding a property to the proxy object.
 ```python
 from wrapt import transient_function_wrapper, ObjectProxy
 
-class StorageClass(object):
+class StorageClass:
     def __init__(self):
         self.name = 'name'
 
 storage = StorageClass()
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         return storage
 
@@ -416,13 +416,13 @@ things.
 ```python
 from wrapt import transient_function_wrapper
 
-class ProductionClass(object):
+class ProductionClass:
     def method(self, a, b, c, key):
         pass
 
 def patch(module, name):
     def _decorator(wrapped):
-        class Wrapper(object):
+        class Wrapper:
             @transient_function_wrapper(module, name)
             def __call__(self, wrapped, instance, args, kwargs):
                 self.args = args

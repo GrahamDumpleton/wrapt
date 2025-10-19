@@ -85,7 +85,7 @@ the class.
 
     import wrapt
 
-    class with_arguments(object):
+    class with_arguments:
 
         def __init__(self, myarg1, myarg2):
             self.myarg1 = myarg1
@@ -126,7 +126,7 @@ being able to be dropped in the latter.
 
     def with_optional_arguments(wrapped=None, myarg1=1, myarg2=2):
         if wrapped is None:
-            return functools.partial(with_optional_arguments,
+            return wrapt.PartialCallableObjectProxy(with_optional_arguments,
                     myarg1=myarg1, myarg2=myarg2)
 
         @wrapt.decorator
@@ -155,7 +155,7 @@ be enforced using the keyword only argument syntax.
 
     def with_optional_arguments(wrapped=None, *, myarg1=1, myarg2=2):
         if wrapped is None:
-            return functools.partial(with_optional_arguments,
+            return wrapt.PartialCallableObjectProxy(with_optional_arguments,
                     myarg1=myarg1, myarg2=myarg2)
 
         @wrapt.decorator
@@ -163,6 +163,13 @@ be enforced using the keyword only argument syntax.
             return wrapped(*args, **kwargs)
 
         return wrapper(wrapped)
+
+The ``wrapt.PartialCallableObjectProxy()`` object is an implementation of
+``functools.partial()`` which uses wrapt and preserves introspection for the
+wrapped callable object. The example uses the name ``PartialCallableObjectProxy``
+here to make it clear that this is a specialized version of the standard library
+``functools.partial()`` function, but you can also use ``wrapt.partial()``,
+which is an alias to ``wrapt.PartialCallableObjectProxy()``.
 
 Processing Function Arguments
 -----------------------------
@@ -588,7 +595,7 @@ the actual instance method.
     def pass_through(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
-    class Class(object):
+    class Class:
 
         @pass_through
         def function_im(self, arg1, arg2):
@@ -629,7 +636,7 @@ method.
     def pass_through(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
-    class Class(object):
+    class Class:
 
         @pass_through
         @classmethod
@@ -670,7 +677,7 @@ be able to distinguish a call to a static method from a normal function.
     def pass_through(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
-    class Class(object):
+    class Class:
 
         @pass_through
         @staticmethod
@@ -694,7 +701,7 @@ is a class type.
         return wrapped(*args, **kwargs)
 
     @pass_through
-    class Class(object):
+    class Class:
         pass
 
     c = Class()

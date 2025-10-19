@@ -51,9 +51,9 @@ Documentation
    quick-start
    decorators
    wrappers
+   typing
    examples
    benchmarks
-   testing
    changes
    issues
 
@@ -75,7 +75,7 @@ Blog Posts
 
 Blog posts related to the **wrapt** module:
 
-* https://github.com/GrahamDumpleton/wrapt/tree/master/blog 
+* https://github.com/GrahamDumpleton/wrapt/tree/master/blog
 
 Installation
 ------------

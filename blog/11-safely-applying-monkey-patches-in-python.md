@@ -97,7 +97,7 @@ Using this decorator is then no different to any other way that decorators
 would be used.
 
 ```python
-class Example(object):
+class Example:
 
     @universal
     def name(self):
@@ -111,7 +111,7 @@ decorators, but you had to be more explicit in applying them. That is, you
 had to write:
 
 ```python
-class Example(object):
+class Example:
 
     def name(self):
         return 'name'
@@ -136,7 +136,7 @@ the function wrapper at that point.
 In effect you are doing:
 
 ```python
-class Example(object):
+class Example:
     def name(self):
         return 'name'
 
@@ -153,7 +153,7 @@ the body of the class when it is defined. In particular the access of
 an instance method. We can see this by running the code:
 
 ```python
-class Example(object):
+class Example:
     def name(self):
         return 'name'
     print type(name)
@@ -195,7 +195,7 @@ To add the wrapper function to a target function we now use the
 'wrapt.wrap_function_wrapper()' function.
 
 ```python
-class Example(object):
+class Example:
     def name(self):
         return 'name'
 

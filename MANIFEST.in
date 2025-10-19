@@ -1,5 +1,6 @@
-include README.rst
+include README.md
+include RELEASE.rst
 include LICENSE
 
-recursive-include src *.c
-recursive-include tests *.py requirements.txt
+recursive-include src *.c *.pyi py.typed
+recursive-include tests *.py *.out

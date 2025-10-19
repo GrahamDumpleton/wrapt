@@ -27,6 +27,11 @@ the Python interpreter was fixed, the only solution is the recommendation
 that decorators implemented using ``@wrapt.decorator`` always be placed
 outside of ``@classmethod`` and never inside.
 
+Unfortunately, in Python 3.13 this change in Python was reverted back to the
+old behaviour because various third party code relied on the broken behaviour
+and even though technically not correct, it was deemed safer to revert the fix.
+The original warning thus applies.
+
 Using decorated class with super()
 ----------------------------------
 
@@ -63,7 +68,7 @@ wrapped class and use it as the base class.
 ::
 
     @mydecorator
-    class Base(object):
+    class Base:
         pass
 
     class Derived(Base.__wrapped__):
@@ -84,8 +89,8 @@ work for versions of Python older than Python 3.7.
 Using issubclass() on abstract classes
 --------------------------------------
 
-If a class heirarchy has a base class which uses the ``abc.ABCMeta``
-metaclass, and a decorator is applied to a class in the heirarchy, use of
+If a class hierarchy has a base class which uses the ``abc.ABCMeta``
+metaclass, and a decorator is applied to a class in the hierarchy, use of
 ``issubclass()`` with classes where the decorator is applied will result in
 an exception of:
 

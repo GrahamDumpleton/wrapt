@@ -1,0 +1,3 @@
+tests/mypy/mypy_weak_function_proxy_t1.py:30: error: Missing positional argument "wrapped" in call to "WeakFunctionProxy"  [call-arg]
+tests/mypy/mypy_weak_function_proxy_t1.py:33: error: Argument 1 to "WeakFunctionProxy" has incompatible type "None"; expected "Callable[..., Any]"  [arg-type]
+Found 2 errors in 1 file (checked 1 source file)
