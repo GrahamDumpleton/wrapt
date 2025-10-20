@@ -1,8 +1,18 @@
 Release Notes
 =============
 
+Version 2.0.1
+-------------
+
+**Bugs Fixed**
+
+* The ``wrapt.lazy_import()`` function wasn't included in the
+  ``__all__`` attribute of the ``wrapt`` module, meaning that it wasn't
+  accessible when using ``from wrapt import *`` and type checkers such as
+  ``mypy`` or ``pylance`` may not see it as part of the public API.
+
 Version 2.0.0
---------------
+-------------
 
 There have been subtle changes in various corner cases of the behaviour of the
 ``ObjectProxy`` class, which although not expected to cause problems, still has
