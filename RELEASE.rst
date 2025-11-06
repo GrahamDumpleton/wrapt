@@ -1,7 +1,7 @@
 wrapt
 =====
 
-|PyPI|
+|PyPI| |Documentation|
 
 A Python module for decorators, wrappers and monkey patching.
 
@@ -155,3 +155,5 @@ Links
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/wrapt.svg?logo=python&cacheSeconds=3600
    :target: https://pypi.python.org/pypi/wrapt
+.. |Documentation| image:: https://img.shields.io/badge/docs-wrapt.readthedocs.io-blue.svg
+   :target: https://wrapt.readthedocs.io/
