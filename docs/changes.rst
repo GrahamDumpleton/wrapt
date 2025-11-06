@@ -11,6 +11,25 @@ Version 2.0.1
   accessible when using ``from wrapt import *`` and type checkers such as
   ``mypy`` or ``pylance`` may not see it as part of the public API.
 
+* When using ``wrapt.lazy_import()`` to lazily import a function of a module,
+  the resulting proxy object wasn't marked as callable until something triggered
+  the import of the module via the proxy. This meant a ``callable()`` check
+  on the proxy would return ``False`` until the module was actually imported.
+  Further, calling the proxy before the module was imported would raise
+  ``TypeError: 'LazyObjectProxy' object is not callable`` rather than
+  importing the module and calling the function as expected. In order to
+  address this issue, an additional keyword argument ``interface`` has been
+  added to ``wrapt.lazy_import()`` which can be used to specify the expected
+  interface type of the wrapped object. This will default to ``Callable``
+  when an attribute name is supplied, and to ``ModuleType`` when no attribute
+  name is supplied. If using ``wrapt.lazy_import()`` and supplying an
+  ``attribute`` argument, and you expect the wrapped object to be something
+  other than a callable, you should now also supply ``interface=...`` with the
+  appropriate type from ``collections.abc`` to ensure the proxy behaves correctly
+  prior to the module being imported. This should only be necessary where the
+  wrapped object has special dunder methods on its type which need to exist on
+  the proxy prior to the module being imported.
+
 Version 2.0.0
 -------------
 

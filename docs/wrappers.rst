@@ -667,13 +667,20 @@ and used as the wrapped object instead of the module itself.
 
 ::
 
-    def lazy_import(name, attribute=None):
+    def lazy_import(name, attribute=None, *, interface=...):
         """Lazily imports the module `name`, returning a `LazyObjectProxy` which
         will import the module when it is first needed. When `name is a dotted name,
         then the full dotted name is imported and the last module is taken as the
         target. If `attribute` is provided then it is used to retrieve an attribute
         from the module.
         """
+
+        if attribute is not None:
+            if interface is ...:
+                interface = Callable
+        else:
+            if interface is ...:
+                interface = ModuleType
 
         def _import():
             module = __import__(name, fromlist=[""])
@@ -683,7 +690,18 @@ and used as the wrapped object instead of the module itself.
 
             return module
 
-        return LazyObjectProxy(_import)
+        return LazyObjectProxy(_import, interface=interface)
+
+The ``interface`` argument is a hint as to the type of object being wrapped.
+This is used to help ``LazyObjectProxy`` determine what special methods need to
+be added to the proxy in order to properly stand in for the wrapped object
+prior to the module being imported, at which point the required special methods
+can be determined from the actual wrapped object. This is important for cases
+such as where the wrapped object is a callable, as the proxy will need to
+implement ``__call__()`` so that calling it will trigger the import of the module
+and then call the wrapped callable. If dealing with attribute of a module which
+have a different interface type, such as an iterable, then the appropriate type
+from ``collections.abc`` should be used.
 
 Since such a lazy import feature is generally useful, a convenience function
 ``wrapt.lazy_import()`` is provided which implements the above example.

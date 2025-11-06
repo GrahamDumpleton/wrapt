@@ -60,3 +60,52 @@ class TestLazyObjectProxy(unittest.TestCase):
         self.assertIsNotNone(client_mod.HTTPConnection)
 
         self.assertTrue("http.client" in sys.modules)
+
+    def test_lazy_import_callable(self):
+        dumps = wrapt.lazy_import("json", "dumps")
+
+        self.assertTrue(callable(dumps))
+
+        result = dumps({"key": "value"})
+
+        self.assertEqual(result, '{"key": "value"}')
+
+    def test_lazy_import_iterable(self):
+        from collections.abc import Iterable
+
+        if "string" in sys.modules:
+            del sys.modules["string"]
+
+        digits0 = wrapt.lazy_import("string", "digits")
+
+        self.assertFalse(hasattr(type(digits0), "__iter__"))
+
+        self.assertTrue(callable(digits0))
+
+        # XXX Iteration does not seem to test for __iter__ being a method
+        # on the type, so this test is not sufficient to raise the TypeError.
+        # I was at some point seeing expected failures here, but not now and
+        # I don't know why.
+
+        # if "string" in sys.modules:
+        #     del sys.modules["string"]
+
+        # digits1 = wrapt.lazy_import("string", "digits")
+
+        # with self.assertRaises(TypeError):
+        #     for char in digits1:
+        #         pass
+
+        if "string" in sys.modules:
+            del sys.modules["string"]
+
+        digits2 = wrapt.lazy_import("string", "digits", interface=Iterable)
+
+        self.assertTrue(hasattr(type(digits2), "__iter__"))
+
+        self.assertFalse(callable(digits2))
+
+        for char in digits2:
+            self.assertIn(char, "0123456789")
+
+        self.assertEqual("".join(digits2), "0123456789")

@@ -1,5 +1,8 @@
 """Variants of ObjectProxy for different use cases."""
 
+from collections.abc import Callable
+from types import ModuleType
+
 from .__wrapt__ import BaseObjectProxy
 from .decorators import synchronized
 
@@ -30,7 +33,12 @@ class ObjectProxy(BaseObjectProxy):
 # object and add special dunder methods.
 
 
-def __wrapper_call__(self, *args, **kwargs):
+def __wrapper_call__(*args, **kwargs):
+    def _unpack_self(self, *args):
+        return self, args
+
+    self, args = _unpack_self(*args)
+
     return self.__wrapped__(*args, **kwargs)
 
 
@@ -136,7 +144,7 @@ class AutoObjectProxy(BaseObjectProxy):
         if cls is AutoObjectProxy:
             name = BaseObjectProxy.__name__
 
-        return super().__new__(type(name, (cls,), namespace))
+        return super(AutoObjectProxy, cls).__new__(type(name, (cls,), namespace))
 
     def __wrapped_setattr_fixups__(self):
         """Adjusts special dunder methods on the class as needed based on the
@@ -218,10 +226,64 @@ class LazyObjectProxy(AutoObjectProxy):
     when it is first needed.
     """
 
-    def __new__(cls, callback=None):
-        return super().__new__(cls, None)
+    def __new__(cls, callback=None, *, interface=...):
+        """Injects special dunder methods into a dynamically created subclass
+        as needed based on the wrapped object.
+        """
 
-    def __init__(self, callback=None):
+        if interface is ...:
+            interface = type(None)
+
+        namespace = {}
+
+        interface_attrs = dir(interface)
+        class_attrs = set(dir(cls))
+
+        if "__call__" in interface_attrs and "__call__" not in class_attrs:
+            namespace["__call__"] = __wrapper_call__
+
+        if "__iter__" in interface_attrs and "__iter__" not in class_attrs:
+            namespace["__iter__"] = __wrapper_iter__
+
+        if "__next__" in interface_attrs and "__next__" not in class_attrs:
+            namespace["__next__"] = __wrapper_next__
+
+        if "__aiter__" in interface_attrs and "__aiter__" not in class_attrs:
+            namespace["__aiter__"] = __wrapper_aiter__
+
+        if "__anext__" in interface_attrs and "__anext__" not in class_attrs:
+            namespace["__anext__"] = __wrapper_anext__
+
+        if (
+            "__length_hint__" in interface_attrs
+            and "__length_hint__" not in class_attrs
+        ):
+            namespace["__length_hint__"] = __wrapper_length_hint__
+
+        # Note that not providing compatibility with generator-based coroutines
+        # (PEP 342) here as they are removed in Python 3.11+ and were deprecated
+        # in 3.8.
+
+        if "__await__" in interface_attrs and "__await__" not in class_attrs:
+            namespace["__await__"] = __wrapper_await__
+
+        if "__get__" in interface_attrs and "__get__" not in class_attrs:
+            namespace["__get__"] = __wrapper_get__
+
+        if "__set__" in interface_attrs and "__set__" not in class_attrs:
+            namespace["__set__"] = __wrapper_set__
+
+        if "__delete__" in interface_attrs and "__delete__" not in class_attrs:
+            namespace["__delete__"] = __wrapper_delete__
+
+        if "__set_name__" in interface_attrs and "__set_name__" not in class_attrs:
+            namespace["__set_name__"] = __wrapper_set_name__
+
+        name = cls.__name__
+
+        return super(AutoObjectProxy, cls).__new__(type(name, (cls,), namespace))
+
+    def __init__(self, callback=None, *, interface=...):
         """Initialize the object proxy with wrapped object as `None` but due
         to presence of special `__wrapped_factory__` attribute addded first,
         this will actually trigger the deferred creation of the wrapped object
@@ -263,13 +325,20 @@ class LazyObjectProxy(AutoObjectProxy):
             return self.__wrapped__
 
 
-def lazy_import(name, attribute=None):
+def lazy_import(name, attribute=None, *, interface=...):
     """Lazily imports the module `name`, returning a `LazyObjectProxy` which
     will import the module when it is first needed. When `name is a dotted name,
     then the full dotted name is imported and the last module is taken as the
     target. If `attribute` is provided then it is used to retrieve an attribute
     from the module.
     """
+
+    if attribute is not None:
+        if interface is ...:
+            interface = Callable
+    else:
+        if interface is ...:
+            interface = ModuleType
 
     def _import():
         module = __import__(name, fromlist=[""])
@@ -279,4 +348,4 @@ def lazy_import(name, attribute=None):
 
         return module
 
-    return LazyObjectProxy(_import)
+    return LazyObjectProxy(_import, interface=interface)
