@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "wrapt"
 dynamic = ["version"]
 description = "Module for decorators, wrappers and monkey patching."
-readme = "README.md"
+readme = "RELEASE.rst"
 license = {file = "LICENSE"}
 authors = [
     {name = "Graham Dumpleton", email = "Graham.Dumpleton@gmail.com"}

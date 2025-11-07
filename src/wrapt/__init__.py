@@ -2,7 +2,7 @@
 Wrapt is a library for decorators, wrappers and monkey patching.
 """
 
-__version_info__ = ("2", "0", "0")
+__version_info__ = ("2", "0", "1")
 __version__ = ".".join(__version_info__)
 
 from .__wrapt__ import (
@@ -53,6 +53,7 @@ __all__ = (
     "when_imported",
     "apply_patch",
     "function_wrapper",
+    "lazy_import",
     "patch_function_wrapper",
     "resolve_path",
     "transient_function_wrapper",
