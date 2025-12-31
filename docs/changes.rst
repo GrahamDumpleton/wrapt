@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 2.1.0
+-------------
+
+**Features Changed**
+
+* Drop support for Python 3.8. Python version 3.9 or later is now required.
+
 Version 2.0.1
 -------------
 
