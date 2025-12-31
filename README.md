@@ -96,7 +96,7 @@ For comprehensive documentation, examples, and advanced usage patterns, visit:
 
 ## Supported Python Versions
 
-- Python 3.8+
+- Python 3.9+
 - CPython
 - PyPy
 

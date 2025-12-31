@@ -49,7 +49,7 @@ The project provides several ways to run tests using the `just` command runner.
 ```bash
 just test
 ```
-This runs the complete test suite across all supported Python versions (3.8-3.14). For each version, it tests three scenarios:
+This runs the complete test suite across all supported Python versions (3.9-3.14). For each version, it tests three scenarios:
 1. Without C extensions
 2. With C extensions
 3. With C extensions disabled at runtime
@@ -58,7 +58,7 @@ This runs the complete test suite across all supported Python versions (3.8-3.14
 ```bash
 just test-version 3.13
 ```
-Replace `3.13` with any supported Python version (3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14).
+Replace `3.13` with any supported Python version (3.9, 3.10, 3.11, 3.12, 3.13, 3.14).
 
 #### Legacy Test Runner (using tox)
 ```bash
@@ -76,7 +76,7 @@ Runs tests using pip-installed pytest in the main virtual environment.
 ```bash
 just test-mypy
 ```
-Runs mypy type checking across all supported Python versions (3.8-3.14).
+Runs mypy type checking across all supported Python versions (3.9-3.14).
 
 ```bash
 just test-mypy-version 3.13

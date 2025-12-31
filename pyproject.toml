@@ -12,12 +12,11 @@ license-files = ["LICENSE"]
 authors = [
     {name = "Graham Dumpleton", email = "Graham.Dumpleton@gmail.com"}
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["wrapper", "proxy", "decorator"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -60,7 +59,7 @@ dev-dependencies = [
 # Black configuration
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py39']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
