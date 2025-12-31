@@ -7,7 +7,8 @@ name = "wrapt"
 dynamic = ["version"]
 description = "Module for decorators, wrappers and monkey patching."
 readme = "RELEASE.rst"
-license = {file = "LICENSE"}
+license = "BSD-2-Clause"
+license-files = ["LICENSE"]
 authors = [
     {name = "Graham Dumpleton", email = "Graham.Dumpleton@gmail.com"}
 ]
