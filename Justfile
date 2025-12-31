@@ -62,7 +62,6 @@ test-tox:
 
 # Run tests with uv (modern alternative)
 test:
-    just test-version 3.8
     just test-version 3.9
     just test-version 3.10
     just test-version 3.11
