@@ -21,9 +21,7 @@ if _use_extensions:
             CallableObjectProxy,
             FunctionWrapper,
         )
-        from ._wrappers import (
-            ObjectProxy as BaseObjectProxy,  # type: ignore[no-redef,import-not-found]
-        )
+        from ._wrappers import ObjectProxy as BaseObjectProxy  # type: ignore[no-redef]
         from ._wrappers import (  # type: ignore[no-redef,import-not-found]
             PartialCallableObjectProxy,
             _FunctionWrapperBase,
