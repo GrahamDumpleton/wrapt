@@ -81,25 +81,21 @@ def run_custom_action(py_file: pathlib.Path) -> str:
         f"{major}.{minor}",
         str(py_file),
     ]
-    try:
-        proc = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
-        )
-        output = proc.stdout
+    proc = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+    output = proc.stdout
 
-        # On Windows, convert backslash paths to forward slashes for consistency
-        # with .out files
+    # On Windows, convert backslash paths to forward slashes for consistency
+    # with .out files
+    if platform.system() == "Windows":
+        output = re.sub(r"\btests\\mypy\\", "tests/mypy/", output)
 
-        if platform.system() == "Windows":
-            output = re.sub(r"\btests\\mypy\\", "tests/mypy/", output)
-
-        return output
-    except FileNotFoundError:
-        return "mypy: command not found\n"
+    return output
 
 
 class MypyPairItem(pytest.Item):
@@ -109,16 +105,16 @@ class MypyPairItem(pytest.Item):
         self.out_path = out_path
 
     def runtest(self):
-        # Check if mypy is available in the PATH
-        if shutil.which("mypyx") is None:
+        # Try to run mypy; if it's not found, skip the test
+        try:
+            actual_output = run_custom_action(self.py_path)
+        except FileNotFoundError:
             warnings.warn(
-                f"mypy not found in PATH; skipping test {self.py_path.name}",
+                f"mypy not found; skipping test {self.py_path.name}",
                 UserWarning,
                 stacklevel=2,
             )
-            pytest.skip("mypy command not found in PATH")
-
-        actual_output = run_custom_action(self.py_path)
+            pytest.skip("mypy command not found")
 
         expected_output = self.out_path.read_text(encoding="utf-8")
 
