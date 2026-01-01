@@ -18,14 +18,12 @@ jobs:
         os:
           - ubuntu-latest
         python-version:
-          - 3.8
           - 3.9
           - "3.10"
           - 3.11
           - 3.12
           - 3.13
           - 3.14
-          - pypy-3.8
           - pypy-3.9
           - pypy-3.10
     steps:
@@ -156,14 +154,12 @@ jobs:
         os:
           - macos-latest
         python-version:
-          - 3.8
           - 3.9
           - "3.10"
           - 3.11
           - 3.12
           - 3.13
           - 3.14
-          - pypy-3.8
           - pypy-3.9
           - pypy-3.10
     steps:
@@ -196,26 +192,20 @@ jobs:
           - windows-latest
           - windows-11-arm
         python-version:
-          - 3.8
           - 3.9
           - "3.10"
           - 3.11
           - 3.12
           - 3.13
           - 3.14
-          - pypy-3.8
           - pypy-3.9
           - pypy-3.10
         exclude:
           # setup-python only support 3.11+ for windows arm
           - os: windows-11-arm
-            python-version: 3.8
-          - os: windows-11-arm
             python-version: 3.9
           - os: windows-11-arm
             python-version: "3.10"
-          - os: windows-11-arm
-            python-version: pypy-3.8
           - os: windows-11-arm
             python-version: pypy-3.9
           - os: windows-11-arm
@@ -264,46 +254,6 @@ jobs:
         name: sdist
         path: dist/*
 
-  bdist_wheel_py38:
-    name: Build wheels (3.8) on ${{ matrix.os }} for ${{ matrix.arch }}
-    needs:
-    - test_linux
-    - test_linux_no_gil
-    - test_macos
-    - test_windows
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
-        arch: [auto]
-        include:
-          - os: ubuntu-latest
-            arch: aarch64
-          - os: macos-13
-            arch: universal2
-          - os: macos-14
-            arch: universal2
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up QEMU
-        if: ${{ matrix.arch == 'aarch64' }}
-        uses: docker/setup-qemu-action@v2
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v3.1.1
-        with:
-          output-dir: dist
-        env:
-            WRAPT_INSTALL_EXTENSIONS: true
-            CIBW_SKIP: pp*
-            CIBW_BUILD_VERBOSITY: 1
-            CIBW_ARCHS: ${{ matrix.arch }}
-            CIBW_FREE_THREADED_SUPPORT: 1
-            CIBW_PROJECT_REQUIRES_PYTHON: ">=3.8,<3.9"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist-py3.8-${{ matrix.os }}-${{ matrix.arch }}
-          path: dist/*.whl
-
   bdist_wheel:
     name: Build wheels (3.9+) on ${{ matrix.os }} for ${{ matrix.arch }}
     needs:
@@ -315,24 +265,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, windows-11-arm, macos-13, macos-14]
-        arch: [auto]
-        include:
-          - os: ubuntu-latest
-            arch: aarch64
-          - os: macos-13
-            arch: universal2
-          - os: macos-14
-            arch: universal2
-          - os: ubuntu-latest
-            arch: riscv64
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-latest]
+        # arch: [auto]
+        # include:
+        #   - os: ubuntu-latest
+        #     arch: aarch64
+        #   - os: macos-latest
+        #     arch: universal2
+        #   - os: ubuntu-latest
+        #     arch: riscv64
     steps:
       - uses: actions/checkout@v5
       - name: Set up QEMU
         if: ${{ matrix.arch == 'aarch64' || matrix.arch == 'riscv64' }}
         uses: docker/setup-qemu-action@v3
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.1.4
+        uses: pypa/cibuildwheel@v3.3.0
         with:
           output-dir: dist
         env:
