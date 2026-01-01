@@ -26,6 +26,7 @@ jobs:
           - 3.14
           - pypy-3.9
           - pypy-3.10
+          - pypy-3.11
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -162,6 +163,7 @@ jobs:
           - 3.14
           - pypy-3.9
           - pypy-3.10
+          - pypy-3.11
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -200,6 +202,7 @@ jobs:
           - 3.14
           - pypy-3.9
           - pypy-3.10
+          - pypy-3.11
         exclude:
           # setup-python only support 3.11+ for windows arm
           - os: windows-11-arm
@@ -210,6 +213,8 @@ jobs:
             python-version: pypy-3.9
           - os: windows-11-arm
             python-version: pypy-3.10
+          - os: windows-11-arm
+            python-version: pypy-3.11
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
