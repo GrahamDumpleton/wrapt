@@ -106,7 +106,7 @@ Each `test-version` run includes three important test scenarios:
 
 ## Mypy Type Checking Tests
 
-The project includes custom pytest handlers for testing mypy type checking behavior. These tests ensure that the wrapt library's type annotations work correctly and produce expected mypy error messages.
+The project includes custom pytest handlers for testing mypy type checking behavior. These tests ensure that the wrapt library's type annotations work correctly and produce expected mypy error messages. Note that `mypy` must exist in your `PATH` else the tests related to type checking which be skipped.
 
 ### Test File Convention
 

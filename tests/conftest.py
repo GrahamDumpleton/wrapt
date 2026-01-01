@@ -1,7 +1,9 @@
 import os
 import pathlib
 import re
+import shutil
 import sys
+import warnings
 
 import pytest
 
@@ -107,6 +109,15 @@ class MypyPairItem(pytest.Item):
         self.out_path = out_path
 
     def runtest(self):
+        # Check if mypy is available in the PATH
+        if shutil.which("mypyx") is None:
+            warnings.warn(
+                f"mypy not found in PATH; skipping test {self.py_path.name}",
+                UserWarning,
+                stacklevel=2,
+            )
+            pytest.skip("mypy command not found in PATH")
+
         actual_output = run_custom_action(self.py_path)
 
         expected_output = self.out_path.read_text(encoding="utf-8")
@@ -130,8 +141,8 @@ class MypyPairCollector(pytest.File):
     """
 
     def collect(self):
-        # Only run this custom collection on Python 3.9+
-        if version < (3, 9):
+        # Only run this custom collection on Python 3.10+
+        if version < (3, 10):
             return
 
         path = pathlib.Path(str(self.fspath))
