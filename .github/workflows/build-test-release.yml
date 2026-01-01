@@ -24,6 +24,7 @@ jobs:
           - 3.12
           - 3.13
           - 3.14
+          - 3.15-dev
           - pypy-3.9
           - pypy-3.10
           - pypy-3.11
@@ -125,6 +126,7 @@ jobs:
         python-version:
           - 3.13
           - 3.14
+          - 3.15-dev
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -161,6 +163,7 @@ jobs:
           - 3.12
           - 3.13
           - 3.14
+          - 3.15-dev
           - pypy-3.9
           - pypy-3.10
           - pypy-3.11
@@ -200,6 +203,7 @@ jobs:
           - 3.12
           - 3.13
           - 3.14
+          - 3.15-dev
           - pypy-3.9
           - pypy-3.10
           - pypy-3.11
