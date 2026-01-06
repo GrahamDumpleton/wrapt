@@ -104,8 +104,23 @@ if sys.version_info >= (3, 10):
         _self_parent: Any
         _self_owner: Any
 
+    _P = ParamSpec("_P")
+    _R = TypeVar("_R")
+    _T = TypeVar("_T")
+
     class BoundFunctionWrapper(_FunctionWrapperBase[P, R]):
         def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
+        @overload
+        def __get__(
+            self, instance: None, owner: type[Any] | None = None
+        ) -> "BoundFunctionWrapper[P, R]": ...
+        @overload
+        def __get__(
+            self: "BoundFunctionWrapper[Concatenate[_T, _P], _R]",
+            instance: _T,
+            owner: type[Any] | None = None,
+        ) -> "BoundFunctionWrapper[_P, _R]": ...
+        @overload
         def __get__(
             self, instance: Any, owner: type[Any] | None = None
         ) -> "BoundFunctionWrapper[P, R]": ...
@@ -118,6 +133,17 @@ if sys.version_info >= (3, 10):
             enabled: bool | Boolean | Callable[[], bool] | None = None,
         ) -> None: ...
         def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
+        @overload
+        def __get__(
+            self, instance: None, owner: type[Any] | None = None
+        ) -> "FunctionWrapper[P, R]": ...
+        @overload
+        def __get__(
+            self: "FunctionWrapper[Concatenate[_T, _P], _R]",
+            instance: _T,
+            owner: type[Any] | None = None,
+        ) -> BoundFunctionWrapper[_P, _R]: ...
+        @overload
         def __get__(
             self, instance: Any, owner: type[Any] | None = None
         ) -> BoundFunctionWrapper[P, R]: ...
@@ -135,9 +161,6 @@ if sys.version_info >= (3, 10):
 
     class Descriptor(Protocol):
         def __get__(self, instance: Any, owner: type[Any] | None = None) -> Any: ...
-
-    _P = ParamSpec("_P")
-    _R = TypeVar("_R")
 
     class FunctionDecorator(Generic[P, R]):
         def __call__(
