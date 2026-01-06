@@ -16,7 +16,6 @@ if sys.version_info >= (3, 10):
 
     P = ParamSpec("P")
     R = TypeVar("R", covariant=True)
-
     T = TypeVar("T", bound=Any)
 
     class Boolean(Protocol):
@@ -137,17 +136,14 @@ if sys.version_info >= (3, 10):
     class Descriptor(Protocol):
         def __get__(self, instance: Any, owner: type[Any] | None = None) -> Any: ...
 
+    _P = ParamSpec("_P")
+    _R = TypeVar("_R")
+
     class FunctionDecorator(Generic[P, R]):
         def __call__(
             self,
-            callable: (
-                Callable[P, R]
-                | Callable[Concatenate[type[T], P], R]
-                | Callable[Concatenate[Any, P], R]
-                | Callable[[type[T]], R]
-                | Descriptor
-            ),
-        ) -> FunctionWrapper[P, R]: ...
+            callable: Callable[_P, _R],
+        ) -> FunctionWrapper[_P, _R]: ...
 
     class PartialFunctionDecorator:
         @overload
