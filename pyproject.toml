@@ -75,6 +75,23 @@ extend-exclude = '''
 )/
 '''
 
+# coverage configuration
+[tool.coverage.run]
+branch = true
+relative_files = true
+parallel = true
+source = [
+    "tests",
+    "wrapt",
+]
+
+[tool.coverage.paths]
+src = [
+    "src/",
+    ".tox/*/lib/*/site-packages/",
+    ".tox/pypy*/site-packages/",
+]
+
 # pytest configuration
 [tool.pytest.ini_options]
 testpaths = ["tests"]
