@@ -43,11 +43,6 @@ jobs:
       run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
-    - name: Store partial coverage reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
-        path: .coverage.*
 
   test_linux_riscv64:
     name: Test (${{ matrix.os }} riscv64-${{ matrix.python-version.tox_e }})
@@ -106,16 +101,6 @@ jobs:
       - name: Test with tox
         run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && cd /src && python -m tox -e '${{ matrix.python-version.tox_e }}'"
 
-      - name: ls -al
-        run: ls -al | grep .coverage
-
-      - name: Store partial coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.os }}-${{ matrix.python-version.python_image }}
-          path: .coverage.*
-          include-hidden-files: true
-
   test_linux_no_gil:
     name: Test - NO GIL (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -143,11 +128,6 @@ jobs:
       run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
-    - name: Store partial coverage reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-no-gil-${{ matrix.os }}-${{ matrix.python-version }}
-        path: .coverage.*
 
   test_macos:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
@@ -182,11 +162,6 @@ jobs:
       run: python -m pip install "mypy==1.18.1; python_version >= '3.9'"
     - name: Test with tox
       run: python -m tox
-    - name: Store partial coverage reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
-        path: .coverage.*
 
   test_windows:
     name: Test (${{ matrix.os }}, ${{ matrix.python-version }})
@@ -302,34 +277,3 @@ jobs:
         with:
           name: dist-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
-
-  # coveralls:
-  #   name: Generate code coverage report
-  #   if: ${{ false }}  # disable for now
-  #   needs:
-  #   - test_linux
-  #   - test_linux_no_gil
-  #   - test_macos
-  #   - test_windows
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v3
-  #   - name: Setup Python 3.9
-  #     uses: actions/setup-python@v4
-  #     with:
-  #       python-version: 3.9
-  #   - name: Install coverage package
-  #     run: python -m pip install -U coverage
-  #   - name: Download partial coverage reports
-  #     uses: actions/download-artifact@v3
-  #     with:
-  #       name: coverage
-  #   - name: Combine coverage
-  #     run: python -m coverage combine
-  #   - name: Report coverage
-  #     run: python -m coverage report
-  #   - name: Export coverage to XML
-  #     run: python -m coverage xml
-  #   - name: Upload coverage statistics to Coveralls
-  #     uses: AndreMiras/coveralls-python-action@develop

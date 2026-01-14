@@ -38,7 +38,7 @@ release:
 release-test: clean package
     uv publish --index-url https://test.pypi.org/simple/ dist/*
 
-# Remove coverage files
+# Remove temporary files and build artifacts
 mostlyclean: clear-cache
     rm -rf .coverage.*
     rm -rf .pytest_cache
@@ -52,7 +52,7 @@ mostlyclean: clear-cache
     rm -rf docs/_build
 
 
-# Clean build artifacts, coverage files, and virtual environment
+# Clean build artifacts and virtual environment
 clean: mostlyclean
     rm -rf build dist src/wrapt.egg-info
 
