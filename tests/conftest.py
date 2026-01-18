@@ -1,7 +1,6 @@
 import os
 import pathlib
 import re
-import shutil
 import sys
 import warnings
 
@@ -139,6 +138,10 @@ class MypyPairCollector(pytest.File):
     def collect(self):
         # Only run this custom collection on Python 3.10+
         if version < (3, 10):
+            return
+
+        # Skip mypy tests if running on PyPy
+        if sys.implementation.name == "pypy":
             return
 
         path = pathlib.Path(str(self.fspath))
