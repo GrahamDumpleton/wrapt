@@ -14,7 +14,10 @@ from wrapt import function_wrapper
 
 @function_wrapper
 def wrapper(
-    wrapped: Callable[[int, int], int], instance: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
+    wrapped: Callable[[int, int], int],
+    instance: Any,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
 ) -> str:
     return "string"
 
