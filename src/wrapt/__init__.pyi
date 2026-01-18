@@ -19,6 +19,21 @@ if sys.version_info >= (3, 10):
 
     T = TypeVar("T", bound=Any)
 
+    # Need two sets of ParamSpec/TypeVar for generics in some cases to ensure
+    # that mypy, pyrefly and ty all work correctly. More specifically need a
+    # separate set for cases where extracting the type or instance from the
+    # first argument of a callable where binding is involved.
+
+    P1 = ParamSpec("P1")
+    R1 = TypeVar("R1", covariant=True)
+
+    T1 = TypeVar("T1", bound=Any)
+
+    P2 = ParamSpec("P2")
+    R2 = TypeVar("R2", covariant=True)
+
+    T2 = TypeVar("T2", bound=Any)
+
     class Boolean(Protocol):
         def __bool__(self) -> bool: ...
 
@@ -105,23 +120,77 @@ if sys.version_info >= (3, 10):
         _self_parent: Any
         _self_owner: Any
 
-    class BoundFunctionWrapper(_FunctionWrapperBase[P, R]):
-        def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
-        def __get__(
-            self, instance: Any, owner: type[Any] | None = None
-        ) -> "BoundFunctionWrapper[P, R]": ...
+    class BoundFunctionWrapper(_FunctionWrapperBase[P1, R1]):
+        def __call__(self, *args: P1.args, **kwargs: P1.kwargs) -> R1: ...
 
-    class FunctionWrapper(_FunctionWrapperBase[P, R]):
+        # Note that for following overloads, testing with mypy and ty they still do
+        # not handle static methods being decorated but to best knowledge this is
+        # a limitation in those type checkers. Testing with pyrefly fails on any
+        # type of bound method. Testing with pyright handles case correctly.
+        #
+        # Also, note that use of T2, P2 and R2 in first two cases is also required
+        # to ensure correct handling by mypy and ty, so do not change to use of T1,
+        # P1 and R1.
+
+        @overload
+        def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
+            self: BoundFunctionWrapper[Concatenate[T2, P2], R2],
+            instance: T2,
+            owner: type[T2] | None = None,
+        ) -> BoundFunctionWrapper[P2, R2]: ...
+        @overload
+        def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
+            self: BoundFunctionWrapper[Concatenate[T2, P2], R2],
+            instance: T2,
+            owner: type[Any] | None = None,
+        ) -> BoundFunctionWrapper[P2, R2]: ...
+        @overload
+        def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
+            self, instance: None, owner: type[T1] | None = None
+        ) -> BoundFunctionWrapper[P1, R1]: ...
+        @overload
+        def __get__(  # Required to ensure pyright works correctly
+            self, instance: T1, owner: type[T1] | None = None
+        ) -> BoundFunctionWrapper[P1, R1]: ...
+
+    class FunctionWrapper(_FunctionWrapperBase[P1, R1]):
         def __init__(
             self,
-            wrapped: WrappedFunction[P, R],
-            wrapper: WrapperFunction[P, R],
+            wrapped: WrappedFunction[P1, R1],
+            wrapper: WrapperFunction[P1, R1],
             enabled: bool | Boolean | Callable[[], bool] | None = None,
         ) -> None: ...
-        def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R: ...
-        def __get__(
-            self, instance: Any, owner: type[Any] | None = None
-        ) -> BoundFunctionWrapper[P, R]: ...
+        def __call__(self, *args: P1.args, **kwargs: P1.kwargs) -> R1: ...
+
+        # Note that for following overloads, testing with mypy and ty they still do
+        # not handle static methods being decorated but to best knowledge this is
+        # a limitation in those type checkers. Testing with pyrefly fails on any
+        # type of bound method. Testing with pyright handles case correctly.
+        #
+        # Also, note that use of T2, P2 and R2 in first two cases is also required
+        # to ensure correct handling by mypy and ty, so do not change to use of T1,
+        # P1 and R1.
+
+        @overload
+        def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
+            self: FunctionWrapper[Concatenate[T2, P2], R2],
+            instance: T2,
+            owner: type[Any] | None = None,
+        ) -> BoundFunctionWrapper[P2, R2]: ...
+        @overload
+        def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
+            self: FunctionWrapper[Concatenate[T2, P2], R2],
+            instance: T2,
+            owner: type[T2] | None = None,
+        ) -> BoundFunctionWrapper[P2, R2]: ...
+        @overload
+        def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
+            self, instance: None, owner: type[T1] | None = None
+        ) -> BoundFunctionWrapper[P1, R1]: ...
+        @overload
+        def __get__(  # Required to ensure pyright works correctly
+            self, instance: T1, owner: type[T1] | None = None
+        ) -> BoundFunctionWrapper[P1, R1]: ...
 
     # AdapterFactory/adapter_factory()
 
@@ -137,51 +206,53 @@ if sys.version_info >= (3, 10):
     class Descriptor(Protocol):
         def __get__(self, instance: Any, owner: type[Any] | None = None) -> Any: ...
 
-    class FunctionDecorator(Generic[P, R]):
+    class FunctionDecorator:
+        @overload
         def __call__(
             self,
             callable: (
                 Callable[P, R]
-                | Callable[Concatenate[type[T], P], R]
-                | Callable[Concatenate[Any, P], R]
-                | Callable[[type[T]], R]
-                | Descriptor
+                | Callable[Concatenate[type[T], P], R]  # Required for pylance
+                # | Callable[Concatenate[Any, P], R]  # Breaks mypy, pyrefly and ty
+                | Callable[[type[T]], R]  # Required for pylance
             ),
         ) -> FunctionWrapper[P, R]: ...
+        @overload
+        def __call__(self, callable: Descriptor) -> FunctionWrapper[P, Any]: ...
 
     class PartialFunctionDecorator:
         @overload
         def __call__(
             self, wrapper: GenericCallableWrapperFunction[P, R], /
-        ) -> FunctionDecorator[P, R]: ...
+        ) -> FunctionDecorator: ...
         @overload
         def __call__(
             self, wrapper: ClassMethodWrapperFunction[P, R], /
-        ) -> FunctionDecorator[P, R]: ...
+        ) -> FunctionDecorator: ...
         @overload
         def __call__(
             self, wrapper: InstanceMethodWrapperFunction[P, R], /
-        ) -> FunctionDecorator[P, R]: ...
+        ) -> FunctionDecorator: ...
 
     # ... Decorator applied to class type.
 
     @overload
-    def decorator(wrapper: type[T], /) -> FunctionDecorator[Any, Any]: ...
+    def decorator(wrapper: type[T], /) -> FunctionDecorator: ...
 
     # ... Decorator applied to function or method.
 
     @overload
     def decorator(
         wrapper: GenericCallableWrapperFunction[P, R], /
-    ) -> FunctionDecorator[P, R]: ...
+    ) -> FunctionDecorator: ...
     @overload
     def decorator(
         wrapper: ClassMethodWrapperFunction[P, R], /
-    ) -> FunctionDecorator[P, R]: ...
+    ) -> FunctionDecorator: ...
     @overload
     def decorator(
         wrapper: InstanceMethodWrapperFunction[P, R], /
-    ) -> FunctionDecorator[P, R]: ...
+    ) -> FunctionDecorator: ...
 
     # ... Positional arguments.
 
@@ -196,21 +267,21 @@ if sys.version_info >= (3, 10):
     # function_wrapper()
 
     @overload
-    def function_wrapper(wrapper: type[Any]) -> FunctionDecorator[Any, Any]: ...
+    def function_wrapper(wrapper: type[Any]) -> FunctionDecorator: ...
     @overload
     def function_wrapper(
         wrapper: GenericCallableWrapperFunction[P, R],
-    ) -> FunctionDecorator[P, R]: ...
+    ) -> FunctionDecorator: ...
     @overload
     def function_wrapper(
         wrapper: ClassMethodWrapperFunction[P, R],
-    ) -> FunctionDecorator[P, R]: ...
+    ) -> FunctionDecorator: ...
     @overload
     def function_wrapper(
         wrapper: InstanceMethodWrapperFunction[P, R],
-    ) -> FunctionDecorator[P, R]: ...
+    ) -> FunctionDecorator: ...
     # @overload
-    # def function_wrapper(wrapper: Any) -> FunctionDecorator[Any, Any]: ... # Don't use, breaks stuff.
+    # def function_wrapper(wrapper: Any) -> FunctionDecorator: ... # Don't use, breaks stuff.
 
     # wrap_function_wrapper()
 
@@ -234,9 +305,7 @@ if sys.version_info >= (3, 10):
     # transient_function_wrapper()
 
     class TransientDecorator:
-        def __call__(
-            self, wrapper: WrapperFunction[P, R]
-        ) -> FunctionDecorator[P, R]: ...
+        def __call__(self, wrapper: WrapperFunction[P, R]) -> FunctionDecorator: ...
 
     def transient_function_wrapper(
         target: ModuleType | type[Any] | Any | str, name: str
