@@ -49,9 +49,8 @@ where = ["src"]
 [tool.setuptools.dynamic]
 version = {attr = "wrapt.__version__"}
 
-# uv configuration
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest",
     "setuptools",
 ]
