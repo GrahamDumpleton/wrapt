@@ -16,9 +16,15 @@ need to add explicit annotations yourself, sometimes by introducing small
 helper functions to guide the type checker.
 
 Of the type checkers, ``pyright`` used within VS Code Pylance extension gives
-the best experience, and ``mypy`` fails to work correctly in many situations.
-This appears to be due to limitations in ``mypy`` rather than issues with the
-**wrapt** type hints.
+the best experience. ``mypy`` and ``ty`` also work well in most situations, but
+have some limitations when dealing with static methods of classes decorated with
+**wrapt** decorators. The ``pyrefly`` type checker currently does not work
+correctly with **wrapt** decorators applied to methods of classes. Problems with
+``mypy``, ``ty`` and ``pyrefly`` may be due to limitations in those type
+checkers rather than issues with the **wrapt** type hints. Many attempts have
+been made to ensure compatibility, but it is not possible to guarantee that all
+type checkers will work correctly in all situations due to differences in how
+they interpret type hint constructs.
 
 Always ensure you are using the most up to date version of a type checking tool.
 If you encounter any issues, please report them on the **wrapt** issue tracker

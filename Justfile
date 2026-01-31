@@ -38,12 +38,13 @@ release:
 release-test: clean package
     uv publish --index-url https://test.pypi.org/simple/ dist/*
 
-# Remove coverage files
+# Remove temporary files and build artifacts
 mostlyclean: clear-cache
     rm -rf .coverage.*
     rm -rf .pytest_cache
     rm -rf .tox .venv
     rm -rf .mypy_cache
+    rm -rf __pycache__
     rm -rf tests/__pycache__
     rm -rf tests/core/__pycache__
     rm -rf src/wrapt/__pycache__
@@ -52,7 +53,7 @@ mostlyclean: clear-cache
     rm -rf docs/_build
 
 
-# Clean build artifacts, coverage files, and virtual environment
+# Clean build artifacts and virtual environment
 clean: mostlyclean
     rm -rf build dist src/wrapt.egg-info
 
@@ -62,7 +63,6 @@ test-tox:
 
 # Run tests with uv (modern alternative)
 test:
-    just test-version 3.8
     just test-version 3.9
     just test-version 3.10
     just test-version 3.11

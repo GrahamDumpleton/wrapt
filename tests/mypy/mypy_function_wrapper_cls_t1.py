@@ -22,6 +22,7 @@ from wrapt import FunctionWrapper
 P = ParamSpec("P")
 R = TypeVar("R", covariant=True)
 
+
 def function(x: int, y: int = 0) -> int:
     """A simple function to be wrapped."""
     return x + y

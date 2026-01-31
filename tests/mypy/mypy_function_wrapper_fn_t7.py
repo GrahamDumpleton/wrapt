@@ -2,7 +2,7 @@
 This example demonstrates usage of the function_wrapper() function.
 """
 
-from typing import Any, Callable, Concatenate, ParamSpec, TypeVar
+from typing import Any, Callable, ParamSpec, TypeVar
 
 from wrapt import function_wrapper
 

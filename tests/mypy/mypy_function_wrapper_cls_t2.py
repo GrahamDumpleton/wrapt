@@ -19,6 +19,7 @@ These should all pass mypy type checking.
 """
 
 from typing import Any, Callable
+
 from wrapt import FunctionWrapper
 
 

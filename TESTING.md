@@ -49,7 +49,7 @@ The project provides several ways to run tests using the `just` command runner.
 ```bash
 just test
 ```
-This runs the complete test suite across all supported Python versions (3.8-3.14). For each version, it tests three scenarios:
+This runs the complete test suite across all supported Python versions (3.9-3.14). For each version, it tests three scenarios:
 1. Without C extensions
 2. With C extensions
 3. With C extensions disabled at runtime
@@ -58,7 +58,7 @@ This runs the complete test suite across all supported Python versions (3.8-3.14
 ```bash
 just test-version 3.13
 ```
-Replace `3.13` with any supported Python version (3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14).
+Replace `3.13` with any supported Python version (3.9, 3.10, 3.11, 3.12, 3.13, 3.14).
 
 #### Legacy Test Runner (using tox)
 ```bash
@@ -76,7 +76,7 @@ Runs tests using pip-installed pytest in the main virtual environment.
 ```bash
 just test-mypy
 ```
-Runs mypy type checking across all supported Python versions (3.8-3.14).
+Runs mypy type checking across all supported Python versions (3.9-3.14).
 
 ```bash
 just test-mypy-version 3.13
@@ -106,7 +106,7 @@ Each `test-version` run includes three important test scenarios:
 
 ## Mypy Type Checking Tests
 
-The project includes custom pytest handlers for testing mypy type checking behavior. These tests ensure that the wrapt library's type annotations work correctly and produce expected mypy error messages.
+The project includes custom pytest handlers for testing mypy type checking behavior. These tests ensure that the wrapt library's type annotations work correctly and produce expected mypy error messages. Note that `mypy` must exist in your `PATH` else the tests related to type checking which be skipped.
 
 ### Test File Convention
 

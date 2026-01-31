@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Version 2.1.0
+-------------
+
+**Features Changed**
+
+* Drop support for Python 3.8. Python version 3.9 or later is now required.
+
+**Bugs Fixed**
+
+* Improved type hints so that ``mypy`` and ``ty`` work better for methods of
+  classes when using ``wrapt.decorator`` and ``wrapt.function_wrapper``. Note
+  that applying these to static methods still does not work correctly due to
+  possibly limitations in those type checkers. The ``pyrefly`` tool still does
+  not work correctly with ``wrapt.decorator`` and ``wrapt.function_wrapper``
+  applied to any methods of classes. Overall ``pyright`` provides the best
+  experience when using ``wrapt`` with type checking.
+
 Version 2.0.1
 -------------
 
