@@ -172,6 +172,10 @@ html_static_path = ["_static"]
 # Output file base name for HTML help builder.
 htmlhelp_basename = "wraptdoc"
 
+# Ensure jQuery is included for search functionality
+html_js_files = [
+    "https://code.jquery.com/jquery-3.7.1.min.js",
+]
 
 # -- Options for LaTeX output --------------------------------------------------
 
