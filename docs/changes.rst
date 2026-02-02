@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 2.1.1
+-------------
+
+**Bugs Fixed**
+
+* Search field for documentation hosted on Read the Docs wasn't working
+  correctly due to JavaScript error.
+
 Version 2.1.0
 -------------
 
