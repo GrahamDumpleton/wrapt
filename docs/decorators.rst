@@ -654,15 +654,21 @@ When calling the wrapped function in the decorator wrapper function, the
 instance is already bound to ``wrapped`` and will be passed automatically
 as the first argument to the original wrapped function.
 
-Note that due to a bug in ``classmethod.__get__()`` prior to Python 3.9,
-whereby it does not apply the descriptor protocol to the function wrapped
-by ``@classmethod``, the above only applies where the decorator wraps the
-``@classmethod`` decorator. If the decorator is placed inside of the
-``@classmethod`` decorator, then ``instance`` will be ``None`` and the
-decorator wrapper function will see the call as being the same as a normal
-function. As a result, always place any decorator outside of the
-``@classmethod`` decorator if needing the code to be portable to versions
-of Python older than Python 3.9.
+Note that you should always apply the decorator outside of the ``@classmethod``
+decorator. This is because the ``@classmethod`` decorator itself is not
+aware of the descriptor protocol for the function it is wrapping, and so
+it does not apply it. If the decorator is placed inside of the ``@classmethod``
+decorator, then ``instance`` will be ``None`` and the decorator wrapper function
+will see the call as being the same as a normal function.
+
+This behavour of ``@classmethod`` is a bug in it's ``classmethod.__get__()``
+implementation. The bug existed prior to Python 3.9 and was fixed in that
+version of Python, however in Python 3.13 this fix in Python was reverted back
+to the old behaviour because various third party code relied on the broken
+behaviour and even though technically not correct, it was deemed safer to revert
+the fix. Thus the general recommendation remains that decorators implemented
+using ``@wrapt.decorator`` always be placed outside of ``@classmethod`` and
+never inside.
 
 Decorating Static Methods
 -------------------------

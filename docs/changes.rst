@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 2.1.1
+-------------
+
+**Bugs Fixed**
+
+* Search field for documentation hosted on Read the Docs wasn't working
+  correctly due to JavaScript error.
+
+* Missing ``tox.ini`` from source distribution package has been added.
+
 Version 2.1.0
 -------------
 
