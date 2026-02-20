@@ -108,6 +108,9 @@ class WeakFunctionProxy(BaseObjectProxy):
         # function we need to rebind the function and then call it. If
         # not just called the wrapped function.
 
+        if self._self_instance is not None and instance is None:
+            raise ReferenceError("weakly-referenced object no longer exists")
+
         if instance is None:
             return self.__wrapped__(*args, **kwargs)
 
