@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 2.2.0
+-------------
+
+**Features Changed**
+
+**Bugs Fixed**
+
 Version 2.1.1
 -------------
 
