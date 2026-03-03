@@ -11,6 +11,10 @@ Version 2.2.0
 * Building of Python wheels for riscv64 Linux platform had been accidentally
   removed from the build configuration. This has now been added back in.
 
+* When a weak function proxy was created for a bound method and the instance
+  it was bound to was garbage collected, calling the proxy would silently
+  call the function as unbound instead of raising a ``ReferenceError``.
+
 Version 2.1.1
 -------------
 
