@@ -8,6 +8,9 @@ Version 2.2.0
 
 **Bugs Fixed**
 
+* Building of Python wheels for riscv64 Linux platform had been accidentally
+  removed from the build configuration. This has now been added back in.
+
 Version 2.1.1
 -------------
 
