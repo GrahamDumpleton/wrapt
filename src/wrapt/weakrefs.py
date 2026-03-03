@@ -103,6 +103,13 @@ class WeakFunctionProxy(BaseObjectProxy):
         instance = self._self_instance and self._self_instance()
         function = self.__wrapped__ and self.__wrapped__
 
+        # If the wrapped function was originally a bound method but the
+        # instance it was bound to has been garbage collected, raise a
+        # ReferenceError rather than silently calling it as unbound.
+
+        if self._self_instance is not None and instance is None:
+            raise ReferenceError("weakly-referenced object no longer exists")
+
         # If the wrapped function was originally a bound function, for
         # which we retained a reference to the instance and the unbound
         # function we need to rebind the function and then call it. If
