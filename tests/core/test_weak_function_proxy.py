@@ -1,5 +1,5 @@
-import unittest
 import gc
+import unittest
 
 import wrapt
 
@@ -82,6 +82,9 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(id(proxy), result[0])
 
+        with self.assertRaises(ReferenceError):
+            proxy(1, 2)
+
     def test_instancemethod_delete_function(self):
         class Class:
             def function(self, a, b):
@@ -104,6 +107,9 @@ class TestWeakFunctionProxy(unittest.TestCase):
 
         self.assertEqual(len(result), 1)
         self.assertEqual(id(proxy), result[0])
+
+        with self.assertRaises(ReferenceError):
+            proxy(1, 2)
 
     def test_instancemethod_delete_function_and_instance(self):
         class Class:
@@ -128,6 +134,9 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(id(proxy), result[0])
 
+        with self.assertRaises(ReferenceError):
+            proxy(1, 2)
+
     def test_classmethod(self):
         class Class:
             @classmethod
@@ -150,6 +159,9 @@ class TestWeakFunctionProxy(unittest.TestCase):
 
         self.assertEqual(len(result), 1)
         self.assertEqual(id(proxy), result[0])
+
+        with self.assertRaises(ReferenceError):
+            proxy(1, 2)
 
     def test_staticmethod(self):
         class Class:
