@@ -84,7 +84,12 @@ class TestUpdateAttributes(unittest.TestCase):
 
         self.assertEqual(function.__qualname__, "override_qualname")
 
-        self.assertRaises(TypeError, delattr, function, "__qualname__")
+        # CPython raises TypeError when deleting __qualname__ from a function
+        # because the C-level setter rejects a NULL value. PyPy raises
+        # AttributeError instead. Both indicate that deletion is not supported.
+        self.assertRaises(
+            (TypeError, AttributeError), delattr, function, "__qualname__"
+        )
 
     def test_delete_qualname_modified_on_original(self):
         def function():
@@ -100,7 +105,12 @@ class TestUpdateAttributes(unittest.TestCase):
         self.assertEqual(function.__qualname__, "override_qualname")
         self.assertEqual(instance.__qualname__, "override_qualname")
 
-        self.assertRaises(TypeError, delattr, instance, "__qualname__")
+        # CPython raises TypeError when deleting __qualname__ from a function
+        # because the C-level setter rejects a NULL value. PyPy raises
+        # AttributeError instead. Both indicate that deletion is not supported.
+        self.assertRaises(
+            (TypeError, AttributeError), delattr, instance, "__qualname__"
+        )
 
     def test_update_module(self):
         @passthru_decorator
@@ -187,7 +197,6 @@ class TestUpdateAttributes(unittest.TestCase):
 
         self.assertEqual(function.__annotations__, override_annotations)
         self.assertEqual(instance.__annotations__, override_annotations)
-
 
     def test_delete_annotations(self):
         @passthru_decorator
