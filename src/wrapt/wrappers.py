@@ -283,6 +283,10 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             object.__delattr__(self, name)
             delattr(self.__wrapped__, name)
 
+        elif name == "__annotations__":
+            object.__delattr__(self, name)
+            delattr(self.__wrapped__, name)
+
         elif hasattr(type(self), name):
             object.__delattr__(self, name)
 

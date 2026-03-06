@@ -1,6 +1,22 @@
 Release Notes
 =============
 
+Version 2.1.2
+-------------
+
+**Bugs Fixed**
+
+* Building of Python wheels for riscv64 Linux platform had been accidentally
+  removed from the build configuration. This has now been added back in.
+
+* When a weak function proxy was created for a bound method and the instance
+  it was bound to was garbage collected, calling the proxy would silently
+  call the function as unbound instead of raising a ``ReferenceError``.
+
+* When deleting an attribute named ``__annotations__`` on an object proxy, the
+  attribute was only being deleted from the proxy and not also from the wrapped
+  object.
+
 Version 2.1.1
 -------------
 

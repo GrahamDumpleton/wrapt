@@ -74,6 +74,44 @@ class TestUpdateAttributes(unittest.TestCase):
         self.assertEqual(function.__qualname__, "override_qualname")
         self.assertEqual(instance.__qualname__, "override_qualname")
 
+    def test_delete_qualname(self):
+
+        @passthru_decorator
+        def function():
+            pass
+
+        function.__qualname__ = "override_qualname"
+
+        self.assertEqual(function.__qualname__, "override_qualname")
+
+        # CPython raises TypeError when deleting __qualname__ from a function
+        # because the C-level setter rejects a NULL value. PyPy raises
+        # AttributeError instead. Both indicate that deletion is not supported.
+        self.assertRaises(
+            (TypeError, AttributeError), delattr, function, "__qualname__"
+        )
+
+    def test_delete_qualname_modified_on_original(self):
+        def function():
+            pass
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        instance = wrapt.FunctionWrapper(function, wrapper)
+
+        instance.__qualname__ = "override_qualname"
+
+        self.assertEqual(function.__qualname__, "override_qualname")
+        self.assertEqual(instance.__qualname__, "override_qualname")
+
+        # CPython raises TypeError when deleting __qualname__ from a function
+        # because the C-level setter rejects a NULL value. PyPy raises
+        # AttributeError instead. Both indicate that deletion is not supported.
+        self.assertRaises(
+            (TypeError, AttributeError), delattr, instance, "__qualname__"
+        )
+
     def test_update_module(self):
         @passthru_decorator
         def function():
@@ -159,6 +197,40 @@ class TestUpdateAttributes(unittest.TestCase):
 
         self.assertEqual(function.__annotations__, override_annotations)
         self.assertEqual(instance.__annotations__, override_annotations)
+
+    def test_delete_annotations(self):
+        @passthru_decorator
+        def function():
+            pass
+
+        override_annotations = {"override_annotations": ""}
+        function.__annotations__ = override_annotations
+
+        self.assertEqual(function.__annotations__, override_annotations)
+
+        del function.__annotations__
+
+        self.assertEqual(function.__annotations__, {})
+
+    def test_delete_annotations_modified_on_original(self):
+        def function():
+            pass
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        instance = wrapt.FunctionWrapper(function, wrapper)
+
+        override_annotations = {"override_annotations": ""}
+        instance.__annotations__ = override_annotations
+
+        self.assertEqual(function.__annotations__, override_annotations)
+        self.assertEqual(instance.__annotations__, override_annotations)
+
+        del instance.__annotations__
+
+        self.assertEqual(function.__annotations__, {})
+        self.assertEqual(instance.__annotations__, {})
 
 
 if __name__ == "__main__":
