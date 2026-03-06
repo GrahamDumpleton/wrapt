@@ -25,7 +25,7 @@ jobs:
           - 3.11
           - 3.12
           - 3.13
-          - 3.14-dev
+          - 3.14
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -57,7 +57,7 @@ jobs:
           - ubuntu-latest
         python-version:
           - 3.13
-          - 3.14-dev
+          - 3.14
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -126,7 +126,7 @@ jobs:
           - 3.11
           - 3.12
           - 3.13
-          - 3.14-dev
+          - 3.14
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -164,7 +164,7 @@ jobs:
           - 3.11
           - 3.12
           - 3.13
-          - 3.14-dev
+          - 3.14
           - pypy-3.8
           - pypy-3.9
           - pypy-3.10
@@ -235,19 +235,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, windows-11-arm, macos-13, macos-14]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-latest]
         arch: [auto]
         include:
           - os: ubuntu-latest
-            arch: aarch64
-          - os: macos-13
-            arch: universal2
-          - os: macos-14
-            arch: universal2
+            arch: riscv64
     steps:
       - uses: actions/checkout@v3
       - name: Set up QEMU
-        if: ${{ matrix.arch == 'aarch64' }}
+        if: ${{ matrix.arch == 'riscv64' }}
         uses: docker/setup-qemu-action@v2
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.1
