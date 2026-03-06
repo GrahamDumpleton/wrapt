@@ -3,6 +3,7 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 
 """
 
+import importlib.metadata
 import sys
 import threading
 
@@ -82,21 +83,25 @@ def register_post_import_hook(hook, name):
 
 def _create_import_hook_from_entrypoint(entrypoint):
     def import_hook(module):
-        __import__(entrypoint.module_name)
-        callback = sys.modules[entrypoint.module_name]
-        for attr in entrypoint.attrs:
-            callback = getattr(callback, attr)
+        entrypoint_value = entrypoint.value.split(':')
+        module_name = entrypoint_value[0]
+        __import__(module_name)
+        callback = sys.modules[module_name]
+        if len(entrypoint_value) > 1:
+            attrs = entrypoint_value[1].split('.')
+            for attr in attrs:
+                callback = getattr(callback, attr)
         return callback(module)
     return import_hook
 
 def discover_post_import_hooks(group):
     try:
-        import pkg_resources
-    except ImportError:
-        return
+        entrypoints = importlib.metadata.entry_points(group=group)
+    except TypeError:
+        entrypoints = importlib.metadata.entry_points().get(group, ())
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
-        callback = _create_import_hook_from_entrypoint(entrypoint)
+    for entrypoint in entrypoints:
+        callback = entrypoint.load()
         register_post_import_hook(callback, entrypoint.name)
 
 # Indicate that a module has been loaded. Any post import hooks which

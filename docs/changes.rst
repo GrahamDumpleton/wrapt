@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 1.17.4
+--------------
+
+**Bugs Fixed**
+
+* Backported from version 2.x, dropping of runtime dependency on the
+  ``pkg_resources`` module from ``setuptools`` for discovery of entrypoints
+  for post import hooks as the mechanism was removed in recent version of
+  ``setuptools``. The new mechanism for discovery of entry points is to use
+  the ``importlib.metadata`` module which is part of the Python standard
+  library in Python 3.8+.
+
 Version 1.17.3
 --------------
 
