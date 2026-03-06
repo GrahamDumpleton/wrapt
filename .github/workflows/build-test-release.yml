@@ -246,15 +246,14 @@ jobs:
         if: ${{ matrix.arch == 'riscv64' }}
         uses: docker/setup-qemu-action@v2
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.1.1
+        uses: pypa/cibuildwheel@v3.3.0
         with:
           output-dir: dist
         env:
-            WRAPT_INSTALL_EXTENSIONS: true
-            CIBW_SKIP: pp*
-            CIBW_BUILD_VERBOSITY: 1
-            CIBW_ARCHS: ${{ matrix.arch }}
-            CIBW_FREE_THREADED_SUPPORT: 1
+          WRAPT_INSTALL_EXTENSIONS: true
+          CIBW_BUILD_VERBOSITY: 1
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_ENABLE: cpython-freethreading
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}-${{ matrix.arch }}
