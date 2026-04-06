@@ -782,7 +782,25 @@ class _FunctionWrapperBase(ObjectProxy):
             return issubclass(subclass, self.__wrapped__)
 
 
+_FUNCTION_WRAPPER_SLOTS = frozenset(_FunctionWrapperBase.__slots__)
+
+
 class BoundFunctionWrapper(_FunctionWrapperBase):
+
+    def __setattr__(self, name, value):
+        if name.startswith("_self_") and name not in _FUNCTION_WRAPPER_SLOTS:
+            if self._self_parent is not None:
+                object.__setattr__(self._self_parent, name, value)
+                return
+        super().__setattr__(name, value)
+
+    def __getattr__(self, name):
+        if self._self_parent is not None:
+            try:
+                return getattr(self._self_parent, name)
+            except AttributeError:
+                pass
+        return super().__getattr__(name)
 
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):

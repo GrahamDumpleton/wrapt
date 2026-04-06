@@ -2602,21 +2602,22 @@ PyTypeObject WraptObjectProxy_Type = {
     (inquiry)WraptObjectProxy_clear,                               /*tp_clear*/
     (richcmpfunc)WraptObjectProxy_richcompare,                     /*tp_richcompare*/
     offsetof(WraptObjectProxyObject, weakreflist),                 /*tp_weaklistoffset*/
-    0, /* (getiterfunc)WraptObjectProxy_iter, */                   /*tp_iter*/
-    0,                                                             /*tp_iternext*/
-    WraptObjectProxy_methods,                                      /*tp_methods*/
-    0,                                                             /*tp_members*/
-    WraptObjectProxy_getset,                                       /*tp_getset*/
-    0,                                                             /*tp_base*/
-    0,                                                             /*tp_dict*/
-    0,                                                             /*tp_descr_get*/
-    0,                                                             /*tp_descr_set*/
-    offsetof(WraptObjectProxyObject, dict),                        /*tp_dictoffset*/
-    (initproc)WraptObjectProxy_init,                               /*tp_init*/
-    PyType_GenericAlloc,                                           /*tp_alloc*/
-    WraptObjectProxy_new,                                          /*tp_new*/
-    PyObject_GC_Del,                                               /*tp_free*/
-    0,                                                             /*tp_is_gc*/
+    0,
+    /* (getiterfunc)WraptObjectProxy_iter, */ /*tp_iter*/
+    0,                                        /*tp_iternext*/
+    WraptObjectProxy_methods,                 /*tp_methods*/
+    0,                                        /*tp_members*/
+    WraptObjectProxy_getset,                  /*tp_getset*/
+    0,                                        /*tp_base*/
+    0,                                        /*tp_dict*/
+    0,                                        /*tp_descr_get*/
+    0,                                        /*tp_descr_set*/
+    offsetof(WraptObjectProxyObject, dict),   /*tp_dictoffset*/
+    (initproc)WraptObjectProxy_init,          /*tp_init*/
+    PyType_GenericAlloc,                      /*tp_alloc*/
+    WraptObjectProxy_new,                     /*tp_new*/
+    PyObject_GC_Del,                          /*tp_free*/
+    0,                                        /*tp_is_gc*/
 };
 
 /* ------------------------------------------------------------------------- */
@@ -3796,6 +3797,83 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptBoundFunctionWrapper_getattr(
+    WraptFunctionWrapperObject *self, PyObject *args)
+{
+  PyObject *name = NULL;
+
+  if (!PyArg_ParseTuple(args, "U:__getattr__", &name))
+    return NULL;
+
+  if (self->parent && self->parent != Py_None)
+  {
+    PyObject *result = PyObject_GetAttr(self->parent, name);
+
+    if (result)
+      return result;
+
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return NULL;
+
+    PyErr_Clear();
+  }
+
+  return WraptObjectProxy_getattr((WraptObjectProxyObject *)self, args);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptBoundFunctionWrapper_setattro(
+    WraptFunctionWrapperObject *self, PyObject *name, PyObject *value)
+{
+  static PyObject *self_str = NULL;
+  static PyObject *startswith_str = NULL;
+
+  PyObject *match = NULL;
+
+  if (!startswith_str)
+  {
+    startswith_str = PyUnicode_InternFromString("startswith");
+  }
+
+  if (!self_str)
+  {
+    self_str = PyUnicode_InternFromString("_self_");
+  }
+
+  match = PyObject_CallMethodObjArgs(name, startswith_str, self_str, NULL);
+
+  if (match == Py_True)
+  {
+    Py_DECREF(match);
+
+    /* Check if this is an internal slot (has a getset descriptor on the type) */
+    if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
+      return PyObject_GenericSetAttr((PyObject *)self, name, value);
+
+    /* User-defined _self_ attribute — delegate to parent */
+    if (self->parent && self->parent != Py_None)
+      return PyObject_GenericSetAttr(self->parent, name, value);
+  }
+  else if (!match)
+    PyErr_Clear();
+
+  Py_XDECREF(match);
+
+  /* Fall through to base ObjectProxy setattro for everything else */
+  return WraptObjectProxy_setattro((WraptObjectProxyObject *)self, name, value);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyMethodDef WraptBoundFunctionWrapper_methods[] = {
+    {"__getattr__", (PyCFunction)WraptBoundFunctionWrapper_getattr, METH_VARARGS,
+     0},
+    {NULL, NULL},
+};
+
+/* ------------------------------------------------------------------------- */
+
 static PyGetSetDef WraptBoundFunctionWrapper_getset[] = {
     {"__module__", (getter)WraptObjectProxy_get_module,
      (setter)WraptObjectProxy_set_module, 0},
@@ -3809,42 +3887,42 @@ PyTypeObject WraptBoundFunctionWrapper_Type = {
     sizeof(WraptFunctionWrapperObject),                    /*tp_basicsize*/
     0,                                                     /*tp_itemsize*/
     /* methods */
-    0,                                             /*tp_dealloc*/
-    0,                                             /*tp_print*/
-    0,                                             /*tp_getattr*/
-    0,                                             /*tp_setattr*/
-    0,                                             /*tp_compare*/
-    0,                                             /*tp_repr*/
-    0,                                             /*tp_as_number*/
-    0,                                             /*tp_as_sequence*/
-    0,                                             /*tp_as_mapping*/
-    0,                                             /*tp_hash*/
-    (ternaryfunc)WraptBoundFunctionWrapper_call,   /*tp_call*/
-    0,                                             /*tp_str*/
-    0,                                             /*tp_getattro*/
-    0,                                             /*tp_setattro*/
-    0,                                             /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,      /*tp_flags*/
-    0,                                             /*tp_doc*/
-    0,                                             /*tp_traverse*/
-    0,                                             /*tp_clear*/
-    0,                                             /*tp_richcompare*/
-    offsetof(WraptObjectProxyObject, weakreflist), /*tp_weaklistoffset*/
-    0,                                             /*tp_iter*/
-    0,                                             /*tp_iternext*/
-    0,                                             /*tp_methods*/
-    0,                                             /*tp_members*/
-    WraptBoundFunctionWrapper_getset,              /*tp_getset*/
-    0,                                             /*tp_base*/
-    0,                                             /*tp_dict*/
-    0,                                             /*tp_descr_get*/
-    0,                                             /*tp_descr_set*/
-    0,                                             /*tp_dictoffset*/
-    0,                                             /*tp_init*/
-    0,                                             /*tp_alloc*/
-    0,                                             /*tp_new*/
-    0,                                             /*tp_free*/
-    0,                                             /*tp_is_gc*/
+    0,                                                /*tp_dealloc*/
+    0,                                                /*tp_print*/
+    0,                                                /*tp_getattr*/
+    0,                                                /*tp_setattr*/
+    0,                                                /*tp_compare*/
+    0,                                                /*tp_repr*/
+    0,                                                /*tp_as_number*/
+    0,                                                /*tp_as_sequence*/
+    0,                                                /*tp_as_mapping*/
+    0,                                                /*tp_hash*/
+    (ternaryfunc)WraptBoundFunctionWrapper_call,      /*tp_call*/
+    0,                                                /*tp_str*/
+    0,                                                /*tp_getattro*/
+    (setattrofunc)WraptBoundFunctionWrapper_setattro, /*tp_setattro*/
+    0,                                                /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    0,                                                /*tp_doc*/
+    0,                                                /*tp_traverse*/
+    0,                                                /*tp_clear*/
+    0,                                                /*tp_richcompare*/
+    offsetof(WraptObjectProxyObject, weakreflist),    /*tp_weaklistoffset*/
+    0,                                                /*tp_iter*/
+    0,                                                /*tp_iternext*/
+    WraptBoundFunctionWrapper_methods,                /*tp_methods*/
+    0,                                                /*tp_members*/
+    WraptBoundFunctionWrapper_getset,                 /*tp_getset*/
+    0,                                                /*tp_base*/
+    0,                                                /*tp_dict*/
+    0,                                                /*tp_descr_get*/
+    0,                                                /*tp_descr_set*/
+    0,                                                /*tp_dictoffset*/
+    0,                                                /*tp_init*/
+    0,                                                /*tp_alloc*/
+    0,                                                /*tp_new*/
+    0,                                                /*tp_free*/
+    0,                                                /*tp_is_gc*/
 };
 
 /* ------------------------------------------------------------------------- */

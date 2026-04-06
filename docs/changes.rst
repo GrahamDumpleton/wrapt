@@ -1,6 +1,19 @@
 Release Notes
 =============
 
+Version 2.2.0
+-------------
+
+**Features Changed**
+
+* Improved attribute access on ``BoundFunctionWrapper`` to delegate lookups to
+  the parent ``FunctionWrapper`` before falling back to the wrapped function.
+  Custom ``_self_``-prefixed attributes set on a ``BoundFunctionWrapper`` are
+  now automatically persisted on the parent ``FunctionWrapper`` rather than
+  being lost when the transient bound instance is discarded. These changes make
+  it easier to store and access decorator state on wrapped methods when accessed
+  through class instances.
+
 Version 2.1.2
 -------------
 

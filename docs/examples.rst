@@ -1,9 +1,139 @@
 Assorted Examples
 =================
 
-This document provides various examples of decorators often described
-elsewhere, to exhibit what can be done with decorators using the **wrapt**
-module, for the purpose of comparison.
+This document provides practical examples of decorators built using the
+**wrapt** module. These range from common patterns such as tracking decorator
+state, through to more complex examples like thread synchronization. For
+details on the core decorator API and wrapper function signature, see
+:doc:`decorators`. For details on the ``FunctionWrapper`` and other proxy
+types used in these examples, see :doc:`wrappers`.
+
+Tracking Call State
+-------------------
+
+A common requirement is to track state across invocations of a decorated
+function. For example, counting how many times a function has been called.
+
+A clean approach is to encapsulate both the state and the wrapper logic in a
+class. An instance of this class is created each time the decorator is
+applied, giving each decorated function its own independent state.
+
+::
+
+    import wrapt
+
+    class CallTracker:
+        def __init__(self):
+            self.call_count = 0
+
+        def wrapper(self, wrapped, instance, args, kwargs):
+            try:
+                return wrapped(*args, **kwargs)
+            finally:
+                self.call_count += 1
+
+The ``wrapper()`` method follows the standard ``wrapt`` wrapper function
+signature, with the addition of ``self`` to access the tracker state. When
+used as a bound method, ``wrapt`` will correctly handle the extra ``self``
+argument.
+
+A decorator factory function can then create a ``CallTracker`` instance,
+wrap the target function using ``wrapt.FunctionWrapper``, and attach the
+tracker to the wrapper for later access.
+
+::
+
+    def track_calls(func):
+        tracker = CallTracker()
+        wrapped = wrapt.FunctionWrapper(func, tracker.wrapper)
+        object.__setattr__(wrapped, "tracker", tracker)
+        return wrapped
+
+The use of ``object.__setattr__()`` stores the tracker directly on the
+``FunctionWrapper`` instance rather than on the underlying wrapped function.
+This ensures each decorator application has its own tracker, even if the same
+function is wrapped multiple times.
+
+The decorator can be applied to normal functions, instance methods, class
+methods, and static methods.
+
+::
+
+    @track_calls
+    def add(x, y):
+        return x + y
+
+    class Calculator:
+
+        @track_calls
+        def compute(self, x, y):
+            return x + y
+
+        @track_calls
+        @classmethod
+        def class_compute(cls, x, y):
+            return x + y
+
+        @track_calls
+        @staticmethod
+        def static_compute(x, y):
+            return x + y
+
+The tracker state can be accessed via the ``tracker`` attribute on the
+decorated function.
+
+::
+
+    >>> add(1, 2)
+    3
+    >>> add(3, 4)
+    7
+    >>> add.tracker.call_count
+    2
+
+For methods on a class, the state can be accessed either via the class or
+via an instance. Accessing via an instance works because attribute lookups on
+bound function wrappers are delegated to the parent ``FunctionWrapper``.
+
+::
+
+    >>> calc = Calculator()
+    >>> calc.compute(1, 2)
+    3
+    >>> calc.compute(3, 4)
+    7
+    >>> calc.compute.tracker.call_count
+    2
+    >>> Calculator.compute.tracker.call_count
+    2
+
+Since the tracker is stored on the ``FunctionWrapper`` and not on individual
+instances, the call count is shared across all instances of the class.
+
+::
+
+    >>> calc1 = Calculator()
+    >>> calc2 = Calculator()
+    >>> calc1.compute(1, 2)
+    3
+    >>> calc2.compute(3, 4)
+    7
+    >>> calc1.compute.tracker.call_count
+    2
+
+The same pattern works for class methods and static methods.
+
+::
+
+    >>> Calculator.class_compute(1, 2)
+    3
+    >>> Calculator.class_compute.tracker.call_count
+    1
+
+    >>> Calculator.static_compute(1, 2)
+    3
+    >>> Calculator.static_compute.tracker.call_count
+    1
 
 Thread Synchronization
 ----------------------

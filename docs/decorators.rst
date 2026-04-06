@@ -794,3 +794,4 @@ These rules can be summarised by the following.
 To be truly robust, if a universal decorator is being applied in a
 scenario it does not support, it should raise a runtime exception
 at the point it is called.
+
