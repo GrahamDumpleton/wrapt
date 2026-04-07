@@ -63,6 +63,13 @@ Version 2.2.0
   on the next attribute write. The constructor now releases the partially
   constructed proxy and propagates the ``MemoryError`` to the caller.
 
+* Fixed unchecked ``PyTuple_New()`` and ``PyDict_New()`` allocations in the
+  C implementation of ``PartialCallableObjectProxy.__call__``. If either
+  allocation failed under low-memory conditions, the function would
+  dereference a ``NULL`` pointer (via ``PyTuple_SetItem`` or ``PyDict_Update``)
+  and crash the interpreter. Both allocations are now checked and the
+  ``MemoryError`` is propagated cleanly to the caller.
+
 Version 2.1.2
 -------------
 

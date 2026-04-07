@@ -2867,6 +2867,9 @@ static PyObject *WraptPartialCallableObjectProxy_call(
 
   fnargs = PyTuple_New(PyTuple_Size(self->args) + PyTuple_Size(args));
 
+  if (!fnargs)
+    return NULL;
+
   for (i = 0; i < PyTuple_Size(self->args); i++)
   {
     PyObject *item;
@@ -2886,6 +2889,12 @@ static PyObject *WraptPartialCallableObjectProxy_call(
   }
 
   fnkwargs = PyDict_New();
+
+  if (!fnkwargs)
+  {
+    Py_DECREF(fnargs);
+    return NULL;
+  }
 
   if (self->kwargs && PyDict_Update(fnkwargs, self->kwargs) == -1)
   {
