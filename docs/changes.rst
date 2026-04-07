@@ -24,6 +24,16 @@ Version 2.2.0
   result). The exception raised by ``__object_proxy__`` is now propagated
   cleanly.
 
+* Fixed a number of optional attribute lookups in the C implementation of
+  ``ObjectProxy`` and ``FunctionWrapper`` that were silently swallowing any
+  exception raised during the lookup, instead of only ignoring
+  ``AttributeError``. As a result, exceptions such as ``MemoryError``,
+  ``KeyboardInterrupt``, ``SystemExit``, and user exceptions raised from
+  ``__getattribute__``, properties, or descriptors on wrapped objects or
+  proxy subclasses were being lost. These lookups now propagate any
+  non-``AttributeError`` exception to the caller, matching the behaviour
+  of the pure-Python implementation.
+
 Version 2.1.2
 -------------
 

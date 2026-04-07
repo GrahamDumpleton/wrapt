@@ -121,7 +121,11 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
     }
   }
   else
+  {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return -1;
     PyErr_Clear();
+  }
 
   // We need to reach into the wrapt.wrappers module to get the exception
   // class because the exception we need to raise needs to inherit from both
@@ -229,7 +233,11 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
       }
     }
     else
+    {
+      if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        return -1;
       PyErr_Clear();
+    }
   }
 
   Py_INCREF(wrapped);
@@ -258,7 +266,11 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
     Py_DECREF(object);
   }
   else
+  {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return -1;
     PyErr_Clear();
+  }
 
   object = PyObject_GetAttr(wrapped, doc_str);
 
@@ -272,7 +284,11 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
     Py_DECREF(object);
   }
   else
+  {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return -1;
     PyErr_Clear();
+  }
 
   return 0;
 }
@@ -2097,6 +2113,8 @@ static PyObject *WraptObjectProxy_mro_entries(WraptObjectProxyObject *self,
     }
     else
     {
+      if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        return NULL;
       PyErr_Clear();
     }
   }
@@ -2335,7 +2353,11 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
     Py_DECREF(result);
   }
   else
+  {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return -1;
     PyErr_Clear();
+  }
 
   return 0;
 }
@@ -2425,7 +2447,11 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
     return PyObject_GenericSetAttr((PyObject *)self, name, value);
   }
   else if (!match)
+  {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return -1;
     PyErr_Clear();
+  }
 
   Py_XDECREF(match);
 
@@ -3157,7 +3183,14 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
       return result;
     }
     else
+    {
+      if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      {
+        Py_XDECREF(param_kwds);
+        return NULL;
+      }
       PyErr_Clear();
+    }
   }
 
   result =
@@ -3233,7 +3266,14 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
       bound_type = PyObject_GenericGetAttr((PyObject *)self, bound_type_str);
 
       if (!bound_type)
+      {
+        if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        {
+          Py_DECREF(descriptor);
+          return NULL;
+        }
         PyErr_Clear();
+      }
     }
 
     if (obj == NULL)
@@ -3296,7 +3336,14 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
           PyObject_GenericGetAttr((PyObject *)self->parent, bound_type_str);
 
       if (!bound_type)
+      {
+        if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        {
+          Py_DECREF(descriptor);
+          return NULL;
+        }
         PyErr_Clear();
+      }
     }
 
     if (obj == NULL)
@@ -3336,6 +3383,8 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
 
   if (!method)
   {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return NULL;
     PyErr_Clear();
     Py_INCREF(Py_None);
     return Py_None;
@@ -3401,7 +3450,11 @@ WraptFunctionWrapperBase_subclasscheck(WraptFunctionWrapperObject *self,
   object = PyObject_GetAttrString(subclass, "__wrapped__");
 
   if (!object)
+  {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return NULL;
     PyErr_Clear();
+  }
 
   check = PyObject_IsSubclass(object ? object : subclass,
                               self->object_proxy.wrapped);
@@ -3773,6 +3826,8 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
 
     if (!instance)
     {
+      if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        return NULL;
       PyErr_Clear();
       Py_INCREF(Py_None);
       instance = Py_None;
@@ -3856,7 +3911,11 @@ static int WraptBoundFunctionWrapper_setattro(
       return PyObject_GenericSetAttr(self->parent, name, value);
   }
   else if (!match)
+  {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return -1;
     PyErr_Clear();
+  }
 
   Py_XDECREF(match);
 
@@ -4034,6 +4093,8 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     }
     else
     {
+      if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        return -1;
       PyErr_Clear();
 
       binding = callable_str;
