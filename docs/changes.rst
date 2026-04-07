@@ -42,6 +42,11 @@ Version 2.2.0
   ``__bool__`` is now propagated to the caller and the wrapped function is
   not invoked, matching the behaviour of the pure-Python implementation.
 
+* Fixed a reference leak in the C implementation of ``__round__`` on
+  ``ObjectProxy``. Each call to ``round()`` on a proxy was leaking one
+  reference to the ``builtins.round`` function due to a spurious
+  ``Py_INCREF`` that was not balanced by a matching ``Py_DECREF``.
+
 Version 2.1.2
 -------------
 
