@@ -4008,6 +4008,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
   PyObject *wrapper = NULL;
   PyObject *enabled = Py_None;
   PyObject *binding = NULL;
+  PyObject *binding_owned = NULL;
   PyObject *instance = NULL;
 
   static PyObject *function_str = NULL;
@@ -4066,7 +4067,17 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
   if (PyObject_IsInstance(wrapped,
                           (PyObject *)&WraptFunctionWrapperBase_Type))
   {
-    binding = PyObject_GetAttrString(wrapped, "_self_binding");
+    binding_owned = PyObject_GetAttrString(wrapped, "_self_binding");
+    if (!binding_owned)
+    {
+      if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        return -1;
+      PyErr_Clear();
+    }
+    else
+    {
+      binding = binding_owned;
+    }
   }
 
   if (!binding)
@@ -4118,6 +4129,8 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 
   result = WraptFunctionWrapperBase_raw_init(
       self, wrapped, Py_None, wrapper, enabled, binding, Py_None, Py_None);
+
+  Py_XDECREF(binding_owned);
 
   return result;
 }

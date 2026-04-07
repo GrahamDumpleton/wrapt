@@ -47,6 +47,15 @@ Version 2.2.0
   reference to the ``builtins.round`` function due to a spurious
   ``Py_INCREF`` that was not balanced by a matching ``Py_DECREF``.
 
+* Fixed a reference leak in the C implementation of ``FunctionWrapper``
+  when wrapping another ``FunctionWrapperBase`` instance. The new reference
+  returned by the internal ``_self_binding`` attribute lookup was never
+  released, leaking one reference to the binding string object on every
+  such construction. The same code path also failed to check for a ``NULL``
+  return from the attribute lookup, so any non-``AttributeError`` exception
+  raised during the lookup was silently swallowed; such exceptions are now
+  propagated to the caller.
+
 Version 2.1.2
 -------------
 
