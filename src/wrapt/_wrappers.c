@@ -822,7 +822,7 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -885,7 +885,7 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -948,7 +948,7 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1012,7 +1012,7 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1076,7 +1076,7 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1139,7 +1139,7 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1202,7 +1202,7 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1265,7 +1265,7 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1328,7 +1328,7 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1391,7 +1391,7 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1513,7 +1513,7 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1577,7 +1577,7 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 
@@ -1682,7 +1682,7 @@ static PyObject *WraptObjectProxy_inplace_matrix_multiply(
 
     if (!proxy_type)
     {
-      Py_DECREF(proxy_type);
+      Py_DECREF(result);
       return NULL;
     }
 

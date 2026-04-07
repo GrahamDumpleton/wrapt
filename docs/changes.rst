@@ -14,6 +14,16 @@ Version 2.2.0
   it easier to store and access decorator state on wrapped methods when accessed
   through class instances.
 
+**Bugs Fixed**
+
+* Fixed a ``Py_DECREF(NULL)`` crash in the C implementation of all inplace
+  operators (``+=``, ``-=``, ``*=``, ``%=``, ``**=``, ``<<=``, ``>>=``, ``&=``,
+  ``^=``, ``|=``, ``//=``, ``/=``, ``@=``) on ``ObjectProxy``. When a subclass
+  overrode ``__object_proxy__`` with a descriptor that raised an exception,
+  the error path dereferenced a ``NULL`` pointer (and leaked the intermediate
+  result). The exception raised by ``__object_proxy__`` is now propagated
+  cleanly.
+
 Version 2.1.2
 -------------
 
