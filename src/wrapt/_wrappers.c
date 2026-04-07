@@ -3128,23 +3128,31 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
     if (PyCallable_Check(self->enabled))
     {
       PyObject *object = NULL;
+      int is_false;
 
       object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
 
       if (!object)
         return NULL;
 
-      if (PyObject_Not(object))
-      {
-        Py_DECREF(object);
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
-      }
-
+      is_false = PyObject_Not(object);
       Py_DECREF(object);
+
+      if (is_false < 0)
+        return NULL;
+
+      if (is_false)
+        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
     }
-    else if (PyObject_Not(self->enabled))
+    else
     {
-      return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      int is_false = PyObject_Not(self->enabled);
+
+      if (is_false < 0)
+        return NULL;
+
+      if (is_false)
+        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
     }
   }
 
@@ -3664,23 +3672,31 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
     if (PyCallable_Check(self->enabled))
     {
       PyObject *object = NULL;
+      int is_false;
 
       object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
 
       if (!object)
         return NULL;
 
-      if (PyObject_Not(object))
-      {
-        Py_DECREF(object);
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
-      }
-
+      is_false = PyObject_Not(object);
       Py_DECREF(object);
+
+      if (is_false < 0)
+        return NULL;
+
+      if (is_false)
+        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
     }
-    else if (PyObject_Not(self->enabled))
+    else
     {
-      return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      int is_false = PyObject_Not(self->enabled);
+
+      if (is_false < 0)
+        return NULL;
+
+      if (is_false)
+        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
     }
   }
 

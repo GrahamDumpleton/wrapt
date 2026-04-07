@@ -34,6 +34,14 @@ Version 2.2.0
   non-``AttributeError`` exception to the caller, matching the behaviour
   of the pure-Python implementation.
 
+* Fixed an error in the C implementation of ``FunctionWrapper`` where if the
+  ``enabled`` argument (or the value returned from a callable ``enabled``)
+  raised an exception when its truthiness was evaluated, the exception was
+  silently swallowed, the wrapper was bypassed, and the wrapped function was
+  called directly with a pending Python exception. The exception raised from
+  ``__bool__`` is now propagated to the caller and the wrapped function is
+  not invoked, matching the behaviour of the pure-Python implementation.
+
 Version 2.1.2
 -------------
 
