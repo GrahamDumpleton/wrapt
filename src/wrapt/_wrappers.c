@@ -189,6 +189,12 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type, PyObject *args,
     return NULL;
 
   self->dict = PyDict_New();
+
+  if (!self->dict) {
+    Py_DECREF(self);
+    return NULL;
+  }
+
   self->wrapped = NULL;
   self->weakreflist = NULL;
 

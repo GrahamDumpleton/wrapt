@@ -56,6 +56,13 @@ Version 2.2.0
   raised during the lookup was silently swallowed; such exceptions are now
   propagated to the caller.
 
+* Fixed an unchecked ``PyDict_New()`` allocation in the C implementation of
+  ``ObjectProxy.__new__``. If the dict allocation failed, the proxy object
+  was still returned to the caller with a ``NULL`` instance dict and a
+  pending ``MemoryError``, violating the C-API contract and causing a crash
+  on the next attribute write. The constructor now releases the partially
+  constructed proxy and propagates the ``MemoryError`` to the caller.
+
 Version 2.1.2
 -------------
 
