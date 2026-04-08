@@ -2429,36 +2429,23 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
                                      PyObject *name, PyObject *value)
 {
   static PyObject *self_str = NULL;
-  static PyObject *startswith_str = NULL;
 
-  PyObject *match = NULL;
-
-  if (!startswith_str)
-  {
-    startswith_str = PyUnicode_InternFromString("startswith");
-  }
+  int match;
 
   if (!self_str)
   {
     self_str = PyUnicode_InternFromString("_self_");
-  }
-
-  match = PyObject_CallMethodObjArgs(name, startswith_str, self_str, NULL);
-
-  if (match == Py_True)
-  {
-    Py_DECREF(match);
-
-    return PyObject_GenericSetAttr((PyObject *)self, name, value);
-  }
-  else if (!match)
-  {
-    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+    if (!self_str)
       return -1;
-    PyErr_Clear();
   }
 
-  Py_XDECREF(match);
+  match = PyUnicode_Tailmatch(name, self_str, 0, PY_SSIZE_T_MAX, -1);
+
+  if (match < 0)
+    return -1;
+
+  if (match)
+    return PyObject_GenericSetAttr((PyObject *)self, name, value);
 
   if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
     return PyObject_GenericSetAttr((PyObject *)self, name, value);
@@ -3962,26 +3949,23 @@ static int WraptBoundFunctionWrapper_setattro(
     WraptFunctionWrapperObject *self, PyObject *name, PyObject *value)
 {
   static PyObject *self_str = NULL;
-  static PyObject *startswith_str = NULL;
 
-  PyObject *match = NULL;
-
-  if (!startswith_str)
-  {
-    startswith_str = PyUnicode_InternFromString("startswith");
-  }
+  int match;
 
   if (!self_str)
   {
     self_str = PyUnicode_InternFromString("_self_");
+    if (!self_str)
+      return -1;
   }
 
-  match = PyObject_CallMethodObjArgs(name, startswith_str, self_str, NULL);
+  match = PyUnicode_Tailmatch(name, self_str, 0, PY_SSIZE_T_MAX, -1);
 
-  if (match == Py_True)
+  if (match < 0)
+    return -1;
+
+  if (match)
   {
-    Py_DECREF(match);
-
     /* Check if this is an internal slot (has a getset descriptor on the type) */
     if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
       return PyObject_GenericSetAttr((PyObject *)self, name, value);
@@ -3990,14 +3974,6 @@ static int WraptBoundFunctionWrapper_setattro(
     if (self->parent && self->parent != Py_None)
       return PyObject_GenericSetAttr(self->parent, name, value);
   }
-  else if (!match)
-  {
-    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-      return -1;
-    PyErr_Clear();
-  }
-
-  Py_XDECREF(match);
 
   /* Fall through to base ObjectProxy setattro for everything else */
   return WraptObjectProxy_setattro((WraptObjectProxyObject *)self, name, value);

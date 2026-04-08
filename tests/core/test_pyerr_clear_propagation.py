@@ -62,16 +62,6 @@ def _make_raising_attr_class(target):
     return RaisingAttr
 
 
-class RaisingStartswithStr(str):
-    """A ``str`` subclass whose ``startswith`` raises ``_Canary``. The
-    wrapt setattro code paths invoke ``name.startswith('_self_')`` to
-    decide where to route the assignment; if that call raises something
-    other than ``AttributeError`` it must propagate, not be cleared."""
-
-    def startswith(self, *args, **kwargs):  # type: ignore[override]
-        _raise_canary()
-
-
 # ---------------------------------------------------------------------------
 # raw_init / uninitialized error
 # ---------------------------------------------------------------------------
@@ -157,42 +147,6 @@ class TestMroEntries(unittest.TestCase):
 
         with self.assertRaises(_Canary):
             _build()
-
-
-# ---------------------------------------------------------------------------
-# setattro startswith
-# ---------------------------------------------------------------------------
-
-
-class TestSetattroStartswith(unittest.TestCase):
-
-    def test_object_proxy_setattro_startswith_propagates(self):
-        """C: ``WraptObjectProxy_setattro`` calling ``name.startswith('_self_')``
-        to decide where to route the assignment."""
-
-        proxy = wrapt.ObjectProxy(object())
-        weird_name = RaisingStartswithStr("anything")
-        with self.assertRaises(_Canary):
-            type(proxy).__setattr__(proxy, weird_name, 1)
-
-    def test_bound_function_wrapper_setattro_startswith_propagates(self):
-        """C: ``WraptBoundFunctionWrapper_setattro`` calling
-        ``name.startswith('_self_')`` to decide where to route the
-        assignment."""
-
-        @wrapt.decorator
-        def deco(wrapped, instance, args, kwargs):
-            return wrapped(*args, **kwargs)
-
-        class Owner:
-            @deco
-            def method(self):
-                return 1
-
-        bound = Owner().method  # BoundFunctionWrapper instance
-        weird_name = RaisingStartswithStr("anything")
-        with self.assertRaises(_Canary):
-            type(bound).__setattr__(bound, weird_name, 1)
 
 
 # ---------------------------------------------------------------------------
