@@ -14,6 +14,20 @@ Version 2.2.0
   it easier to store and access decorator state on wrapped methods when accessed
   through class instances.
 
+* Reworked module initialisation in the C extension to use multi-phase
+  initialisation (PEP 489) with per-interpreter module state. The six
+  proxy and function-wrapper types are now heap types created via
+  ``PyType_FromModuleAndSpec`` rather than static ``PyTypeObject``
+  definitions, and the previously process-wide cached interned strings
+  are now stored in per-interpreter module state and populated eagerly
+  during module execution. As a result the C extension now declares
+  ``Py_mod_multiple_interpreters = Py_MOD_PER_INTERPRETER_GIL_SUPPORTED``
+  on Python 3.12+ (so it can be loaded into sub-interpreters that own
+  their own GIL, per PEP 684) and continues to declare
+  ``Py_mod_gil = Py_MOD_GIL_NOT_USED`` on Python 3.13+ for free-threaded
+  builds, with that declaration now sound because there is no remaining
+  lazy initialisation of shared Python objects to race on.
+
 **Bugs Fixed**
 
 * Fixed a ``Py_DECREF(NULL)`` crash in the C implementation of all inplace
