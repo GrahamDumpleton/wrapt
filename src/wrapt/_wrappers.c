@@ -3209,37 +3209,21 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
   PyObject *result = NULL;
 
   static PyObject *bound_type_str = NULL;
-  static PyObject *builtin_str = NULL;
-  static PyObject *class_str = NULL;
 
   if (!bound_type_str)
   {
     bound_type_str = PyUnicode_InternFromString("__bound_function_wrapper__");
   }
 
-  if (!builtin_str)
-  {
-    builtin_str = PyUnicode_InternFromString("builtin");
-    class_str = PyUnicode_InternFromString("class");
-  }
-
   if (self->parent == Py_None)
   {
-    int matched;
-
-    matched = PyObject_RichCompareBool(self->binding, builtin_str, Py_EQ);
-    if (matched < 0)
-      return NULL;
-    if (matched)
+    if (PyUnicode_CompareWithASCIIString(self->binding, "builtin") == 0)
     {
       Py_INCREF(self);
       return (PyObject *)self;
     }
 
-    matched = PyObject_RichCompareBool(self->binding, class_str, Py_EQ);
-    if (matched < 0)
-      return NULL;
-    if (matched)
+    if (PyUnicode_CompareWithASCIIString(self->binding, "class") == 0)
     {
       Py_INCREF(self);
       return (PyObject *)self;
