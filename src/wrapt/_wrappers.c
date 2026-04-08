@@ -4267,6 +4267,23 @@ static struct PyModuleDef moduledef = {
     NULL,        /* m_free */
 };
 
+#if PY_VERSION_HEX >= 0x030A0000
+#define WRAPT_ADD_TYPE(mod, name, type)                                  \
+  do {                                                                   \
+    if (PyModule_AddObjectRef((mod), (name), (PyObject *)(type)) < 0)    \
+      goto error;                                                        \
+  } while (0)
+#else
+#define WRAPT_ADD_TYPE(mod, name, type)                                  \
+  do {                                                                   \
+    Py_INCREF((PyObject *)(type));                                       \
+    if (PyModule_AddObject((mod), (name), (PyObject *)(type)) < 0) {     \
+      Py_DECREF((PyObject *)(type));                                     \
+      goto error;                                                        \
+    }                                                                    \
+  } while (0)
+#endif
+
 static PyObject *moduleinit(void)
 {
   PyObject *module;
@@ -4277,7 +4294,7 @@ static PyObject *moduleinit(void)
     return NULL;
 
   if (PyType_Ready(&WraptObjectProxy_Type) < 0)
-    return NULL;
+    goto error;
 
   /* Ensure that inheritance relationships specified. */
 
@@ -4288,40 +4305,36 @@ static PyObject *moduleinit(void)
   WraptFunctionWrapper_Type.tp_base = &WraptFunctionWrapperBase_Type;
 
   if (PyType_Ready(&WraptCallableObjectProxy_Type) < 0)
-    return NULL;
+    goto error;
   if (PyType_Ready(&WraptPartialCallableObjectProxy_Type) < 0)
-    return NULL;
+    goto error;
   if (PyType_Ready(&WraptFunctionWrapperBase_Type) < 0)
-    return NULL;
+    goto error;
   if (PyType_Ready(&WraptBoundFunctionWrapper_Type) < 0)
-    return NULL;
+    goto error;
   if (PyType_Ready(&WraptFunctionWrapper_Type) < 0)
-    return NULL;
+    goto error;
 
-  Py_INCREF(&WraptObjectProxy_Type);
-  PyModule_AddObject(module, "ObjectProxy", (PyObject *)&WraptObjectProxy_Type);
-  Py_INCREF(&WraptCallableObjectProxy_Type);
-  PyModule_AddObject(module, "CallableObjectProxy",
-                     (PyObject *)&WraptCallableObjectProxy_Type);
-  Py_INCREF(&WraptPartialCallableObjectProxy_Type);
-  PyModule_AddObject(module, "PartialCallableObjectProxy",
-                     (PyObject *)&WraptPartialCallableObjectProxy_Type);
-  Py_INCREF(&WraptFunctionWrapper_Type);
-  PyModule_AddObject(module, "FunctionWrapper",
-                     (PyObject *)&WraptFunctionWrapper_Type);
-
-  Py_INCREF(&WraptFunctionWrapperBase_Type);
-  PyModule_AddObject(module, "_FunctionWrapperBase",
-                     (PyObject *)&WraptFunctionWrapperBase_Type);
-  Py_INCREF(&WraptBoundFunctionWrapper_Type);
-  PyModule_AddObject(module, "BoundFunctionWrapper",
-                     (PyObject *)&WraptBoundFunctionWrapper_Type);
+  WRAPT_ADD_TYPE(module, "ObjectProxy", &WraptObjectProxy_Type);
+  WRAPT_ADD_TYPE(module, "CallableObjectProxy",
+                 &WraptCallableObjectProxy_Type);
+  WRAPT_ADD_TYPE(module, "PartialCallableObjectProxy",
+                 &WraptPartialCallableObjectProxy_Type);
+  WRAPT_ADD_TYPE(module, "FunctionWrapper", &WraptFunctionWrapper_Type);
+  WRAPT_ADD_TYPE(module, "_FunctionWrapperBase",
+                 &WraptFunctionWrapperBase_Type);
+  WRAPT_ADD_TYPE(module, "BoundFunctionWrapper",
+                 &WraptBoundFunctionWrapper_Type);
 
 #ifdef Py_GIL_DISABLED
   PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
 #endif
 
   return module;
+
+error:
+  Py_DECREF(module);
+  return NULL;
 }
 
 PyMODINIT_FUNC PyInit__wrappers(void) { return moduleinit(); }

@@ -82,6 +82,16 @@ Version 2.2.0
   ``0`` and propagate any exception to the caller, matching the behaviour
   of the pure-Python implementation.
 
+* Fixed a leaked module reference and unchecked ``PyModule_AddObject()``
+  calls in the C extension's module initialisation. If any ``PyType_Ready()``
+  call failed, the freshly created module object was leaked. Each subsequent
+  ``PyModule_AddObject()`` call was also unchecked, so on failure the
+  preceding ``Py_INCREF`` leaked a type reference and initialisation
+  continued with a pending exception, ultimately returning the module
+  with an exception set in violation of the C-API contract. All failures
+  are now checked and routed through a single cleanup path that releases
+  the module before returning ``NULL``.
+
 Version 2.1.2
 -------------
 
