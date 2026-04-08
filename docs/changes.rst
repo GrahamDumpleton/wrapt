@@ -70,6 +70,18 @@ Version 2.2.0
   and crash the interpreter. Both allocations are now checked and the
   ``MemoryError`` is propagated cleanly to the caller.
 
+* Fixed error suppression in the C implementation of ``FunctionWrapper`` and
+  ``BoundFunctionWrapper`` where ``PyObject_RichCompareBool()`` calls used
+  in ``binding`` dispatch were checked with ``== 1``, conflating the error
+  return ``-1`` with the false return ``0``. If a comparison raised, the
+  exception was silently swallowed, subsequent comparisons in the same
+  ``||``-chain overwrote the pending error indicator, and control fell
+  through to a downstream call that executed with a stale exception set,
+  typically surfacing as a confusing ``SystemError`` instead of the
+  original exception. All such comparisons now distinguish ``-1`` from
+  ``0`` and propagate any exception to the caller, matching the behaviour
+  of the pure-Python implementation.
+
 Version 2.1.2
 -------------
 
