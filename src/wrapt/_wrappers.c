@@ -59,6 +59,29 @@ typedef struct
   PyTypeObject *FunctionWrapperBase_Type;
   PyTypeObject *BoundFunctionWrapper_Type;
   PyTypeObject *FunctionWrapper_Type;
+
+  /* Cached interned attribute / argument names. Initialized eagerly in
+   * wrapt_exec, released in wrapt_clear. Per-interpreter so they remain
+   * sub-interpreter safe; eager init makes them free-threading safe by
+   * eliminating the lazy-init data race that the previous static-local
+   * string pattern had. */
+
+  PyObject *str_wrapped;                 /* "__wrapped__" */
+  PyObject *str_wrapped_factory;         /* "__wrapped_factory__" */
+  PyObject *str_wrapped_get;             /* "__wrapped_get__" */
+  PyObject *str_module;                  /* "__module__" */
+  PyObject *str_doc;                     /* "__doc__" */
+  PyObject *str_setattr_fixups;          /* "__wrapped_setattr_fixups__" */
+  PyObject *str_getattr;                 /* "__getattr__" */
+  PyObject *str_self_;                   /* "_self_" */
+  PyObject *str_callable;                /* "callable" */
+  PyObject *str_bound_function_wrapper;  /* "__bound_function_wrapper__" */
+  PyObject *str_function;                /* "function" */
+  PyObject *str_classmethod;             /* "classmethod" */
+  PyObject *str_staticmethod;            /* "staticmethod" */
+  PyObject *str_builtin;                 /* "builtin" */
+  PyObject *str_class;                   /* "class" */
+  PyObject *str_instancemethod;          /* "instancemethod" */
 } wrapt_module_state;
 
 static inline wrapt_module_state *wrapt_get_state(PyObject *module)
@@ -217,19 +240,16 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
   // the exception, but if the callback is present and returns a value, we set
   // that as the wrapped object and continue and return without raising an error.
 
-  static PyObject *wrapped_str = NULL;
-  static PyObject *wrapped_factory_str = NULL;
-  static PyObject *wrapped_get_str = NULL;
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(object));
+  if (!state)
+    return -1;
+
+  PyObject *wrapped_str = state->str_wrapped;
+  PyObject *wrapped_factory_str = state->str_wrapped_factory;
+  PyObject *wrapped_get_str = state->str_wrapped_get;
 
   PyObject *callback = NULL;
   PyObject *value = NULL;
-
-  if (!wrapped_str)
-  {
-    wrapped_str = PyUnicode_InternFromString("__wrapped__");
-    wrapped_factory_str = PyUnicode_InternFromString("__wrapped_factory__");
-    wrapped_get_str = PyUnicode_InternFromString("__wrapped_get__");
-  }
 
   // Note that we use existance of __wrapped_factory__ to gate whether we can
   // attempt to initialize the wrapped object lazily, but it is __wrapped_get__
@@ -365,19 +385,18 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type, PyObject *args,
 static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
                                      PyObject *wrapped)
 {
-  static PyObject *module_str = NULL;
-  static PyObject *doc_str = NULL;
-  static PyObject *wrapped_factory_str = NULL;
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
+
+  PyObject *module_str = state->str_module;
+  PyObject *doc_str = state->str_doc;
+  PyObject *wrapped_factory_str = state->str_wrapped_factory;
 
   PyObject *object = NULL;
 
   // If wrapped is Py_None and we have a __wrapped_factory__ attribute
   // then we defer initialization of the wrapped object until it is first needed.
-
-  if (!wrapped_factory_str)
-  {
-    wrapped_factory_str = PyUnicode_InternFromString("__wrapped_factory__");
-  }
 
   if (wrapped == Py_None)
   {
@@ -408,16 +427,6 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
   Py_INCREF(wrapped);
   Py_XDECREF(self->wrapped);
   self->wrapped = wrapped;
-
-  if (!module_str)
-  {
-    module_str = PyUnicode_InternFromString("__module__");
-  }
-
-  if (!doc_str)
-  {
-    doc_str = PyUnicode_InternFromString("__doc__");
-  }
 
   object = PyObject_GetAttr(wrapped, module_str);
 
@@ -2485,7 +2494,9 @@ static PyObject *WraptObjectProxy_get_object_proxy(WraptObjectProxyObject *self)
 static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
                                         PyObject *value)
 {
-  static PyObject *fixups_str = NULL;
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
 
   PyObject *fixups = NULL;
 
@@ -2500,12 +2511,7 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
 
   self->wrapped = value;
 
-  if (!fixups_str)
-  {
-    fixups_str = PyUnicode_InternFromString("__wrapped_setattr_fixups__");
-  }
-
-  fixups = PyObject_GetAttr((PyObject *)self, fixups_str);
+  fixups = PyObject_GetAttr((PyObject *)self, state->str_setattr_fixups);
 
   if (fixups)
   {
@@ -2536,8 +2542,7 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
 {
   PyObject *object = NULL;
   PyObject *result = NULL;
-
-  static PyObject *getattr_str = NULL;
+  wrapt_module_state *state;
 
   object = PyObject_GenericGetAttr((PyObject *)self, name);
 
@@ -2549,12 +2554,11 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
 
   PyErr_Clear();
 
-  if (!getattr_str)
-  {
-    getattr_str = PyUnicode_InternFromString("__getattr__");
-  }
+  state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
 
-  object = PyObject_GenericGetAttr((PyObject *)self, getattr_str);
+  object = PyObject_GenericGetAttr((PyObject *)self, state->str_getattr);
 
   if (!object)
     return NULL;
@@ -2590,18 +2594,11 @@ static PyObject *WraptObjectProxy_getattr(WraptObjectProxyObject *self,
 static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
                                      PyObject *name, PyObject *value)
 {
-  static PyObject *self_str = NULL;
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
 
-  int match;
-
-  if (!self_str)
-  {
-    self_str = PyUnicode_InternFromString("_self_");
-    if (!self_str)
-      return -1;
-  }
-
-  match = PyUnicode_Tailmatch(name, self_str, 0, PY_SSIZE_T_MAX, -1);
+  int match = PyUnicode_Tailmatch(name, state->str_self_, 0, PY_SSIZE_T_MAX, -1);
 
   if (match < 0)
     return -1;
@@ -3125,15 +3122,12 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
   PyObject *parent = Py_None;
   PyObject *owner = Py_None;
 
-  static PyObject *callable_str = NULL;
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
 
   char *const kwlist[] = {"wrapped", "instance", "wrapper", "enabled",
                           "binding", "parent", "owner", NULL};
-
-  if (!callable_str)
-  {
-    callable_str = PyUnicode_InternFromString("callable");
-  }
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO|OOOO:FunctionWrapperBase",
                                    kwlist, &wrapped, &instance, &wrapper,
@@ -3143,7 +3137,7 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
   }
 
   if (!binding)
-    binding = callable_str;
+    binding = state->str_callable;
 
   return WraptFunctionWrapperBase_raw_init(self, wrapped, instance, wrapper,
                                            enabled, binding, parent, owner);
@@ -3303,12 +3297,7 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
   if (!state)
     return NULL;
 
-  static PyObject *bound_type_str = NULL;
-
-  if (!bound_type_str)
-  {
-    bound_type_str = PyUnicode_InternFromString("__bound_function_wrapper__");
-  }
+  PyObject *bound_type_str = state->str_bound_function_wrapper;
 
   if (self->parent == Py_None)
   {
@@ -3950,18 +3939,11 @@ static PyObject *WraptBoundFunctionWrapper_getattr(
 static int WraptBoundFunctionWrapper_setattro(
     WraptFunctionWrapperObject *self, PyObject *name, PyObject *value)
 {
-  static PyObject *self_str = NULL;
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
 
-  int match;
-
-  if (!self_str)
-  {
-    self_str = PyUnicode_InternFromString("_self_");
-    if (!self_str)
-      return -1;
-  }
-
-  match = PyUnicode_Tailmatch(name, self_str, 0, PY_SSIZE_T_MAX, -1);
+  int match = PyUnicode_Tailmatch(name, state->str_self_, 0, PY_SSIZE_T_MAX, -1);
 
   if (match < 0)
     return -1;
@@ -4030,13 +4012,17 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
   PyObject *binding_owned = NULL;
   PyObject *instance = NULL;
 
-  static PyObject *function_str = NULL;
-  static PyObject *classmethod_str = NULL;
-  static PyObject *staticmethod_str = NULL;
-  static PyObject *callable_str = NULL;
-  static PyObject *builtin_str = NULL;
-  static PyObject *class_str = NULL;
-  static PyObject *instancemethod_str = NULL;
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
+
+  PyObject *function_str = state->str_function;
+  PyObject *classmethod_str = state->str_classmethod;
+  PyObject *staticmethod_str = state->str_staticmethod;
+  PyObject *callable_str = state->str_callable;
+  PyObject *builtin_str = state->str_builtin;
+  PyObject *class_str = state->str_class;
+  PyObject *instancemethod_str = state->str_instancemethod;
 
   int result = 0;
 
@@ -4048,59 +4034,18 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
     return -1;
   }
 
-  if (!function_str)
+  if (PyObject_TypeCheck(wrapped, state->FunctionWrapperBase_Type))
   {
-    function_str = PyUnicode_InternFromString("function");
-  }
-
-  if (!classmethod_str)
-  {
-    classmethod_str = PyUnicode_InternFromString("classmethod");
-  }
-
-  if (!staticmethod_str)
-  {
-    staticmethod_str = PyUnicode_InternFromString("staticmethod");
-  }
-
-  if (!callable_str)
-  {
-    callable_str = PyUnicode_InternFromString("callable");
-  }
-
-  if (!builtin_str)
-  {
-    builtin_str = PyUnicode_InternFromString("builtin");
-  }
-
-  if (!class_str)
-  {
-    class_str = PyUnicode_InternFromString("class");
-  }
-
-  if (!instancemethod_str)
-  {
-    instancemethod_str = PyUnicode_InternFromString("instancemethod");
-  }
-
-  {
-    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
-    if (!state)
-      return -1;
-
-    if (PyObject_TypeCheck(wrapped, state->FunctionWrapperBase_Type))
+    binding_owned = PyObject_GetAttrString(wrapped, "_self_binding");
+    if (!binding_owned)
     {
-      binding_owned = PyObject_GetAttrString(wrapped, "_self_binding");
-      if (!binding_owned)
-      {
-        if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-          return -1;
-        PyErr_Clear();
-      }
-      else
-      {
-        binding = binding_owned;
-      }
+      if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        return -1;
+      PyErr_Clear();
+    }
+    else
+    {
+      binding = binding_owned;
     }
   }
 
@@ -4231,10 +4176,67 @@ static int wrapt_create_type(PyObject *module, PyTypeObject **out,
   return 0;
 }
 
+/* Helper: intern a C string into the given module-state slot. Returns 0
+ * on success, -1 on failure (with PyErr set). */
+
+static int wrapt_intern_string(PyObject **slot, const char *s)
+{
+  PyObject *o = PyUnicode_InternFromString(s);
+  if (o == NULL)
+    return -1;
+  *slot = o;
+  return 0;
+}
+
+static int wrapt_init_strings(wrapt_module_state *state)
+{
+  if (wrapt_intern_string(&state->str_wrapped, "__wrapped__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_wrapped_factory,
+                          "__wrapped_factory__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_wrapped_get, "__wrapped_get__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_module, "__module__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_doc, "__doc__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_setattr_fixups,
+                          "__wrapped_setattr_fixups__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_getattr, "__getattr__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_self_, "_self_") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_callable, "callable") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_bound_function_wrapper,
+                          "__bound_function_wrapper__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_function, "function") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_classmethod, "classmethod") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_staticmethod, "staticmethod") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_builtin, "builtin") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_class, "class") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_instancemethod, "instancemethod") < 0)
+    return -1;
+  return 0;
+}
+
 static int wrapt_exec(PyObject *module)
 {
   wrapt_module_state *state = wrapt_get_state(module);
   PyObject *bases = NULL;
+
+  /* Eagerly intern all cached strings. m_clear releases anything that
+   * was set before a failure, so we can return -1 on the first error. */
+  if (wrapt_init_strings(state) < 0)
+    return -1;
 
   /* ObjectProxy: base = object (default). */
   if (wrapt_create_type(module, &state->ObjectProxy_Type,
@@ -4320,6 +4322,22 @@ static int wrapt_traverse(PyObject *module, visitproc visit, void *arg)
   Py_VISIT(state->FunctionWrapperBase_Type);
   Py_VISIT(state->BoundFunctionWrapper_Type);
   Py_VISIT(state->FunctionWrapper_Type);
+  Py_VISIT(state->str_wrapped);
+  Py_VISIT(state->str_wrapped_factory);
+  Py_VISIT(state->str_wrapped_get);
+  Py_VISIT(state->str_module);
+  Py_VISIT(state->str_doc);
+  Py_VISIT(state->str_setattr_fixups);
+  Py_VISIT(state->str_getattr);
+  Py_VISIT(state->str_self_);
+  Py_VISIT(state->str_callable);
+  Py_VISIT(state->str_bound_function_wrapper);
+  Py_VISIT(state->str_function);
+  Py_VISIT(state->str_classmethod);
+  Py_VISIT(state->str_staticmethod);
+  Py_VISIT(state->str_builtin);
+  Py_VISIT(state->str_class);
+  Py_VISIT(state->str_instancemethod);
   return 0;
 }
 
@@ -4334,6 +4352,22 @@ static int wrapt_clear(PyObject *module)
   Py_CLEAR(state->FunctionWrapperBase_Type);
   Py_CLEAR(state->BoundFunctionWrapper_Type);
   Py_CLEAR(state->FunctionWrapper_Type);
+  Py_CLEAR(state->str_wrapped);
+  Py_CLEAR(state->str_wrapped_factory);
+  Py_CLEAR(state->str_wrapped_get);
+  Py_CLEAR(state->str_module);
+  Py_CLEAR(state->str_doc);
+  Py_CLEAR(state->str_setattr_fixups);
+  Py_CLEAR(state->str_getattr);
+  Py_CLEAR(state->str_self_);
+  Py_CLEAR(state->str_callable);
+  Py_CLEAR(state->str_bound_function_wrapper);
+  Py_CLEAR(state->str_function);
+  Py_CLEAR(state->str_classmethod);
+  Py_CLEAR(state->str_staticmethod);
+  Py_CLEAR(state->str_builtin);
+  Py_CLEAR(state->str_class);
+  Py_CLEAR(state->str_instancemethod);
   return 0;
 }
 
