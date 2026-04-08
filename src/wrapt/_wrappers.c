@@ -4378,6 +4378,22 @@ static void wrapt_free(void *module)
 
 static PyModuleDef_Slot wrapt_slots[] = {
     {Py_mod_exec, wrapt_exec},
+#if PY_VERSION_HEX >= 0x030C0000
+    /* Per-interpreter GIL support (PEP 684, 3.12+). All process-wide
+     * mutable state has been removed: types are heap types created per
+     * interpreter via PyType_FromModuleAndSpec, cached strings live in
+     * per-interpreter module state, and there are no static PyObject *
+     * globals. */
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
+#if PY_VERSION_HEX >= 0x030D0000
+    /* Free-threading support (3.13+). The previous Py_MOD_GIL_NOT_USED
+     * declaration via PyUnstable_Module_SetGIL was unsound because the
+     * 19 cached interned strings were lazily initialized via racy
+     * static locals. With eager init in wrapt_exec the declaration is
+     * now actually correct. */
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
     {0, NULL},
 };
 
