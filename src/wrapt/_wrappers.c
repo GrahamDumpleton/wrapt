@@ -3281,17 +3281,28 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
     {
     PyObject *wrapped = NULL;
 
-    static PyObject *wrapped_str = NULL;
-
-    if (!wrapped_str)
+    if (PyObject_TypeCheck(self->parent, &WraptObjectProxy_Type))
     {
-      wrapped_str = PyUnicode_InternFromString("__wrapped__");
+      WraptObjectProxyObject *parent_proxy =
+          (WraptObjectProxyObject *)self->parent;
+
+      if (!parent_proxy->wrapped)
+      {
+        if (raise_uninitialized_wrapper_error(parent_proxy) == -1)
+          return NULL;
+      }
+
+      wrapped = parent_proxy->wrapped;
+      Py_INCREF(wrapped);
     }
+    else
+    {
+      /* Fallback for the unusual case where parent is not a wrapt proxy. */
+      wrapped = PyObject_GetAttrString(self->parent, "__wrapped__");
 
-    wrapped = PyObject_GetAttr(self->parent, wrapped_str);
-
-    if (!wrapped)
-      return NULL;
+      if (!wrapped)
+        return NULL;
+    }
 
     if (Py_TYPE(wrapped)->tp_descr_get == NULL)
     {
