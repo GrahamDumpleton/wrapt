@@ -3111,35 +3111,6 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
 
   PyObject *result = NULL;
 
-  static PyObject *function_str = NULL;
-  static PyObject *callable_str = NULL;
-  static PyObject *classmethod_str = NULL;
-  static PyObject *instancemethod_str = NULL;
-  static PyObject *unbound_method_bindings = NULL;
-
-  if (!function_str)
-  {
-    function_str = PyUnicode_InternFromString("function");
-    callable_str = PyUnicode_InternFromString("callable");
-    classmethod_str = PyUnicode_InternFromString("classmethod");
-    instancemethod_str = PyUnicode_InternFromString("instancemethod");
-  }
-
-  if (!unbound_method_bindings)
-  {
-    /* FIXME(free-threading): this check-then-act cache is racy under
-     * PEP 703. Unlike the PyUnicode_InternFromString caches elsewhere
-     * in this file (which are idempotent because interning canonicalises
-     * the result), PyTuple_Pack produces a fresh object on each call,
-     * so racing threads will leak the loser's tuple. Revisit as part of
-     * the broader free-threading sweep that addresses the existing
-     * string caches — module state, PyMutex, or atomic CAS. */
-    unbound_method_bindings = PyTuple_Pack(4, function_str, instancemethod_str,
-                                           callable_str, classmethod_str);
-    if (!unbound_method_bindings)
-      return NULL;
-  }
-
   if (self->enabled != Py_None)
   {
     if (PyCallable_Check(self->enabled))
@@ -3182,13 +3153,10 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   if (self->instance == Py_None)
   {
     int matched =
-        PySequence_Contains(unbound_method_bindings, self->binding);
-
-    if (matched < 0)
-    {
-      Py_XDECREF(param_kwds);
-      return NULL;
-    }
+        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0       ||
+        PyUnicode_CompareWithASCIIString(self->binding, "instancemethod") == 0 ||
+        PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0       ||
+        PyUnicode_CompareWithASCIIString(self->binding, "classmethod") == 0;
 
     if (matched)
     {
@@ -3241,35 +3209,18 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
   PyObject *result = NULL;
 
   static PyObject *bound_type_str = NULL;
-  static PyObject *function_str = NULL;
-  static PyObject *callable_str = NULL;
   static PyObject *builtin_str = NULL;
   static PyObject *class_str = NULL;
-  static PyObject *instancemethod_str = NULL;
-  static PyObject *bound_method_bindings = NULL;
 
   if (!bound_type_str)
   {
     bound_type_str = PyUnicode_InternFromString("__bound_function_wrapper__");
   }
 
-  if (!function_str)
+  if (!builtin_str)
   {
-    function_str = PyUnicode_InternFromString("function");
-    callable_str = PyUnicode_InternFromString("callable");
     builtin_str = PyUnicode_InternFromString("builtin");
     class_str = PyUnicode_InternFromString("class");
-    instancemethod_str = PyUnicode_InternFromString("instancemethod");
-  }
-
-  if (!bound_method_bindings)
-  {
-    /* FIXME(free-threading): see matching note in
-     * WraptFunctionWrapperBase_call. */
-    bound_method_bindings = PyTuple_Pack(3, function_str, instancemethod_str,
-                                         callable_str);
-    if (!bound_method_bindings)
-      return NULL;
   }
 
   if (self->parent == Py_None)
@@ -3338,10 +3289,9 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
   if (self->instance == Py_None)
   {
     int matched =
-        PySequence_Contains(bound_method_bindings, self->binding);
-
-    if (matched < 0)
-      return NULL;
+        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0       ||
+        PyUnicode_CompareWithASCIIString(self->binding, "instancemethod") == 0 ||
+        PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0;
 
     if (matched)
     {
@@ -3702,10 +3652,6 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
 
   PyObject *result = NULL;
 
-  static PyObject *function_str = NULL;
-  static PyObject *callable_str = NULL;
-  static PyObject *instance_method_bindings = NULL;
-
   int matched;
 
   if (self->enabled != Py_None)
@@ -3741,29 +3687,14 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
     }
   }
 
-  if (!function_str)
-  {
-    function_str = PyUnicode_InternFromString("function");
-    callable_str = PyUnicode_InternFromString("callable");
-  }
-
-  if (!instance_method_bindings)
-  {
-    /* FIXME(free-threading): see matching note in
-     * WraptFunctionWrapperBase_call. */
-    instance_method_bindings = PyTuple_Pack(2, function_str, callable_str);
-    if (!instance_method_bindings)
-      return NULL;
-  }
-
   /*
    * We need to do things different depending on whether we are likely
    * wrapping an instance method vs a static method or class method.
    */
 
-  matched = PySequence_Contains(instance_method_bindings, self->binding);
-  if (matched < 0)
-    return NULL;
+  matched =
+      PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
+      PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0;
 
   if (matched)
   {

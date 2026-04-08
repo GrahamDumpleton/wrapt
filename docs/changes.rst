@@ -78,9 +78,17 @@ Version 2.2.0
   ``||``-chain overwrote the pending error indicator, and control fell
   through to a downstream call that executed with a stale exception set,
   typically surfacing as a confusing ``SystemError`` instead of the
-  original exception. All such comparisons now distinguish ``-1`` from
-  ``0`` and propagate any exception to the caller, matching the behaviour
-  of the pure-Python implementation.
+  original exception. The two surviving ``PyObject_RichCompareBool()``
+  comparisons (against the ``"builtin"`` and ``"class"`` binding values
+  in ``FunctionWrapper.__get__``) now distinguish ``-1`` from ``0`` and
+  propagate any exception to the caller, matching the behaviour of the
+  pure-Python implementation. The remaining ``binding`` dispatch sites in
+  ``FunctionWrapper.__call__``, ``FunctionWrapper.__get__``, and
+  ``BoundFunctionWrapper.__call__`` have been further simplified to
+  compare ``self->binding`` directly against fixed ASCII literals using
+  ``PyUnicode_CompareWithASCIIString()``, a primitive that allocates
+  nothing and cannot raise, so the swallowed-exception failure mode
+  cannot reoccur at those sites.
 
 * Fixed a leaked module reference and unchecked ``PyModule_AddObject()``
   calls in the C extension's module initialisation. If any ``PyType_Ready()``
