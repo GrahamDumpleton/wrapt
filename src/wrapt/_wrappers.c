@@ -506,6 +506,8 @@ static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
 
 static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 {
+  PyTypeObject *tp = Py_TYPE(self);
+
   PyObject_GC_UnTrack(self);
 
   if (self->weakreflist != NULL)
@@ -513,7 +515,8 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 
   WraptObjectProxy_clear(self);
 
-  Py_TYPE(self)->tp_free(self);
+  tp->tp_free(self);
+  Py_DECREF(tp);
 }
 
 /* ------------------------------------------------------------------------- */
