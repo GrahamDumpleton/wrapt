@@ -125,6 +125,21 @@ Version 2.2.0
   callback, triggered GC pass, or audit hook) would observe the dangling
   pointer.
 
+* Fixed unchecked ``PyObject_IsInstance()`` error returns in the C
+  implementation of ``FunctionWrapper.__init__`` and
+  ``BoundFunctionWrapper.__call__``. The cascade in ``__init__`` that
+  selects the ``binding`` ("function", "classmethod", "class",
+  "staticmethod", "instancemethod", ...) used bare
+  ``else if (PyObject_IsInstance(...))``, and because ``-1`` is truthy in
+  C, an exception raised from a metaclass's ``__instancecheck__`` was
+  silently treated as a positive match: the wrong binding was recorded
+  and a Python exception was left set on the thread state, surfacing
+  later as a spurious failure in unrelated code. The shifted-argument
+  branch in ``BoundFunctionWrapper.__call__`` had the related ``== 1``
+  variant, which avoided the truthy trap but still silently swallowed
+  the ``-1`` error case. Both sites now distinguish ``-1`` from ``0``
+  and propagate any exception to the caller.
+
 Version 2.1.2
 -------------
 

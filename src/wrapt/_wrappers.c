@@ -3785,7 +3785,12 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
       if (!instance)
         return NULL;
 
-      if (PyObject_IsInstance(instance, self->owner) == 1)
+      int check = PyObject_IsInstance(instance, self->owner);
+
+      if (check < 0)
+        return NULL;
+
+      if (check)
       {
         wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
         if (!state)
@@ -4026,48 +4031,87 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 
   if (!binding)
   {
+    int check;
+
     if (PyCFunction_Check(wrapped))
     {
       binding = builtin_str;
     }
-    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyFunction_Type))
-    {
-      binding = function_str;
-    }
-    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type))
-    {
-      binding = classmethod_str;
-    }
-    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyType_Type))
-    {
-      binding = class_str;
-    }
-    else if (PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type))
-    {
-      binding = staticmethod_str;
-    }
-    else if ((instance = PyObject_GetAttrString(wrapped, "__self__")) != 0)
-    {
-      if (PyObject_IsInstance(instance, (PyObject *)&PyType_Type))
-      {
-        binding = classmethod_str;
-      }
-      else if (PyObject_IsInstance(wrapped, (PyObject *)&PyMethod_Type))
-      {
-        binding = instancemethod_str;
-      }
-      else
-        binding = callable_str;
-
-      Py_DECREF(instance);
-    }
     else
     {
-      if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-        return -1;
-      PyErr_Clear();
+      check = PyObject_IsInstance(wrapped, (PyObject *)&PyFunction_Type);
+      if (check < 0)
+        goto error;
+      if (check)
+        binding = function_str;
+    }
 
-      binding = callable_str;
+    if (!binding)
+    {
+      check = PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type);
+      if (check < 0)
+        goto error;
+      if (check)
+        binding = classmethod_str;
+    }
+
+    if (!binding)
+    {
+      check = PyObject_IsInstance(wrapped, (PyObject *)&PyType_Type);
+      if (check < 0)
+        goto error;
+      if (check)
+        binding = class_str;
+    }
+
+    if (!binding)
+    {
+      check = PyObject_IsInstance(wrapped, (PyObject *)&PyStaticMethod_Type);
+      if (check < 0)
+        goto error;
+      if (check)
+        binding = staticmethod_str;
+    }
+
+    if (!binding)
+    {
+      instance = PyObject_GetAttrString(wrapped, "__self__");
+      if (instance != NULL)
+      {
+        check = PyObject_IsInstance(instance, (PyObject *)&PyType_Type);
+        if (check < 0)
+        {
+          Py_DECREF(instance);
+          goto error;
+        }
+        if (check)
+        {
+          binding = classmethod_str;
+        }
+        else
+        {
+          check = PyObject_IsInstance(wrapped, (PyObject *)&PyMethod_Type);
+          if (check < 0)
+          {
+            Py_DECREF(instance);
+            goto error;
+          }
+          if (check)
+            binding = instancemethod_str;
+          else
+            binding = callable_str;
+        }
+
+        Py_DECREF(instance);
+      }
+      else
+      {
+        if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+          goto error;
+        PyErr_Clear();
+
+        binding = callable_str;
+      }
     }
   }
 
@@ -4077,6 +4121,10 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
   Py_XDECREF(binding_owned);
 
   return result;
+
+error:
+  Py_XDECREF(binding_owned);
+  return -1;
 }
 
 /* ------------------------------------------------------------------------- */
