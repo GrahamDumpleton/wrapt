@@ -100,3 +100,54 @@ an exception of:
 
 This is due to what can be argued as being a bug in The Python standard
 library and has been reported (https://bugs.python.org/issue44847).
+
+Free-threaded Python (PEP 703)
+------------------------------
+
+The C extension declares ``Py_mod_gil = Py_MOD_GIL_NOT_USED`` on Python
+3.13 and later, which allows it to be loaded into a free-threaded build
+without the runtime re-enabling the GIL on import. This declaration is
+sound for the way **wrapt** is used in the overwhelming majority of
+applications: a decorator is applied to a function or class at import
+time, the resulting wrapper or proxy is published once, and from then on
+it is only *read* (called, introspected, used as a descriptor) from
+multiple threads. That pattern is safe on free-threaded builds.
+
+The current implementation does **not**, however, guarantee safety when
+a single proxy or wrapper instance is **mutated** from one thread while
+another thread concurrently reads from or calls it. In particular, the
+following operations are not race-free on free-threaded builds when the
+same instance is shared across threads:
+
+* Assigning to ``__wrapped__`` (or any other proxy attribute) on an
+  ``ObjectProxy`` while another thread is calling, iterating, or
+  performing attribute access on the same proxy.
+
+* Reassigning fields on a ``FunctionWrapper`` (such as the ``enabled``
+  callable, the ``wrapper`` function, or the bound instance) after
+  construction, while another thread is invoking the wrapper.
+
+* Replacing the captured ``args`` or ``kwargs`` on a
+  ``PartialCallableObjectProxy`` while another thread is calling it.
+
+In each case the writer's update is not atomic with respect to a
+concurrent reader. A reader may observe a torn view of multiple proxy
+fields, or, in the worst case, a use-after-free of an object that the
+writer has just released. The same hazards exist in the pure-Python
+implementation — Python attribute assignment is not atomic with respect
+to readers in any meaningful sense — so the limitation is a property of
+the proxy model, not specifically of the C extension.
+
+The recommended pattern on free-threaded builds is therefore the same
+as the pattern on GIL builds: construct the proxy or wrapper once,
+publish it, and treat it as immutable thereafter. Concurrent readers
+and concurrent calls are supported; concurrent mutation of a shared
+instance is not.
+
+More robust support for free-threaded Python — covering the
+shared-mutation case via atomic field access and per-instance critical
+sections — is being investigated for a future release. Until then,
+applications that genuinely need to mutate a shared proxy from multiple
+threads should serialise those mutations externally (for example, with
+a ``threading.Lock`` held across both the write and any concurrent
+read).

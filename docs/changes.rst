@@ -26,7 +26,9 @@ Version 2.2.0
   their own GIL, per PEP 684) and continues to declare
   ``Py_mod_gil = Py_MOD_GIL_NOT_USED`` on Python 3.13+ for free-threaded
   builds, with that declaration now sound because there is no remaining
-  lazy initialisation of shared Python objects to race on.
+  lazy initialisation of shared Python objects to race on. See the
+  "Free-threaded Python (PEP 703)" section of :doc:`issues` for the
+  current limitations on shared-mutation use cases.
 
 **Bugs Fixed**
 
