@@ -4,6 +4,11 @@ Release Notes
 Version 2.2.0
 -------------
 
+A special thanks to `devdanzin <https://github.com/devdanzin>`_ for providing
+an extremely useful analysis of issues in the wrapt C extension. Their
+analysis led to the majority of the fixes and updates in this release and
+their help is much appreciated.
+
 **Features Changed**
 
 * Improved attribute access on ``BoundFunctionWrapper`` to delegate lookups to
