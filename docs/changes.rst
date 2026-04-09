@@ -114,6 +114,15 @@ Version 2.2.0
   are now checked and routed through a single cleanup path that releases
   the module before returning ``NULL``.
 
+* Fixed a use-after-free reentrancy window in the C implementation of
+  ``ObjectProxy``, ``PartialCallableObjectProxy`` and ``FunctionWrapper``
+  when replacing instance fields such as ``__wrapped__``. Code decremented
+  the old value's refcount before overwriting the field, leaving the field
+  briefly pointing at a freed object while the old object's ``__del__`` ran.
+  Any reentrant access to the proxy from that finalizer (or from a weakref
+  callback, triggered GC pass, or audit hook) would observe the dangling
+  pointer.
+
 Version 2.1.2
 -------------
 

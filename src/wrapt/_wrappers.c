@@ -421,8 +421,7 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
   }
 
   Py_INCREF(wrapped);
-  Py_XDECREF(self->wrapped);
-  self->wrapped = wrapped;
+  Py_XSETREF(self->wrapped, wrapped);
 
   object = PyObject_GetAttr(wrapped, module_str);
 
@@ -994,8 +993,7 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1057,8 +1055,7 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1120,8 +1117,7 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1184,8 +1180,7 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1248,8 +1243,7 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1311,8 +1305,7 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1374,8 +1367,7 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1437,8 +1429,7 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1500,8 +1491,7 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1563,8 +1553,7 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1685,8 +1674,7 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1749,8 +1737,7 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1854,8 +1841,7 @@ static PyObject *WraptObjectProxy_inplace_matrix_multiply(
     if (!object)
       return NULL;
 
-    Py_DECREF(self->wrapped);
-    self->wrapped = object;
+    Py_SETREF(self->wrapped, object);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -2506,9 +2492,7 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
   }
 
   Py_INCREF(value);
-  Py_XDECREF(self->wrapped);
-
-  self->wrapped = value;
+  Py_XSETREF(self->wrapped, value);
 
   fixups = PyObject_GetAttr((PyObject *)self, state->str_setattr_fixups);
 
@@ -2849,12 +2833,10 @@ static int WraptPartialCallableObjectProxy_raw_init(
   if (result == 0)
   {
     Py_INCREF(args);
-    Py_XDECREF(self->args);
-    self->args = args;
+    Py_XSETREF(self->args, args);
 
     Py_XINCREF(kwargs);
-    Py_XDECREF(self->kwargs);
-    self->kwargs = kwargs;
+    Py_XSETREF(self->kwargs, kwargs);
   }
 
   return result;
@@ -3081,28 +3063,22 @@ static int WraptFunctionWrapperBase_raw_init(
   if (result == 0)
   {
     Py_INCREF(instance);
-    Py_XDECREF(self->instance);
-    self->instance = instance;
+    Py_XSETREF(self->instance, instance);
 
     Py_INCREF(wrapper);
-    Py_XDECREF(self->wrapper);
-    self->wrapper = wrapper;
+    Py_XSETREF(self->wrapper, wrapper);
 
     Py_INCREF(enabled);
-    Py_XDECREF(self->enabled);
-    self->enabled = enabled;
+    Py_XSETREF(self->enabled, enabled);
 
     Py_INCREF(binding);
-    Py_XDECREF(self->binding);
-    self->binding = binding;
+    Py_XSETREF(self->binding, binding);
 
     Py_INCREF(parent);
-    Py_XDECREF(self->parent);
-    self->parent = parent;
+    Py_XSETREF(self->parent, parent);
 
     Py_INCREF(owner);
-    Py_XDECREF(self->owner);
-    self->owner = owner;
+    Py_XSETREF(self->owner, owner);
   }
 
   return result;
