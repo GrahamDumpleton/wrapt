@@ -3207,6 +3207,8 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   if (!kwds)
   {
     param_kwds = PyDict_New();
+    if (!param_kwds)
+      return NULL;
     kwds = param_kwds;
   }
 
@@ -3831,6 +3833,12 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
     if (!kwds)
     {
       param_kwds = PyDict_New();
+      if (!param_kwds)
+      {
+        Py_XDECREF(param_args);
+        Py_DECREF(wrapped);
+        return NULL;
+      }
       kwds = param_kwds;
     }
 
@@ -3874,6 +3882,11 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
     if (!kwds)
     {
       param_kwds = PyDict_New();
+      if (!param_kwds)
+      {
+        Py_DECREF(instance);
+        return NULL;
+      }
       kwds = param_kwds;
     }
 

@@ -140,6 +140,17 @@ Version 2.2.0
   the ``-1`` error case. Both sites now distinguish ``-1`` from ``0``
   and propagate any exception to the caller.
 
+* Fixed unchecked ``PyDict_New()`` allocations in the C implementation of
+  ``FunctionWrapper.__call__`` and ``BoundFunctionWrapper.__call__`` used
+  to synthesize an empty kwargs dict when the caller did not supply one.
+  If the allocation failed, the resulting ``NULL`` was passed as the
+  ``kwds`` argument to ``PyObject_CallFunctionObjArgs()``, whose variadic
+  argument list is ``NULL``-terminated. This truncated the call, masked
+  the original ``MemoryError``, and surfaced as a confusing ``TypeError``
+  from the wrapper signature mismatch instead. All three sites now check
+  for allocation failure, release any locally owned references, and
+  propagate the ``MemoryError`` to the caller.
+
 Version 2.1.2
 -------------
 
