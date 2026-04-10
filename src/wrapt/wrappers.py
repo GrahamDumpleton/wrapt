@@ -118,12 +118,22 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             pass
 
         # Python 3.10 onwards also does not allow itself to be overridden
-        # using a property and it must instead be set explicitly.
+        # using a property and it must instead be set explicitly. Python
+        # 3.14 onwards uses deferred evaluation of annotations via the
+        # __annotate__ attribute, so we copy that instead to avoid
+        # triggering eager evaluation which can fail if names referenced
+        # in annotations have been shadowed.
 
-        try:
-            object.__setattr__(self, "__annotations__", wrapped.__annotations__)
-        except AttributeError:
-            pass
+        if sys.version_info >= (3, 14):
+            try:
+                object.__setattr__(self, "__annotate__", wrapped.__annotate__)
+            except AttributeError:
+                pass
+        else:
+            try:
+                object.__setattr__(self, "__annotations__", wrapped.__annotations__)
+            except AttributeError:
+                pass
 
     @property
     def __object_proxy__(self):
@@ -218,14 +228,24 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
                 object.__setattr__(self, "__qualname__", value.__qualname__)
             except AttributeError:
                 pass
-            try:
-                object.__delattr__(self, "__annotations__")
-            except AttributeError:
-                pass
-            try:
-                object.__setattr__(self, "__annotations__", value.__annotations__)
-            except AttributeError:
-                pass
+            if sys.version_info >= (3, 14):
+                try:
+                    object.__delattr__(self, "__annotate__")
+                except AttributeError:
+                    pass
+                try:
+                    object.__setattr__(self, "__annotate__", value.__annotate__)
+                except AttributeError:
+                    pass
+            else:
+                try:
+                    object.__delattr__(self, "__annotations__")
+                except AttributeError:
+                    pass
+                try:
+                    object.__setattr__(self, "__annotations__", value.__annotations__)
+                except AttributeError:
+                    pass
 
             __wrapped_setattr_fixups__ = getattr(
                 self, "__wrapped_setattr_fixups__", None
@@ -239,6 +259,10 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             object.__setattr__(self, name, value)
 
         elif name == "__annotations__":
+            setattr(self.__wrapped__, name, value)
+            object.__setattr__(self, name, value)
+
+        elif name == "__annotate__":
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
 
@@ -284,7 +308,17 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             delattr(self.__wrapped__, name)
 
         elif name == "__annotations__":
-            object.__delattr__(self, name)
+            try:
+                object.__delattr__(self, name)
+            except AttributeError:
+                pass
+            delattr(self.__wrapped__, name)
+
+        elif name == "__annotate__":
+            try:
+                object.__delattr__(self, name)
+            except AttributeError:
+                pass
             delattr(self.__wrapped__, name)
 
         elif hasattr(type(self), name):

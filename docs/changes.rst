@@ -156,6 +156,18 @@ their help is much appreciated.
   for allocation failure, release any locally owned references, and
   propagate the ``MemoryError`` to the caller.
 
+* Fixed eager evaluation of ``__annotations__`` in the pure-Python
+  implementation of ``ObjectProxy.__init__`` on Python 3.14+. Python 3.14
+  defers annotation evaluation (PEP 649/749) via the ``__annotate__``
+  descriptor, but ``ObjectProxy`` was accessing ``wrapped.__annotations__``
+  at construction time, which forced immediate evaluation and raised
+  ``TypeError`` when names referenced in annotations had been shadowed in
+  the local scope. The proxy now copies ``__annotate__`` instead of
+  ``__annotations__`` on Python 3.14+, matching the approach taken by
+  ``functools.wraps`` in the standard library. The C extension was not
+  affected as it already delegates ``__annotations__`` to the wrapped
+  object lazily on each access.
+
 Version 2.1.2
 -------------
 
