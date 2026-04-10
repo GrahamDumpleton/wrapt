@@ -28,6 +28,13 @@ class _ObjectProxyMethods:
     # that, we copy the properties into the derived class type itself
     # via a meta class. In that way the properties will always take
     # precedence.
+    #
+    # Note that because these properties end up in the class __dict__,
+    # type-level access (e.g. ObjectProxy.__module__) would return the
+    # property object rather than a string, since CPython's
+    # type.__module__ getter does a raw dict lookup without invoking the
+    # descriptor protocol. The metaclass has its own __module__ and
+    # __doc__ properties to handle type-level access correctly.
 
     @property
     def __module__(self):
@@ -63,15 +70,56 @@ class _ObjectProxyMethods:
 
 
 class _ObjectProxyMetaType(type):
+    # Properties on the metaclass control type-level access to __module__
+    # and __doc__ (e.g. ObjectProxy.__module__). Without these, the
+    # instance-level properties copied from _ObjectProxyMethods into each
+    # class dict would shadow the string values that type.__new__ sets,
+    # causing type.__module__ to return a property object instead of a
+    # string. The metaclass properties read from internal keys where the
+    # real values are saved.
+
+    @property
+    def __module__(cls):
+        return cls.__dict__.get("_cls_real_module", "builtins")
+
+    @__module__.setter
+    def __module__(cls, value):
+        type.__setattr__(cls, "_cls_real_module", value)
+
+    @property
+    def __doc__(cls):
+        return cls.__dict__.get("_cls_real_doc")
+
+    @__doc__.setter
+    def __doc__(cls, value):
+        type.__setattr__(cls, "_cls_real_doc", value)
+
     def __new__(cls, name, bases, dictionary):
         # Copy our special properties into the class so that they
         # always take precedence over attributes of the same name added
         # during construction of a derived class. This is to save
         # duplicating the implementation for them in all derived classes.
+        #
+        # Because this overwrites the __module__ and __doc__ strings
+        # that would normally be in the class dict with property objects,
+        # we save the original values first and store them under internal
+        # keys. The metaclass properties above read from these keys to
+        # ensure type-level access (e.g. MyProxy.__module__) returns a
+        # string rather than a property object.
+
+        real_module = dictionary.get("__module__")
+        real_doc = dictionary.get("__doc__")
 
         dictionary.update(vars(_ObjectProxyMethods))
 
-        return type.__new__(cls, name, bases, dictionary)
+        klass = type.__new__(cls, name, bases, dictionary)
+
+        if real_module is not None:
+            type.__setattr__(klass, "_cls_real_module", real_module)
+        if real_doc is not None:
+            type.__setattr__(klass, "_cls_real_doc", real_doc)
+
+        return klass
 
 
 # NOTE: Although Python 3+ supports the newer metaclass=MetaClass syntax,

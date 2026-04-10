@@ -168,6 +168,25 @@ their help is much appreciated.
   affected as it already delegates ``__annotations__`` to the wrapped
   object lazily on each access.
 
+* Fixed type-level access to ``__module__`` and ``__doc__`` on proxy and
+  wrapper classes (e.g. ``ObjectProxy.__module__``) returning a descriptor
+  object instead of a string. CPython's ``type.__module__`` getter performs
+  a raw dict lookup on the type's ``__dict__`` without invoking the
+  descriptor protocol, so the proxying descriptors placed there to delegate
+  instance-level access to the wrapped object were returned as-is. This
+  caused tools such as pylint/astroid to crash with ``AttributeError:
+  'property' object has no attribute 'split'`` when introspecting wrapt
+  types. The pure-Python implementation has always had this bug but it was
+  not previously reported because the C extension was the default code path
+  and static types were unaffected. The C extension became affected after
+  the conversion to heap types in this release, since heap types store
+  ``__module__`` in ``tp_dict`` rather than deriving it from ``tp_name``.
+  The fix moves ``__module__`` and ``__doc__`` proxying out of the type-level
+  descriptor slots and into the instance-level attribute access machinery
+  (``tp_getattro``/``tp_setattro`` in C, metaclass properties in Python),
+  ensuring that type-level access returns the real string while instance-level
+  access continues to delegate to the wrapped object.
+
 Version 2.1.2
 -------------
 

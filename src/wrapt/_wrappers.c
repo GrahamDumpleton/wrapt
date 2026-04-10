@@ -2525,7 +2525,21 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
 {
   PyObject *object = NULL;
   PyObject *result = NULL;
-  wrapt_module_state *state;
+
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  /* Intercept __module__ and __doc__ so they proxy to the wrapped object.
+   * These cannot be getset descriptors on heap types because that would
+   * place a descriptor object in tp_dict, shadowing the type-level
+   * __module__/__doc__ strings that type.__module__ reads via raw dict
+   * lookup. */
+
+  if (name == state->str_module)
+    return WraptObjectProxy_get_module(self);
+  if (name == state->str_doc)
+    return WraptObjectProxy_get_doc(self);
 
   object = PyObject_GenericGetAttr((PyObject *)self, name);
 
@@ -2536,10 +2550,6 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
     return NULL;
 
   PyErr_Clear();
-
-  state = wrapt_state_from_type(Py_TYPE(self));
-  if (!state)
-    return NULL;
 
   object = PyObject_GenericGetAttr((PyObject *)self, state->str_getattr);
 
@@ -2588,6 +2598,16 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
 
   if (match)
     return PyObject_GenericSetAttr((PyObject *)self, name, value);
+
+  /* Intercept __module__ and __doc__ so they forward to the wrapped
+   * object rather than being stored locally. Without this, the string
+   * values in the type dict (from PyType_FromModuleAndSpec) would cause
+   * wrapt_type_has_attr to match and GenericSetAttr to store locally. */
+
+  if (name == state->str_module)
+    return WraptObjectProxy_set_module(self, value);
+  if (name == state->str_doc)
+    return WraptObjectProxy_set_doc(self, value);
 
   if (wrapt_type_has_attr(Py_TYPE(self), name))
     return PyObject_GenericSetAttr((PyObject *)self, name, value);
@@ -2665,10 +2685,6 @@ static PyGetSetDef WraptObjectProxy_getset[] = {
      (setter)WraptObjectProxy_set_name, 0},
     {"__qualname__", (getter)WraptObjectProxy_get_qualname,
      (setter)WraptObjectProxy_set_qualname, 0},
-    {"__module__", (getter)WraptObjectProxy_get_module,
-     (setter)WraptObjectProxy_set_module, 0},
-    {"__doc__", (getter)WraptObjectProxy_get_doc,
-     (setter)WraptObjectProxy_set_doc, 0},
     {"__class__", (getter)WraptObjectProxy_get_class,
      (setter)WraptObjectProxy_set_class, 0},
     {"__annotations__", (getter)WraptObjectProxy_get_annotations,
@@ -2774,20 +2790,11 @@ static PyObject *WraptCallableObjectProxy_call(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */;
 
-static PyGetSetDef WraptCallableObjectProxy_getset[] = {
-    {"__module__", (getter)WraptObjectProxy_get_module,
-     (setter)WraptObjectProxy_set_module, 0},
-    {"__doc__", (getter)WraptObjectProxy_get_doc,
-     (setter)WraptObjectProxy_set_doc, 0},
-    {NULL},
-};
-
 static PyType_Slot WraptCallableObjectProxy_slots[] = {
     {Py_tp_dealloc, WraptObjectProxy_dealloc},
     {Py_tp_traverse, WraptObjectProxy_traverse},
     {Py_tp_clear, WraptObjectProxy_clear},
     {Py_tp_call, WraptCallableObjectProxy_call},
-    {Py_tp_getset, WraptCallableObjectProxy_getset},
     {Py_tp_init, WraptObjectProxy_init},
     {0, NULL},
 };
@@ -3000,20 +3007,11 @@ static PyObject *WraptPartialCallableObjectProxy_call(
 
 /* ------------------------------------------------------------------------- */;
 
-static PyGetSetDef WraptPartialCallableObjectProxy_getset[] = {
-    {"__module__", (getter)WraptObjectProxy_get_module,
-     (setter)WraptObjectProxy_set_module, 0},
-    {"__doc__", (getter)WraptObjectProxy_get_doc,
-     (setter)WraptObjectProxy_set_doc, 0},
-    {NULL},
-};
-
 static PyType_Slot WraptPartialCallableObjectProxy_slots[] = {
     {Py_tp_dealloc, WraptPartialCallableObjectProxy_dealloc},
     {Py_tp_call, WraptPartialCallableObjectProxy_call},
     {Py_tp_traverse, WraptPartialCallableObjectProxy_traverse},
     {Py_tp_clear, WraptPartialCallableObjectProxy_clear},
-    {Py_tp_getset, WraptPartialCallableObjectProxy_getset},
     {Py_tp_init, WraptPartialCallableObjectProxy_init},
     {Py_tp_new, WraptPartialCallableObjectProxy_new},
     {0, NULL},
@@ -3634,10 +3632,6 @@ static PyMethodDef WraptFunctionWrapperBase_methods[] = {
 /* ------------------------------------------------------------------------- */;
 
 static PyGetSetDef WraptFunctionWrapperBase_getset[] = {
-    {"__module__", (getter)WraptObjectProxy_get_module,
-     (setter)WraptObjectProxy_set_module, 0},
-    {"__doc__", (getter)WraptObjectProxy_get_doc,
-     (setter)WraptObjectProxy_set_doc, 0},
     {"_self_instance", (getter)WraptFunctionWrapperBase_get_self_instance, NULL,
      0},
     {"_self_wrapper", (getter)WraptFunctionWrapperBase_get_self_wrapper, NULL,
@@ -3966,14 +3960,6 @@ static PyMethodDef WraptBoundFunctionWrapper_methods[] = {
 
 /* ------------------------------------------------------------------------- */
 
-static PyGetSetDef WraptBoundFunctionWrapper_getset[] = {
-    {"__module__", (getter)WraptObjectProxy_get_module,
-     (setter)WraptObjectProxy_set_module, 0},
-    {"__doc__", (getter)WraptObjectProxy_get_doc,
-     (setter)WraptObjectProxy_set_doc, 0},
-    {NULL},
-};
-
 static PyType_Slot WraptBoundFunctionWrapper_slots[] = {
     {Py_tp_dealloc, WraptFunctionWrapperBase_dealloc},
     {Py_tp_traverse, WraptFunctionWrapperBase_traverse},
@@ -3981,7 +3967,6 @@ static PyType_Slot WraptBoundFunctionWrapper_slots[] = {
     {Py_tp_call, WraptBoundFunctionWrapper_call},
     {Py_tp_setattro, WraptBoundFunctionWrapper_setattro},
     {Py_tp_methods, WraptBoundFunctionWrapper_methods},
-    {Py_tp_getset, WraptBoundFunctionWrapper_getset},
     {0, NULL},
 };
 
@@ -4142,19 +4127,10 @@ error:
 
 /* ------------------------------------------------------------------------- */
 
-static PyGetSetDef WraptFunctionWrapper_getset[] = {
-    {"__module__", (getter)WraptObjectProxy_get_module,
-     (setter)WraptObjectProxy_set_module, 0},
-    {"__doc__", (getter)WraptObjectProxy_get_doc,
-     (setter)WraptObjectProxy_set_doc, 0},
-    {NULL},
-};
-
 static PyType_Slot WraptFunctionWrapper_slots[] = {
     {Py_tp_dealloc, WraptFunctionWrapperBase_dealloc},
     {Py_tp_traverse, WraptFunctionWrapperBase_traverse},
     {Py_tp_clear, WraptFunctionWrapperBase_clear},
-    {Py_tp_getset, WraptFunctionWrapper_getset},
     {Py_tp_init, WraptFunctionWrapper_init},
     {0, NULL},
 };
