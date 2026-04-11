@@ -114,7 +114,14 @@ static PyObject *PyType_GetModuleByDef(PyTypeObject *type,
       return m;
 
     if (m == NULL)
+    {
+      /* PyType_GetModule only raises TypeError here (no module
+       * association on heap type); no other failure mode is expected.
+       * Guard with WriteUnraisable for completeness. */
+      if (!PyErr_ExceptionMatches(PyExc_TypeError))
+        PyErr_WriteUnraisable((PyObject *)t);
       PyErr_Clear();
+    }
   }
 
   PyErr_Format(PyExc_TypeError,
@@ -162,6 +169,10 @@ static int wrapt_type_has_attr(PyTypeObject *type, PyObject *name)
     contains = PyDict_Contains(dict, name);
     if (contains < 0)
     {
+      /* PyDict_Contains cannot fail with string keys against a
+       * string-keyed tp_dict; no failure is expected here. Guard
+       * with WriteUnraisable for completeness. */
+      PyErr_WriteUnraisable((PyObject *)t);
       PyErr_Clear();
       continue;
     }
@@ -207,6 +218,11 @@ static int wrapt_is_proxy(PyObject *o)
 
     if (m == NULL)
     {
+      /* PyType_GetModule only raises TypeError here (no module
+       * association on heap type); no other failure mode is expected.
+       * Guard with WriteUnraisable for completeness. */
+      if (!PyErr_ExceptionMatches(PyExc_TypeError))
+        PyErr_WriteUnraisable((PyObject *)t);
       PyErr_Clear();
       continue;
     }
