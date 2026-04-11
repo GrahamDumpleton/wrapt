@@ -2248,7 +2248,7 @@ static PyObject *WraptObjectProxy_aexit(WraptObjectProxyObject *self,
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_copy(WraptObjectProxyObject *self,
-                                       PyObject *args, PyObject *kwds)
+                                       PyObject *Py_UNUSED(ignored))
 {
   PyErr_SetString(PyExc_NotImplementedError,
                   "object proxy must define __copy__()");
@@ -2270,7 +2270,7 @@ static PyObject *WraptObjectProxy_deepcopy(WraptObjectProxyObject *self,
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_reduce(WraptObjectProxyObject *self,
-                                         PyObject *args, PyObject *kwds)
+                                         PyObject *Py_UNUSED(ignored))
 {
   PyErr_SetString(PyExc_NotImplementedError,
                   "object proxy must define __reduce__()");
