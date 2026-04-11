@@ -3016,16 +3016,9 @@ static int WraptPartialCallableObjectProxy_init(
 
   int result = 0;
 
-  if (!PyObject_Length(args))
+  if (PyTuple_GET_SIZE(args) < 1)
   {
     PyErr_SetString(PyExc_TypeError, "__init__ of partial needs an argument");
-    return -1;
-  }
-
-  if (PyObject_Length(args) < 1)
-  {
-    PyErr_SetString(PyExc_TypeError,
-                    "partial type takes at least one argument");
     return -1;
   }
 
@@ -3037,7 +3030,7 @@ static int WraptPartialCallableObjectProxy_init(
     return -1;
   }
 
-  fnargs = PyTuple_GetSlice(args, 1, PyTuple_Size(args));
+  fnargs = PyTuple_GetSlice(args, 1, PyTuple_GET_SIZE(args));
 
   if (!fnargs)
     return -1;
@@ -3109,12 +3102,12 @@ static PyObject *WraptPartialCallableObjectProxy_call(
       return NULL;
   }
 
-  fnargs = PyTuple_New(PyTuple_Size(self->args) + PyTuple_Size(args));
+  fnargs = PyTuple_New(PyTuple_GET_SIZE(self->args) + PyTuple_GET_SIZE(args));
 
   if (!fnargs)
     return NULL;
 
-  for (i = 0; i < PyTuple_Size(self->args); i++)
+  for (i = 0; i < PyTuple_GET_SIZE(self->args); i++)
   {
     PyObject *item;
     item = PyTuple_GetItem(self->args, i);
@@ -3122,9 +3115,9 @@ static PyObject *WraptPartialCallableObjectProxy_call(
     PyTuple_SetItem(fnargs, i, item);
   }
 
-  offset = PyTuple_Size(self->args);
+  offset = PyTuple_GET_SIZE(self->args);
 
-  for (i = 0; i < PyTuple_Size(args); i++)
+  for (i = 0; i < PyTuple_GET_SIZE(args); i++)
   {
     PyObject *item;
     item = PyTuple_GetItem(args, i);
@@ -3941,7 +3934,7 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
     //     args = param_args;
     // }
 
-    if (self->instance == Py_None && PyTuple_Size(args) != 0)
+    if (self->instance == Py_None && PyTuple_GET_SIZE(args) != 0)
     {
       /*
        * This situation can occur where someone is calling the
@@ -3974,7 +3967,7 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
         if (!wrapped)
           return NULL;
 
-        param_args = PyTuple_GetSlice(args, 1, PyTuple_Size(args));
+        param_args = PyTuple_GetSlice(args, 1, PyTuple_GET_SIZE(args));
 
         if (!param_args)
         {
