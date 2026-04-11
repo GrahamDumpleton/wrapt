@@ -78,6 +78,19 @@ typedef struct
   PyObject *str_builtin;                /* "builtin" */
   PyObject *str_class;                  /* "class" */
   PyObject *str_instancemethod;         /* "instancemethod" */
+  PyObject *str_object_proxy;           /* "__object_proxy__" */
+  PyObject *str_enter;                  /* "__enter__" */
+  PyObject *str_exit;                   /* "__exit__" */
+  PyObject *str_aenter;                 /* "__aenter__" */
+  PyObject *str_aexit;                  /* "__aexit__" */
+  PyObject *str_mro_entries;            /* "__mro_entries__" */
+  PyObject *str_name;                   /* "__name__" */
+  PyObject *str_qualname;               /* "__qualname__" */
+  PyObject *str_annotations;            /* "__annotations__" */
+  PyObject *str_dunder_class;           /* "__class__" */
+  PyObject *str_self;                   /* "__self__" */
+  PyObject *str_set_name;               /* "__set_name__" */
+  PyObject *str_self_binding;           /* "_self_binding" */
 
   /* Cached exception type from wrapt.wrappers. Initialized eagerly in
    * wrapt_exec after type creation. The wrapt.wrappers module is guaranteed
@@ -1029,7 +1042,14 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1104,7 +1124,14 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1179,7 +1206,14 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1255,7 +1289,14 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1331,7 +1372,14 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1406,7 +1454,14 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1481,7 +1536,14 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1556,7 +1618,14 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1631,7 +1700,14 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1706,7 +1782,14 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1840,7 +1923,14 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -1916,7 +2006,14 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -2033,7 +2130,14 @@ static PyObject *WraptObjectProxy_inplace_matrix_multiply(
     if (!result)
       return NULL;
 
-    PyObject *proxy_type = PyObject_GetAttrString((PyObject *)self, "__object_proxy__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+    {
+      Py_DECREF(result);
+      return NULL;
+    }
+
+    PyObject *proxy_type = PyObject_GetAttr((PyObject *)self, state->str_object_proxy);
 
     if (!proxy_type)
     {
@@ -2166,7 +2270,11 @@ static PyObject *WraptObjectProxy_enter(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  method = PyObject_GetAttrString(self->wrapped, "__enter__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  method = PyObject_GetAttr(self->wrapped, state->str_enter);
 
   if (!method)
     return NULL;
@@ -2192,7 +2300,11 @@ static PyObject *WraptObjectProxy_exit(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  method = PyObject_GetAttrString(self->wrapped, "__exit__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  method = PyObject_GetAttr(self->wrapped, state->str_exit);
 
   if (!method)
     return NULL;
@@ -2218,7 +2330,11 @@ static PyObject *WraptObjectProxy_aenter(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  method = PyObject_GetAttrString(self->wrapped, "__aenter__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  method = PyObject_GetAttr(self->wrapped, state->str_aenter);
 
   if (!method)
     return NULL;
@@ -2244,7 +2360,11 @@ static PyObject *WraptObjectProxy_aexit(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  method = PyObject_GetAttrString(self->wrapped, "__aexit__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  method = PyObject_GetAttr(self->wrapped, state->str_aexit);
 
   if (!method)
     return NULL;
@@ -2437,7 +2557,11 @@ static PyObject *WraptObjectProxy_mro_entries(WraptObjectProxyObject *self,
 
   if (!is_type)
   {
-    mro_entries_method = PyObject_GetAttrString(wrapped, "__mro_entries__");
+    wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+    if (!state)
+      return NULL;
+
+    mro_entries_method = PyObject_GetAttr(wrapped, state->str_mro_entries);
 
     if (mro_entries_method)
     {
@@ -2470,7 +2594,11 @@ static PyObject *WraptObjectProxy_get_name(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyObject_GetAttrString(self->wrapped, "__name__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  return PyObject_GetAttr(self->wrapped, state->str_name);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2484,7 +2612,11 @@ static int WraptObjectProxy_set_name(WraptObjectProxyObject *self,
       return -1;
   }
 
-  return PyObject_SetAttrString(self->wrapped, "__name__", value);
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
+
+  return PyObject_SetAttr(self->wrapped, state->str_name, value);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2497,7 +2629,11 @@ static PyObject *WraptObjectProxy_get_qualname(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyObject_GetAttrString(self->wrapped, "__qualname__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  return PyObject_GetAttr(self->wrapped, state->str_qualname);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2511,7 +2647,11 @@ static int WraptObjectProxy_set_qualname(WraptObjectProxyObject *self,
       return -1;
   }
 
-  return PyObject_SetAttrString(self->wrapped, "__qualname__", value);
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
+
+  return PyObject_SetAttr(self->wrapped, state->str_qualname, value);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2524,7 +2664,11 @@ static PyObject *WraptObjectProxy_get_module(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyObject_GetAttrString(self->wrapped, "__module__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  return PyObject_GetAttr(self->wrapped, state->str_module);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2538,7 +2682,11 @@ static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
       return -1;
   }
 
-  if (PyObject_SetAttrString(self->wrapped, "__module__", value) == -1)
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
+
+  if (PyObject_SetAttr(self->wrapped, state->str_module, value) == -1)
     return -1;
 
   return PyDict_SetItemString(self->dict, "__module__", value);
@@ -2554,7 +2702,11 @@ static PyObject *WraptObjectProxy_get_doc(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyObject_GetAttrString(self->wrapped, "__doc__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  return PyObject_GetAttr(self->wrapped, state->str_doc);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2568,7 +2720,11 @@ static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
       return -1;
   }
 
-  if (PyObject_SetAttrString(self->wrapped, "__doc__", value) == -1)
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
+
+  if (PyObject_SetAttr(self->wrapped, state->str_doc, value) == -1)
     return -1;
 
   return PyDict_SetItemString(self->dict, "__doc__", value);
@@ -2584,7 +2740,11 @@ static PyObject *WraptObjectProxy_get_class(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyObject_GetAttrString(self->wrapped, "__class__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  return PyObject_GetAttr(self->wrapped, state->str_dunder_class);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2598,7 +2758,11 @@ static int WraptObjectProxy_set_class(WraptObjectProxyObject *self,
       return -1;
   }
 
-  return PyObject_SetAttrString(self->wrapped, "__class__", value);
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
+
+  return PyObject_SetAttr(self->wrapped, state->str_dunder_class, value);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2612,7 +2776,11 @@ WraptObjectProxy_get_annotations(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyObject_GetAttrString(self->wrapped, "__annotations__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  return PyObject_GetAttr(self->wrapped, state->str_annotations);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2626,7 +2794,11 @@ static int WraptObjectProxy_set_annotations(WraptObjectProxyObject *self,
       return -1;
   }
 
-  return PyObject_SetAttrString(self->wrapped, "__annotations__", value);
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return -1;
+
+  return PyObject_SetAttr(self->wrapped, state->str_annotations, value);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3371,6 +3543,10 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
       return NULL;
   }
 
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
   if (self->enabled != Py_None)
   {
     if (PyCallable_Check(self->enabled))
@@ -3425,7 +3601,7 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
       PyObject *instance = NULL;
 
       instance =
-          PyObject_GetAttrString(self->object_proxy.wrapped, "__self__");
+          PyObject_GetAttr(self->object_proxy.wrapped, state->str_self);
 
       if (instance)
       {
@@ -3565,7 +3741,7 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
       else
       {
         /* Fallback for the unusual case where parent is not a wrapt proxy. */
-        wrapped = PyObject_GetAttrString(self->parent, "__wrapped__");
+        wrapped = PyObject_GetAttr((PyObject *)self->parent, state->str_wrapped);
 
         if (!wrapped)
           return NULL;
@@ -3637,7 +3813,12 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
       return NULL;
   }
 
-  method = PyObject_GetAttrString(self->object_proxy.wrapped, "__set_name__");
+  wrapt_module_state *state =
+      wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  method = PyObject_GetAttr(self->object_proxy.wrapped, state->str_set_name);
 
   if (!method)
   {
@@ -3705,7 +3886,12 @@ WraptFunctionWrapperBase_subclasscheck(WraptFunctionWrapperObject *self,
   if (!PyArg_ParseTuple(args, "O", &subclass))
     return NULL;
 
-  object = PyObject_GetAttrString(subclass, "__wrapped__");
+  wrapt_module_state *state =
+      wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  object = PyObject_GetAttr(subclass, state->str_wrapped);
 
   if (!object)
   {
@@ -3896,6 +4082,10 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
       return NULL;
   }
 
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
   if (self->enabled != Py_None)
   {
     if (PyCallable_Check(self->enabled))
@@ -4038,7 +4228,7 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
      * available in the decoratored function.
      */
 
-    instance = PyObject_GetAttrString(self->object_proxy.wrapped, "__self__");
+    instance = PyObject_GetAttr(self->object_proxy.wrapped, state->str_self);
 
     if (!instance)
     {
@@ -4190,7 +4380,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 
   if (PyObject_TypeCheck(wrapped, state->FunctionWrapperBase_Type))
   {
-    binding_owned = PyObject_GetAttrString(wrapped, "_self_binding");
+    binding_owned = PyObject_GetAttr(wrapped, state->str_self_binding);
     if (!binding_owned)
     {
       if (!PyErr_ExceptionMatches(PyExc_AttributeError))
@@ -4249,7 +4439,7 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 
     if (!binding)
     {
-      instance = PyObject_GetAttrString(wrapped, "__self__");
+      instance = PyObject_GetAttr(wrapped, state->str_self);
       if (instance != NULL)
       {
         check = PyObject_IsInstance(instance, (PyObject *)&PyType_Type);
@@ -4417,6 +4607,32 @@ static int wrapt_init_strings(wrapt_module_state *state)
     return -1;
   if (wrapt_intern_string(&state->str_instancemethod, "instancemethod") < 0)
     return -1;
+  if (wrapt_intern_string(&state->str_object_proxy, "__object_proxy__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_enter, "__enter__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_exit, "__exit__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_aenter, "__aenter__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_aexit, "__aexit__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_mro_entries, "__mro_entries__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_name, "__name__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_qualname, "__qualname__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_annotations, "__annotations__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_dunder_class, "__class__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_self, "__self__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_set_name, "__set_name__") < 0)
+    return -1;
+  if (wrapt_intern_string(&state->str_self_binding, "_self_binding") < 0)
+    return -1;
   return 0;
 }
 
@@ -4547,6 +4763,19 @@ static int wrapt_traverse(PyObject *module, visitproc visit, void *arg)
   Py_VISIT(state->str_builtin);
   Py_VISIT(state->str_class);
   Py_VISIT(state->str_instancemethod);
+  Py_VISIT(state->str_object_proxy);
+  Py_VISIT(state->str_enter);
+  Py_VISIT(state->str_exit);
+  Py_VISIT(state->str_aenter);
+  Py_VISIT(state->str_aexit);
+  Py_VISIT(state->str_mro_entries);
+  Py_VISIT(state->str_name);
+  Py_VISIT(state->str_qualname);
+  Py_VISIT(state->str_annotations);
+  Py_VISIT(state->str_dunder_class);
+  Py_VISIT(state->str_self);
+  Py_VISIT(state->str_set_name);
+  Py_VISIT(state->str_self_binding);
   Py_VISIT(state->WrapperNotInitializedError);
   return 0;
 }
@@ -4578,6 +4807,19 @@ static int wrapt_clear(PyObject *module)
   Py_CLEAR(state->str_builtin);
   Py_CLEAR(state->str_class);
   Py_CLEAR(state->str_instancemethod);
+  Py_CLEAR(state->str_object_proxy);
+  Py_CLEAR(state->str_enter);
+  Py_CLEAR(state->str_exit);
+  Py_CLEAR(state->str_aenter);
+  Py_CLEAR(state->str_aexit);
+  Py_CLEAR(state->str_mro_entries);
+  Py_CLEAR(state->str_name);
+  Py_CLEAR(state->str_qualname);
+  Py_CLEAR(state->str_annotations);
+  Py_CLEAR(state->str_dunder_class);
+  Py_CLEAR(state->str_self);
+  Py_CLEAR(state->str_set_name);
+  Py_CLEAR(state->str_self_binding);
   Py_CLEAR(state->WrapperNotInitializedError);
   return 0;
 }
