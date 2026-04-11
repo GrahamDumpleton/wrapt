@@ -3087,11 +3087,27 @@ static int WraptPartialCallableObjectProxy_clear(
 static void WraptPartialCallableObjectProxy_dealloc(
     WraptPartialCallableObjectProxyObject *self)
 {
+  PyTypeObject *tp = Py_TYPE(self);
+
   PyObject_GC_UnTrack(self);
+
+  if (self->object_proxy.weakreflist != NULL)
+    PyObject_ClearWeakRefs((PyObject *)self);
 
   WraptPartialCallableObjectProxy_clear(self);
 
-  WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
+  tp->tp_free(self);
+
+#if PY_VERSION_HEX >= 0x030C0000
+  PyObject *exc = PyErr_GetRaisedException();
+  Py_DECREF(tp);
+  PyErr_SetRaisedException(exc);
+#else
+  PyObject *exc_type, *exc_value, *exc_tb;
+  PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+  Py_DECREF(tp);
+  PyErr_Restore(exc_type, exc_value, exc_tb);
+#endif
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3317,11 +3333,27 @@ static int WraptFunctionWrapperBase_clear(WraptFunctionWrapperObject *self)
 
 static void WraptFunctionWrapperBase_dealloc(WraptFunctionWrapperObject *self)
 {
+  PyTypeObject *tp = Py_TYPE(self);
+
   PyObject_GC_UnTrack(self);
+
+  if (self->object_proxy.weakreflist != NULL)
+    PyObject_ClearWeakRefs((PyObject *)self);
 
   WraptFunctionWrapperBase_clear(self);
 
-  WraptObjectProxy_dealloc((WraptObjectProxyObject *)self);
+  tp->tp_free(self);
+
+#if PY_VERSION_HEX >= 0x030C0000
+  PyObject *exc = PyErr_GetRaisedException();
+  Py_DECREF(tp);
+  PyErr_SetRaisedException(exc);
+#else
+  PyObject *exc_type, *exc_value, *exc_tb;
+  PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+  Py_DECREF(tp);
+  PyErr_Restore(exc_type, exc_value, exc_tb);
+#endif
 }
 
 /* ------------------------------------------------------------------------- */
