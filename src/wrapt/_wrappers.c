@@ -2741,19 +2741,6 @@ static PyObject *WraptObjectProxy_richcompare(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptObjectProxy_iter(WraptObjectProxyObject *self)
-{
-  if (!self->wrapped)
-  {
-    if (raise_uninitialized_wrapper_error(self) == -1)
-      return NULL;
-  }
-
-  return PyObject_GetIter(self->wrapped);
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyMethodDef WraptObjectProxy_methods[] = {
     {"__self_setattr__", (PyCFunction)WraptObjectProxy_self_setattr,
      METH_VARARGS, 0},
