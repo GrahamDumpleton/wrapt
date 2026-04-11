@@ -2693,7 +2693,7 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
 
   if (!value)
   {
-    PyErr_SetString(PyExc_TypeError, "__wrapped__ must be an object");
+    PyErr_SetString(PyExc_TypeError, "can't delete __wrapped__ attribute");
     return -1;
   }
 

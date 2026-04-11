@@ -35,6 +35,11 @@ their help is much appreciated.
   "Free-threaded Python (PEP 703)" section of :doc:`issues` for the
   current limitations on shared-mutation use cases.
 
+* Aligned the error raised when attempting to delete ``__wrapped__`` on a
+  proxy object. Both the C and Python implementations now raise
+  ``TypeError("can't delete __wrapped__ attribute")``, matching the
+  convention used by CPython for non-deletable attributes.
+
 **Bugs Fixed**
 
 * Fixed a ``Py_DECREF(NULL)`` crash in the C implementation of all inplace

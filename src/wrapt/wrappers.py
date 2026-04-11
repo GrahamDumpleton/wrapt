@@ -349,7 +349,7 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             object.__delattr__(self, name)
 
         elif name == "__wrapped__":
-            raise TypeError("__wrapped__ attribute cannot be deleted")
+            raise TypeError("can't delete __wrapped__ attribute")
 
         elif name == "__qualname__":
             object.__delattr__(self, name)

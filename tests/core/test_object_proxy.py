@@ -111,7 +111,9 @@ class TestAttributeAccess(unittest.TestCase):
         def run(*args):
             del function2.__wrapped__
 
-        self.assertRaises(TypeError, run, ())
+        self.assertRaisesRegex(
+            TypeError, "can't delete __wrapped__ attribute", run, ()
+        )
 
     def test_proxy_attribute(self):
         def function1(*args, **kwargs):
