@@ -3169,6 +3169,12 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
 
   PyObject *result = NULL;
 
+  if (!self->object_proxy.wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(&self->object_proxy) == -1)
+      return NULL;
+  }
+
   if (self->enabled != Py_None)
   {
     if (PyCallable_Check(self->enabled))
@@ -3273,6 +3279,12 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
     return NULL;
 
   PyObject *bound_type_str = state->str_bound_function_wrapper;
+
+  if (!self->object_proxy.wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(&self->object_proxy) == -1)
+      return NULL;
+  }
 
   if (self->parent == Py_None)
   {
@@ -3681,6 +3693,12 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   PyObject *result = NULL;
 
   int matched;
+
+  if (!self->object_proxy.wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(&self->object_proxy) == -1)
+      return NULL;
+  }
 
   if (self->enabled != Py_None)
   {

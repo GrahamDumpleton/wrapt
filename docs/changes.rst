@@ -187,6 +187,16 @@ their help is much appreciated.
   ensuring that type-level access returns the real string while instance-level
   access continues to delegate to the wrapped object.
 
+* Fixed missing NULL guards in the C implementation of
+  ``FunctionWrapper.__call__``, ``FunctionWrapper.__get__``, and
+  ``BoundFunctionWrapper.__call__``. If a wrapper object was constructed via
+  ``__new__`` without calling ``__init__``, invoking or accessing the
+  descriptor on the uninitialized object would dereference NULL pointers and
+  crash the interpreter (SIGSEGV) instead of raising
+  ``WrapperNotInitializedError``. The same ``if (!self->wrapped)`` guard
+  already used throughout the rest of the C extension has been added to these
+  three functions.
+
 Version 2.1.2
 -------------
 
