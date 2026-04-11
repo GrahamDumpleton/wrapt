@@ -62,22 +62,22 @@ typedef struct
    * eliminating the lazy-init data race that the previous static-local
    * string pattern had. */
 
-  PyObject *str_wrapped;                 /* "__wrapped__" */
-  PyObject *str_wrapped_factory;         /* "__wrapped_factory__" */
-  PyObject *str_wrapped_get;             /* "__wrapped_get__" */
-  PyObject *str_module;                  /* "__module__" */
-  PyObject *str_doc;                     /* "__doc__" */
-  PyObject *str_setattr_fixups;          /* "__wrapped_setattr_fixups__" */
-  PyObject *str_getattr;                 /* "__getattr__" */
-  PyObject *str_self_;                   /* "_self_" */
-  PyObject *str_callable;                /* "callable" */
-  PyObject *str_bound_function_wrapper;  /* "__bound_function_wrapper__" */
-  PyObject *str_function;                /* "function" */
-  PyObject *str_classmethod;             /* "classmethod" */
-  PyObject *str_staticmethod;            /* "staticmethod" */
-  PyObject *str_builtin;                 /* "builtin" */
-  PyObject *str_class;                   /* "class" */
-  PyObject *str_instancemethod;          /* "instancemethod" */
+  PyObject *str_wrapped;                /* "__wrapped__" */
+  PyObject *str_wrapped_factory;        /* "__wrapped_factory__" */
+  PyObject *str_wrapped_get;            /* "__wrapped_get__" */
+  PyObject *str_module;                 /* "__module__" */
+  PyObject *str_doc;                    /* "__doc__" */
+  PyObject *str_setattr_fixups;         /* "__wrapped_setattr_fixups__" */
+  PyObject *str_getattr;                /* "__getattr__" */
+  PyObject *str_self_;                  /* "_self_" */
+  PyObject *str_callable;               /* "callable" */
+  PyObject *str_bound_function_wrapper; /* "__bound_function_wrapper__" */
+  PyObject *str_function;               /* "function" */
+  PyObject *str_classmethod;            /* "classmethod" */
+  PyObject *str_staticmethod;           /* "staticmethod" */
+  PyObject *str_builtin;                /* "builtin" */
+  PyObject *str_class;                  /* "class" */
+  PyObject *str_instancemethod;         /* "instancemethod" */
 
   /* Cached exception type from wrapt.wrappers. Initialized eagerly in
    * wrapt_exec after type creation. The wrapt.wrappers module is guaranteed
@@ -364,7 +364,8 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type, PyObject *args,
 
   self->dict = PyDict_New();
 
-  if (!self->dict) {
+  if (!self->dict)
+  {
     Py_DECREF(self);
     return NULL;
   }
@@ -515,7 +516,17 @@ static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
   WraptObjectProxy_clear(self);
 
   tp->tp_free(self);
+
+#if PY_VERSION_HEX >= 0x030C0000
+  PyObject *exc = PyErr_GetRaisedException();
   Py_DECREF(tp);
+  PyErr_SetRaisedException(exc);
+#else
+  PyObject *exc_type, *exc_value, *exc_tb;
+  PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+  Py_DECREF(tp);
+  PyErr_Restore(exc_type, exc_value, exc_tb);
+#endif
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3049,7 +3060,8 @@ static int WraptPartialCallableObjectProxy_traverse(
     WraptPartialCallableObjectProxyObject *self, visitproc visit, void *arg)
 {
   int err = WraptObjectProxy_traverse((WraptObjectProxyObject *)self, visit, arg);
-  if (err) return err;
+  if (err)
+    return err;
 
   Py_VISIT(self->args);
   Py_VISIT(self->kwargs);
@@ -3272,7 +3284,8 @@ static int WraptFunctionWrapperBase_traverse(WraptFunctionWrapperObject *self,
                                              visitproc visit, void *arg)
 {
   int err = WraptObjectProxy_traverse((WraptObjectProxyObject *)self, visit, arg);
-  if (err) return err;
+  if (err)
+    return err;
 
   Py_VISIT(self->instance);
   Py_VISIT(self->wrapper);
@@ -3370,9 +3383,9 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   if (self->instance == Py_None)
   {
     int matched =
-        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0       ||
+        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
         PyUnicode_CompareWithASCIIString(self->binding, "instancemethod") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0       ||
+        PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0 ||
         PyUnicode_CompareWithASCIIString(self->binding, "classmethod") == 0;
 
     if (matched)
@@ -3495,81 +3508,81 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
   if (self->instance == Py_None)
   {
     int matched =
-        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0       ||
+        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
         PyUnicode_CompareWithASCIIString(self->binding, "instancemethod") == 0 ||
         PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0;
 
     if (matched)
     {
-    PyObject *wrapped = NULL;
+      PyObject *wrapped = NULL;
 
-    if (PyObject_TypeCheck(self->parent, state->ObjectProxy_Type))
-    {
-      WraptObjectProxyObject *parent_proxy =
-          (WraptObjectProxyObject *)self->parent;
-
-      if (!parent_proxy->wrapped)
+      if (PyObject_TypeCheck(self->parent, state->ObjectProxy_Type))
       {
-        if (raise_uninitialized_wrapper_error(parent_proxy) == -1)
-          return NULL;
-      }
+        WraptObjectProxyObject *parent_proxy =
+            (WraptObjectProxyObject *)self->parent;
 
-      wrapped = parent_proxy->wrapped;
-      Py_INCREF(wrapped);
-    }
-    else
-    {
-      /* Fallback for the unusual case where parent is not a wrapt proxy. */
-      wrapped = PyObject_GetAttrString(self->parent, "__wrapped__");
-
-      if (!wrapped)
-        return NULL;
-    }
-
-    if (Py_TYPE(wrapped)->tp_descr_get == NULL)
-    {
-      PyErr_Format(PyExc_AttributeError,
-                   "'%s' object has no attribute '__get__'",
-                   Py_TYPE(wrapped)->tp_name);
-      Py_DECREF(wrapped);
-      return NULL;
-    }
-
-    descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
-
-    Py_DECREF(wrapped);
-
-    if (!descriptor)
-      return NULL;
-
-    if (Py_TYPE(self->parent) != state->FunctionWrapper_Type)
-    {
-      bound_type =
-          PyObject_GenericGetAttr((PyObject *)self->parent, bound_type_str);
-
-      if (!bound_type)
-      {
-        if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+        if (!parent_proxy->wrapped)
         {
-          Py_DECREF(descriptor);
-          return NULL;
+          if (raise_uninitialized_wrapper_error(parent_proxy) == -1)
+            return NULL;
         }
-        PyErr_Clear();
+
+        wrapped = parent_proxy->wrapped;
+        Py_INCREF(wrapped);
       }
-    }
+      else
+      {
+        /* Fallback for the unusual case where parent is not a wrapt proxy. */
+        wrapped = PyObject_GetAttrString(self->parent, "__wrapped__");
 
-    if (obj == NULL)
-      obj = Py_None;
+        if (!wrapped)
+          return NULL;
+      }
 
-    result = PyObject_CallFunctionObjArgs(
-        bound_type ? bound_type : (PyObject *)state->BoundFunctionWrapper_Type,
-        descriptor, obj, self->wrapper, self->enabled, self->binding,
-        self->parent, type, NULL);
+      if (Py_TYPE(wrapped)->tp_descr_get == NULL)
+      {
+        PyErr_Format(PyExc_AttributeError,
+                     "'%s' object has no attribute '__get__'",
+                     Py_TYPE(wrapped)->tp_name);
+        Py_DECREF(wrapped);
+        return NULL;
+      }
 
-    Py_XDECREF(bound_type);
-    Py_DECREF(descriptor);
+      descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
 
-    return result;
+      Py_DECREF(wrapped);
+
+      if (!descriptor)
+        return NULL;
+
+      if (Py_TYPE(self->parent) != state->FunctionWrapper_Type)
+      {
+        bound_type =
+            PyObject_GenericGetAttr((PyObject *)self->parent, bound_type_str);
+
+        if (!bound_type)
+        {
+          if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+          {
+            Py_DECREF(descriptor);
+            return NULL;
+          }
+          PyErr_Clear();
+        }
+      }
+
+      if (obj == NULL)
+        obj = Py_None;
+
+      result = PyObject_CallFunctionObjArgs(
+          bound_type ? bound_type : (PyObject *)state->BoundFunctionWrapper_Type,
+          descriptor, obj, self->wrapper, self->enabled, self->binding,
+          self->parent, type, NULL);
+
+      Py_XDECREF(bound_type);
+      Py_DECREF(descriptor);
+
+      return result;
     }
   }
 
@@ -4278,19 +4291,22 @@ static PyType_Spec WraptFunctionWrapper_spec = {
 
 /* PyModule_AddObjectRef polyfill for Python 3.9. */
 #if PY_VERSION_HEX >= 0x030A0000
-#define WRAPT_ADD_TYPE(mod, name, type)                                  \
-  do {                                                                   \
-    if (PyModule_AddObjectRef((mod), (name), (PyObject *)(type)) < 0)    \
-      return -1;                                                         \
+#define WRAPT_ADD_TYPE(mod, name, type)                               \
+  do                                                                  \
+  {                                                                   \
+    if (PyModule_AddObjectRef((mod), (name), (PyObject *)(type)) < 0) \
+      return -1;                                                      \
   } while (0)
 #else
-#define WRAPT_ADD_TYPE(mod, name, type)                                  \
-  do {                                                                   \
-    Py_INCREF((PyObject *)(type));                                       \
-    if (PyModule_AddObject((mod), (name), (PyObject *)(type)) < 0) {     \
-      Py_DECREF((PyObject *)(type));                                     \
-      return -1;                                                         \
-    }                                                                    \
+#define WRAPT_ADD_TYPE(mod, name, type)                            \
+  do                                                               \
+  {                                                                \
+    Py_INCREF((PyObject *)(type));                                 \
+    if (PyModule_AddObject((mod), (name), (PyObject *)(type)) < 0) \
+    {                                                              \
+      Py_DECREF((PyObject *)(type));                               \
+      return -1;                                                   \
+    }                                                              \
   } while (0)
 #endif
 
