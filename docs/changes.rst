@@ -197,6 +197,16 @@ their help is much appreciated.
   already used throughout the rest of the C extension has been added to these
   three functions.
 
+* Fixed missing NULL guards for the ``other`` operand in the C implementation
+  of all thirteen inplace numeric operators (``+=``, ``-=``, ``*=``, ``%=``,
+  ``**=``, ``<<=``, ``>>=``, ``&=``, ``^=``, ``|=``, ``//=``, ``/=``, ``@=``)
+  on ``ObjectProxy``. When ``other`` was itself a proxy whose wrapped attribute
+  had not been set, the code unwrapped it to ``NULL`` and passed that to the
+  corresponding ``PyNumber_InPlace*`` function, crashing the interpreter
+  (SIGSEGV). The non-inplace binary operators already had the correct guard;
+  the inplace variants now check for ``NULL`` and raise the same uninitialised
+  wrapper error.
+
 Version 2.1.2
 -------------
 

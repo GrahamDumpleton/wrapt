@@ -984,7 +984,15 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__iadd__"))
   {
@@ -1046,7 +1054,15 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__isub__"))
   {
@@ -1108,7 +1124,15 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__imul__"))
   {
@@ -1171,7 +1195,15 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__imod__"))
   {
@@ -1234,7 +1266,15 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__ipow__"))
   {
@@ -1296,7 +1336,15 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__ilshift__"))
   {
@@ -1358,7 +1406,15 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__irshift__"))
   {
@@ -1420,7 +1476,15 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__iand__"))
   {
@@ -1482,7 +1546,15 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__ixor__"))
   {
@@ -1544,7 +1616,15 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__ior__"))
   {
@@ -1665,7 +1745,15 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__ifloordiv__"))
   {
@@ -1728,7 +1816,15 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__itruediv__"))
   {
@@ -1832,7 +1928,15 @@ static PyObject *WraptObjectProxy_inplace_matrix_multiply(
   }
 
   if (wrapt_is_proxy(other))
+  {
+    if (!((WraptObjectProxyObject *)other)->wrapped)
+    {
+      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
+        return NULL;
+    }
+
     other = ((WraptObjectProxyObject *)other)->wrapped;
+  }
 
   if (PyObject_HasAttrString(self->wrapped, "__imatmul__"))
   {
