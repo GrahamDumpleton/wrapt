@@ -101,6 +101,44 @@ an exception of:
 This is due to what can be argued as being a bug in The Python standard
 library and has been reported (https://bugs.python.org/issue44847).
 
+\_\_qualname\_\_ snapshot vs live-read divergence
+--------------------------------------------------
+
+The Python and C implementations of ``ObjectProxy`` handle the
+``__qualname__`` attribute differently. CPython does not allow
+``__qualname__`` to be overridden via a Python property — it must be an
+actual string object stored on the instance. To work around this, the
+pure-Python ``ObjectProxy.__init__`` copies the wrapped object's
+``__qualname__`` into the proxy's instance dictionary at construction
+time using ``object.__setattr__()``. This creates a *snapshot* of the
+value.
+
+The C extension, by contrast, uses a ``PyGetSetDef`` descriptor to
+live-read ``__qualname__`` from the wrapped object on every access.
+C-level getset descriptors operate below the layer where CPython
+enforces the "must be a real string" restriction, so this works without
+issue.
+
+The practical consequence is that if the wrapped object's ``__qualname__``
+is mutated *directly* (not through the proxy) after wrapping, the two
+implementations diverge::
+
+    import wrapt
+
+    def foo(): pass
+
+    proxy = wrapt.ObjectProxy(foo)
+    foo.__qualname__ = "Changed"
+
+    # Pure-Python: proxy.__qualname__ returns the original value (snapshot)
+    # C extension: proxy.__qualname__ returns "Changed" (live-read)
+
+This only matters when code mutates ``__qualname__`` on the wrapped
+object after the proxy has been constructed. Setting ``__qualname__``
+*through* the proxy (``proxy.__qualname__ = "new"``) updates both the
+wrapped object and the local snapshot in the Python implementation, so
+both implementations agree in that case.
+
 Free-threaded Python (PEP 703)
 ------------------------------
 
