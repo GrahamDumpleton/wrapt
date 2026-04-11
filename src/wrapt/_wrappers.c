@@ -485,6 +485,7 @@ static int WraptObjectProxy_init(WraptObjectProxyObject *self, PyObject *args,
 static int WraptObjectProxy_traverse(WraptObjectProxyObject *self,
                                      visitproc visit, void *arg)
 {
+  Py_VISIT(Py_TYPE(self));
   Py_VISIT(self->dict);
   Py_VISIT(self->wrapped);
 
@@ -2990,7 +2991,8 @@ static int WraptPartialCallableObjectProxy_init(
 static int WraptPartialCallableObjectProxy_traverse(
     WraptPartialCallableObjectProxyObject *self, visitproc visit, void *arg)
 {
-  WraptObjectProxy_traverse((WraptObjectProxyObject *)self, visit, arg);
+  int err = WraptObjectProxy_traverse((WraptObjectProxyObject *)self, visit, arg);
+  if (err) return err;
 
   Py_VISIT(self->args);
   Py_VISIT(self->kwargs);
@@ -3212,7 +3214,8 @@ static int WraptFunctionWrapperBase_init(WraptFunctionWrapperObject *self,
 static int WraptFunctionWrapperBase_traverse(WraptFunctionWrapperObject *self,
                                              visitproc visit, void *arg)
 {
-  WraptObjectProxy_traverse((WraptObjectProxyObject *)self, visit, arg);
+  int err = WraptObjectProxy_traverse((WraptObjectProxyObject *)self, visit, arg);
+  if (err) return err;
 
   Py_VISIT(self->instance);
   Py_VISIT(self->wrapper);
