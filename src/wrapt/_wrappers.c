@@ -78,6 +78,12 @@ typedef struct
   PyObject *str_builtin;                 /* "builtin" */
   PyObject *str_class;                   /* "class" */
   PyObject *str_instancemethod;          /* "instancemethod" */
+
+  /* Cached exception type from wrapt.wrappers. Initialized eagerly in
+   * wrapt_exec after type creation. The wrapt.wrappers module is guaranteed
+   * to be imported before _wrappers because __wrapt__.py imports it first. */
+
+  PyObject *WrapperNotInitializedError;
 } wrapt_module_state;
 
 static inline wrapt_module_state *wrapt_get_state(PyObject *module)
@@ -338,51 +344,8 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
     PyErr_Clear();
   }
 
-  // We need to reach into the wrapt.wrappers module to get the exception
-  // class because the exception we need to raise needs to inherit from both
-  // ValueError and AttributeError and we can't do that in C code using the
-  // built in exception classes, or at least not easily or safely.
-
-  PyObject *wrapt_wrappers_module = NULL;
-  PyObject *wrapper_not_initialized_error = NULL;
-
-  // Import the wrapt.wrappers module and get the exception class.
-  // We do this fresh each time to be safe with multiple sub-interpreters.
-
-  wrapt_wrappers_module = PyImport_ImportModule("wrapt.wrappers");
-
-  if (!wrapt_wrappers_module)
-  {
-    // Fallback to ValueError if import fails.
-
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-
-    return -1;
-  }
-
-  wrapper_not_initialized_error = PyObject_GetAttrString(
-      wrapt_wrappers_module, "WrapperNotInitializedError");
-
-  if (!wrapper_not_initialized_error)
-  {
-    // Fallback to ValueError if attribute lookup fails.
-
-    Py_DECREF(wrapt_wrappers_module);
-
-    PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
-
-    return -1;
-  }
-
-  // Raise the custom exception.
-
-  PyErr_SetString(wrapper_not_initialized_error,
+  PyErr_SetString(state->WrapperNotInitializedError,
                   "wrapper has not been initialized");
-
-  // Clean up references.
-
-  Py_DECREF(wrapper_not_initialized_error);
-  Py_DECREF(wrapt_wrappers_module);
 
   return -1;
 }
@@ -4533,6 +4496,23 @@ static int wrapt_exec(PyObject *module)
   }
   Py_DECREF(bases);
 
+  /* Cache WrapperNotInitializedError from wrapt.wrappers. The module is
+   * already in sys.modules because __wrapt__.py imports it before us. */
+
+  {
+    PyObject *wrapt_wrappers_module = PyImport_ImportModule("wrapt.wrappers");
+    if (!wrapt_wrappers_module)
+      return -1;
+
+    state->WrapperNotInitializedError = PyObject_GetAttrString(
+        wrapt_wrappers_module, "WrapperNotInitializedError");
+
+    Py_DECREF(wrapt_wrappers_module);
+
+    if (!state->WrapperNotInitializedError)
+      return -1;
+  }
+
   return 0;
 }
 
@@ -4563,6 +4543,7 @@ static int wrapt_traverse(PyObject *module, visitproc visit, void *arg)
   Py_VISIT(state->str_builtin);
   Py_VISIT(state->str_class);
   Py_VISIT(state->str_instancemethod);
+  Py_VISIT(state->WrapperNotInitializedError);
   return 0;
 }
 
@@ -4593,6 +4574,7 @@ static int wrapt_clear(PyObject *module)
   Py_CLEAR(state->str_builtin);
   Py_CLEAR(state->str_class);
   Py_CLEAR(state->str_instancemethod);
+  Py_CLEAR(state->WrapperNotInitializedError);
   return 0;
 }
 
