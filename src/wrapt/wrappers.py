@@ -918,7 +918,7 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
             )
 
         elif self._self_binding == "callable":
-            if self._self_instance is None:
+            if self._self_instance is None and args:
                 # This situation can occur where someone is calling the
                 # instancemethod via the class type and passing the instance as
                 # the first argument. We need to shift the args before making
@@ -926,12 +926,10 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
                 # the wrapped function using a partial so the wrapper doesn't
                 # see anything as being different.
 
-                if not args:
-                    raise TypeError("missing 1 required positional argument")
-
-                instance, args = args[0], args[1:]
-                wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
-                return self._self_wrapper(wrapped, instance, args, kwargs)
+                instance, newargs = args[0], args[1:]
+                if isinstance(instance, self._self_owner):
+                    wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
+                    return self._self_wrapper(wrapped, instance, newargs, kwargs)
 
             return self._self_wrapper(
                 self.__wrapped__, self._self_instance, args, kwargs

@@ -221,6 +221,23 @@ their help is much appreciated.
   object. The replacement only suppresses ``AttributeError``, matching the
   behaviour of Python's ``hasattr()`` and the pure-Python implementation.
 
+* Fixed a behaviour divergence in the pure-Python implementation of
+  ``BoundFunctionWrapper.__call__`` when ``binding`` is ``"callable"`` and
+  ``instance`` is ``None``. This situation arises when a callable descriptor
+  wrapped via ``FunctionWrapper`` is assigned as a class attribute and then
+  accessed via the class rather than an instance. The pure-Python
+  ``"callable"`` path unconditionally required a positional argument (raising
+  ``TypeError`` if none was provided) and extracted the first argument as the
+  instance without checking whether it was actually an instance of the owner
+  class. The C extension had already been updated in an earlier rework to
+  align the ``"callable"`` path with the ``"function"`` path, adding an
+  ``isinstance`` guard and falling through gracefully when no arguments are
+  provided, but the corresponding Python code was not updated at the time.
+  The pure-Python implementation now matches the C extension: it only extracts
+  the first argument as the instance when it passes the ``isinstance`` check
+  against the owner class, and calls the wrapper with ``instance=None`` when
+  no arguments are provided rather than raising ``TypeError``.
+
 Version 2.1.2
 -------------
 

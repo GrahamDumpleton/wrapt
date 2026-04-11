@@ -3896,44 +3896,6 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   if (matched)
   {
 
-    // if (self->instance == Py_None) {
-    //     /*
-    //      * This situation can occur where someone is calling the
-    //      * instancemethod via the class type and passing the
-    //      * instance as the first argument. We need to shift the args
-    //      * before making the call to the wrapper and effectively
-    //      * bind the instance to the wrapped function using a partial
-    //      * so the wrapper doesn't see anything as being different.
-    //      */
-
-    //     if (PyTuple_Size(args) == 0) {
-    //         PyErr_SetString(PyExc_TypeError,
-    //                 "missing 1 required positional argument");
-    //         return NULL;
-    //     }
-
-    //     instance = PyTuple_GetItem(args, 0);
-
-    //     if (!instance)
-    //         return NULL;
-
-    //     wrapped = PyObject_CallFunctionObjArgs(
-    //             (PyObject *)&WraptPartialCallableObjectProxy_Type,
-    //             self->object_proxy.wrapped, instance, NULL);
-
-    //     if (!wrapped)
-    //         return NULL;
-
-    //     param_args = PyTuple_GetSlice(args, 1, PyTuple_Size(args));
-
-    //     if (!param_args) {
-    //         Py_DECREF(wrapped);
-    //         return NULL;
-    //     }
-
-    //     args = param_args;
-    // }
-
     if (self->instance == Py_None && PyTuple_GET_SIZE(args) != 0)
     {
       /*
