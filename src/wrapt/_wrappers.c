@@ -4345,14 +4345,15 @@ static int wrapt_create_type(PyObject *module, PyTypeObject **out,
   if (type == NULL)
     return -1;
 
-  /* PyType_FromModuleAndSpec returns a new reference. Store it owned in
-   * module state and add it to the module dict (WRAPT_ADD_TYPE adds
-   * another ref via PyModule_AddObjectRef on 3.10+, or via manual
-   * incref + PyModule_AddObject on 3.9). */
-
-  *out = (PyTypeObject *)type;
+  /* PyType_FromModuleAndSpec returns a new reference. Add the type to
+   * the module dict first (WRAPT_ADD_TYPE adds another ref via
+   * PyModule_AddObjectRef on 3.10+, or via manual incref +
+   * PyModule_AddObject on 3.9). Only then store the owned reference
+   * in module state so that *out is never populated on failure. */
 
   WRAPT_ADD_TYPE(module, name, type);
+
+  *out = (PyTypeObject *)type;
 
   return 0;
 }
