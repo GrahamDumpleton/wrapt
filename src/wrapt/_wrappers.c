@@ -132,6 +132,26 @@ static PyObject *PyType_GetModuleByDef(PyTypeObject *type,
 }
 #endif
 
+/* Polyfill PyObject_GetOptionalAttrString for Python < 3.13. Matches the
+ * 3.13+ semantics: returns 1 if found, 0 if not found (AttributeError
+ * only), -1 on other errors with exception set. */
+
+#if PY_VERSION_HEX < 0x030d0000
+static inline int
+PyObject_GetOptionalAttrString(PyObject *obj, const char *name, PyObject **result)
+{
+  *result = PyObject_GetAttrString(obj, name);
+  if (*result)
+    return 1;
+  if (PyErr_ExceptionMatches(PyExc_AttributeError))
+  {
+    PyErr_Clear();
+    return 0;
+  }
+  return -1;
+}
+#endif
+
 /* Get module state for the wrapt module given any type whose MRO includes
  * one of our heap types. Returns NULL and sets an exception on miss. */
 
@@ -1011,7 +1031,12 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__iadd__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__iadd__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceAdd(self->wrapped, other);
 
@@ -1081,7 +1106,12 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__isub__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__isub__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceSubtract(self->wrapped, other);
 
@@ -1151,7 +1181,12 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__imul__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__imul__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceMultiply(self->wrapped, other);
 
@@ -1222,7 +1257,12 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__imod__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__imod__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceRemainder(self->wrapped, other);
 
@@ -1293,7 +1333,12 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__ipow__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ipow__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlacePower(self->wrapped, other, modulo);
 
@@ -1363,7 +1408,12 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__ilshift__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ilshift__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceLshift(self->wrapped, other);
 
@@ -1433,7 +1483,12 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__irshift__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__irshift__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceRshift(self->wrapped, other);
 
@@ -1503,7 +1558,12 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__iand__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__iand__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceAnd(self->wrapped, other);
 
@@ -1573,7 +1633,12 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__ixor__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ixor__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceXor(self->wrapped, other);
 
@@ -1643,7 +1708,12 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__ior__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ior__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceOr(self->wrapped, other);
 
@@ -1772,7 +1842,12 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__ifloordiv__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ifloordiv__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceFloorDivide(self->wrapped, other);
 
@@ -1843,7 +1918,12 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__itruediv__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__itruediv__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceTrueDivide(self->wrapped, other);
 
@@ -1955,7 +2035,12 @@ static PyObject *WraptObjectProxy_inplace_matrix_multiply(
     other = ((WraptObjectProxyObject *)other)->wrapped;
   }
 
-  if (PyObject_HasAttrString(self->wrapped, "__imatmul__"))
+  PyObject *attr;
+  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__imatmul__", &attr);
+  Py_XDECREF(attr);
+  if (rc < 0)
+    return NULL;
+  if (rc)
   {
     object = PyNumber_InPlaceMatrixMultiply(self->wrapped, other);
 

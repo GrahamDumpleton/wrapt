@@ -207,6 +207,15 @@ their help is much appreciated.
   the inplace variants now check for ``NULL`` and raise the same uninitialised
   wrapper error.
 
+* Replaced all thirteen uses of the deprecated ``PyObject_HasAttrString()``
+  C-API function in the inplace numeric operators of ``ObjectProxy`` with
+  ``PyObject_GetOptionalAttrString()`` (backfilled for Python < 3.13).
+  ``PyObject_HasAttrString()`` catches all exceptions and returns false,
+  silently swallowing ``KeyboardInterrupt``, ``SystemExit``, or any
+  exception raised by ``__getattr__``/``__getattribute__`` on the wrapped
+  object. The replacement only suppresses ``AttributeError``, matching the
+  behaviour of Python's ``hasattr()`` and the pure-Python implementation.
+
 Version 2.1.2
 -------------
 
