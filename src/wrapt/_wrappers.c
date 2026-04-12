@@ -4448,20 +4448,20 @@ static int WraptFunctionWrapper_init(WraptFunctionWrapperObject *self,
 
     if (!binding)
     {
-      check = PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type);
-      if (check < 0)
-        goto error;
-      if (check)
-        binding = classmethod_str;
-    }
-
-    if (!binding)
-    {
       check = PyObject_IsInstance(wrapped, (PyObject *)&PyType_Type);
       if (check < 0)
         goto error;
       if (check)
         binding = class_str;
+    }
+
+    if (!binding)
+    {
+      check = PyObject_IsInstance(wrapped, (PyObject *)&PyClassMethod_Type);
+      if (check < 0)
+        goto error;
+      if (check)
+        binding = classmethod_str;
     }
 
     if (!binding)
