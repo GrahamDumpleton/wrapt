@@ -552,9 +552,13 @@ static PyObject *WraptObjectProxy_repr(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyUnicode_FromFormat("<%s at %p for %s at %p>", Py_TYPE(self)->tp_name,
-                              self, Py_TYPE(self->wrapped)->tp_name,
-                              self->wrapped);
+  char self_addr[24], wrapped_addr[24];
+  snprintf(self_addr, sizeof(self_addr), "0x%zx", (Py_uintptr_t)self);
+  snprintf(wrapped_addr, sizeof(wrapped_addr), "0x%zx",
+           (Py_uintptr_t)self->wrapped);
+  return PyUnicode_FromFormat("<%s at %s for %s at %s>",
+                              Py_TYPE(self)->tp_name, self_addr,
+                              Py_TYPE(self->wrapped)->tp_name, wrapped_addr);
 }
 
 /* ------------------------------------------------------------------------- */
