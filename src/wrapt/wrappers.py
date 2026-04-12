@@ -124,15 +124,14 @@ class _ObjectProxyMetaType(type):
 
 # NOTE: Although Python 3+ supports the newer metaclass=MetaClass syntax,
 # we must continue using with_metaclass() for ObjectProxy. The newer syntax
-# changes how __slots__ is handled during class creation, which would break
-# the ability to set _self_* attributes on ObjectProxy instances. The
-# with_metaclass() approach creates an intermediate base class that allows
-# the necessary attribute flexibility while still applying the metaclass.
+# changes how the class namespace is handled during class creation, which
+# would break the ability to set _self_* attributes on ObjectProxy
+# instances. The with_metaclass() approach creates an intermediate base
+# class that allows the necessary attribute flexibility while still
+# applying the metaclass.
 
 
 class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
-
-    __slots__ = "__wrapped__"
 
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""
@@ -679,15 +678,6 @@ class PartialCallableObjectProxy(ObjectProxy):
 
 class _FunctionWrapperBase(ObjectProxy):
 
-    __slots__ = (
-        "_self_instance",
-        "_self_wrapper",
-        "_self_enabled",
-        "_self_binding",
-        "_self_parent",
-        "_self_owner",
-    )
-
     def __init__(
         self,
         wrapped,
@@ -855,7 +845,14 @@ class _FunctionWrapperBase(ObjectProxy):
             return issubclass(subclass, self.__wrapped__)
 
 
-_FUNCTION_WRAPPER_SLOTS = frozenset(_FunctionWrapperBase.__slots__)
+_FUNCTION_WRAPPER_SLOTS = frozenset((
+    "_self_instance",
+    "_self_wrapper",
+    "_self_enabled",
+    "_self_binding",
+    "_self_parent",
+    "_self_owner",
+))
 
 
 class BoundFunctionWrapper(_FunctionWrapperBase):

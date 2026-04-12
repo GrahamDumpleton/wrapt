@@ -30,8 +30,6 @@ def _weak_function_proxy_callback(ref, proxy, callback):
 class WeakFunctionProxy(BaseObjectProxy):
     """A weak function proxy."""
 
-    __slots__ = ("_self_expired", "_self_instance")
-
     def __init__(self, wrapped, callback=None):
         """Create a proxy to object which uses a weak reference. This is
         similar to the `weakref.proxy` but is designed to work with functions
