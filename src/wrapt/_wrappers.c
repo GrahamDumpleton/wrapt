@@ -91,6 +91,7 @@ typedef struct
   PyObject *str_self;                   /* "__self__" */
   PyObject *str_set_name;               /* "__set_name__" */
   PyObject *str_self_binding;           /* "_self_binding" */
+  PyObject *str_dict;                   /* "__dict__" */
 
   /* Cached exception type from wrapt.wrappers. Initialized eagerly in
    * wrapt_exec after type creation. The wrapt.wrappers module is guaranteed
@@ -2815,7 +2816,11 @@ static PyObject *WraptObjectProxy_get_dict(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyObject_GetAttrString(self->wrapped, "__dict__");
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  return PyObject_GetAttr(self->wrapped, state->str_dict);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4669,6 +4674,8 @@ static int wrapt_init_strings(wrapt_module_state *state)
     return -1;
   if (wrapt_intern_string(&state->str_self_binding, "_self_binding") < 0)
     return -1;
+  if (wrapt_intern_string(&state->str_dict, "__dict__") < 0)
+    return -1;
   return 0;
 }
 
@@ -4812,6 +4819,7 @@ static int wrapt_traverse(PyObject *module, visitproc visit, void *arg)
   Py_VISIT(state->str_self);
   Py_VISIT(state->str_set_name);
   Py_VISIT(state->str_self_binding);
+  Py_VISIT(state->str_dict);
   Py_VISIT(state->WrapperNotInitializedError);
   return 0;
 }
@@ -4856,6 +4864,7 @@ static int wrapt_clear(PyObject *module)
   Py_CLEAR(state->str_self);
   Py_CLEAR(state->str_set_name);
   Py_CLEAR(state->str_self_binding);
+  Py_CLEAR(state->str_dict);
   Py_CLEAR(state->WrapperNotInitializedError);
   return 0;
 }
