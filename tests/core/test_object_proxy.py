@@ -29,25 +29,40 @@ class TestAttributeAccess(unittest.TestCase):
         a = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy, None)
         b = wrapt.ObjectProxy.__new__(wrapt.ObjectProxy, None)
 
-        try:
+        # Pre-init access should raise AttributeError, not ValueError.
+
+        with self.assertRaises(AttributeError):
             a.__wrapped__
-        except ValueError:
-            pass
 
-        try:
+        with self.assertRaises(AttributeError):
             a + b
-        except ValueError:
-            pass
 
-        try:
+        # hasattr should return False, not raise.
+
+        self.assertFalse(hasattr(a, "__wrapped__"))
+
+    def test_init_called_wrapped_deleted(self):
+        # Post-init deletion of __wrapped__ should raise
+        # WrapperNotInitializedError (a ValueError, not AttributeError)
+        # so it is not silently swallowed by hasattr/getattr patterns.
+        # We use a LazyObjectProxy to reach a state where __init__ was
+        # called (init_called=True) but __wrapped__ is not set, by
+        # removing the factory before __wrapped__ is accessed.
+
+        a = wrapt.LazyObjectProxy(lambda: 42)
+
+        del a.__wrapped_factory__
+
+        for cls in type(a).__mro__:
+            if "__wrapped_factory__" in cls.__dict__:
+                delattr(cls, "__wrapped_factory__")
+                break
+
+        with self.assertRaises(wrapt.wrappers.WrapperNotInitializedError):
             a.__wrapped__
-        except AttributeError:
-            pass
 
-        try:
-            a + b
-        except AttributeError:
-            pass
+        with self.assertRaises(ValueError):
+            a.__wrapped__
 
     def test_attributes(self):
         def function1(*args, **kwargs):
@@ -961,7 +976,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert one + two == result
-        except ValueError:
+        except AttributeError:
             pass
 
         one = wrapt.ObjectProxy(1)
@@ -969,7 +984,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert one + two == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_sub(self):
@@ -988,7 +1003,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert one - two == result
-        except ValueError:
+        except AttributeError:
             pass
 
         one = wrapt.ObjectProxy(1)
@@ -996,7 +1011,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert one - two == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_mul(self):
@@ -1015,7 +1030,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert two * three == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1023,7 +1038,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert two * three == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_div(self):
@@ -1045,7 +1060,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert two / three == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1053,7 +1068,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert two / three == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_floordiv(self):
@@ -1072,7 +1087,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert two // four == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1080,7 +1095,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert two // four == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_mod(self):
@@ -1099,7 +1114,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert two % four == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1107,7 +1122,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert two % four == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_divmod(self):
@@ -1126,7 +1141,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert divmod(two, three) == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1134,7 +1149,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert divmod(two, three) == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_pow(self):
@@ -1168,7 +1183,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three**two == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1176,7 +1191,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three**two == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_lshift(self):
@@ -1195,7 +1210,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three << two == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1203,7 +1218,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three << two == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_rshift(self):
@@ -1222,7 +1237,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three >> two == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1230,7 +1245,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three >> two == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_and(self):
@@ -1249,7 +1264,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three & two == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1257,7 +1272,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three & two == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_xor(self):
@@ -1276,7 +1291,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three ^ two == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1284,7 +1299,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three ^ two == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_or(self):
@@ -1303,7 +1318,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three | two == result
-        except ValueError:
+        except AttributeError:
             pass
 
         two = wrapt.ObjectProxy(2)
@@ -1311,7 +1326,7 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         try:
             assert three | two == result
-        except ValueError:
+        except AttributeError:
             pass
 
     def test_iadd(self):

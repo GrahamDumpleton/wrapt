@@ -13,6 +13,7 @@ typedef struct
       PyObject *dict;
   PyObject *wrapped;
   PyObject *weakreflist;
+  int init_called;
 } WraptObjectProxyObject;
 
 typedef struct
@@ -358,8 +359,17 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
     PyErr_Clear();
   }
 
-  PyErr_SetString(state->WrapperNotInitializedError,
-                  "wrapper has not been initialized");
+  if (object->init_called)
+  {
+    PyErr_SetString(state->WrapperNotInitializedError,
+                    "wrapper is in an inconsistent state: __wrapped__ is not set");
+  }
+  else
+  {
+    PyErr_Format(PyExc_AttributeError,
+                 "'%.100s' object has no attribute '__wrapped__'",
+                 Py_TYPE(object)->tp_name);
+  }
 
   return -1;
 }
@@ -386,6 +396,7 @@ static PyObject *WraptObjectProxy_new(PyTypeObject *type, PyObject *args,
 
   self->wrapped = NULL;
   self->weakreflist = NULL;
+  self->init_called = 0;
 
   return (PyObject *)self;
 }
@@ -419,6 +430,7 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
       if (callback != Py_None)
       {
         Py_DECREF(callback);
+        self->init_called = 1;
         return 0;
       }
       else
@@ -436,6 +448,8 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
 
   Py_INCREF(wrapped);
   Py_XSETREF(self->wrapped, wrapped);
+
+  self->init_called = 1;
 
   object = PyObject_GetAttr(wrapped, module_str);
 

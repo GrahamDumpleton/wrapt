@@ -3,11 +3,11 @@ import operator
 import sys
 
 
-class WrapperNotInitializedError(ValueError, AttributeError):
+class WrapperNotInitializedError(ValueError):
     """
-    Exception raised when a wrapper is accessed before it has been initialized.
-    To satisfy different situations where this could arise, we inherit from both
-    ValueError and AttributeError.
+    Exception raised when a wrapper is in an inconsistent state: __init__ was
+    called but __wrapped__ is not set. Inherits from ValueError only, so it is
+    not silently swallowed by hasattr/getattr/except AttributeError patterns.
     """
 
     pass
@@ -140,6 +140,8 @@ class ObjectProxy(metaclass=_ObjectProxyMetaType):
                 object.__setattr__(self, "__wrapped__", wrapped)
         else:
             object.__setattr__(self, "__wrapped__", wrapped)
+
+        object.__setattr__(self, "__init_called__", True)
 
         # Python 3.2+ has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
@@ -322,7 +324,22 @@ class ObjectProxy(metaclass=_ObjectProxyMetaType):
             else:
                 return object.__getattribute__(self, "__wrapped_get__")()
 
-            raise WrapperNotInitializedError("wrapper has not been initialized")
+            # If __init__ was called but __wrapped__ is not set, the wrapper
+            # is in an inconsistent state. Raise WrapperNotInitializedError
+            # (a ValueError, not AttributeError) so it is not silently
+            # swallowed by hasattr/getattr patterns.
+
+            try:
+                object.__getattribute__(self, "__init_called__")
+            except AttributeError:
+                raise AttributeError(
+                    f"'{type(self).__name__}' object has no attribute "
+                    f"'__wrapped__'"
+                )
+
+            raise WrapperNotInitializedError(
+                "wrapper is in an inconsistent state: __wrapped__ is not set"
+            )
 
         return getattr(self.__wrapped__, name)
 

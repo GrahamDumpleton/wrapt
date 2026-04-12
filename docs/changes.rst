@@ -65,6 +65,18 @@ their help is much appreciated.
   ``TypeError("can't delete __wrapped__ attribute")``, matching the
   convention used by CPython for non-deletable attributes.
 
+* Changed ``WrapperNotInitializedError`` to inherit from ``ValueError`` only,
+  removing the ``AttributeError`` base class. The dual inheritance was
+  originally added so that IDEs such as PyCharm, which introspect objects
+  between ``__new__`` and ``__init__``, would not fail when encountering an
+  unset ``__wrapped__``. However, inheriting from ``AttributeError`` caused
+  ``hasattr``/``getattr``/``except AttributeError`` patterns throughout the
+  codebase to silently swallow genuine errors. The proxy now tracks whether
+  ``__init__`` has been called: before ``__init__``, accessing ``__wrapped__``
+  raises a plain ``AttributeError`` (satisfying IDE introspection); after
+  ``__init__``, it raises ``WrapperNotInitializedError`` (a ``ValueError``)
+  which will not be silently ignored.
+
 **Bugs Fixed**
 
 * Fixed a ``Py_DECREF(NULL)`` crash in the C implementation of all inplace
