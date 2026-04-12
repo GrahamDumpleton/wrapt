@@ -255,9 +255,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     def __hash__(self):
         return hash(self.__wrapped__)
 
-    def __nonzero__(self):
-        return bool(self.__wrapped__)
-
     def __bool__(self):
         return bool(self.__wrapped__)
 
@@ -559,12 +556,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
 
     def __complex__(self):
         return complex(self.__wrapped__)
-
-    def __oct__(self):
-        return oct(self.__wrapped__)
-
-    def __hex__(self):
-        return hex(self.__wrapped__)
 
     def __index__(self):
         return operator.index(self.__wrapped__)
