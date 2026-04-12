@@ -2451,7 +2451,7 @@ static PyObject *WraptObjectProxy_format(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (!PyArg_ParseTuple(args, "|O:format", &format_spec))
+  if (!PyArg_ParseTuple(args, "O:format", &format_spec))
     return NULL;
 
   return PyObject_Format(self->wrapped, format_spec);
