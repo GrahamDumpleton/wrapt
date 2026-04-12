@@ -5,10 +5,10 @@ Version 1: Manual state attachment using __self_setattr__
 Version 2: Automatic state attachment using wrapt.bind_state_to_wrapper
 Version 3: With optional decorator arguments via static method
 Version 4: Singleton tracker with per-function stats
+Version 5: Custom FunctionWrapper/BoundFunctionWrapper with decorator(proxy=...)
 """
 
 import wrapt
-from wrapt import bind_state_to_wrapper
 
 
 # ============================================================
@@ -44,7 +44,7 @@ class CallTracker2:
     def __init__(self):
         self.call_count = 0
 
-    @bind_state_to_wrapper(name="tracker")
+    @wrapt.bind_state_to_wrapper(name="tracker")
     @wrapt.function_wrapper
     def __call__(self, wrapped, instance, args, kwargs):
         try:
@@ -62,7 +62,7 @@ class CallTracker3:
     def __init__(self, *, call_count=0):
         self.call_count = call_count
 
-    @bind_state_to_wrapper(name="tracker")
+    @wrapt.bind_state_to_wrapper(name="tracker")
     @wrapt.function_wrapper
     def __call__(self, wrapped, instance, args, kwargs):
         try:
@@ -89,7 +89,7 @@ class CallTracker4:
     def __init__(self):
         self.stats = {}
 
-    @bind_state_to_wrapper(name="tracker")
+    @wrapt.bind_state_to_wrapper(name="tracker")
     @wrapt.function_wrapper
     def __call__(self, wrapped, instance, args, kwargs):
         name = f"{wrapped.__module__}:{wrapped.__qualname__}"
@@ -110,6 +110,59 @@ class CallTracker4:
         if func is None:
             return tracker
         return tracker(func)
+
+
+# ============================================================
+# Version 5: Custom FunctionWrapper/BoundFunctionWrapper
+# ============================================================
+#
+# Instead of attaching state externally, this approach uses custom
+# subclasses of FunctionWrapper and BoundFunctionWrapper passed via
+# the proxy argument to @decorator. The call count is tracked
+# directly on the FunctionWrapper, and accessor methods like
+# call_count() and reset() are available on both the wrapper and
+# bound wrapper without needing bind_state_to_wrapper.
+
+
+class _TrackerBoundWrapper(wrapt.BoundFunctionWrapper):
+
+    def __call__(self, *args, **kwargs):
+        try:
+            return super().__call__(*args, **kwargs)
+        finally:
+            self._self_parent._self_call_count += 1
+
+    def call_count(self):
+        return self._self_parent._self_call_count
+
+    def reset(self):
+        self._self_parent._self_call_count = 0
+
+
+class _TrackerWrapper(wrapt.FunctionWrapper):
+
+    __bound_function_wrapper__ = _TrackerBoundWrapper
+
+    def __init__(self, wrapped, wrapper, **kwargs):
+        super().__init__(wrapped, wrapper, **kwargs)
+        self._self_call_count = 0
+
+    def __call__(self, *args, **kwargs):
+        try:
+            return super().__call__(*args, **kwargs)
+        finally:
+            self._self_call_count += 1
+
+    def call_count(self):
+        return self._self_call_count
+
+    def reset(self):
+        self._self_call_count = 0
+
+
+@wrapt.decorator(proxy=_TrackerWrapper)
+def track_calls_v5(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
 
 
 # ============================================================
@@ -203,6 +256,27 @@ class MyClass4:
         return x + y
 
     @CallTracker4.track
+    @staticmethod
+    def static_method(x, y):
+        return x + y
+
+
+@track_calls_v5
+def add_v5(x, y):
+    return x + y
+
+
+class MyClass5:
+    @track_calls_v5
+    def method(self, x, y):
+        return x + y
+
+    @track_calls_v5
+    @classmethod
+    def class_method(cls, x, y):
+        return x + y
+
+    @track_calls_v5
     @staticmethod
     def static_method(x, y):
         return x + y
@@ -320,10 +394,58 @@ def test_version4():
     print("  ALL PASSED")
 
 
+def test_version5():
+    print("\n--- Version 5 (custom FunctionWrapper/BoundFunctionWrapper) ---")
+
+    # Normal function
+    add_v5.reset()
+    assert add_v5(1, 2) == 3
+    assert add_v5(3, 4) == 7
+    assert add_v5.call_count() == 2
+    print(f"  function: call_count={add_v5.call_count()} (expected 2)")
+
+    # Instance method
+    MyClass5.method.reset()
+    obj = MyClass5()
+    assert obj.method(1, 2) == 3
+    assert obj.method(3, 4) == 7
+    assert obj.method.call_count() == 2
+    print(f"  instance method: call_count={obj.method.call_count()} (expected 2)")
+
+    # Shared across instances
+    obj2 = MyClass5()
+    obj2.method(5, 6)
+    assert obj.method.call_count() == 3
+    assert obj2.method.call_count() == 3
+    print(f"  shared across instances: call_count={obj.method.call_count()} (expected 3)")
+
+    # Class method
+    MyClass5.class_method.reset()
+    assert MyClass5.class_method(1, 2) == 3
+    assert MyClass5.class_method(3, 4) == 7
+    assert MyClass5.class_method.call_count() == 2
+    print(f"  class method: call_count={MyClass5.class_method.call_count()} (expected 2)")
+
+    # Static method
+    MyClass5.static_method.reset()
+    assert MyClass5.static_method(1, 2) == 3
+    assert MyClass5.static_method(3, 4) == 7
+    assert MyClass5.static_method.call_count() == 2
+    print(f"  static method: call_count={MyClass5.static_method.call_count()} (expected 2)")
+
+    # Reset works
+    add_v5.reset()
+    assert add_v5.call_count() == 0
+    print("  reset: OK")
+
+    print("  ALL PASSED")
+
+
 if __name__ == "__main__":
     test_version("Version 1 (manual)", add_v1, MyClass1)
     test_version("Version 2 (bind_state_to_wrapper)", add_v2, MyClass2)
     test_version("Version 3a (static track, no args)", add_v3a, MyClass3a)
     test_version("Version 3b (static track, call_count=10)", add_v3b, MyClass3b, expected_base=10)
     test_version4()
+    test_version5()
     print("\nAll tests passed!")
