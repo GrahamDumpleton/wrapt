@@ -3,11 +3,6 @@ import operator
 import sys
 
 
-def with_metaclass(meta, *bases):
-    """Create a base class with a metaclass."""
-    return meta("NewBase", bases, {})
-
-
 class WrapperNotInitializedError(ValueError, AttributeError):
     """
     Exception raised when a wrapper is accessed before it has been initialized.
@@ -122,16 +117,7 @@ class _ObjectProxyMetaType(type):
         return klass
 
 
-# NOTE: Although Python 3+ supports the newer metaclass=MetaClass syntax,
-# we must continue using with_metaclass() for ObjectProxy. The newer syntax
-# changes how the class namespace is handled during class creation, which
-# would break the ability to set _self_* attributes on ObjectProxy
-# instances. The with_metaclass() approach creates an intermediate base
-# class that allows the necessary attribute flexibility while still
-# applying the metaclass.
-
-
-class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
+class ObjectProxy(metaclass=_ObjectProxyMetaType):
 
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""
