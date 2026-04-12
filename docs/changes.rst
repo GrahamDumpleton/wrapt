@@ -21,6 +21,19 @@ their help is much appreciated.
   build stateful decorators where the state is accessible through the decorated
   function. See the "Tracking Call State" section of :doc:`examples` for usage.
 
+* Added ``lru_cache``, a drop-in replacement for ``functools.lru_cache`` that
+  works correctly with instance methods. Unlike ``functools.lru_cache``, which
+  includes ``self`` as a cache key — causing cache pollution across instances,
+  preventing garbage collection of instances, and requiring instances to be
+  hashable — ``wrapt.lru_cache`` maintains a separate per-instance cache stored
+  as an attribute on the instance itself. This means each instance gets its own
+  full ``maxsize`` budget, instances do not need to be hashable, and caches are
+  automatically cleaned up when the instance is garbage collected. For plain
+  functions, class methods, and static methods, a single shared cache is used.
+  The ``cache_info()``, ``cache_clear()``, and ``cache_parameters()`` methods
+  are available directly on the decorated function. See the "LRU Cache"
+  section of :doc:`examples` for details.
+
 **Features Changed**
 
 * Improved attribute access on ``BoundFunctionWrapper`` to delegate lookups to

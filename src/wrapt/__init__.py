@@ -19,6 +19,7 @@ from .decorators import (
     adapter_factory,
     bind_state_to_wrapper,
     decorator,
+    lru_cache,
     synchronized,
 )
 from .importer import (
@@ -55,6 +56,7 @@ __all__ = (
     "adapter_factory",
     "bind_state_to_wrapper",
     "decorator",
+    "lru_cache",
     "synchronized",
     "discover_post_import_hooks",
     "notify_module_loaded",
