@@ -9,6 +9,18 @@ an extremely useful analysis of issues in the wrapt C extension. Their
 analysis led to the majority of the fixes and updates in this release and
 their help is much appreciated.
 
+**New Features**
+
+* Added ``bind_state_to_wrapper`` (also available as ``StateBindingWrapper``),
+  a descriptor decorator for automatically binding state to a wrapper. When
+  applied on top of a method decorated with ``function_wrapper`` or
+  ``decorator``, it intercepts descriptor binding so that when the method is
+  accessed through an instance, the owner instance is automatically stored on
+  the resulting wrapper as a named attribute. This eliminates the need for
+  manual setup in decorator factory functions and makes it straightforward to
+  build stateful decorators where the state is accessible through the decorated
+  function. See the "Tracking Call State" section of :doc:`examples` for usage.
+
 **Features Changed**
 
 * Improved attribute access on ``BoundFunctionWrapper`` to delegate lookups to

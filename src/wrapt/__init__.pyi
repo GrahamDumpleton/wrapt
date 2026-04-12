@@ -386,3 +386,16 @@ if sys.version_info >= (3, 10):
     def synchronized(wrapped: Callable[P, R]) -> Callable[P, R]: ...
     @overload
     def synchronized(wrapped: Any) -> SynchronizedObject: ...
+
+    # bind_state_to_wrapper()
+
+    class StateBindingWrapper:
+        name: str
+        wrapper_factory: Descriptor | None
+        def __init__(self, *, name: str = "state") -> None: ...
+        def __call__(self, wrapper_factory: Descriptor) -> StateBindingWrapper: ...
+        def __get__(
+            self, instance: Any, owner: type[Any] | None = None
+        ) -> StateBindingWrapper | Callable[[Callable[..., Any]], FunctionWrapper[..., Any]]: ...
+
+    bind_state_to_wrapper = StateBindingWrapper

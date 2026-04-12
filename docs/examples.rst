@@ -15,8 +15,20 @@ A common requirement is to track state across invocations of a decorated
 function. For example, counting how many times a function has been called.
 
 A clean approach is to encapsulate both the state and the wrapper logic in a
-class. An instance of this class is created each time the decorator is
-applied, giving each decorated function its own independent state.
+class. The wrapper method is decorated with ``@wrapt.function_wrapper`` so
+that it follows the standard ``wrapt`` wrapper function signature, with the
+addition of ``self`` to access the tracker state. When used as a bound
+method, ``wrapt`` will correctly handle the extra ``self`` argument.
+
+The ``@wrapt.bind_state_to_wrapper`` descriptor decorator is applied on top
+of ``@wrapt.function_wrapper``. It intercepts descriptor binding so that
+when the wrapper method is accessed through an instance, the instance is
+automatically stored on the resulting wrapper as a named attribute. The
+``name`` keyword argument controls the attribute name (here ``"tracker"``).
+
+By naming the wrapper method ``__call__``, each instance of the class
+becomes a callable decorator. An instance is created each time the decorator
+is applied, giving each decorated function its own independent state.
 
 ::
 
@@ -26,55 +38,36 @@ applied, giving each decorated function its own independent state.
         def __init__(self):
             self.call_count = 0
 
-        def wrapper(self, wrapped, instance, args, kwargs):
+        @wrapt.bind_state_to_wrapper(name="tracker")
+        @wrapt.function_wrapper
+        def __call__(self, wrapped, instance, args, kwargs):
             try:
                 return wrapped(*args, **kwargs)
             finally:
                 self.call_count += 1
 
-The ``wrapper()`` method follows the standard ``wrapt`` wrapper function
-signature, with the addition of ``self`` to access the tracker state. When
-used as a bound method, ``wrapt`` will correctly handle the extra ``self``
-argument.
-
-A decorator factory function can then create a ``CallTracker`` instance,
-wrap the target function using ``wrapt.FunctionWrapper``, and attach the
-tracker to the wrapper for later access.
-
-::
-
-    def track_calls(func):
-        tracker = CallTracker()
-        wrapped = wrapt.FunctionWrapper(func, tracker.wrapper)
-        object.__setattr__(wrapped, "tracker", tracker)
-        return wrapped
-
-The use of ``object.__setattr__()`` stores the tracker directly on the
-``FunctionWrapper`` instance rather than on the underlying wrapped function.
-This ensures each decorator application has its own tracker, even if the same
-function is wrapped multiple times.
-
 The decorator can be applied to normal functions, instance methods, class
-methods, and static methods.
+methods, and static methods. Each use of ``CallTracker()`` creates a fresh
+instance with its own state.
 
 ::
 
-    @track_calls
+    @CallTracker()
     def add(x, y):
         return x + y
 
     class Calculator:
 
-        @track_calls
+        @CallTracker()
         def compute(self, x, y):
             return x + y
 
-        @track_calls
+        @CallTracker()
         @classmethod
         def class_compute(cls, x, y):
             return x + y
 
-        @track_calls
+        @CallTracker()
         @staticmethod
         def static_compute(x, y):
             return x + y
@@ -134,6 +127,45 @@ The same pattern works for class methods and static methods.
     3
     >>> Calculator.static_compute.tracker.call_count
     1
+
+For convenience, a static method can be added to provide a decorator that
+accepts optional arguments. When called without arguments, the function is
+wrapped directly. When called with keyword arguments, a configured
+``CallTracker`` instance is returned, which then wraps the function in a
+second step.
+
+::
+
+    class CallTracker:
+        def __init__(self, *, call_count=0):
+            self.call_count = call_count
+
+        @wrapt.bind_state_to_wrapper(name="tracker")
+        @wrapt.function_wrapper
+        def __call__(self, wrapped, instance, args, kwargs):
+            try:
+                return wrapped(*args, **kwargs)
+            finally:
+                self.call_count += 1
+
+        @staticmethod
+        def track(func=None, /, *, call_count=0):
+            tracker = CallTracker(call_count=call_count)
+            if func is None:
+                return tracker
+            return tracker(func)
+
+This allows both styles of usage.
+
+::
+
+    @CallTracker.track
+    def add(x, y):
+        return x + y
+
+    @CallTracker.track(call_count=10)
+    def add_starting_at_ten(x, y):
+        return x + y
 
 Thread Synchronization
 ----------------------

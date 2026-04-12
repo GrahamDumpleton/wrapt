@@ -1,3 +1,4 @@
+import inspect
 import unittest
 
 import wrapt
@@ -444,7 +445,8 @@ class CallTracker:
     def __init__(self):
         self.call_count = 0
 
-    def wrapper(self, wrapped, instance, args, kwargs):
+    @wrapt.function_wrapper
+    def track(self, wrapped, instance, args, kwargs):
         try:
             return wrapped(*args, **kwargs)
         finally:
@@ -453,9 +455,9 @@ class CallTracker:
 
 def track_calls_tracker(func):
     tracker = CallTracker()
-    wrapped = wrapt.FunctionWrapper(func, tracker.wrapper)
-    wrapped.__self_setattr__("tracker", tracker)
-    return wrapped
+    wrapper = tracker.track(func)
+    wrapper.__self_setattr__("tracker", tracker)
+    return wrapper
 
 
 @track_calls_tracker
@@ -595,6 +597,189 @@ class TestStaticMethodTracker(unittest.TestCase):
         self.assertEqual(obj.static_method.tracker.call_count, 1)
 
 
+class BoundCallTracker:
+    def __init__(self):
+        self.call_count = 0
+
+    @wrapt.bind_state_to_wrapper(name="tracker")
+    @wrapt.function_wrapper
+    def __call__(self, wrapped, instance, args, kwargs):
+        try:
+            return wrapped(*args, **kwargs)
+        finally:
+            self.call_count += 1
+
+
+@BoundCallTracker()
+def bound_tracker_function(x, y):
+    return x + y
+
+
+class BoundTrackerClass:
+    @BoundCallTracker()
+    def method(self, x, y):
+        return x + y
+
+    @BoundCallTracker()
+    @classmethod
+    def class_method(cls, x, y):
+        return x + y
+
+    @BoundCallTracker()
+    @staticmethod
+    def static_method(x, y):
+        return x + y
+
+
+class TestNormalFunctionBoundTracker(unittest.TestCase):
+    def setUp(self):
+        bound_tracker_function.tracker.call_count = 0
+
+    def test_initial_count_zero(self):
+        self.assertEqual(bound_tracker_function.tracker.call_count, 0)
+
+    def test_count_increments(self):
+        bound_tracker_function(1, 2)
+        self.assertEqual(bound_tracker_function.tracker.call_count, 1)
+        bound_tracker_function(3, 4)
+        self.assertEqual(bound_tracker_function.tracker.call_count, 2)
+
+    def test_reset(self):
+        bound_tracker_function(1, 2)
+        bound_tracker_function(3, 4)
+        bound_tracker_function.tracker.call_count = 0
+        self.assertEqual(bound_tracker_function.tracker.call_count, 0)
+
+    def test_function_still_works(self):
+        result = bound_tracker_function(1, 2)
+        self.assertEqual(result, 3)
+
+
+class TestInstanceMethodBoundTracker(unittest.TestCase):
+    def setUp(self):
+        BoundTrackerClass.method.tracker.call_count = 0
+
+    def test_count_increments(self):
+        obj = BoundTrackerClass()
+        obj.method(1, 2)
+        self.assertEqual(obj.method.tracker.call_count, 1)
+        obj.method(3, 4)
+        self.assertEqual(obj.method.tracker.call_count, 2)
+
+    def test_reset(self):
+        obj = BoundTrackerClass()
+        obj.method(1, 2)
+        obj.method(3, 4)
+        obj.method.tracker.call_count = 0
+        self.assertEqual(obj.method.tracker.call_count, 0)
+
+    def test_method_still_works(self):
+        obj = BoundTrackerClass()
+        result = obj.method(1, 2)
+        self.assertEqual(result, 3)
+
+    def test_separate_instances_share_count(self):
+        obj1 = BoundTrackerClass()
+        obj2 = BoundTrackerClass()
+        obj1.method(1, 2)
+        obj2.method(3, 4)
+        self.assertEqual(obj1.method.tracker.call_count, 2)
+        self.assertEqual(obj2.method.tracker.call_count, 2)
+
+
+class TestClassMethodBoundTracker(unittest.TestCase):
+    def setUp(self):
+        BoundTrackerClass.class_method.tracker.call_count = 0
+
+    def test_count_increments(self):
+        BoundTrackerClass.class_method(1, 2)
+        self.assertEqual(BoundTrackerClass.class_method.tracker.call_count, 1)
+        BoundTrackerClass.class_method(3, 4)
+        self.assertEqual(BoundTrackerClass.class_method.tracker.call_count, 2)
+
+    def test_reset(self):
+        BoundTrackerClass.class_method(1, 2)
+        BoundTrackerClass.class_method(3, 4)
+        BoundTrackerClass.class_method.tracker.call_count = 0
+        self.assertEqual(BoundTrackerClass.class_method.tracker.call_count, 0)
+
+    def test_classmethod_still_works(self):
+        result = BoundTrackerClass.class_method(1, 2)
+        self.assertEqual(result, 3)
+
+    def test_access_via_instance(self):
+        obj = BoundTrackerClass()
+        BoundTrackerClass.class_method(1, 2)
+        self.assertEqual(obj.class_method.tracker.call_count, 1)
+
+
+class TestStaticMethodBoundTracker(unittest.TestCase):
+    def setUp(self):
+        BoundTrackerClass.static_method.tracker.call_count = 0
+
+    def test_count_increments(self):
+        BoundTrackerClass.static_method(1, 2)
+        self.assertEqual(BoundTrackerClass.static_method.tracker.call_count, 1)
+        BoundTrackerClass.static_method(3, 4)
+        self.assertEqual(BoundTrackerClass.static_method.tracker.call_count, 2)
+
+    def test_reset(self):
+        BoundTrackerClass.static_method(1, 2)
+        BoundTrackerClass.static_method(3, 4)
+        BoundTrackerClass.static_method.tracker.call_count = 0
+        self.assertEqual(BoundTrackerClass.static_method.tracker.call_count, 0)
+
+    def test_staticmethod_still_works(self):
+        result = BoundTrackerClass.static_method(1, 2)
+        self.assertEqual(result, 3)
+
+    def test_access_via_instance(self):
+        obj = BoundTrackerClass()
+        BoundTrackerClass.static_method(1, 2)
+        self.assertEqual(obj.static_method.tracker.call_count, 1)
+
+
+class TestBoundTrackerIntrospection(unittest.TestCase):
+    def test_descriptor_proxies_name(self):
+        self.assertEqual(BoundCallTracker.__call__.__name__, "__call__")
+
+    def test_descriptor_proxies_qualname(self):
+        self.assertEqual(
+            BoundCallTracker.__call__.__qualname__, "BoundCallTracker.__call__"
+        )
+
+    def test_descriptor_proxies_signature(self):
+        sig = inspect.signature(BoundCallTracker.__call__)
+        self.assertIn("wrapped", sig.parameters)
+
+    def test_function_preserves_name(self):
+        self.assertEqual(bound_tracker_function.__name__, "bound_tracker_function")
+
+    def test_function_preserves_qualname(self):
+        self.assertEqual(
+            bound_tracker_function.__qualname__, "bound_tracker_function"
+        )
+
+    def test_function_preserves_signature(self):
+        sig = inspect.signature(bound_tracker_function)
+        self.assertEqual(list(sig.parameters), ["x", "y"])
+
+    def test_method_preserves_name(self):
+        self.assertEqual(BoundTrackerClass.method.__name__, "method")
+
+    def test_method_preserves_qualname(self):
+        self.assertEqual(
+            BoundTrackerClass.method.__qualname__, "BoundTrackerClass.method"
+        )
+
+    def test_bound_method_preserves_name(self):
+        obj = BoundTrackerClass()
+        self.assertEqual(obj.method.__name__, "method")
+
+    def test_bound_method_preserves_signature(self):
+        obj = BoundTrackerClass()
+        sig = inspect.signature(obj.method)
+        self.assertEqual(list(sig.parameters), ["x", "y"])
 
 
 class TestBoundSetattr(unittest.TestCase):

@@ -8,7 +8,12 @@ from functools import partial
 from inspect import isclass, signature
 from threading import Lock, RLock
 
-from .__wrapt__ import BoundFunctionWrapper, CallableObjectProxy, FunctionWrapper
+from .__wrapt__ import (
+    BaseObjectProxy,
+    BoundFunctionWrapper,
+    CallableObjectProxy,
+    FunctionWrapper,
+)
 from .arguments import formatargspec
 
 # Adapter wrapper for the wrapped function which will overlay certain
@@ -520,3 +525,74 @@ def synchronized(wrapped):
 
 
 synchronized._synchronized_meta_lock = Lock()  # type: ignore[attr-defined]
+
+
+# Descriptor decorator for automatically binding state to a wrapper.
+# When applied to a method decorated with function_wrapper or decorator,
+# it intercepts descriptor access so that when the method is accessed
+# via an instance, the instance is automatically attached to the
+# resulting wrapper using __self_setattr__. This is useful when you
+# want the wrapper to carry a reference back to the object that owns
+# the wrapper factory method, making state accessible through the
+# decorated function without manual setup.
+
+
+class StateBindingWrapper(BaseObjectProxy):
+    """A descriptor decorator that binds the owner instance to wrappers
+    produced by a wrapper factory method.
+
+    When applied on top of a method decorated with ``function_wrapper``
+    or ``decorator``, it intercepts the descriptor ``__get__`` so that
+    when the method is accessed through an instance, the owner instance
+    is automatically attached as an attribute on the resulting wrapper
+    via ``__self_setattr__``.
+
+    The *name* keyword argument controls the attribute name under which
+    the owner instance is stored on the wrapper (default ``"state"``).
+    """
+
+    def __init__(self, *, name="state"):
+        # Initialise the proxy with a placeholder. The actual wrapper
+        # factory is set later when __call__ is invoked as a decorator.
+
+        super().__init__(None)
+
+        self._self_name = name
+
+    def __call__(self, wrapper_factory):
+        # Called when used as a decorator, receiving the wrapper factory
+        # (the function_wrapper or decorator-decorated method) to wrap.
+
+        self.__wrapped__ = wrapper_factory
+
+        return self
+
+    def __get__(self, instance, owner):
+        # When accessed via the class rather than an instance, return
+        # the descriptor itself unchanged. This preserves introspection
+        # of the underlying wrapper factory via the object proxy.
+
+        if instance is None:
+            return self
+
+        # Bind the underlying wrapper factory to the instance so it
+        # receives the correct self/cls when called.
+
+        wrapper_factory = self.__wrapped__.__get__(instance, owner)
+
+        name = self._self_name
+
+        def _bind(func):
+            wrapper = wrapper_factory(func)
+
+            # Attach the owner instance to the wrapper so it can be
+            # accessed as an attribute of the decorated function.
+
+            wrapper.__self_setattr__(name, instance)
+
+            return wrapper
+
+        return _bind
+
+
+bind_state_to_wrapper = StateBindingWrapper

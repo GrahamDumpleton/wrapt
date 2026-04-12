@@ -13,7 +13,14 @@ from .__wrapt__ import (
     PartialCallableObjectProxy,
     partial,
 )
-from .decorators import AdapterFactory, adapter_factory, decorator, synchronized
+from .decorators import (
+    AdapterFactory,
+    StateBindingWrapper,
+    adapter_factory,
+    bind_state_to_wrapper,
+    decorator,
+    synchronized,
+)
 from .importer import (
     discover_post_import_hooks,
     notify_module_loaded,
@@ -44,7 +51,9 @@ __all__ = (
     "PartialCallableObjectProxy",
     "partial",
     "AdapterFactory",
+    "StateBindingWrapper",
     "adapter_factory",
+    "bind_state_to_wrapper",
     "decorator",
     "synchronized",
     "discover_post_import_hooks",
