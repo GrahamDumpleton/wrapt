@@ -2807,6 +2807,36 @@ static int WraptObjectProxy_set_annotations(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_get_dict(WraptObjectProxyObject *self)
+{
+  if (!self->wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(self) == -1)
+      return NULL;
+  }
+
+  return PyObject_GetAttrString(self->wrapped, "__dict__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int WraptObjectProxy_set_dict(WraptObjectProxyObject *self,
+                                     PyObject *value)
+{
+  if (!value)
+  {
+    PyErr_SetString(PyExc_AttributeError,
+                    "property '__dict__' of 'ObjectProxy' object has no deleter");
+    return -1;
+  }
+
+  PyErr_SetString(PyExc_AttributeError,
+                  "property '__dict__' of 'ObjectProxy' object has no setter");
+  return -1;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_wrapped(WraptObjectProxyObject *self)
 {
   if (!self->wrapped)
@@ -3032,6 +3062,8 @@ static PyGetSetDef WraptObjectProxy_getset[] = {
      (setter)WraptObjectProxy_set_class, 0},
     {"__annotations__", (getter)WraptObjectProxy_get_annotations,
      (setter)WraptObjectProxy_set_annotations, 0},
+    {"__dict__", (getter)WraptObjectProxy_get_dict,
+     (setter)WraptObjectProxy_set_dict, 0},
     {"__wrapped__", (getter)WraptObjectProxy_get_wrapped,
      (setter)WraptObjectProxy_set_wrapped, 0},
     {"__object_proxy__", (getter)WraptObjectProxy_get_object_proxy, 0, 0},
