@@ -68,7 +68,7 @@ def apply_patch(parent, attribute, replacement):
     setattr(parent, attribute, replacement)
 
 
-def wrap_object(target, name, factory, args=(), kwargs={}):
+def wrap_object(target, name, factory, args=(), kwargs=None):
     """
     Wraps an object which is the attribute of a target object with a wrapper
     object created by the `factory` function. The `target` can be a module,
@@ -81,6 +81,9 @@ def wrap_object(target, name, factory, args=(), kwargs={}):
     `*args` and `**kwargs` calling conventions. The factory function should
     return a new object that will replace the original object.
     """
+
+    if kwargs is None:
+        kwargs = {}
 
     (parent, attribute, original) = resolve_path(target, name)
     wrapper = factory(original, *args, **kwargs)
@@ -115,7 +118,7 @@ class AttributeWrapper:
         del instance.__dict__[self.attribute]
 
 
-def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
+def wrap_object_attribute(module, name, factory, args=(), kwargs=None):
     """
     Wraps an object which is the attribute of a class instance with a wrapper
     object created by the `factory` function. It does this by patching the
@@ -130,6 +133,9 @@ def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
     conventions. The factory function should return a new object that will
     replace the original object.
     """
+
+    if kwargs is None:
+        kwargs = {}
 
     path, attribute = name.rsplit(".", 1)
     parent = resolve_path(module, path)[2]

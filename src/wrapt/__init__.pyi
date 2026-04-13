@@ -336,7 +336,7 @@ if sys.version_info >= (3, 10):
         name: str,
         factory: WrapperFactory | type[ObjectProxy[Any]],
         args: tuple[Any, ...] = (),
-        kwargs: dict[str, Any] = {},
+        kwargs: dict[str, Any] | None = None,
     ) -> Any: ...
 
     # wrap_object_attribute()
@@ -346,7 +346,7 @@ if sys.version_info >= (3, 10):
         name: str,
         factory: WrapperFactory | type[ObjectProxy[Any]],
         args: tuple[Any, ...] = (),
-        kwargs: dict[str, Any] = {},
+        kwargs: dict[str, Any] | None = None,
     ) -> Any: ...
 
     # register_post_import_hook()
