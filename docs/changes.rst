@@ -361,8 +361,8 @@ these reasons a major version bump is being made.
 
 * Added ``__all__`` attribute to ``wrapt`` module to expose the public API.
 
-* The ``wrapt.PartialCallableObjectProxy`` class can now be accessed via the
-  alias ``wrapt.partial``, which is a convenience for users who are used to using
+* The ``wrapt.PartialCallableObjectProxy`` class can now be created via the
+  convenience function ``wrapt.partial``, for users who are used to using
   ``functools.partial`` and want to use the ``wrapt`` version of it.
 
 * Type hints have been added to the ``wrapt`` module. The type hints are
