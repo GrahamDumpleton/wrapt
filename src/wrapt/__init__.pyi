@@ -342,7 +342,7 @@ if sys.version_info >= (3, 10):
     # wrap_object_attribute()
 
     def wrap_object_attribute(
-        target: ModuleType | type[Any] | Any | str,
+        module: ModuleType | type[Any] | Any | str,
         name: str,
         factory: WrapperFactory | type[ObjectProxy[Any]],
         args: tuple[Any, ...] = (),
