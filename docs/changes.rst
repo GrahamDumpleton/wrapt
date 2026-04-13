@@ -34,6 +34,15 @@ their help is much appreciated.
   are available directly on the decorated function. See the "LRU Cache"
   section of :doc:`examples` for details.
 
+* Added support for deferred patching in ``wrap_function_wrapper`` and
+  ``patch_function_wrapper``. When the target module name is passed as a
+  string with a trailing ``?`` (e.g., ``"requests?"``) and the module has
+  not yet been imported, a post import hook will be registered so that the
+  wrapping is applied automatically when the module is eventually imported.
+  If the module is already imported, the wrapping is applied immediately.
+  This avoids eagerly importing modules solely for the purpose of monkey
+  patching them.
+
 **Features Changed**
 
 * Improved attribute access on ``BoundFunctionWrapper`` to delegate lookups to
