@@ -65,6 +65,10 @@ class WeakFunctionProxy(BaseObjectProxy):
             self._self_instance = weakref.ref(wrapped._self_instance, _callback)
 
             if wrapped._self_parent is not None:
+                # Explicit class in super() is used because the proxy
+                # overrides __class__ and MRO-related methods to delegate
+                # to the wrapped object, which can interfere with bare
+                # super().
                 super(WeakFunctionProxy, self).__init__(
                     weakref.proxy(wrapped._self_parent, _callback)
                 )

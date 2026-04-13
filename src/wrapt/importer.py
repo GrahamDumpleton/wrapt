@@ -144,6 +144,9 @@ def notify_module_loaded(module):
 class _ImportHookChainedLoader(BaseObjectProxy):
 
     def __init__(self, loader):
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(_ImportHookChainedLoader, self).__init__(loader)
 
         if hasattr(loader, "load_module"):

@@ -144,6 +144,9 @@ class AutoObjectProxy(BaseObjectProxy):
         if cls is AutoObjectProxy:
             name = BaseObjectProxy.__name__
 
+        # Explicit class in super() is required here to ensure __new__
+        # is called on the parent of AutoObjectProxy, not the dynamically
+        # created subclass.
         return super(AutoObjectProxy, cls).__new__(type(name, (cls,), namespace))
 
     def __wrapped_setattr_fixups__(self):
@@ -281,6 +284,9 @@ class LazyObjectProxy(AutoObjectProxy):
 
         name = cls.__name__
 
+        # Explicit class in super() is required here to ensure __new__
+        # is called on the parent of AutoObjectProxy, not the dynamically
+        # created subclass.
         return super(AutoObjectProxy, cls).__new__(type(name, (cls,), namespace))
 
     def __init__(self, callback=None, *, interface=...):

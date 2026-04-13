@@ -657,6 +657,9 @@ class PartialCallableObjectProxy(ObjectProxy):
         if not callable(wrapped):
             raise TypeError("the first argument must be callable")
 
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(PartialCallableObjectProxy, self).__init__(wrapped)
 
         self._self_args = args
@@ -689,6 +692,9 @@ class _FunctionWrapperBase(ObjectProxy):
         owner=None,
     ):
 
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
         object.__setattr__(self, "_self_instance", instance)
@@ -1069,4 +1075,7 @@ class FunctionWrapper(_FunctionWrapperBase):
             else:
                 binding = "callable"
 
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper, enabled, binding)

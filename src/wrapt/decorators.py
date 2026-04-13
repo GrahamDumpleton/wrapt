@@ -24,6 +24,9 @@ from .arguments import formatargspec
 class _AdapterFunctionCode(CallableObjectProxy):
 
     def __init__(self, wrapped_code, adapter_code):
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(_AdapterFunctionCode, self).__init__(wrapped_code)
         self._self_adapter_code = adapter_code
 
@@ -51,6 +54,9 @@ class _AdapterFunctionCode(CallableObjectProxy):
 class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     def __init__(self, wrapped, adapter):
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(_AdapterFunctionSurrogate, self).__init__(wrapped)
         self._self_adapter = adapter
 
@@ -92,6 +98,9 @@ class AdapterWrapper(FunctionWrapper):
 
     def __init__(self, *args, **kwargs):
         adapter = kwargs.pop("adapter")
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(AdapterWrapper, self).__init__(*args, **kwargs)
         self._self_surrogate = _AdapterFunctionSurrogate(self.__wrapped__, adapter)
         self._self_adapter = adapter
@@ -120,6 +129,7 @@ class AdapterFactory:
 
 class DelegatedAdapterFactory(AdapterFactory):
     def __init__(self, factory):
+        # Explicit class in super() for consistency with proxy subclasses.
         super(DelegatedAdapterFactory, self).__init__()
         self.factory = factory
 
