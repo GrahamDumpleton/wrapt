@@ -70,10 +70,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     @property
     def __signature__(self):
-        if "signature" not in globals():
-            return self._self_adapter.__signature__
-        else:
-            return signature(self._self_adapter)
+        return signature(self._self_adapter)
 
 
 class _BoundAdapterWrapper(BoundFunctionWrapper):
@@ -86,10 +83,7 @@ class _BoundAdapterWrapper(BoundFunctionWrapper):
 
     @property
     def __signature__(self):
-        if "signature" not in globals():
-            return self.__wrapped__.__signature__
-        else:
-            return signature(self._self_parent._self_adapter)
+        return signature(self._self_parent._self_adapter)
 
 
 class AdapterWrapper(FunctionWrapper):
