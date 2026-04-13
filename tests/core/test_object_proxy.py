@@ -181,7 +181,7 @@ class TestAttributeAccess(unittest.TestCase):
             def value(self):
                 return 2 * self.__wrapped__.value
 
-        WrappedObject(Object()).value == "valuevalue"
+        self.assertEqual(WrappedObject(Object()).value, "valuevalue")
 
     def test_attribute_lookup_value_exception(self):
         class Object:
@@ -220,7 +220,7 @@ class TestAttributeAccess(unittest.TestCase):
         # instead and robs the wrapper of the chance to return an alternate
         # value.
 
-        WrappedObject(Object()).value == "value"
+        self.assertEqual(WrappedObject(Object()).value, "value")
 
 
 class TestNamingObjectProxy(unittest.TestCase):
@@ -1679,7 +1679,7 @@ class TestDerivedClassCreation(unittest.TestCase):
 
             def __new__(cls, wrapped):
                 instance = super(DerivedObjectProxy, cls).__new__(cls, wrapped)
-                instance.__init__(wrapped)
+                return instance
 
             def __init__(self, wrapped):
                 super(DerivedObjectProxy, self).__init__(wrapped)
@@ -1688,6 +1688,9 @@ class TestDerivedClassCreation(unittest.TestCase):
             pass
 
         obj = DerivedObjectProxy(function)
+
+        self.assertIsInstance(obj, DerivedObjectProxy)
+        self.assertIs(obj.__wrapped__, function)
 
     def test_derived_setattr(self):
 
