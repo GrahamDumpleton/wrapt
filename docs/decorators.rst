@@ -291,7 +291,7 @@ normal.
         pass
 
     >>> type(function)
-    <type 'FunctionWrapper'>
+    <class 'FunctionWrapper'>
 
 If however the ``enabled`` option was ``False``, then no wrapper is added
 to the target function and the original function returned instead.
@@ -309,7 +309,7 @@ to the target function and the original function returned instead.
         pass
 
     >>> type(function)
-    <type 'function'>
+    <class 'function'>
 
 In this scenario, as no wrapper is applied there is no runtime overhead
 at the point of call when the decorator had been disabled. This therefore

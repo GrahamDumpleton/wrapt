@@ -72,12 +72,12 @@ proxy object.
     >>> value = 1
     >>> proxy = wrapt.ObjectProxy(value)
     >>> type(proxy)
-    <type 'ObjectProxy'>
+    <class 'ObjectProxy'>
 
     >>> proxy += 1
 
     >>> type(proxy)
-    <type 'ObjectProxy'>
+    <class 'ObjectProxy'>
 
     >>> print(proxy)
     2
@@ -98,7 +98,7 @@ of any derived class type if creating a custom object proxy.
     >>> value = 1
     >>> proxy = wrapt.ObjectProxy(value)
     >>> type(proxy)
-    <type 'ObjectProxy'>
+    <class 'ObjectProxy'>
 
     >>> class CustomProxy(wrapt.ObjectProxy):
     ...     pass
@@ -125,7 +125,7 @@ type for the wrapped object.
 ::
 
     >>> proxy.__class__
-    <type 'int'>
+    <class 'int'>
 
 Note that ``isinstance()`` will still also succeed if comparing to the
 ``ObjectProxy`` type. It is therefore still possible to use ``isinstance()``
@@ -283,13 +283,13 @@ definition.
            del self._self_attribute
 
     >>> proxy = CustomProxy(1)
-    >>> print proxy.attribute
+    >>> print(proxy.attribute)
     1
     >>> proxy.attribute = 2
-    >>> print proxy.attribute
+    >>> print(proxy.attribute)
     2
     >>> del proxy.attribute
-    >>> print proxy.attribute
+    >>> print(proxy.attribute)
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
     AttributeError: 'int' object has no attribute 'attribute'
@@ -307,13 +307,13 @@ that then being overridden if necessary, with a specific value in the
             self.attribute = 1
 
     >>> proxy = CustomProxy(1)
-    >>> print proxy.attribute
+    >>> print(proxy.attribute)
     1
     >>> proxy.attribute = 2
-    >>> print proxy.attribute
+    >>> print(proxy.attribute)
     2
     >>> del proxy.attribute
-    >>> print proxy.attribute
+    >>> print(proxy.attribute)
     None
 
 Just be aware that although the attribute can be deleted from the instance
