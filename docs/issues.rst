@@ -101,6 +101,57 @@ an exception of:
 This is due to what can be argued as being a bug in The Python standard
 library and has been reported (https://bugs.python.org/issue44847).
 
+Using issubclass() and isinstance() with proxied types
+-------------------------------------------------------
+
+When wrapping a class (type) object with ``ObjectProxy``, the
+``issubclass()`` and ``isinstance()`` checks work correctly when the
+proxy appears on the **right** side of the check:
+
+::
+
+    import wrapt
+
+    class Base:
+        pass
+
+    class Child(Base):
+        pass
+
+    proxy = wrapt.ObjectProxy(Base)
+
+    issubclass(Child, proxy)       # True
+    isinstance(Child(), proxy)     # True
+
+This works because Python calls ``__subclasscheck__`` or
+``__instancecheck__`` on the proxy, and ``ObjectProxy`` delegates these
+to the wrapped type.
+
+There are two cases that **cannot** be fixed when the proxy appears on
+the **left** side of the check:
+
+1. ``issubclass(proxy, WrappedClass)`` returns ``False`` when testing
+   against the same class the proxy wraps. This is because CPython's
+   ``issubclass()`` first performs an identity check (``proxy is
+   WrappedClass``), which fails since the proxy is not the actual class.
+   It then walks ``proxy.__bases__`` looking for the class, but a class
+   is not in its own ``__bases__``. Checking against *ancestors* of the
+   wrapped class works correctly since they are found via the
+   ``__bases__`` walk.
+
+   ::
+
+       proxy = wrapt.ObjectProxy(Child)
+
+       issubclass(proxy, Base)    # True — Base is in Child.__bases__
+       issubclass(proxy, Child)   # False — identity check fails
+
+2. ``issubclass(proxy, ABCClass)`` raises ``TypeError`` when the
+   right-hand class uses ``abc.ABCMeta`` as its metaclass. The C-level
+   ``__subclasscheck__`` in ``ABCMeta`` strictly requires its argument
+   to be a real class. This is the same limitation described in the
+   `Using issubclass() on abstract classes`_ section above.
+
 \_\_qualname\_\_ snapshot vs live-read divergence
 --------------------------------------------------
 

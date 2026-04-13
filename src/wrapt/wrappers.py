@@ -624,6 +624,15 @@ class ObjectProxy(metaclass=_ObjectProxyMetaType):
     def __reduce_ex__(self, protocol):
         raise NotImplementedError("object proxy must define __reduce_ex__()")
 
+    def __instancecheck__(self, instance):
+        return isinstance(instance, self.__wrapped__)
+
+    def __subclasscheck__(self, subclass):
+        if hasattr(subclass, "__wrapped__"):
+            return issubclass(subclass.__wrapped__, self.__wrapped__)
+        else:
+            return issubclass(subclass, self.__wrapped__)
+
 
 class CallableObjectProxy(ObjectProxy):
     """An object proxy for callable objects that also forwards calls."""
@@ -835,23 +844,6 @@ class _FunctionWrapperBase(ObjectProxy):
 
         if hasattr(self.__wrapped__, "__set_name__"):
             self.__wrapped__.__set_name__(owner, name)
-
-    def __instancecheck__(self, instance):
-        # This is a special method used by isinstance() to make checks
-        # instance of the `__wrapped__`.
-        return isinstance(instance, self.__wrapped__)
-
-    def __subclasscheck__(self, subclass):
-        # This is a special method used by issubclass() to make checks
-        # about inheritance of classes. We need to upwrap any object
-        # proxy. Not wanting to add this to ObjectProxy as not sure of
-        # broader implications of doing that. Thus restrict to
-        # FunctionWrapper used by decorators.
-
-        if hasattr(subclass, "__wrapped__"):
-            return issubclass(subclass.__wrapped__, self.__wrapped__)
-        else:
-            return issubclass(subclass, self.__wrapped__)
 
 
 _FUNCTION_WRAPPER_SLOTS = frozenset(

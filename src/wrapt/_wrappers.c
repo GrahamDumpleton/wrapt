@@ -3041,6 +3041,75 @@ static PyObject *WraptObjectProxy_richcompare(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *
+WraptObjectProxy_instancecheck(WraptObjectProxyObject *self,
+                               PyObject *instance)
+{
+  int check = 0;
+
+  if (!self->wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(self) == -1)
+      return NULL;
+  }
+
+  check = PyObject_IsInstance(instance, self->wrapped);
+
+  if (check < 0)
+  {
+    return NULL;
+  }
+
+  return PyBool_FromLong(check);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *
+WraptObjectProxy_subclasscheck(WraptObjectProxyObject *self,
+                               PyObject *args)
+{
+  PyObject *subclass = NULL;
+  PyObject *object = NULL;
+
+  int check = 0;
+
+  if (!self->wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(self) == -1)
+      return NULL;
+  }
+
+  if (!PyArg_ParseTuple(args, "O", &subclass))
+    return NULL;
+
+  wrapt_module_state *state =
+      wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  object = PyObject_GetAttr(subclass, state->str_wrapped);
+
+  if (!object)
+  {
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      return NULL;
+    PyErr_Clear();
+  }
+
+  check = PyObject_IsSubclass(object ? object : subclass,
+                              self->wrapped);
+
+  Py_XDECREF(object);
+
+  if (check == -1)
+    return NULL;
+
+  return PyBool_FromLong(check);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyMethodDef WraptObjectProxy_methods[] = {
     {"__self_setattr__", (PyCFunction)WraptObjectProxy_self_setattr,
      METH_VARARGS, 0},
@@ -3068,6 +3137,10 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     {"__complex__", (PyCFunction)WraptObjectProxy_complex, METH_NOARGS, 0},
     {"__mro_entries__", (PyCFunction)WraptObjectProxy_mro_entries,
      METH_VARARGS | METH_KEYWORDS, 0},
+    {"__instancecheck__", (PyCFunction)WraptObjectProxy_instancecheck,
+     METH_O, 0},
+    {"__subclasscheck__", (PyCFunction)WraptObjectProxy_subclasscheck,
+     METH_VARARGS, 0},
     {NULL, NULL},
 };
 
@@ -3892,75 +3965,6 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
 /* ------------------------------------------------------------------------- */
 
 static PyObject *
-WraptFunctionWrapperBase_instancecheck(WraptFunctionWrapperObject *self,
-                                       PyObject *instance)
-{
-  int check = 0;
-
-  if (!self->object_proxy.wrapped)
-  {
-    if (raise_uninitialized_wrapper_error(&self->object_proxy) == -1)
-      return NULL;
-  }
-
-  check = PyObject_IsInstance(instance, self->object_proxy.wrapped);
-
-  if (check < 0)
-  {
-    return NULL;
-  }
-
-  return PyBool_FromLong(check);
-}
-
-/* ------------------------------------------------------------------------- */
-
-static PyObject *
-WraptFunctionWrapperBase_subclasscheck(WraptFunctionWrapperObject *self,
-                                       PyObject *args)
-{
-  PyObject *subclass = NULL;
-  PyObject *object = NULL;
-
-  int check = 0;
-
-  if (!self->object_proxy.wrapped)
-  {
-    if (raise_uninitialized_wrapper_error(&self->object_proxy) == -1)
-      return NULL;
-  }
-
-  if (!PyArg_ParseTuple(args, "O", &subclass))
-    return NULL;
-
-  wrapt_module_state *state =
-      wrapt_state_from_type(Py_TYPE(self));
-  if (!state)
-    return NULL;
-
-  object = PyObject_GetAttr(subclass, state->str_wrapped);
-
-  if (!object)
-  {
-    if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-      return NULL;
-    PyErr_Clear();
-  }
-
-  check = PyObject_IsSubclass(object ? object : subclass,
-                              self->object_proxy.wrapped);
-
-  Py_XDECREF(object);
-
-  if (check == -1)
-    return NULL;
-
-  return PyBool_FromLong(check);
-}
-
-/* ------------------------------------------------------------------------- */
-
-static PyObject *
 WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
                                            void *closure)
 {
@@ -4053,10 +4057,6 @@ WraptFunctionWrapperBase_get_self_owner(WraptFunctionWrapperObject *self,
 static PyMethodDef WraptFunctionWrapperBase_methods[] = {
     {"__set_name__", (PyCFunction)WraptFunctionWrapperBase_set_name,
      METH_VARARGS | METH_KEYWORDS, 0},
-    {"__instancecheck__", (PyCFunction)WraptFunctionWrapperBase_instancecheck,
-     METH_O, 0},
-    {"__subclasscheck__", (PyCFunction)WraptFunctionWrapperBase_subclasscheck,
-     METH_VARARGS, 0},
     {NULL, NULL},
 };
 

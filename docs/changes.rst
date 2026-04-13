@@ -77,6 +77,13 @@ their help is much appreciated.
   ``__init__``, it raises ``WrapperNotInitializedError`` (a ``ValueError``)
   which will not be silently ignored.
 
+* Added ``__instancecheck__`` and ``__subclasscheck__`` to ``ObjectProxy``
+  so that ``isinstance()`` and ``issubclass()`` work correctly when a proxied
+  type appears on the right-hand side of the check. Previously these methods
+  were only available on ``FunctionWrapper``. See the "Using issubclass() and
+  isinstance() with proxied types" section of :doc:`issues` for remaining
+  limitations when the proxy appears on the left-hand side.
+
 **Bugs Fixed**
 
 * Fixed a ``Py_DECREF(NULL)`` crash in the C implementation of all inplace
