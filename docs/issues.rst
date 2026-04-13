@@ -127,8 +127,8 @@ This works because Python calls ``__subclasscheck__`` or
 ``__instancecheck__`` on the proxy, and ``ObjectProxy`` delegates these
 to the wrapped type.
 
-There are two cases that **cannot** be fixed when the proxy appears on
-the **left** side of the check:
+There are several cases that **cannot** be fixed when the proxy appears
+on the **left** side of the check:
 
 1. ``issubclass(proxy, WrappedClass)`` returns ``False`` when testing
    against the same class the proxy wraps. This is because CPython's
@@ -151,6 +151,55 @@ the **left** side of the check:
    ``__subclasscheck__`` in ``ABCMeta`` strictly requires its argument
    to be a real class. This is the same limitation described in the
    `Using issubclass() on abstract classes`_ section above.
+
+3. ``isinstance(proxy, typing.Dict)`` and other ``typing`` generic
+   aliases return ``False`` when the proxy wraps a matching value. This
+   happens because ``typing._BaseGenericAlias.__instancecheck__`` is
+   implemented using ``type(obj)`` rather than ``obj.__class__``.
+   Because ``type()`` returns the concrete C-level type, it sees
+   ``ObjectProxy`` instead of the wrapped object's class, and the check
+   fails. This is a known CPython issue
+   (https://github.com/python/cpython/issues/89949).
+
+   ::
+
+       from typing import Dict
+       import wrapt
+
+       proxy = wrapt.ObjectProxy({1: 2})
+
+       isinstance(proxy, dict)    # True — default __instancecheck__ uses __class__
+       isinstance(proxy, Dict)    # False — typing uses type(obj)
+
+   The workaround is to check against the origin type instead::
+
+       import typing
+
+       isinstance(proxy, typing.get_origin(Dict))    # True
+
+   Note that the newer parameterised generic syntax (``dict[str, int]``)
+   does not support ``isinstance()`` checks at all — with or without a
+   proxy — and raises ``TypeError``.
+
+More generally, any ``__instancecheck__`` or ``__subclasscheck__``
+implementation that calls ``type(obj)`` instead of inspecting
+``obj.__class__`` will see ``ObjectProxy`` rather than the wrapped
+type. The same applies to C-level type-check macros such as
+``PyTuple_Check`` or ``PyDict_Check``, which inspect the internal
+``ob_type`` field directly. Code paths that rely on these C-level
+checks — for example, the C-accelerated JSON encoder in the standard
+library — will not recognise a proxied object as the type it wraps::
+
+    import json
+    import wrapt
+
+    proxy = wrapt.ObjectProxy((1, 2, 3))
+
+    json.dumps(proxy)    # TypeError — C encoder does not see a tuple
+
+This is an inherent limitation of the transparent proxy pattern: the
+proxy can override ``__class__`` at the Python level, but it cannot
+change the object's C-level type.
 
 \_\_qualname\_\_ snapshot vs live-read divergence
 --------------------------------------------------
