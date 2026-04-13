@@ -494,8 +494,6 @@ class ObjectProxy(metaclass=_ObjectProxyMetaType):
         else:
             return self.__object_proxy__(self.__wrapped__ % other)
 
-        return self
-
     def __ipow__(self, other):  # type: ignore[misc]
         if hasattr(self.__wrapped__, "__ipow__"):
             self.__wrapped__ **= other
