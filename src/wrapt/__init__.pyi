@@ -335,8 +335,8 @@ if sys.version_info >= (3, 10):
         target: ModuleType | type[Any] | Any | str,
         name: str,
         factory: WrapperFactory | type[ObjectProxy[Any]],
-        args: tuple[Any, ...],
-        kwargs: dict[str, Any],
+        args: tuple[Any, ...] = (),
+        kwargs: dict[str, Any] = {},
     ) -> Any: ...
 
     # wrap_object_attribute()
