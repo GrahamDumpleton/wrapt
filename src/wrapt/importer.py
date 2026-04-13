@@ -207,25 +207,25 @@ class ImportHookFinder:
         self.in_progress = {}
 
     def find_module(self, fullname, path=None):
-        # If the module being imported is not one we have registered
-        # post import hooks for, we can return immediately. We will
-        # take no further part in the importing of this module.
-
         with _post_import_hooks_lock:
+            # If the module being imported is not one we have registered
+            # post import hooks for, we can return immediately. We will
+            # take no further part in the importing of this module.
+
             if fullname not in _post_import_hooks:
                 return None
 
-        # When we are interested in a specific module, we will call back
-        # into the import system a second time to defer to the import
-        # finder that is supposed to handle the importing of the module.
-        # We set an in progress flag for the target module so that on
-        # the second time through we don't trigger another call back
-        # into the import system and cause a infinite loop.
+            # When we are interested in a specific module, we will call back
+            # into the import system a second time to defer to the import
+            # finder that is supposed to handle the importing of the module.
+            # We set an in progress flag for the target module so that on
+            # the second time through we don't trigger another call back
+            # into the import system and cause a infinite loop.
 
-        if fullname in self.in_progress:
-            return None
+            if fullname in self.in_progress:
+                return None
 
-        self.in_progress[fullname] = True
+            self.in_progress[fullname] = True
 
         # Now call back into the import system again.
 
@@ -251,25 +251,25 @@ class ImportHookFinder:
         # instead of find_module() and since Python 3.10 you get deprecation
         # warnings if you don't define find_spec().
 
-        # If the module being imported is not one we have registered
-        # post import hooks for, we can return immediately. We will
-        # take no further part in the importing of this module.
-
         with _post_import_hooks_lock:
+            # If the module being imported is not one we have registered
+            # post import hooks for, we can return immediately. We will
+            # take no further part in the importing of this module.
+
             if fullname not in _post_import_hooks:
                 return None
 
-        # When we are interested in a specific module, we will call back
-        # into the import system a second time to defer to the import
-        # finder that is supposed to handle the importing of the module.
-        # We set an in progress flag for the target module so that on
-        # the second time through we don't trigger another call back
-        # into the import system and cause a infinite loop.
+            # When we are interested in a specific module, we will call back
+            # into the import system a second time to defer to the import
+            # finder that is supposed to handle the importing of the module.
+            # We set an in progress flag for the target module so that on
+            # the second time through we don't trigger another call back
+            # into the import system and cause a infinite loop.
 
-        if fullname in self.in_progress:
-            return None
+            if fullname in self.in_progress:
+                return None
 
-        self.in_progress[fullname] = True
+            self.in_progress[fullname] = True
 
         # Now call back into the import system again.
 
