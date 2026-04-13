@@ -90,22 +90,6 @@ def register_post_import_hook(hook, name):
 # Register post import hooks defined as package entry points.
 
 
-def _create_import_hook_from_entrypoint(entrypoint):
-    def import_hook(module):
-        entrypoint_value = entrypoint.value.split(":")
-        module_name = entrypoint_value[0]
-        __import__(module_name)
-        callback = sys.modules[module_name]
-
-        if len(entrypoint_value) > 1:
-            attrs = entrypoint_value[1].split(".")
-            for attr in attrs:
-                callback = getattr(callback, attr)
-        return callback(module)
-
-    return import_hook
-
-
 def discover_post_import_hooks(group):
     """
     Discover and register post import hooks defined as package entry points
@@ -155,15 +139,6 @@ def notify_module_loaded(module):
 # modules and watches out for attempts to import target modules of
 # interest. When a module of interest is imported, then any post import
 # hooks which are registered will be invoked.
-
-
-class _ImportHookLoader:
-
-    def load_module(self, fullname):
-        module = sys.modules[fullname]
-        notify_module_loaded(module)
-
-        return module
 
 
 class _ImportHookChainedLoader(BaseObjectProxy):
