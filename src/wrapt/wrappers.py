@@ -710,11 +710,9 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, "_self_owner", owner)
 
     def __get__(self, instance, owner):
-        # This method is actually doing double duty for both unbound and bound
-        # derived wrapper classes. It should possibly be broken up and the
-        # distinct functionality moved into the derived classes. Can't do that
-        # straight away due to some legacy code which is relying on it being
-        # here in this base class.
+        # This method handles both unbound and bound derived wrapper classes.
+        # It is kept in the base class as the amount of common code makes it
+        # impractical to split into the derived classes.
         #
         # The distinguishing attribute which determines whether we are being
         # called in an unbound or bound wrapper is the parent attribute. If
