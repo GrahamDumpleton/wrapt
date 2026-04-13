@@ -655,8 +655,8 @@ supplied at a later time via a callable which will only be called the first
 time the wrapped object is needed.
 
 The callable which is used to create the wrapped object is supplied as
-the ``factory`` argument to the constructor of ``LazyObjectProxy``. The
-``factory`` callable should accept no arguments and return the object to
+the ``callback`` argument to the constructor of ``LazyObjectProxy``. The
+``callback`` callable should accept no arguments and return the object to
 be wrapped.
 
 An example of using ``LazyObjectProxy`` is to lazily import a Python module,
