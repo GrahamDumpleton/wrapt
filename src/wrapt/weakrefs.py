@@ -1,3 +1,5 @@
+"""Weak reference proxy for functions and bound methods."""
+
 import functools
 import weakref
 

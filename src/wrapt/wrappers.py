@@ -1,3 +1,5 @@
+"""Core object proxy and function wrapper implementations."""
+
 import inspect
 import operator
 import sys
@@ -118,6 +120,8 @@ class _ObjectProxyMetaType(type):
 
 
 class ObjectProxy(metaclass=_ObjectProxyMetaType):
+    """A transparent object proxy that delegates attribute access to a
+    wrapped object."""
 
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""
@@ -622,6 +626,7 @@ class ObjectProxy(metaclass=_ObjectProxyMetaType):
 
 
 class CallableObjectProxy(ObjectProxy):
+    """An object proxy for callable objects that also forwards calls."""
 
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):
@@ -864,6 +869,7 @@ _FUNCTION_WRAPPER_SLOTS = frozenset(
 
 
 class BoundFunctionWrapper(_FunctionWrapperBase):
+    """A wrapper for bound methods, classmethods, and staticmethods."""
 
     def __setattr__(self, name, value):
         if name.startswith("_self_") and name not in _FUNCTION_WRAPPER_SLOTS:

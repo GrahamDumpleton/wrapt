@@ -1,3 +1,5 @@
+"""Utilities for monkey patching and wrapping object attributes."""
+
 import inspect
 import sys
 
@@ -100,6 +102,8 @@ def wrap_object(target, name, factory, args=(), kwargs=None):
 
 
 class AttributeWrapper:
+    """A descriptor that intercepts access to an instance attribute to apply
+    a wrapper factory."""
 
     def __init__(self, attribute, factory, args, kwargs):
         self.attribute = attribute
