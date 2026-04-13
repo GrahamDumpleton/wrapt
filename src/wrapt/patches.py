@@ -62,9 +62,8 @@ def resolve_path(target, name):
 
 def apply_patch(parent, attribute, replacement):
     """
-    Convenience function for applying a patch to an attribute. Currently this
-    maps to the standard setattr() function, but in the future may be extended
-    to support more complex patching strategies.
+    Convenience function for applying a patch to an attribute. This maps to
+    the standard setattr() function.
     """
 
     setattr(parent, attribute, replacement)
