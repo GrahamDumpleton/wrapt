@@ -333,8 +333,7 @@ class ObjectProxy(metaclass=_ObjectProxyMetaType):
                 object.__getattribute__(self, "__init_called__")
             except AttributeError:
                 raise AttributeError(
-                    f"'{type(self).__name__}' object has no attribute "
-                    f"'__wrapped__'"
+                    f"'{type(self).__name__}' object has no attribute " f"'__wrapped__'"
                 )
 
             raise WrapperNotInitializedError(
@@ -846,14 +845,16 @@ class _FunctionWrapperBase(ObjectProxy):
             return issubclass(subclass, self.__wrapped__)
 
 
-_FUNCTION_WRAPPER_SLOTS = frozenset((
-    "_self_instance",
-    "_self_wrapper",
-    "_self_enabled",
-    "_self_binding",
-    "_self_parent",
-    "_self_owner",
-))
+_FUNCTION_WRAPPER_SLOTS = frozenset(
+    (
+        "_self_instance",
+        "_self_wrapper",
+        "_self_enabled",
+        "_self_binding",
+        "_self_parent",
+        "_self_owner",
+    )
+)
 
 
 class BoundFunctionWrapper(_FunctionWrapperBase):
