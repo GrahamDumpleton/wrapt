@@ -2257,8 +2257,7 @@ static PyObject *WraptObjectProxy_self_setattr(WraptObjectProxyObject *self,
     return NULL;
   }
 
-  Py_INCREF(Py_None);
-  return Py_None;
+  Py_RETURN_NONE;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3880,8 +3879,7 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
     if (!PyErr_ExceptionMatches(PyExc_AttributeError))
       return NULL;
     PyErr_Clear();
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   result = PyObject_Call(method, args, kwds);
@@ -3897,8 +3895,6 @@ static PyObject *
 WraptFunctionWrapperBase_instancecheck(WraptFunctionWrapperObject *self,
                                        PyObject *instance)
 {
-  PyObject *result = NULL;
-
   int check = 0;
 
   if (!self->object_proxy.wrapped)
@@ -3914,10 +3910,7 @@ WraptFunctionWrapperBase_instancecheck(WraptFunctionWrapperObject *self,
     return NULL;
   }
 
-  result = check ? Py_True : Py_False;
-
-  Py_INCREF(result);
-  return result;
+  return PyBool_FromLong(check);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3928,7 +3921,6 @@ WraptFunctionWrapperBase_subclasscheck(WraptFunctionWrapperObject *self,
 {
   PyObject *subclass = NULL;
   PyObject *object = NULL;
-  PyObject *result = NULL;
 
   int check = 0;
 
@@ -3963,11 +3955,7 @@ WraptFunctionWrapperBase_subclasscheck(WraptFunctionWrapperObject *self,
   if (check == -1)
     return NULL;
 
-  result = check ? Py_True : Py_False;
-
-  Py_INCREF(result);
-
-  return result;
+  return PyBool_FromLong(check);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3978,8 +3966,7 @@ WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
 {
   if (!self->instance)
   {
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   Py_INCREF(self->instance);
@@ -3994,8 +3981,7 @@ WraptFunctionWrapperBase_get_self_wrapper(WraptFunctionWrapperObject *self,
 {
   if (!self->wrapper)
   {
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   Py_INCREF(self->wrapper);
@@ -4010,8 +3996,7 @@ WraptFunctionWrapperBase_get_self_enabled(WraptFunctionWrapperObject *self,
 {
   if (!self->enabled)
   {
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   Py_INCREF(self->enabled);
@@ -4026,8 +4011,7 @@ WraptFunctionWrapperBase_get_self_binding(WraptFunctionWrapperObject *self,
 {
   if (!self->binding)
   {
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   Py_INCREF(self->binding);
@@ -4042,8 +4026,7 @@ WraptFunctionWrapperBase_get_self_parent(WraptFunctionWrapperObject *self,
 {
   if (!self->parent)
   {
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   Py_INCREF(self->parent);
@@ -4058,8 +4041,7 @@ WraptFunctionWrapperBase_get_self_owner(WraptFunctionWrapperObject *self,
 {
   if (!self->owner)
   {
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
   }
 
   Py_INCREF(self->owner);
