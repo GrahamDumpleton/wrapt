@@ -66,6 +66,33 @@ class _ObjectProxyMethods:
         return self.__wrapped__.__weakref__
 
 
+class _ObjectProxyDictBase:
+    """Base class whose sole purpose is to provide a ``getset_descriptor``
+    for ``__dict__`` that is valid for all ``ObjectProxy`` subclasses.
+    The metaclass installs this descriptor as ``__self_dict__`` so that
+    the real instance dictionary of the proxy can always be accessed,
+    even though ``ObjectProxy`` replaces ``__dict__`` with a property
+    that delegates to the wrapped object."""
+
+    pass
+
+
+_REAL_DICT_DESCRIPTOR = type.__dict__["__dict__"].__get__(_ObjectProxyDictBase)[
+    "__dict__"
+]
+
+
+def _get_self_dict(self):
+    return _REAL_DICT_DESCRIPTOR.__get__(self)
+
+
+# Wrapping the descriptor in a read-only property ensures that
+# ``proxy.__self_dict__ = value`` raises AttributeError rather than
+# replacing the real instance dictionary (which would break the proxy).
+
+_SELF_DICT_PROPERTY = property(_get_self_dict)
+
+
 class _ObjectProxyMetaType(type):
     # Properties on the metaclass control type-level access to __module__
     # and __doc__ (e.g. ObjectProxy.__module__). Without these, the
@@ -107,7 +134,20 @@ class _ObjectProxyMetaType(type):
         real_module = dictionary.get("__module__")
         real_doc = dictionary.get("__doc__")
 
+        # If the subclass defines its own __dict__ property, preserve it
+        # rather than overwriting it with the default delegating property
+        # from _ObjectProxyMethods. When __dict__ is not explicitly
+        # defined in the class body, it will not be present in the
+        # dictionary at this point.
+
+        custom_dict = dictionary.get("__dict__")
+
         dictionary.update(vars(_ObjectProxyMethods))
+
+        if custom_dict is not None:
+            dictionary["__dict__"] = custom_dict
+
+        dictionary.setdefault("__self_dict__", _SELF_DICT_PROPERTY)
 
         klass = type.__new__(cls, name, bases, dictionary)
 
@@ -119,7 +159,7 @@ class _ObjectProxyMetaType(type):
         return klass
 
 
-class ObjectProxy(metaclass=_ObjectProxyMetaType):
+class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     """A transparent object proxy that delegates attribute access to a
     wrapped object."""
 

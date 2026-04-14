@@ -2855,6 +2855,21 @@ static int WraptObjectProxy_set_dict(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_get_self_dict(WraptObjectProxyObject *self)
+{
+  if (!self->dict)
+  {
+    self->dict = PyDict_New();
+    if (!self->dict)
+      return NULL;
+  }
+
+  Py_INCREF(self->dict);
+  return self->dict;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_get_wrapped(WraptObjectProxyObject *self)
 {
   if (!self->wrapped)
@@ -3155,6 +3170,7 @@ static PyGetSetDef WraptObjectProxy_getset[] = {
      (setter)WraptObjectProxy_set_annotations, 0},
     {"__dict__", (getter)WraptObjectProxy_get_dict,
      (setter)WraptObjectProxy_set_dict, 0},
+    {"__self_dict__", (getter)WraptObjectProxy_get_self_dict, 0, 0},
     {"__wrapped__", (getter)WraptObjectProxy_get_wrapped,
      (setter)WraptObjectProxy_set_wrapped, 0},
     {"__object_proxy__", (getter)WraptObjectProxy_get_object_proxy, 0, 0},

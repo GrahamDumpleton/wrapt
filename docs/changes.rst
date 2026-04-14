@@ -43,6 +43,20 @@ their help is much appreciated.
   This avoids eagerly importing modules solely for the purpose of monkey
   patching them.
 
+* Added ``__self_dict__`` to ``ObjectProxy`` to allow introspection of the
+  proxy's own instance dictionary. Because ``ObjectProxy`` replaces
+  ``__dict__`` with a property that delegates to the wrapped object,
+  ``vars(proxy)`` returns the wrapped object's attributes rather than the
+  proxy's, which previously made it impossible to see what ``_self_``
+  attributes were stored on the proxy itself. ``__self_dict__`` returns
+  the live instance dictionary of the proxy, so mutations to it are
+  reflected on the proxy. The metaclass used by the pure Python
+  ``ObjectProxy`` was also updated to preserve a custom ``__dict__``
+  property defined on a subclass rather than overwriting it with the
+  default delegating property, allowing subclasses to provide their own
+  combined view if desired. See the "Introspecting the ObjectProxy
+  instance __dict__" section of :doc:`issues` for details.
+
 **Features Changed**
 
 * Improved attribute access on ``BoundFunctionWrapper`` to delegate lookups to

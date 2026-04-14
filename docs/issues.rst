@@ -289,3 +289,65 @@ applications that genuinely need to mutate a shared proxy from multiple
 threads should serialise those mutations externally (for example, with
 a ``threading.Lock`` held across both the write and any concurrent
 read).
+
+Introspecting the ObjectProxy instance \_\_dict\_\_
+----------------------------------------------------
+
+``ObjectProxy`` replaces ``__dict__`` with a property that delegates to
+the wrapped object. This means that ``vars(proxy)`` returns the wrapped
+object's ``__dict__`` rather than the proxy's own instance dictionary::
+
+    import wrapt
+
+    class Target:
+        def __init__(self, name):
+            self.name = name
+
+    class MyProxy(wrapt.ObjectProxy):
+        def __init__(self, wrapped):
+            super().__init__(wrapped)
+            self._self_tag = "example"
+
+    target = Target("test")
+    proxy = MyProxy(target)
+
+    vars(proxy)       # {'name': 'test'} — no '_self_tag'
+
+This is by design — the proxy is meant to be transparent — but it makes
+it difficult to introspect what attributes are stored on the proxy
+instance itself.
+
+To allow introspection of the proxy's own instance dictionary,
+``ObjectProxy`` exposes it as ``__self_dict__``::
+
+    proxy.__self_dict__    # {'_self_tag': 'example', ...}
+
+This returns the live instance dictionary of the proxy, so any
+``_self_`` attributes set on the proxy will appear there. Mutations to
+the returned dictionary are reflected on the proxy.
+
+If the combined view of the wrapped object's ``__dict__`` together with
+the proxy's own ``_self_`` attributes is desired as the result of
+``vars()``, a derived ``ObjectProxy`` can override ``__dict__`` with its
+own property::
+
+    class IntrospectableProxy(wrapt.ObjectProxy):
+        def __init__(self, wrapped):
+            super().__init__(wrapped)
+            self._self_tag = "example"
+            self._self_count = 0
+
+        @property
+        def __dict__(self):
+            result = self.__wrapped__.__dict__.copy()
+            result.update(self.__self_dict__)
+            return result
+
+    target = Target("test")
+    proxy = IntrospectableProxy(target)
+
+    vars(proxy)       # includes 'name' from target and '_self_tag', '_self_count'
+
+Note that because the result is a copy, modifying the dictionary returned
+by ``vars()`` in this case will not affect either the proxy or the
+wrapped object.
