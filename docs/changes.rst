@@ -305,6 +305,17 @@ their help is much appreciated.
   against the owner class, and calls the wrapper with ``instance=None`` when
   no arguments are provided rather than raising ``TypeError``.
 
+* Fixed a crash (SIGSEGV) in the C implementation of ``ObjectProxy.__pow__``
+  when a proxy was passed as the modulo argument to the ternary form of the
+  builtin ``pow()``. The ``nb_power`` slot unwrapped the first two arguments
+  but not modulo before calling ``PyNumber_Power``, so CPython's ternary
+  operator fallback recursed back into the same slot indefinitely and
+  overflowed the C stack. The slot now returns ``NotImplemented`` when modulo
+  is a proxy, causing ``TypeError`` to be raised instead, matching the
+  behaviour of the pure-Python and PyPy implementations which do not unwrap
+  modulo either. See the "Ternary ``pow()`` with ObjectProxy" section of
+  :doc:`issues` for the resulting calling convention.
+
 Version 2.1.2
 -------------
 
