@@ -201,6 +201,95 @@ This is an inherent limitation of the transparent proxy pattern: the
 proxy can override ``__class__`` at the Python level, but it cannot
 change the object's C-level type.
 
+Using the json module with ObjectProxy
+--------------------------------------
+
+Serialising an ``ObjectProxy`` with the standard library ``json`` module
+does not work reliably, even when the wrapped object is a type that
+``json`` natively supports. The reason is the same C-level type check
+issue described in the preceding section: the C-accelerated encoder
+that ``json.dumps()`` uses by default inspects the internal ``ob_type``
+field of each value rather than calling ``isinstance()``, and therefore
+does not recognise a proxied ``dict``, ``list``, ``tuple``, ``str``,
+``int``, ``float`` or ``bool`` as the type it wraps.
+
+For example, the following raises ``TypeError`` from the C encoder,
+even though the proxy wraps a plain ``dict``::
+
+    import json
+    import wrapt
+
+    proxy = wrapt.ObjectProxy({"b": "123"})
+
+    json.dumps({"a": proxy})    # TypeError: ... is not JSON serializable
+
+The ``json`` module falls back to its pure Python encoder in a handful
+of cases, most notably when ``indent`` is supplied. The pure Python
+encoder uses ``isinstance()`` checks, which ``ObjectProxy`` satisfies
+for the wrapped type, so the same call succeeds if ``indent`` is
+passed::
+
+    json.dumps({"a": proxy}, indent=4)    # works, pure Python encoder
+
+Relying on ``indent`` as a way to force a working encoder is fragile
+(it is an implementation detail of the standard library and affects
+output formatting), so it should not be treated as a real fix.
+
+The supported approach is to supply a ``default`` fallback to
+``json.dumps()`` that unwraps any ``ObjectProxy`` instance. The
+``default`` callable is invoked by the encoder for any value it does
+not otherwise know how to serialise, and its return value is then
+encoded in place of the original::
+
+    import json
+    import wrapt
+
+    def unwrap_proxy(obj):
+        if isinstance(obj, wrapt.ObjectProxy):
+            to_json = getattr(obj, "__to_json__", None)
+            if to_json is not None:
+                return to_json()
+            return obj.__wrapped__
+        raise TypeError(
+            f"Object of type {obj.__class__.__name__} is not JSON serializable"
+        )
+
+    json.dumps({"a": proxy}, default=unwrap_proxy)
+
+This pattern also gives derived proxy classes a place to contribute
+extra state to the serialised form. A subclass that wants its own
+attributes to appear alongside the wrapped value can define a
+``__to_json__()`` method (the name is a local convention, not something
+recognised by the ``json`` module) that returns the representation to
+encode::
+
+    class Tagged(wrapt.ObjectProxy):
+        def __init__(self, wrapped, metadata):
+            super().__init__(wrapped)
+            self._self_metadata = metadata
+
+        def __to_json__(self):
+            result = dict(self.__wrapped__)
+            result["_metadata"] = self._self_metadata
+            return result
+
+The ``default`` callback is only consulted for values the encoder
+cannot otherwise handle. When ``indent`` is supplied and the pure
+Python encoder is in use, an ``ObjectProxy`` around a ``dict`` or
+``list`` is recognised directly via ``isinstance()`` and walked
+structurally, so ``__to_json__()`` will not be called in that case.
+Code that needs the ``__to_json__()`` hook to run consistently should
+therefore avoid combining ``indent`` with a proxy over a JSON
+container type, or should apply the unwrapping itself before calling
+``json.dumps()``.
+
+The underlying limitation cannot be fixed in ``wrapt``. The C encoder
+in the standard library is deliberately written against concrete
+C-level types for performance, and a transparent proxy has no way to
+present itself as a different C-level type. Any code path that
+similarly bypasses ``isinstance()`` in favour of C-level type-check
+macros will exhibit the same behaviour.
+
 hasattr() on ObjectProxy and pre-defined dunder methods
 -------------------------------------------------------
 
