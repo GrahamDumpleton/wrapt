@@ -528,7 +528,7 @@ equivalent of::
 is replaced by::
 
     func = setup_class.__func__    # reach past the descriptor
-    func(cls)                       # call the raw function directly
+    func(cls)                     # call the raw function directly
 
 Reading ``__func__`` off a ``@classmethod`` (or ``@staticmethod``)
 returns the underlying plain function, that is, the original function
