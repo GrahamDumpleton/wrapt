@@ -1,6 +1,7 @@
 import unittest
 
 import abc
+import platform
 
 import wrapt
 
@@ -107,6 +108,12 @@ class TestIssubclassProxyOnLeftWithABC(unittest.TestCase):
     in test_inheritance_py37.py for decorated classes.
     """
 
+    @unittest.skipIf(
+        platform.python_implementation() == "PyPy",
+        "PyPy uses the pure-Python abc implementation, which lacks the strict "
+        "PyType_Check guard in CPython's _abc C extension and so does not "
+        "raise TypeError here.",
+    )
     def test_abc_raises_type_error(self):
         class AbstractBase(metaclass=abc.ABCMeta):
             @abc.abstractmethod
