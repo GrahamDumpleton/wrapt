@@ -483,6 +483,55 @@ Note that because the result is a copy, modifying the dictionary returned
 by ``vars()`` in this case will not affect either the proxy or the
 wrapped object.
 
+Ternary ``pow()`` with ObjectProxy
+----------------------------------
+
+The three-argument form of the builtin ``pow()`` function does not accept
+an ``ObjectProxy`` in every argument position, and the set of positions
+that is accepted depends on whether the C extension is in use.
+
+With the pure Python implementation, only the first argument (the base)
+may be an ``ObjectProxy``. This is because the ``__pow__`` method on
+``ObjectProxy`` unwraps ``self`` before delegating to ``pow()``, but it
+does not unwrap the second argument or the modulo argument. When
+``pow()`` is called with a proxy in either of those positions, the
+underlying numeric type has no way to coerce the proxy and a
+``TypeError`` is raised.
+
+With the C extension, the first and second arguments may both be an
+``ObjectProxy`` because the ``nb_power`` slot explicitly unwraps them
+before dispatching to ``PyNumber_Power``. The modulo argument is still
+not unwrapped, for two reasons. Firstly, unwrapping modulo would make
+the C extension behaviour diverge further from the pure Python and PyPy
+implementations, which cannot be made to support a proxy in that slot.
+Secondly, if ``PyNumber_Power`` were invoked with a proxy modulo, the
+CPython ternary operator fallback would end up calling back into the
+proxy's ``nb_power`` slot indefinitely, overflowing the C stack. A
+proxy passed as the modulo argument therefore always results in a
+``TypeError`` regardless of implementation.
+
+The practical consequence is that for portability across the pure
+Python implementation, the C extension and PyPy, callers should pass
+only the base as an ``ObjectProxy`` and should unwrap the exponent and
+modulo arguments themselves where necessary.
+
+::
+
+    import wrapt
+
+    base = wrapt.ObjectProxy(2)
+    exponent = wrapt.ObjectProxy(3)
+    modulo = wrapt.ObjectProxy(5)
+
+    # Portable: only the base is a proxy.
+    pow(base, 3, 5)
+
+    # C extension only: exponent may also be a proxy.
+    pow(base, exponent, 5)
+
+    # Not supported anywhere: unwrap the modulo yourself.
+    pow(base, exponent, modulo.__wrapped__)
+
 pytest setup_class/teardown_class hooks
 ----------------------------------------
 
@@ -584,3 +633,4 @@ into an ordinary helper method that the hook calls, or into a
 ``setup_method`` / ``teardown_method`` hook, both of which are dispatched
 through normal attribute access and therefore honour decorators applied
 via ``@wrapt.decorator``.
+

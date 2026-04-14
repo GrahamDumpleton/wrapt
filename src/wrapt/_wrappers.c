@@ -752,6 +752,18 @@ static PyObject *WraptObjectProxy_divmod(PyObject *o1, PyObject *o2)
 static PyObject *WraptObjectProxy_power(PyObject *o1, PyObject *o2,
                                         PyObject *modulo)
 {
+  /*
+   * If modulo is a proxy we cannot call PyNumber_Power with it, otherwise
+   * we would recurse back into this slot via CPython's ternary_op fallback
+   * and blow the C stack. Return NotImplemented so a TypeError is raised,
+   * matching the pure Python implementation which does not unwrap modulo.
+   */
+
+  if (wrapt_is_proxy(modulo))
+  {
+    Py_RETURN_NOTIMPLEMENTED;
+  }
+
   if (wrapt_is_proxy(o1))
   {
     if (!((WraptObjectProxyObject *)o1)->wrapped)

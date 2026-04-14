@@ -1175,6 +1175,22 @@ class TestAsNumberObjectProxy(unittest.TestCase):
 
         self.assertEqual(pow(three, 2, 2), pow(3, 2, 2))
 
+    def test_pow_modulo_proxy_raises(self):
+        # Regression test for #108. Passing a proxy as the modulo
+        # argument to pow() previously segfaulted with the C extension
+        # because ternary_op would recurse back into the proxy nb_power
+        # slot indefinitely. A proxy modulo is not supported and must
+        # raise TypeError consistently across implementations.
+
+        two = wrapt.ObjectProxy(2)
+        three = wrapt.ObjectProxy(3)
+        five = wrapt.ObjectProxy(5)
+
+        self.assertRaises(TypeError, pow, 2, 3, five)
+        self.assertRaises(TypeError, pow, three, 3, five)
+        self.assertRaises(TypeError, pow, 2, two, five)
+        self.assertRaises(TypeError, pow, three, two, five)
+
     def test_pow_uninitialized_args(self):
         result = object()
 
