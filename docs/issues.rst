@@ -482,3 +482,105 @@ own property::
 Note that because the result is a copy, modifying the dictionary returned
 by ``vars()`` in this case will not affect either the proxy or the
 wrapped object.
+
+pytest setup_class/teardown_class hooks
+----------------------------------------
+
+Decorators implemented using ``@wrapt.decorator`` are silently bypassed
+when applied to the ``setup_class`` or ``teardown_class`` xunit-style
+hooks that ``pytest`` recognises on test classes. The decorator is never
+invoked when ``pytest`` runs the hook, even though the same decorator
+applied to a regular test method, or to ``setup_method`` /
+``teardown_method``, works correctly.
+
+The following test illustrates the problem::
+
+    import wrapt
+
+    @wrapt.decorator
+    def pass_through(wrapped, instance, args, kwargs):
+        return wrapped(*args, foo=1, **kwargs)
+
+    class TestMyClass:
+        @pass_through
+        @classmethod
+        def setup_class(cls, **kwargs):
+            cls.kwargs = kwargs
+
+        def test_something(self):
+            assert self.kwargs == {'foo': 1}
+
+When this is run under ``pytest``, ``test_something`` fails with
+``kwargs`` equal to ``{}`` rather than ``{'foo': 1}``. The
+``pass_through`` decorator is never called. Replacing its body with a
+``raise`` confirms that the wrapper is not entered at all.
+
+The cause is specific to how ``pytest`` invokes the class-level xunit
+hooks. For these hooks, ``pytest`` does not use normal attribute access
+on the class. Instead, it retrieves the attribute statically, then
+extracts the underlying function object by reading ``__func__`` directly
+(via an internal helper ``_pytest.compat.getimfunc``), and finally calls
+that function with the class as an explicit first argument. The
+equivalent of::
+
+    cls.setup_class()        # normal, goes through descriptor protocol
+
+is replaced by::
+
+    func = setup_class.__func__    # reach past the descriptor
+    func(cls)                       # call the raw function directly
+
+Reading ``__func__`` off a ``@classmethod`` (or ``@staticmethod``)
+returns the underlying plain function, that is, the original function
+supplied to the method decorator. When a ``@wrapt.decorator`` has been applied
+on top of the ``@classmethod``, ``wrapt``'s wrapper object sits between
+the classmethod descriptor and the caller, and its behaviour is
+delivered via the descriptor binding protocol. By reading ``__func__``
+and calling the result directly, ``pytest`` bypasses the descriptor
+binding protocol entirely, and with it any decorator that relies on
+that protocol to inject itself into the call.
+
+The same shortcut is taken for ``teardown_class``, and analogous
+behaviour applies to the ``setup_class`` / ``teardown_class`` forms
+whether the method is declared with ``@classmethod``, as a plain
+function taking ``cls``, or as a zero-argument function. By contrast,
+``setup_method`` and ``teardown_method`` are invoked by ``pytest`` via
+normal attribute access on the instance, so the descriptor protocol is
+honoured and ``@wrapt.decorator`` wrappers on those hooks work
+correctly.
+
+This is believed to be an issue in ``pytest`` rather than in ``wrapt``.
+The Python descriptor binding protocol is the language-defined mechanism
+for invoking methods, including ``@classmethod`` and ``@staticmethod``,
+and decorators, proxies and other wrappers legitimately rely on it to
+interpose on calls. Code that reaches past that protocol by extracting
+``__func__`` and calling it directly will skip any wrapping applied via
+the descriptor protocol, regardless of whether the wrapper is from
+``wrapt`` or implemented by some other means. If ``pytest`` were to
+follow normal Python practice, invoking the hook via attribute access on
+the class and allowing the descriptor protocol to deliver the correctly
+bound callable, the problem would not arise.
+
+It is likely that the ``__func__`` extraction in ``pytest`` is a
+historical shortcut rather than a considered design decision. Pytest
+supports three different ways of declaring the class-level xunit hooks,
+namely as a ``@classmethod``, as a plain function taking ``cls``, or as
+a zero-argument function, and the ``__func__`` trick normalises all
+three into a single uniform dispatch: always call the underlying plain
+function with ``cls`` as an explicit argument. This was probably the
+shortest path that worked across older versions of Python, and it has
+remained in place ever since because it handles the common cases. The
+same uniformity could be achieved today without reaching past the
+descriptor protocol, for example by dispatching through normal
+attribute access and using ``inspect.signature`` to decide how many
+arguments to pass, but the original code has never been revisited to
+match more current practice.
+
+Until this is addressed upstream in ``pytest``, the practical workaround
+is to avoid applying ``@wrapt.decorator`` directly on top of
+``@classmethod`` or ``@staticmethod`` for the ``setup_class`` and
+``teardown_class`` hooks. The decorated behaviour can instead be moved
+into an ordinary helper method that the hook calls, or into a
+``setup_method`` / ``teardown_method`` hook, both of which are dispatched
+through normal attribute access and therefore honour decorators applied
+via ``@wrapt.decorator``.
