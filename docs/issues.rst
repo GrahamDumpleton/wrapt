@@ -201,6 +201,137 @@ This is an inherent limitation of the transparent proxy pattern: the
 proxy can override ``__class__`` at the Python level, but it cannot
 change the object's C-level type.
 
+hasattr() on ObjectProxy and pre-defined dunder methods
+-------------------------------------------------------
+
+Although ``ObjectProxy`` is described as a transparent object proxy, in
+practice it always defines a large number of Python "dunder" (double
+underscore) methods on the proxy class itself, regardless of whether the
+wrapped object defines the equivalent method. As a result, ``hasattr()``
+checks for these dunder methods on the proxy always return ``True``,
+even when the same check against the wrapped object directly would
+return ``False``::
+
+    import wrapt
+
+    hasattr(wrapt.ObjectProxy(1), "__contains__")    # True
+    hasattr(1, "__contains__")                       # False
+
+This is a deliberate design trade-off rather than a bug.
+
+For most Python special methods, the interpreter looks up the method on
+the **type** of the object, not on the instance. That is how operators
+such as ``x in obj``, ``len(obj)``, ``-obj``, ``obj + 1`` and so on are
+dispatched internally. For these operations to delegate correctly to
+the wrapped object, the corresponding dunder method must be defined on
+the proxy class. A proxy class that did not define ``__contains__``,
+``__len__``, ``__add__`` and the rest could not forward those
+operations at all, regardless of what the wrapped object supports.
+
+The obvious alternative, generating a custom proxy class per wrapped
+object whose dunder methods exactly mirror those of the wrapped type,
+is not free. Constructing a fresh class for every proxy instance adds
+meaningful memory and construction-time overhead, which is a problem
+when proxies are used pervasively (for example, when decorating every
+function and method in a large codebase). ``ObjectProxy`` is intended
+to be cheap enough to use in that setting, so it instead defines a
+fixed set of dunder methods on a single shared class.
+
+For the dunder methods that ``ObjectProxy`` pre-defines, this is
+usually harmless in practice. Code that wants to use one of these
+features, such as arithmetic, containment, length, comparison, hashing,
+attribute access, subscripting or the context-manager protocol, almost
+always just *uses* the feature directly. If the wrapped object does
+not implement the corresponding dunder method, the shim on
+``ObjectProxy`` will delegate through to ``self.__wrapped__`` and an
+``AttributeError`` will be raised from there, which is the same
+exception Python would raise for an object that didn't define the
+method in the first place. Code that simply does ``len(obj)``,
+``a in b`` or ``x + y`` therefore behaves correctly whether or not the
+argument is a proxy.
+
+The cases where this becomes a problem are the dunder methods whose
+*existence* is itself meaningful, typically methods that Python
+introspection APIs or user code probe for explicitly rather than just
+invoking. The most common examples are:
+
+* ``__call__``, probed by ``callable(obj)``.
+* ``__iter__`` and ``__next__``, probed by code that distinguishes
+  iterables from iterators, or that wants to decide whether an object
+  can be iterated.
+* ``__aiter__``, ``__anext__`` and ``__await__``, the async
+  counterparts of the above, probed by async frameworks when deciding
+  how to drive an object.
+* Descriptor protocol methods ``__get__``, ``__set__``, ``__delete__``
+  and ``__set_name__``, whose mere presence on a class attribute
+  changes how Python treats that attribute.
+* ``__length_hint__``, consulted by built-ins as an optimisation hint;
+  its presence implies the object can cheaply estimate its length.
+
+If ``ObjectProxy`` defined these unconditionally, ``callable(proxy)``
+would always be ``True`` even when wrapping a non-callable, every
+proxy would appear to be iterable, and every proxy attribute on a
+class body would silently behave as a descriptor. To avoid those
+incorrect answers, these specific methods are **not** defined on
+``ObjectProxy`` by default. The trade-off is that if you want a proxy
+around a callable (or an iterable, or an awaitable, and so on) to
+itself be recognised as callable/iterable/awaitable, you have to opt
+in.
+
+There are two ways to opt in:
+
+1. Define a derived proxy class that implements the required dunder
+   methods explicitly. This is the preferred approach when you know at
+   the point of wrapping what kind of object you are wrapping, and is
+   the cheapest in terms of runtime cost. For example, to wrap a
+   callable so that ``callable(proxy)`` returns ``True``::
+
+       class CallableProxy(wrapt.ObjectProxy):
+           def __call__(self, *args, **kwargs):
+               return self.__wrapped__(*args, **kwargs)
+
+   Equivalent subclasses can be defined for iterators, async
+   iterators, awaitables and descriptors, adding only the dunder
+   methods actually required.
+
+2. Use ``AutoObjectProxy`` when the type of the wrapped object is not
+   known statically, or varies. ``AutoObjectProxy`` inspects the
+   wrapped object at construction time and dynamically creates a
+   subclass that defines exactly those problematic dunder methods
+   (``__call__``, ``__iter__``, ``__next__``, ``__aiter__``,
+   ``__anext__``, ``__await__``, ``__length_hint__``, ``__get__``,
+   ``__set__``, ``__delete__``, ``__set_name__``) that the wrapped
+   object actually supports::
+
+       import wrapt
+
+       proxy = wrapt.AutoObjectProxy(lambda: 42)
+       callable(proxy)    # True
+
+       proxy = wrapt.AutoObjectProxy(42)
+       callable(proxy)    # False
+
+   The cost is that ``AutoObjectProxy`` generates a **new class per
+   wrapped object**. That is significantly more expensive, in both
+   time and memory, than using a pre-defined proxy class, and the
+   generated classes are not deduplicated. ``AutoObjectProxy`` is
+   therefore intended for situations where the flexibility is genuinely
+   needed, typically a small number of long-lived proxies over objects
+   of varying types, rather than as a drop-in replacement for
+   ``ObjectProxy``.
+
+The short version is that ``ObjectProxy`` chooses a fixed set of
+pre-defined dunder methods as a compromise between transparency and
+efficiency. The dunder methods whose presence is benign in practice
+are defined unconditionally; the dunder methods whose presence would
+give incorrect answers to introspection are left off, and opt-in is
+provided via subclassing or ``AutoObjectProxy``. Code that relies on
+``hasattr(proxy, "__some_dunder__")`` producing the same answer as
+``hasattr(wrapped, "__some_dunder__")`` will therefore see mismatches
+for the pre-defined set, and should either test the wrapped object
+directly (via ``proxy.__wrapped__``) or use the feature and handle any
+resulting ``AttributeError`` rather than probing for it.
+
 \_\_qualname\_\_ snapshot vs live-read divergence
 --------------------------------------------------
 
