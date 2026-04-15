@@ -47,6 +47,9 @@ nosetests.xml
 # Editor save files.
 .*.swp
 
+# Claude Code local settings.
+.claude/
+
 # Sphinx documentation.
 docs/venv
 docs/_build
