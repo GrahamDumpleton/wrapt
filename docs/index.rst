@@ -52,6 +52,7 @@ Documentation
    decorators
    wrappers
    typing
+   bundled
    examples
    benchmarks
    changes

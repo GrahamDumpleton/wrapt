@@ -32,7 +32,7 @@ their help is much appreciated.
   functions, class methods, and static methods, a single shared cache is used.
   The ``cache_info()``, ``cache_clear()``, and ``cache_parameters()`` methods
   are available directly on the decorated function. See the "LRU Cache"
-  section of :doc:`examples` for details.
+  section of :doc:`bundled` for details.
 
 * Added support for deferred patching in ``wrap_function_wrapper`` and
   ``patch_function_wrapper``. When the target module name is passed as a
@@ -68,7 +68,8 @@ their help is much appreciated.
   block of code using an independent per-context ``asyncio.Lock``. Note
   that ``asyncio.Lock`` is not reentrant, which is a known difference from
   the threading case; users requiring reentrant semantics can pass their
-  own task-reentrant async lock via the explicit-lock form.
+  own task-reentrant async lock via the explicit-lock form. See the "Thread
+  Synchronization" section of :doc:`bundled` for details.
 
 **Features Changed**
 
