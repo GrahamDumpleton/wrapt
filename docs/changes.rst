@@ -107,6 +107,21 @@ their help is much appreciated.
   isinstance() with proxied types" section of :doc:`issues` for remaining
   limitations when the proxy appears on the left-hand side.
 
+* Removed the ``__reduce_ex__`` override from the object proxy base classes.
+  Previously both ``__reduce__`` and ``__reduce_ex__`` were overridden to
+  raise ``NotImplementedError``, which forced proxy subclasses wanting to
+  support pickling to override both methods, with ``__reduce_ex__`` typically
+  just delegating to ``__reduce__``. Because the default ``__reduce_ex__``
+  inherited from ``object`` already delegates to ``__reduce__`` whenever a
+  subclass has overridden it, the extra override was unnecessary and
+  actively prevented the standard pickle contract from working as expected.
+  Proxy subclasses now only need to override ``__reduce__`` to be
+  pickleable. See the "Pickling an Object Proxy" section of :doc:`examples`
+  for a worked example. Note that code which needs to remain compatible
+  with versions of **wrapt** prior to 2.2.0 should continue to define both
+  ``__reduce__`` and ``__reduce_ex__``, as defining ``__reduce_ex__`` in
+  addition to ``__reduce__`` is harmless on newer versions.
+
 **Bugs Fixed**
 
 * Fixed a ``Py_DECREF(NULL)`` crash in the C implementation of all inplace

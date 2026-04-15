@@ -661,9 +661,6 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     def __reduce__(self):
         raise NotImplementedError("object proxy must define __reduce__()")
 
-    def __reduce_ex__(self, protocol):
-        raise NotImplementedError("object proxy must define __reduce_ex__()")
-
     def __instancecheck__(self, instance):
         return isinstance(instance, self.__wrapped__)
 
