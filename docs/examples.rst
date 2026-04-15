@@ -423,6 +423,95 @@ The same consideration applies at the module level via
 all ``dill`` operations in the process. Without ``byref=True`` the dump
 step will fail.
 
+Serialising a Decorator
+-----------------------
+
+The same technique used to make a subclass of ``BaseObjectProxy``
+serialisable can be applied to ``FunctionWrapper``, which is the proxy
+class ``wrapt`` uses to implement decorators. Making a decorated
+function serialisable therefore comes down to defining ``__reduce__``
+on a subclass of ``FunctionWrapper`` and using that subclass in a
+decorator factory of your own.
+
+``FunctionWrapper`` stores the wrapped callable at ``__wrapped__`` and
+the user supplied wrapper function on the proxy itself as the
+``_self_wrapper`` attribute. The rebuild recipe returned from
+``__reduce__`` is therefore simply the same pair of arguments
+``FunctionWrapper`` was constructed with in the first place.
+
+::
+
+    import wrapt
+
+    class SerialisableFunctionWrapper(wrapt.FunctionWrapper):
+
+        def __reduce__(self):
+            return (type(self), (self.__wrapped__, self._self_wrapper))
+
+    def serialisable_decorator(wrapper):
+        def _decorator(wrapped):
+            return SerialisableFunctionWrapper(wrapped, wrapper)
+        return _decorator
+
+This is all that is needed to plug a serialisable variant into the same
+place ``@wrapt.decorator`` would be used. The decorator factory
+returned from ``serialisable_decorator`` is used identically to a
+factory built with ``@wrapt.decorator``, and a function or method
+decorated with it can be serialised with ``dill`` (using ``byref=True``
+for the reason described in the preceding section).
+
+::
+
+    import dill
+
+    @serialisable_decorator
+    def trace(wrapped, instance, args, kwargs):
+        print(f"[trace] {wrapped.__name__}({args}, {kwargs})")
+        return wrapped(*args, **kwargs)
+
+    @trace
+    def add(a, b):
+        return a + b
+
+    data = dill.dumps(add, byref=True)
+    restored = dill.loads(data)
+
+    restored(2, 3)    # works the same as add(2, 3)
+
+The restored callable is an instance of ``SerialisableFunctionWrapper``
+again, retains the same wrapper behaviour, and participates in the
+descriptor binding protocol just like the original. This means the
+same approach works for decorated instance methods, class methods and
+static methods on a class: restoring an instance of the class also
+restores any decorated methods reachable through it.
+
+Before adopting this pattern, consider carefully whether serialising
+decorators is actually what you need. Most applications of decorators
+do not need them to survive serialisation. Wrappers are typically
+rebuilt from source at import time, and the things that *do* need to
+travel through a serialisation boundary (data, configuration, results)
+are usually plain values rather than decorated callables. If
+serialising decorated functions is not a core requirement of the
+system, the simplest thing is not to try.
+
+When decorator serialisation genuinely is a requirement, it is
+strongly recommended to build a small decorator factory of your own
+along the lines of the one above, rather than trying to make
+``@wrapt.decorator`` or ``wrapt.FunctionWrapper`` themselves
+serialisable. ``wrapt`` offers a number of features beyond the minimum
+needed to implement a decorator, including adapter functions that
+reshape the apparent signature of the wrapper, enabled and disabled
+flags that can toggle wrapping on and off dynamically, descriptor
+protocol integration for bound methods, and careful handling of edge
+cases such as classmethods, staticmethods and nested classes. All of
+this state lives on the proxy in ways that make a fully general
+``__reduce__`` implementation substantially more involved than the
+one shown here. A hand-rolled decorator factory that only supports
+what your application actually uses keeps the pickle surface small
+and the rebuild recipe obvious, and avoids inheriting serialisation
+responsibility for parts of ``wrapt`` that are not relevant to your
+use case.
+
 Thread Synchronization
 ----------------------
 

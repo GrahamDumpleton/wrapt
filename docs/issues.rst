@@ -329,6 +329,55 @@ worked example of a proxy subclass that implements ``__reduce__`` so
 that it can be pickled and unpickled, along with notes on using the
 same subclass with ``dill``.
 
+Serialising a Decorated Function
+--------------------------------
+
+A function or method decorated with ``@wrapt.decorator`` cannot be
+serialised with ``pickle`` or ``dill`` as is. Decorators built with
+``@wrapt.decorator`` are implemented using ``FunctionWrapper``, which
+is itself a subclass of the object proxy base class, and so inherits
+the same ``__reduce__`` that raises ``NotImplementedError``::
+
+    import dill
+    import wrapt
+
+    @wrapt.decorator
+    def trace(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+    @trace
+    def add(a, b):
+        return a + b
+
+    dill.dumps(add, byref=True)
+    # NotImplementedError: object proxy must define __reduce__()
+
+The same error is raised by ``pickle.dumps(add)``. This is not a
+special case; it is the same underlying limitation described in the
+preceding section, surfacing through ``FunctionWrapper``.
+
+Making ``@wrapt.decorator`` and ``FunctionWrapper`` themselves
+serialisable in a general way is not something **wrapt** provides, and
+is not recommended. ``FunctionWrapper`` carries additional state such
+as optional adapter functions, enabled/disabled flags and descriptor
+protocol integration. A fully general ``__reduce__`` implementation
+covering all of that is substantially more involved than a typical
+application needs, and tying the serialised form to all of it creates
+a compatibility surface that is awkward to evolve.
+
+The recommended approach, when decorator serialisation is genuinely
+required, is to build a small decorator factory of your own based on
+a ``FunctionWrapper`` subclass that defines ``__reduce__`` for only
+the state the factory actually uses. See the "Serialising a Decorator"
+section in :doc:`examples` for a worked example of this pattern,
+including the ``byref=True`` requirement when using ``dill`` with a
+``FunctionWrapper`` subclass.
+
+Before doing that, consider whether decorator serialisation is really
+needed at all. In most applications decorated functions are rebuilt
+from source at import time and only plain values travel through the
+serialisation boundary, so the issue does not arise.
+
 hasattr() on ObjectProxy and pre-defined dunder methods
 -------------------------------------------------------
 
