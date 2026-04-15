@@ -276,6 +276,99 @@ single shared cache.
     >>> fibonacci.cache_parameters()
     {'maxsize': 128, 'typed': False}
 
+Pickling an Object Proxy
+------------------------
+
+By default an instance of ``wrapt.ObjectProxy`` (or ``wrapt.BaseObjectProxy``)
+cannot be pickled. The object proxy base classes define ``__reduce__`` and
+``__reduce_ex__`` such that they raise ``NotImplementedError``. This is
+because there is no generic way to pickle a proxy that would correctly
+capture both the wrapped object and any additional state a proxy subclass
+may add on top of it. It is therefore up to the user to define their own
+pickle methods on a proxy subclass to indicate how its data should be
+saved and restored.
+
+Consider a proxy subclass which wraps a dict of computed statistics and
+adds a ``label`` attribute alongside it.
+
+::
+
+    import wrapt
+
+    class StatsProxy(wrapt.BaseObjectProxy):
+
+        def __init__(self, wrapped, label):
+            super().__init__(wrapped)
+            self._self_label = label
+
+        @property
+        def label(self):
+            return self._self_label
+
+Proxy-local state is conventionally held in attributes named with a
+``_self_`` prefix. Such attributes are stored on the proxy instance itself
+rather than being forwarded to the wrapped object. Here ``_self_label``
+holds the label that is specific to the proxy, while ``__wrapped__``
+holds the dict being proxied.
+
+Attempting to pickle an instance of ``StatsProxy`` as defined above will
+fail with ``NotImplementedError`` coming from the base class. To make
+the proxy pickleable, override both ``__reduce__`` and ``__reduce_ex__``.
+
+::
+
+    import pickle
+
+    class StatsProxy(wrapt.BaseObjectProxy):
+
+        def __init__(self, wrapped, label):
+            super().__init__(wrapped)
+            self._self_label = label
+
+        @property
+        def label(self):
+            return self._self_label
+
+        def __reduce__(self):
+            return (type(self), (self.__wrapped__, self._self_label))
+
+        def __reduce_ex__(self, protocol):
+            return self.__reduce__()
+
+The ``__reduce__`` method returns a two-tuple. The first element is a
+callable that pickle will invoke to recreate the object. In this case
+that is the proxy class itself. The second element is the tuple of
+arguments that will be passed to that callable. Here those arguments are
+the wrapped object and the proxy-local ``label`` state, matching the
+signature of ``__init__``. When the pickle stream is loaded, pickle will
+reconstruct the wrapped dict first, then call
+``StatsProxy(wrapped_dict, label)`` to rebuild the proxy around it.
+
+Both ``__reduce__`` and ``__reduce_ex__`` must be overridden. Pickle
+consults ``__reduce_ex__`` first, and the base proxy implementation of
+that method also raises ``NotImplementedError``. Defining ``__reduce__``
+alone is not sufficient. For this reason the override of
+``__reduce_ex__`` here simply delegates to ``__reduce__``, ignoring the
+pickle protocol version.
+
+Note that the wrapped object must itself be pickleable, since pickle will
+recursively pickle the arguments returned from ``__reduce__``. The same
+applies to any proxy-local state included in the returned arguments.
+
+With the two methods in place, instances of ``StatsProxy`` can be
+pickled and unpickled in the normal way, and the restored proxy will
+retain both the wrapped object and the proxy-local state.
+
+::
+
+    >>> original = StatsProxy({"count": 3, "sum": 6}, label="demo")
+    >>> data = pickle.dumps(original)
+    >>> restored = pickle.loads(data)
+    >>> restored.label
+    'demo'
+    >>> dict(restored)
+    {'count': 3, 'sum': 6}
+
 Thread Synchronization
 ----------------------
 

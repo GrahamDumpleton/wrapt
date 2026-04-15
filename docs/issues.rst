@@ -290,6 +290,33 @@ present itself as a different C-level type. Any code path that
 similarly bypasses ``isinstance()`` in favour of C-level type-check
 macros will exhibit the same behaviour.
 
+Pickling an ObjectProxy
+-----------------------
+
+Attempting to pickle an instance of ``ObjectProxy`` (or any subclass of
+``BaseObjectProxy``) that does not override the pickle dunder methods
+will fail with ``NotImplementedError``::
+
+    import pickle
+    import wrapt
+
+    proxy = wrapt.ObjectProxy({"a": 1})
+
+    pickle.dumps(proxy)
+    # NotImplementedError: object proxy must define __reduce_ex__()
+
+The object proxy base classes intentionally define ``__reduce__`` and
+``__reduce_ex__`` such that they raise ``NotImplementedError``. This is
+because there is no generic implementation that would correctly capture
+both the wrapped object and any additional state a proxy subclass may
+add on top of it. The user is therefore required to define pickle
+methods on their own proxy subclass, indicating how its data should be
+saved and restored.
+
+See the `Pickling an Object Proxy`_ example in :doc:`examples` for a
+worked example of a proxy subclass that implements ``__reduce__`` and
+``__reduce_ex__`` so that it can be pickled and unpickled.
+
 hasattr() on ObjectProxy and pre-defined dunder methods
 -------------------------------------------------------
 
