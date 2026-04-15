@@ -381,6 +381,13 @@ if sys.version_info >= (3, 10):
             exc_value: BaseException | None,
             traceback: TracebackType | None,
         ) -> bool | None: ...
+        async def __aenter__(self) -> Any: ...
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_value: BaseException | None,
+            traceback: TracebackType | None,
+        ) -> bool | None: ...
 
     @overload
     def synchronized(wrapped: Callable[P, R]) -> Callable[P, R]: ...
@@ -396,7 +403,10 @@ if sys.version_info >= (3, 10):
         def __call__(self, wrapper_factory: Descriptor) -> StateBindingWrapper: ...
         def __get__(
             self, instance: Any, owner: type[Any] | None = None
-        ) -> StateBindingWrapper | Callable[[Callable[..., Any]], FunctionWrapper[..., Any]]: ...
+        ) -> (
+            StateBindingWrapper
+            | Callable[[Callable[..., Any]], FunctionWrapper[..., Any]]
+        ): ...
 
     bind_state_to_wrapper = StateBindingWrapper
 
