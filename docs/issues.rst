@@ -313,7 +313,7 @@ add on top of it. The user is therefore required to define pickle
 methods on their own proxy subclass, indicating how its data should be
 saved and restored.
 
-See the `Pickling an Object Proxy`_ example in :doc:`examples` for a
+See the "Pickling an Object Proxy" section in :doc:`examples` for a
 worked example of a proxy subclass that implements ``__reduce__`` and
 ``__reduce_ex__`` so that it can be pickled and unpickled.
 
