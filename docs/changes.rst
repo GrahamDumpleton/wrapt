@@ -116,7 +116,7 @@ their help is much appreciated.
   subclass has overridden it, the extra override was unnecessary and
   actively prevented the standard pickle contract from working as expected.
   Proxy subclasses now only need to override ``__reduce__`` to be
-  pickleable. See the "Pickling an Object Proxy" section of :doc:`examples`
+  pickleable. See the "Serialising an Object Proxy" section of :doc:`examples`
   for a worked example. Note that code which needs to remain compatible
   with versions of **wrapt** prior to 2.2.0 should continue to define both
   ``__reduce__`` and ``__reduce_ex__``, as defining ``__reduce_ex__`` in

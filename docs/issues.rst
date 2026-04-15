@@ -290,8 +290,8 @@ present itself as a different C-level type. Any code path that
 similarly bypasses ``isinstance()`` in favour of C-level type-check
 macros will exhibit the same behaviour.
 
-Pickling an ObjectProxy
------------------------
+Serialising an ObjectProxy
+--------------------------
 
 Attempting to pickle an instance of ``ObjectProxy`` (or any subclass of
 ``BaseObjectProxy``) that does not override ``__reduce__`` will fail
@@ -312,9 +312,22 @@ object and any additional state a proxy subclass may add on top of it.
 The user is therefore required to define ``__reduce__`` on their own
 proxy subclass, indicating how its data should be saved and restored.
 
-See the "Pickling an Object Proxy" section in :doc:`examples` for a
+The same restriction applies to third party serialisers such as
+``dill`` which build on the standard library pickle protocol. They use
+``__reduce__`` in the same way as ``pickle`` and do not bypass the
+``NotImplementedError`` raised by the base proxy's ``__reduce__``.
+Defining ``__reduce__`` on a proxy subclass therefore makes it
+serialisable with both ``pickle`` and ``dill``. Note, however, that
+when using ``dill`` with a ``BaseObjectProxy`` subclass the dump must
+be made with ``byref=True`` so that the proxy class is referenced by
+its import path rather than serialised by value. The proxy base class
+is a C extension type and cannot be reconstructed from a serialised
+class body.
+
+See the "Serialising an Object Proxy" section in :doc:`examples` for a
 worked example of a proxy subclass that implements ``__reduce__`` so
-that it can be pickled and unpickled.
+that it can be pickled and unpickled, along with notes on using the
+same subclass with ``dill``.
 
 hasattr() on ObjectProxy and pre-defined dunder methods
 -------------------------------------------------------

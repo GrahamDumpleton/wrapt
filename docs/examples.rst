@@ -276,8 +276,8 @@ single shared cache.
     >>> fibonacci.cache_parameters()
     {'maxsize': 128, 'typed': False}
 
-Pickling an Object Proxy
-------------------------
+Serialising an Object Proxy
+---------------------------
 
 By default an instance of ``wrapt.ObjectProxy`` (or ``wrapt.BaseObjectProxy``)
 cannot be pickled. The object proxy base classes define ``__reduce__`` such
@@ -286,6 +286,14 @@ way to pickle a proxy that would correctly capture both the wrapped object
 and any additional state a proxy subclass may add on top of it. It is
 therefore up to the user to define ``__reduce__`` on a proxy subclass to
 indicate how its data should be saved and restored.
+
+The same requirement applies to third party serialisers such as ``dill``
+which extend and build on top of the standard library pickle protocol.
+They rely on ``__reduce__`` in exactly the same way, and the base proxy
+class's ``__reduce__`` raising ``NotImplementedError`` is not bypassed
+by them. Defining ``__reduce__`` on a proxy subclass therefore makes it
+serialisable with ``pickle``, ``dill`` and any other serialiser that
+follows the pickle protocol.
 
 Consider a proxy subclass which wraps a dict of computed statistics and
 adds a ``label`` attribute alongside it.
@@ -382,6 +390,38 @@ the wrapped object and the proxy-local state.
     'demo'
     >>> dict(restored)
     {'count': 3, 'sum': 6}
+
+The same ``StatsProxy`` works unchanged with ``dill`` in place of
+``pickle``. This is useful when the wrapped object contains values
+that the standard library pickle module cannot handle, such as
+lambdas, closures or nested functions. ``dill`` uses the same pickle
+protocol for user defined types, so the ``__reduce__`` method defined
+on the proxy is all that is needed to make the proxy serialisable.
+
+There is however one extra consideration when using ``dill`` with a
+proxy subclass. By default ``dill`` attempts to serialise classes and
+functions by value, embedding their source in the output stream, rather
+than by reference to their import path the way ``pickle`` does. This
+does not work for a subclass of ``wrapt.BaseObjectProxy`` because the
+proxy base class is ultimately backed by a C extension type and cannot
+be reconstructed from a serialised class body. The ``dill.dump()`` (and
+``dill.dumps()``) call must therefore be passed ``byref=True`` so that
+``dill`` references the proxy class by its import path instead of
+attempting to serialise it by value.
+
+::
+
+    import dill
+
+    original = StatsProxy({"count": 3, "sum": 6}, label="demo")
+
+    data = dill.dumps(original, byref=True)
+    restored = dill.loads(data)
+
+The same consideration applies at the module level via
+``dill.settings["byref"] = True`` if ``byref`` is to be the default for
+all ``dill`` operations in the process. Without ``byref=True`` the dump
+step will fail.
 
 Thread Synchronization
 ----------------------
