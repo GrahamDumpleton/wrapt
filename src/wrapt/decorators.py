@@ -3,8 +3,9 @@ as well as some commonly used decorators.
 
 """
 
+import asyncio
 from functools import lru_cache as _functools_lru_cache, partial
-from inspect import isclass, signature
+from inspect import isclass, iscoroutinefunction, signature
 from threading import Lock, RLock
 
 from .__wrapt__ import (
@@ -421,6 +422,19 @@ def decorator(wrapper=None, /, *, enabled=None, adapter=None, proxy=FunctionWrap
 # derived or supplied context.
 
 
+def _synchronized_is_async_lock(obj):
+    return iscoroutinefunction(getattr(obj, "acquire", None))
+
+
+def _synchronized_is_async_callable(obj):
+    target = obj
+    if isinstance(target, (classmethod, staticmethod)):
+        target = target.__func__
+    while hasattr(target, "__wrapped__"):
+        target = target.__wrapped__
+    return iscoroutinefunction(target)
+
+
 def synchronized(wrapped):
     """Depending on the nature of the `wrapped` object, will either return a
     decorator which can be used to wrap a function or method, or a context
@@ -432,6 +446,15 @@ def synchronized(wrapped):
     directly as the synchronization primitive, otherwise a lock is created
     automatically and attached to the wrapped object and used as the
     synchronization primitive.
+
+    Async functions are supported: if the wrapped callable is an async
+    function, an `asyncio.Lock` is created for the context and the wrapper
+    awaits the lock. The returned object also exposes `__aenter__` and
+    `__aexit__` so it can be used with `async with` to synchronise a block
+    of code using an independent per-context `asyncio.Lock`. If an object
+    with coroutine `acquire`/`release` methods (such as an `asyncio.Lock`)
+    is supplied directly, the returned decorator and context manager will
+    use it via the async protocol.
     """
 
     # Determine if being passed an object which is a synchronization
@@ -448,6 +471,24 @@ def synchronized(wrapped):
         # synchronized statements with a 'with' statement.
 
         lock = wrapped
+
+        if _synchronized_is_async_lock(lock):
+
+            @decorator
+            async def _synchronized(wrapped, instance, args, kwargs):
+                async with lock:
+                    return await wrapped(*args, **kwargs)
+
+            class _AsyncPartialDecorator(CallableObjectProxy):
+
+                async def __aenter__(self):
+                    await lock.acquire()
+                    return lock
+
+                async def __aexit__(self, *args):
+                    lock.release()
+
+            return _AsyncPartialDecorator(wrapped=_synchronized)
 
         @decorator
         def _synchronized(wrapped, instance, args, kwargs):
@@ -506,6 +547,24 @@ def synchronized(wrapped):
 
         return lock
 
+    def _synchronized_async_lock(context):
+        # Per-context asyncio.Lock, created lazily on first use. Created
+        # under the shared meta lock so creation is safe across threads;
+        # the meta lock is never held across an await. asyncio.Lock is
+        # not reentrant.
+
+        lock = vars(context).get("_synchronized_async_lock", None)
+
+        if lock is None:
+            with synchronized._synchronized_meta_lock:
+                lock = vars(context).get("_synchronized_async_lock", None)
+
+                if lock is None:
+                    lock = asyncio.Lock()
+                    setattr(context, "_synchronized_async_lock", lock)
+
+        return lock
+
     def _synchronized_wrapper(wrapped, instance, args, kwargs):
         # Execute the wrapped function while the lock for the
         # desired context is held. If instance is None then the
@@ -513,6 +572,12 @@ def synchronized(wrapped):
 
         with _synchronized_lock(instance if instance is not None else wrapped):
             return wrapped(*args, **kwargs)
+
+    async def _synchronized_async_wrapper(wrapped, instance, args, kwargs):
+        async with _synchronized_async_lock(
+            instance if instance is not None else wrapped
+        ):
+            return await wrapped(*args, **kwargs)
 
     class _FinalDecorator(FunctionWrapper):
 
@@ -523,6 +588,17 @@ def synchronized(wrapped):
 
         def __exit__(self, *args):
             self._self_lock.release()
+
+        async def __aenter__(self):
+            self._self_async_lock = _synchronized_async_lock(self.__wrapped__)
+            await self._self_async_lock.acquire()
+            return self._self_async_lock
+
+        async def __aexit__(self, *args):
+            self._self_async_lock.release()
+
+    if _synchronized_is_async_callable(wrapped):
+        return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_async_wrapper)
 
     return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
 

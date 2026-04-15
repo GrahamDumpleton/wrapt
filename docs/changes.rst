@@ -57,6 +57,19 @@ their help is much appreciated.
   combined view if desired. See the "Introspecting the ObjectProxy
   instance __dict__" section of :doc:`issues` for details.
 
+* Extended ``synchronized`` to support async functions and async locks.
+  When applied to an ``async def`` function or method, the wrapper now
+  awaits an ``asyncio.Lock`` created per context rather than acquiring a
+  ``threading.RLock``. When an object with coroutine ``acquire``/``release``
+  methods (such as an ``asyncio.Lock``) is supplied directly, the returned
+  decorator and context manager use it via the async protocol. The object
+  returned by ``synchronized`` now also exposes ``__aenter__`` and
+  ``__aexit__`` so it can be used with ``async with`` to synchronise a
+  block of code using an independent per-context ``asyncio.Lock``. Note
+  that ``asyncio.Lock`` is not reentrant, which is a known difference from
+  the threading case; users requiring reentrant semantics can pass their
+  own task-reentrant async lock via the explicit-lock form.
+
 **Features Changed**
 
 * Improved attribute access on ``BoundFunctionWrapper`` to delegate lookups to
