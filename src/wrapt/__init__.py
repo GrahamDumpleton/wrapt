@@ -2,7 +2,7 @@
 Wrapt is a library for decorators, wrappers and monkey patching.
 """
 
-__version_info__ = ("2", "2", "0", "rc8")
+__version_info__ = ("2", "2", "0", "rc9")
 __version__ = ".".join(__version_info__)
 
 from .__wrapt__ import (
@@ -19,13 +19,6 @@ from .decorators import (
     adapter_factory,
     bind_state_to_wrapper,
     decorator,
-)
-from .synchronization import (
-    async_to_sync,
-    mark_as_async,
-    mark_as_sync,
-    sync_to_async,
-    synchronized,
 )
 from .importer import (
     discover_post_import_hooks,
@@ -45,6 +38,13 @@ from .patches import (
 )
 from .proxies import AutoObjectProxy, LazyObjectProxy, ObjectProxy, lazy_import
 from .signature import with_signature
+from .synchronization import (
+    async_to_sync,
+    mark_as_async,
+    mark_as_sync,
+    sync_to_async,
+    synchronized,
+)
 from .weakrefs import WeakFunctionProxy
 
 __all__ = (
