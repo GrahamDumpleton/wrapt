@@ -57,6 +57,22 @@ their help is much appreciated.
   combined view if desired. See the "Introspecting the ObjectProxy
   instance __dict__" section of :doc:`issues` for details.
 
+* Added ``mark_as_sync``, ``mark_as_async``, ``async_to_sync`` and
+  ``sync_to_async`` decorators for declaring or bridging the calling
+  convention of a decorated callable. ``mark_as_sync`` and ``mark_as_async``
+  are pass-through wrappers that adjust ``__code__.co_flags`` so that
+  ``inspect.iscoroutinefunction()`` reports the intended convention,
+  letting ``synchronized`` auto-select the correct sync or async wrapping
+  behaviour even when an upstream decorator has changed the effective
+  calling convention. ``async_to_sync`` runs an async callable to
+  completion via ``asyncio.run()``, and ``sync_to_async`` dispatches a
+  sync callable onto the default executor via ``loop.run_in_executor()``;
+  both self-mark so they integrate with ``synchronized`` without needing
+  an additional marker decorator. The naming of ``async_to_sync`` and
+  ``sync_to_async`` follows the convention used by ``asgiref``. See the
+  "Calling Convention Markers and Adapters" section of :doc:`bundled` for
+  details.
+
 * Extended ``synchronized`` to support async functions and async locks.
   When applied to an ``async def`` function or method, the wrapper now
   awaits an ``asyncio.Lock`` created per context rather than acquiring a

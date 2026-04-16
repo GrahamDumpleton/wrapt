@@ -299,6 +299,145 @@ context. Do not mix ``@wrapt.synchronized`` on a regular method and
 ``@wrapt.synchronized`` on an ``async def`` method of the same class and
 expect them to serialise against one another.
 
+Calling Convention Markers and Adapters
+---------------------------------------
+
+The ``synchronized`` decorator decides between its synchronous and asynchronous
+paths by consulting ``inspect.iscoroutinefunction()`` on the callable it is
+applied to. That works whenever the calling convention exposed by the decorator
+stack matches the underlying function definition. In more elaborate stacks the
+two can diverge: an inner decorator might call an ``async def`` via
+``asyncio.run()`` and present a synchronous callable to the outside, or a
+decorator around a plain ``def`` might return a coroutine. In either case
+auto-detection based on the inner function definition alone gives the wrong
+answer.
+
+To make the effective calling convention explicit, **wrapt** provides four
+small decorators. ``mark_as_sync`` and ``mark_as_async`` are pass-through
+markers that leave the calling behaviour untouched; ``async_to_sync`` and ``sync_to_async``
+actually bridge between the two conventions.
+
+All four are wrapt function wrappers that adjust ``__code__.co_flags`` so that
+``inspect.iscoroutinefunction()`` (and therefore any stdlib or third-party code
+that consults it, including ``synchronized``) reports the intended convention.
+The underlying wrapped callable is left unchanged and is still reachable via
+``__wrapped__``.
+
+Marking without converting
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``wrapt.mark_as_sync`` and ``wrapt.mark_as_async`` are pass-through wrappers.
+They do not change how the callable is invoked; they only record the convention
+that the surrounding stack has established.
+
+Use ``mark_as_sync`` when an inner decorator has already collapsed an
+``async def`` into a synchronous callable (for example by running it to
+completion with ``asyncio.run()``) but the outer introspection would still
+see the inner ``async def``:
+
+::
+
+    import wrapt
+
+    @wrapt.synchronized
+    @wrapt.mark_as_sync
+    @some_third_party_run_to_completion
+    async def work(...):
+        ...
+
+Use ``mark_as_async`` for the symmetric case where a plain ``def`` wrapper
+actually returns a coroutine and should be treated as an async callable:
+
+::
+
+    @wrapt.synchronized
+    @wrapt.mark_as_async
+    @some_third_party_coroutine_returning_wrapper
+    def work(...):
+        ...
+
+Because the marker wrappers do not alter the calling convention themselves,
+applying them directly to an ``async def`` (with no intermediate decorator to
+collapse it) does not make the result actually callable synchronously; it only
+changes what ``iscoroutinefunction()`` reports. The marker wrappers are for
+annotating stacks whose effective convention has already been established by
+other decorators.
+
+Bridging between conventions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``wrapt.async_to_sync`` adapts an async callable so that callers can invoke it
+synchronously. Each call runs the coroutine to completion via
+``asyncio.run()`` and returns the result.
+
+::
+
+    @wrapt.async_to_sync
+    async def add(a, b):
+        return a + b
+
+    add(2, 3)  # returns 5
+
+``wrapt.sync_to_async`` adapts a synchronous callable so that callers can
+``await`` it. Each call schedules the synchronous work on the default
+executor using ``loop.run_in_executor()``.
+
+::
+
+    @wrapt.sync_to_async
+    def mul(a, b):
+        return a * b
+
+    await mul(4, 5)  # returns 20
+
+Both adapters also take care of marking the result with the appropriate
+``iscoroutinefunction()`` reporting, so they can be stacked directly under
+``@wrapt.synchronized`` with no additional marker required:
+
+::
+
+    @wrapt.synchronized
+    @wrapt.async_to_sync
+    async def fetch(...):
+        # ``synchronized`` sees this as synchronous and uses the
+        # ``threading.RLock`` path.
+        ...
+
+    @wrapt.synchronized
+    @wrapt.sync_to_async
+    def compute(...):
+        # ``synchronized`` sees this as asynchronous and uses the
+        # ``asyncio.Lock`` path.
+        ...
+
+Relationship to third-party equivalents
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tools similar to ``async_to_sync`` and ``sync_to_async`` are available in a number of
+third-party packages. The versions provided here are primarily a convenience:
+they are set up so that ``wrapt.synchronized`` sees the correct calling
+convention automatically, without needing to interpose ``mark_as_sync`` or
+``mark_as_async`` between the adapter and ``synchronized``.
+
+If you prefer a third-party ``async_to_sync`` / ``sync_to_async`` (for example because it
+offers features such as explicit executor selection, loop reuse, or structured
+concurrency hooks), use ``mark_as_sync`` or ``mark_as_async`` to declare the
+resulting calling convention to ``wrapt.synchronized``:
+
+::
+
+    @wrapt.synchronized
+    @wrapt.mark_as_sync
+    @third_party_to_sync
+    async def work(...):
+        ...
+
+    @wrapt.synchronized
+    @wrapt.mark_as_async
+    @third_party_to_async
+    def work(...):
+        ...
+
 LRU Cache
 ---------
 

@@ -4,8 +4,16 @@ as well as some commonly used decorators.
 """
 
 import asyncio
-from functools import lru_cache as _functools_lru_cache, partial
-from inspect import isclass, iscoroutinefunction, signature
+import sys
+from functools import lru_cache as _functools_lru_cache
+from functools import partial
+from inspect import (
+    CO_ASYNC_GENERATOR,
+    CO_COROUTINE,
+    isclass,
+    iscoroutinefunction,
+    signature,
+)
 from threading import Lock, RLock
 
 from .__wrapt__ import (
@@ -411,6 +419,183 @@ def decorator(wrapper=None, /, *, enabled=None, adapter=None, proxy=FunctionWrap
         return partial(decorator, enabled=enabled, adapter=adapter, proxy=proxy)
 
 
+# Calling-convention marker wrappers. These manipulate __code__.co_flags
+# so that inspect.iscoroutinefunction() reports the intended calling
+# convention, which lets stdlib code and the synchronized() decorator
+# auto-select the correct sync or async wrapping behaviour even when
+# stacked decorators change the effective convention (for example an
+# inner decorator that invokes an async def via asyncio.run()).
+
+
+_CO_SYNC_MASK = ~(CO_COROUTINE | CO_ASYNC_GENERATOR)
+
+
+class _SyncCodeProxy(CallableObjectProxy):
+
+    @property
+    def co_flags(self):
+        return self.__wrapped__.co_flags & _CO_SYNC_MASK
+
+
+class _SyncFunctionSurrogate(CallableObjectProxy):
+
+    @property
+    def __code__(self):
+        return _SyncCodeProxy(self.__wrapped__.__code__)
+
+
+class BoundSyncFunctionWrapper(BoundFunctionWrapper):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._self_is_not_coroutine = True
+
+    @property
+    def __func__(self):
+        return _SyncFunctionSurrogate(self.__wrapped__.__func__)
+
+
+class SyncFunctionWrapper(FunctionWrapper):
+
+    __bound_function_wrapper__ = BoundSyncFunctionWrapper
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._self_is_not_coroutine = True
+
+    @property
+    def __code__(self):
+        return _SyncCodeProxy(self.__wrapped__.__code__)
+
+
+class _AsyncCodeProxy(CallableObjectProxy):
+
+    @property
+    def co_flags(self):
+        return (self.__wrapped__.co_flags & ~CO_ASYNC_GENERATOR) | CO_COROUTINE
+
+
+class _AsyncFunctionSurrogate(CallableObjectProxy):
+
+    @property
+    def __code__(self):
+        return _AsyncCodeProxy(self.__wrapped__.__code__)
+
+
+class BoundAsyncFunctionWrapper(BoundFunctionWrapper):
+
+    @property
+    def __func__(self):
+        return _AsyncFunctionSurrogate(self.__wrapped__.__func__)
+
+
+class AsyncFunctionWrapper(FunctionWrapper):
+
+    __bound_function_wrapper__ = BoundAsyncFunctionWrapper
+
+    @property
+    def __code__(self):
+        return _AsyncCodeProxy(self.__wrapped__.__code__)
+
+
+def mark_as_sync(wrapped):
+    """Mark a callable as synchronous from the perspective of calling
+    convention detection. The returned wrapper is a pass-through that
+    reports `inspect.iscoroutinefunction()` as False regardless of
+    whether the underlying callable is declared `async def`. Useful
+    when a stacked decorator has already collapsed an async function
+    into a synchronous one (for example by using `asyncio.run()`)."""
+
+    def wrapper(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+    return SyncFunctionWrapper(wrapped, wrapper)
+
+
+def mark_as_async(wrapped):
+    """Mark a callable as asynchronous from the perspective of calling
+    convention detection. The returned wrapper reports
+    `inspect.iscoroutinefunction()` as True regardless of whether the
+    underlying callable is declared `async def`. Useful when a stacked
+    decorator returns a coroutine from a plain `def` wrapper."""
+
+    async def wrapper(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
+
+    return AsyncFunctionWrapper(wrapped, wrapper)
+
+
+def async_to_sync(wrapped):
+    """Adapt an async callable so it can be called synchronously. Each
+    call runs the coroutine to completion via `asyncio.run()`. The
+    returned wrapper reports as synchronous under
+    `inspect.iscoroutinefunction()`. Naming follows the asgiref
+    convention."""
+
+    def wrapper(wrapped, instance, args, kwargs):
+        return asyncio.run(wrapped(*args, **kwargs))
+
+    return SyncFunctionWrapper(wrapped, wrapper)
+
+
+def sync_to_async(wrapped):
+    """Adapt a sync callable so it can be awaited. Each call dispatches
+    the synchronous work to the default executor via
+    `loop.run_in_executor()`. The returned wrapper reports as
+    asynchronous under `inspect.iscoroutinefunction()`. Naming follows
+    the asgiref convention."""
+
+    async def wrapper(wrapped, instance, args, kwargs):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, partial(wrapped, *args, **kwargs))
+
+    return AsyncFunctionWrapper(wrapped, wrapper)
+
+
+def _synchronized_is_async_lock(obj):
+    return iscoroutinefunction(getattr(obj, "acquire", None))
+
+
+def _synchronized_is_async_callable(obj):
+    # Walk the __wrapped__ chain, returning True as soon as any layer
+    # declares itself a coroutine function. A sync marker wrapper can
+    # carry an authoritative `_self_is_not_coroutine` attribute that
+    # short-circuits the walk before it descends into a genuinely
+    # async inner layer. Cycle / runaway-chain protection modelled on
+    # inspect.unwrap().
+
+    memo = {id(obj): obj}
+    recursion_limit = sys.getrecursionlimit()
+    target = obj
+
+    while True:
+        if isinstance(target, (classmethod, staticmethod)):
+            inner = getattr(target, "__wrapped__", None)
+            if inner is None:
+                inner = target.__func__
+            target = inner
+            id_target = id(target)
+            if id_target in memo or len(memo) >= recursion_limit:
+                raise ValueError("wrapper loop when unwrapping {!r}".format(obj))
+            memo[id_target] = target
+            continue
+
+        if getattr(target, "_self_is_not_coroutine", False):
+            return False
+
+        if iscoroutinefunction(target):
+            return True
+
+        next_target = getattr(target, "__wrapped__", None)
+        if next_target is None or next_target is target:
+            return False
+        target = next_target
+        id_target = id(target)
+        if id_target in memo or len(memo) >= recursion_limit:
+            raise ValueError("wrapper loop when unwrapping {!r}".format(obj))
+        memo[id_target] = target
+
+
 # Decorator for implementing thread synchronization. It can be used as a
 # decorator, in which case the synchronization context is determined by
 # what type of function is wrapped, or it can also be used as a context
@@ -420,19 +605,6 @@ def decorator(wrapper=None, /, *, enabled=None, adapter=None, proxy=FunctionWrap
 # and acquire() methods. In that case that will be used directly as the
 # synchronization primitive without creating a separate lock against the
 # derived or supplied context.
-
-
-def _synchronized_is_async_lock(obj):
-    return iscoroutinefunction(getattr(obj, "acquire", None))
-
-
-def _synchronized_is_async_callable(obj):
-    target = obj
-    if isinstance(target, (classmethod, staticmethod)):
-        target = target.__func__
-    while hasattr(target, "__wrapped__"):
-        target = target.__wrapped__
-    return iscoroutinefunction(target)
 
 
 def synchronized(wrapped):
@@ -731,9 +903,9 @@ class _LRUCacheBoundWrapper(BoundFunctionWrapper):
                 cache = getattr(instance, cache_attr, None)
 
                 if cache is None:
-                    cache = _functools_lru_cache(
-                        **parent._self_lru_kwargs
-                    )(self.__wrapped__)
+                    cache = _functools_lru_cache(**parent._self_lru_kwargs)(
+                        self.__wrapped__
+                    )
 
                     setattr(instance, cache_attr, cache)
 
@@ -747,9 +919,7 @@ class _LRUCacheBoundWrapper(BoundFunctionWrapper):
         if not self._is_instance_method():
             return self._self_parent.cache_info()
 
-        cache = getattr(
-            self._self_instance, self._self_parent._self_cache_attr, None
-        )
+        cache = getattr(self._self_instance, self._self_parent._self_cache_attr, None)
 
         if cache is not None:
             return cache.cache_info()
@@ -763,9 +933,7 @@ class _LRUCacheBoundWrapper(BoundFunctionWrapper):
             self._self_parent.cache_clear()
             return
 
-        cache = getattr(
-            self._self_instance, self._self_parent._self_cache_attr, None
-        )
+        cache = getattr(self._self_instance, self._self_parent._self_cache_attr, None)
 
         if cache is not None:
             cache.cache_clear()
@@ -776,9 +944,7 @@ class _LRUCacheBoundWrapper(BoundFunctionWrapper):
         if not self._is_instance_method():
             return self._self_parent.cache_parameters()
 
-        cache = getattr(
-            self._self_instance, self._self_parent._self_cache_attr, None
-        )
+        cache = getattr(self._self_instance, self._self_parent._self_cache_attr, None)
 
         if cache is not None:
             return cache.cache_parameters()
@@ -816,9 +982,9 @@ class _LRUCacheWrapper(FunctionWrapper):
         if self._self_cache is None:
             with synchronized(self):
                 if self._self_cache is None:
-                    self._self_cache = _functools_lru_cache(
-                        **self._self_lru_kwargs
-                    )(self.__wrapped__)
+                    self._self_cache = _functools_lru_cache(**self._self_lru_kwargs)(
+                        self.__wrapped__
+                    )
 
         return self._self_cache(*args, **kwargs)
 
