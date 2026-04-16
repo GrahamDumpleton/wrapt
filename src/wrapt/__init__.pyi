@@ -1,7 +1,7 @@
 import sys
 
 if sys.version_info >= (3, 10):
-    from inspect import FullArgSpec
+    from inspect import FullArgSpec, Signature
     from types import ModuleType, TracebackType
     from typing import (
         Any,
@@ -436,3 +436,12 @@ if sys.version_info >= (3, 10):
     def lru_cache(
         func: None = None, /, **kwargs: Any
     ) -> Callable[[Callable[P, R]], _LRUCacheWrapper[P, R]]: ...
+
+    # with_signature()
+
+    def with_signature(
+        *,
+        prototype: Callable[..., Any] | None = None,
+        signature: Signature | None = None,
+        factory: Callable[[Callable[..., Any]], Signature | Callable[..., Any]] | None = None,
+    ) -> Callable[[Callable[P, R]], FunctionWrapper[P, R]]: ...

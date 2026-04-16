@@ -43,6 +43,7 @@ from .patches import (
     wrap_object_attribute,
 )
 from .proxies import AutoObjectProxy, LazyObjectProxy, ObjectProxy, lazy_import
+from .signature import with_signature
 from .weakrefs import WeakFunctionProxy
 
 __all__ = (
@@ -66,6 +67,7 @@ __all__ = (
     "mark_as_sync",
     "sync_to_async",
     "synchronized",
+    "with_signature",
     "discover_post_import_hooks",
     "notify_module_loaded",
     "register_post_import_hook",

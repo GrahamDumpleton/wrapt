@@ -436,6 +436,14 @@ original source code for the wrapped function.
 Signature Changing Decorators
 -----------------------------
 
+.. note::
+
+    The ``adapter`` argument described in this section is planned for
+    deprecation. New code should instead use the ``wrapt.with_signature``
+    decorator, which provides the same signature override capability as a
+    standalone decorator that composes cleanly with ``wrapt.decorator`` and
+    other wrapt decorators. See :doc:`bundled` for details.
+
 When using ``inspect.getargspec()`` the argument specification for the
 original wrapped function is returned. If however the decorator is a
 signature changing decorator, this is not going to be what is desired.

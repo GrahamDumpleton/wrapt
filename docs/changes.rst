@@ -87,6 +87,21 @@ their help is much appreciated.
   "Calling Convention Markers and Adapters" section of :doc:`bundled` for
   details.
 
+* Added ``with_signature``, a decorator for overriding the signature that
+  introspection tools see for a wrapped callable without mutating the wrapped
+  function itself. The signature can be supplied as a prototype callable, a
+  prebuilt ``inspect.Signature`` object, or a factory callable that derives
+  the signature from the wrapped function at decoration time. Annotations,
+  defaults, keyword defaults, and argument-related attributes of ``__code__``
+  are all derived from the supplied signature so that tools which read those
+  attributes directly stay consistent with ``inspect.signature()``. The
+  override propagates correctly through outer wrapt decorators stacked on
+  top, and is handled correctly for instance methods, class methods, and
+  static methods. ``with_signature`` replaces the need for the ``adapter``
+  argument of ``wrapt.decorator``, which is planned for deprecation in a
+  future release. See the "Signature Override" section of :doc:`bundled`
+  for details.
+
 **Features Changed**
 
 * Improved attribute access on ``BoundFunctionWrapper`` to delegate lookups to

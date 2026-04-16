@@ -7,6 +7,111 @@ is a usage reference for those bundled decorators. For worked examples of how
 decorators of this kind can be constructed from scratch using **wrapt**, see
 :doc:`examples`.
 
+LRU Cache
+---------
+
+The ``functools.lru_cache`` decorator from the standard library works well
+for plain functions, but has several limitations when applied to instance
+methods:
+
+* **Cache pollution** — because ``self`` is included as a cache key, all
+  instances share the same ``maxsize`` budget. A cache with ``maxsize=128``
+  shared across 100 instances gives roughly one entry per instance.
+
+* **Garbage collection** — the cache holds strong references to ``self``
+  through the cache keys, preventing instances from being garbage collected
+  as long as they remain in the cache.
+
+* **Hashability** — ``self`` must be hashable for the cache lookup to work.
+  If a class defines ``__eq__`` without ``__hash__``, applying
+  ``functools.lru_cache`` to its methods will raise a ``TypeError``.
+
+``wrapt.lru_cache`` addresses all three issues by maintaining a separate
+per-instance cache stored as an attribute on the instance itself. Each
+instance gets its own full ``maxsize`` budget, instances do not need to be
+hashable, and caches are automatically cleaned up when the instance is
+garbage collected. For plain functions, class methods, and static methods,
+a single shared cache is used, the same as ``functools.lru_cache``.
+
+The decorator can be used with or without arguments, just like
+``functools.lru_cache``. All keyword arguments are passed through to the
+underlying ``functools.lru_cache``.
+
+::
+
+    import wrapt
+
+    @wrapt.lru_cache
+    def fibonacci(n):
+        if n < 2:
+            return n
+        return fibonacci(n - 1) + fibonacci(n - 2)
+
+    @wrapt.lru_cache(maxsize=32)
+    def factorial(n):
+        return n * factorial(n - 1) if n else 1
+
+The decorator works with instance methods, class methods, and static methods.
+
+::
+
+    class MyClass:
+
+        @wrapt.lru_cache
+        def compute(self, x):
+            return x * 2
+
+        @wrapt.lru_cache(maxsize=32)
+        @classmethod
+        def class_compute(cls, x):
+            return x * 3
+
+        @wrapt.lru_cache
+        @staticmethod
+        def static_compute(x):
+            return x * 4
+
+For instance methods, each instance maintains its own independent cache.
+
+::
+
+    >>> obj1 = MyClass()
+    >>> obj2 = MyClass()
+    >>> obj1.compute(5)
+    10
+    >>> obj2.compute(5)
+    10
+
+Each instance has its own ``maxsize`` budget, so caching on one instance
+does not affect another.
+
+The ``cache_info()``, ``cache_clear()``, and ``cache_parameters()`` methods
+are available directly on the decorated function. For instance methods,
+these operate on the per-instance cache for the bound instance.
+
+::
+
+    >>> obj = MyClass()
+    >>> obj.compute(5)
+    10
+    >>> obj.compute(5)
+    10
+    >>> obj.compute.cache_info()
+    CacheInfo(hits=1, misses=1, maxsize=128, currsize=1)
+    >>> obj.compute.cache_clear()
+
+For plain functions, class methods, and static methods these operate on the
+single shared cache.
+
+::
+
+    >>> fibonacci(10)
+    55
+    >>> fibonacci.cache_info()
+    CacheInfo(hits=8, misses=11, maxsize=128, currsize=11)
+    >>> fibonacci.cache_parameters()
+    {'maxsize': 128, 'typed': False}
+
 Thread Synchronization
 ----------------------
 
@@ -438,107 +543,161 @@ resulting calling convention to ``wrapt.synchronized``:
     def work(...):
         ...
 
-LRU Cache
----------
+Signature Override
+------------------
 
-The ``functools.lru_cache`` decorator from the standard library works well
-for plain functions, but has several limitations when applied to instance
-methods:
+``wrapt.with_signature`` overrides the signature that introspection tools
+see for a wrapped callable, without mutating the wrapped function itself.
+The wrapper still calls through to the wrapped function normally; only the
+signature reported by ``inspect.signature()``, ``inspect.getfullargspec()``,
+``help()``, and equivalent tools is substituted. Annotations, defaults,
+keyword defaults, and the argument-related attributes of ``__code__`` are
+all derived from the supplied signature so that tools which read these
+attributes directly stay consistent with ``inspect.signature()``.
 
-* **Cache pollution** — because ``self`` is included as a cache key, all
-  instances share the same ``maxsize`` budget. A cache with ``maxsize=128``
-  shared across 100 instances gives roughly one entry per instance.
+This is the modern replacement for the ``adapter`` argument of
+``wrapt.decorator`` (see :doc:`decorators`). The older ``adapter``
+mechanism remains available but is planned for deprecation.
 
-* **Garbage collection** — the cache holds strong references to ``self``
-  through the cache keys, preventing instances from being garbage collected
-  as long as they remain in the cache.
+Exactly one of the keyword arguments ``prototype=``, ``signature=``, or
+``factory=`` must be supplied. Supplying none, or more than one, raises
+``TypeError``.
 
-* **Hashability** — ``self`` must be hashable for the cache lookup to work.
-  If a class defines ``__eq__`` without ``__hash__``, applying
-  ``functools.lru_cache`` to its methods will raise a ``TypeError``.
+Providing a prototype function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``wrapt.lru_cache`` addresses all three issues by maintaining a separate
-per-instance cache stored as an attribute on the instance itself. Each
-instance gets its own full ``maxsize`` budget, instances do not need to be
-hashable, and caches are automatically cleaned up when the instance is
-garbage collected. For plain functions, class methods, and static methods,
-a single shared cache is used, the same as ``functools.lru_cache``.
-
-The decorator can be used with or without arguments, just like
-``functools.lru_cache``. All keyword arguments are passed through to the
-underlying ``functools.lru_cache``.
+The most common form is to pass a prototype function whose signature is
+to be presented. The prototype's body is not executed; only its signature
+(including annotations) is used.
 
 ::
 
     import wrapt
 
-    @wrapt.lru_cache
-    def fibonacci(n):
-        if n < 2:
-            return n
-        return fibonacci(n - 1) + fibonacci(n - 2)
+    def _prototype(user: str, count: int = 1) -> bool: ...
 
-    @wrapt.lru_cache(maxsize=32)
-    def factorial(n):
-        return n * factorial(n - 1) if n else 1
+    @wrapt.with_signature(prototype=_prototype)
+    def function(*args, **kwargs):
+        # The real implementation accepts (*args, **kwargs), but
+        # introspection sees (user: str, count: int = 1) -> bool.
+        ...
 
-The decorator works with instance methods, class methods, and static methods.
+The wrapped function is not modified. ``inspect.signature(function)``
+returns the prototype's signature, while
+``inspect.signature(function.__wrapped__)`` still returns the wrapped
+function's own ``(*args, **kwargs)``.
+
+Providing a Signature object
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the signature is built programmatically, an ``inspect.Signature`` object
+can be supplied directly via ``signature=``.
 
 ::
 
-    class MyClass:
+    import inspect
+    import wrapt
 
-        @wrapt.lru_cache
-        def compute(self, x):
-            return x * 2
+    sig = inspect.Signature(
+        [
+            inspect.Parameter(
+                "user",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=str,
+            ),
+        ],
+        return_annotation=bool,
+    )
 
-        @wrapt.lru_cache(maxsize=32)
+    @wrapt.with_signature(signature=sig)
+    def function(*args, **kwargs):
+        ...
+
+Deriving the signature from the wrapped function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A factory callable can be supplied via ``factory=``. It is called at
+decoration time with the function being wrapped, and must return either
+an ``inspect.Signature`` or a prototype callable from which a signature
+will be derived. This form is the equivalent of ``wrapt.adapter_factory``
+in the legacy mechanism.
+
+::
+
+    def prepend_request_id(wrapped):
+        s = inspect.signature(wrapped)
+        return s.replace(
+            parameters=[
+                inspect.Parameter(
+                    "request_id",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                ),
+                *s.parameters.values(),
+            ]
+        )
+
+    @wrapt.with_signature(factory=prepend_request_id)
+    def function(a, b):
+        ...
+
+Methods
+~~~~~~~
+
+``with_signature`` handles instance methods, class methods, and static
+methods. For an instance method the prototype should include ``self``; the
+bound view has it stripped automatically, matching Python's built-in
+behaviour for ``inspect.signature(instance.method)``.
+
+::
+
+    def _method_proto(self, value: int) -> int: ...
+
+    class C:
+
+        @wrapt.with_signature(prototype=_method_proto)
+        def scale(self, *args, **kwargs):
+            return args[0] * 10
+
+    # inspect.signature(C.scale)   reports (self, value: int) -> int
+    # inspect.signature(c.scale)   reports (value: int) -> int
+
+For class methods and static methods, ``with_signature`` can be stacked
+either above or below ``@classmethod`` / ``@staticmethod``; both orders
+produce correct introspection results. The conventional ordering is to
+place ``@with_signature`` on top.
+
+::
+
+    class C:
+
+        @wrapt.with_signature(prototype=_cm_proto)
         @classmethod
-        def class_compute(cls, x):
-            return x * 3
+        def build(cls, *args, **kwargs):
+            ...
 
-        @wrapt.lru_cache
+        @wrapt.with_signature(prototype=_sm_proto)
         @staticmethod
-        def static_compute(x):
-            return x * 4
+        def twice(*args, **kwargs):
+            ...
 
-For instance methods, each instance maintains its own independent cache.
+Stacking under other decorators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-::
-
-    >>> obj1 = MyClass()
-    >>> obj2 = MyClass()
-    >>> obj1.compute(5)
-    10
-    >>> obj2.compute(5)
-    10
-
-Each instance has its own ``maxsize`` budget, so caching on one instance
-does not affect another.
-
-The ``cache_info()``, ``cache_clear()``, and ``cache_parameters()`` methods
-are available directly on the decorated function. For instance methods,
-these operate on the per-instance cache for the bound instance.
+When another **wrapt** decorator is placed on top of ``@with_signature``,
+the overridden signature is still reported by introspection on the outer
+wrapper. Annotations, defaults, keyword defaults, and the argument
+attributes of ``__code__`` all propagate upward through the wrapper
+chain.
 
 ::
 
-    >>> obj = MyClass()
-    >>> obj.compute(5)
-    10
-    >>> obj.compute(5)
-    10
-    >>> obj.compute.cache_info()
-    CacheInfo(hits=1, misses=1, maxsize=128, currsize=1)
-    >>> obj.compute.cache_clear()
+    @wrapt.decorator
+    def pass_through(wrapped, instance, args, kwargs):
+        return wrapped(*args, **kwargs)
 
-For plain functions, class methods, and static methods these operate on the
-single shared cache.
+    @pass_through
+    @wrapt.with_signature(prototype=_prototype)
+    def function(*args, **kwargs):
+        ...
 
-::
-
-    >>> fibonacci(10)
-    55
-    >>> fibonacci.cache_info()
-    CacheInfo(hits=8, misses=11, maxsize=128, currsize=11)
-    >>> fibonacci.cache_parameters()
-    {'maxsize': 128, 'typed': False}
+    # inspect.signature(function) still reports the prototype's signature.
