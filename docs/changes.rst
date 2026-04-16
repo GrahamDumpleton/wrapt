@@ -78,11 +78,15 @@ their help is much appreciated.
   ``inspect.iscoroutinefunction()`` reports the intended convention,
   letting ``synchronized`` auto-select the correct sync or async wrapping
   behaviour even when an upstream decorator has changed the effective
-  calling convention. ``async_to_sync`` runs an async callable to
-  completion via ``asyncio.run()``, and ``sync_to_async`` dispatches a
-  sync callable onto the default executor via ``loop.run_in_executor()``;
-  both self-mark so they integrate with ``synchronized`` without needing
-  an additional marker decorator. The naming of ``async_to_sync`` and
+  calling convention. Both markers take an optional ``generator`` keyword
+  (tri-state: ``None`` / ``True`` / ``False``) controlling the reported
+  generator bit, so all four callable kinds (plain function, sync
+  generator, coroutine function, async generator) can be asserted.
+  ``async_to_sync`` runs an async callable to completion via
+  ``asyncio.run()``, and ``sync_to_async`` dispatches a sync callable
+  onto the default executor via ``loop.run_in_executor()``; both
+  self-mark so they integrate with ``synchronized`` without needing an
+  additional marker decorator. The naming of ``async_to_sync`` and
   ``sync_to_async`` follows the convention used by ``asgiref``. See the
   "Calling Convention Markers and Adapters" section of :doc:`bundled` for
   details.

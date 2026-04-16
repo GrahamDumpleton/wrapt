@@ -468,6 +468,60 @@ changes what ``iscoroutinefunction()`` reports. The marker wrappers are for
 annotating stacks whose effective convention has already been established by
 other decorators.
 
+Marking generator convention
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Both ``mark_as_sync`` and ``mark_as_async`` accept an optional
+``generator`` keyword to control the reported generator-ness of the
+wrapper. This is the modifier on top of the primary sync/async axis, and
+lets the markers address all four realistic callable kinds: plain
+function, sync generator, coroutine function, and async generator.
+
+The parameter is tri-state:
+
+- ``None`` (default): auto. Preserve generator-ness from the input. For
+  ``mark_as_sync``, an async generator input becomes a sync generator;
+  other inputs keep their ``CO_GENERATOR`` bit as-is. For
+  ``mark_as_async``, any generator input (sync or async) becomes an
+  async generator; non-generator input becomes a coroutine function.
+- ``True``: force generator reporting on. ``mark_as_sync(generator=True)``
+  sets ``CO_GENERATOR``; ``mark_as_async(generator=True)`` sets
+  ``CO_ASYNC_GENERATOR`` (and clears ``CO_COROUTINE`` since the two
+  are mutually exclusive at the CPython code-object level).
+- ``False``: force generator reporting off. ``mark_as_sync(generator=False)``
+  clears ``CO_GENERATOR``; ``mark_as_async(generator=False)`` sets
+  ``CO_COROUTINE`` and clears ``CO_ASYNC_GENERATOR`` and ``CO_GENERATOR``.
+
+::
+
+    # An upstream decorator collects items from an async generator into
+    # a list and returns it synchronously. Mark the resulting callable
+    # as a plain sync function (default auto would flip
+    # CO_ASYNC_GENERATOR into CO_GENERATOR and the wrapper would report
+    # as a sync generator, which is wrong here -- the real return is a
+    # list).
+
+    @wrapt.mark_as_sync(generator=False)
+    @collect_async_generator_to_list
+    async def stream(...):
+        yield ...
+
+::
+
+    # A sync generator is being exposed through an adapter that wraps
+    # each yielded item in an async future. Mark it as an async
+    # generator so consumers using ``async for`` see the expected
+    # introspection.
+
+    @wrapt.mark_as_async(generator=True)
+    @async_wrap_yielded_items
+    def produce(...):
+        yield ...
+
+Both markers always clear ``CO_ITERABLE_COROUTINE`` (the legacy
+``@types.coroutine`` flag), regardless of ``generator``, since that
+flag's meaning is incompatible with either marker's assertion.
+
 Bridging between conventions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -701,3 +755,49 @@ chain.
         ...
 
     # inspect.signature(function) still reports the prototype's signature.
+
+Combining with calling-convention markers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``with_signature`` controls *what the arguments look like*, but it does
+not assert anything about the *calling convention* of the resulting
+wrapper -- whether it is a coroutine function, a generator, an async
+generator, or a plain sync function. Those concerns are expressed by
+``mark_as_sync`` and ``mark_as_async``, described in the "Calling
+Convention Markers and Adapters" section above. The two concerns are
+deliberately orthogonal: ``with_signature`` only modifies the
+argument-related ``co_flags`` bits (``CO_VARARGS`` and
+``CO_VARKEYWORDS``, derived from the signature), while the markers only
+modify the calling-convention bits (``CO_COROUTINE``,
+``CO_ASYNC_GENERATOR``, ``CO_GENERATOR``, ``CO_ITERABLE_COROUTINE``).
+
+Because the two decorators touch disjoint bits, they compose cleanly
+when stacked. The conventional ordering is the marker on top, the
+signature override underneath, but both orders produce the same
+result:
+
+::
+
+    @wrapt.mark_as_sync
+    @wrapt.with_signature(prototype=_prototype)
+    async def real(*args, **kwargs):
+        # inspect.iscoroutinefunction(real) -> False (from mark_as_sync)
+        # inspect.signature(real)           -> prototype's signature
+        ...
+
+When the underlying callable is a generator of some kind and the
+surrounding stack has changed that convention, the ``generator``
+keyword on the markers is the right modifier:
+
+::
+
+    @wrapt.mark_as_async(generator=True)
+    @wrapt.with_signature(prototype=_prototype)
+    def real(*args, **kwargs):
+        # inspect.isasyncgenfunction(real) -> True
+        # inspect.signature(real)          -> prototype's signature
+        yield ...
+
+Use ``with_signature`` alone when only the signature needs correcting;
+stack with a marker when the calling convention also needs to be
+asserted independently of the wrapped function's own declaration.

@@ -9,7 +9,13 @@ wrapped callable (without converting it), and ``async_to_sync`` /
 import asyncio
 import sys
 from functools import partial
-from inspect import CO_ASYNC_GENERATOR, CO_COROUTINE, iscoroutinefunction
+from inspect import (
+    CO_ASYNC_GENERATOR,
+    CO_COROUTINE,
+    CO_GENERATOR,
+    CO_ITERABLE_COROUTINE,
+    iscoroutinefunction,
+)
 from threading import Lock, RLock
 
 from .__wrapt__ import BoundFunctionWrapper, CallableObjectProxy, FunctionWrapper
@@ -23,21 +29,40 @@ from .decorators import decorator
 # inner decorator that invokes an async def via asyncio.run()).
 
 
-_CO_SYNC_MASK = ~(CO_COROUTINE | CO_ASYNC_GENERATOR)
-
-
 class _SyncCodeProxy(CallableObjectProxy):
+
+    def __init__(self, wrapped, generator=None):
+        super().__init__(wrapped)
+        self._self_generator = generator
 
     @property
     def co_flags(self):
-        return self.__wrapped__.co_flags & _CO_SYNC_MASK
+        original = self.__wrapped__.co_flags
+        # Strip async-axis and iterable-coroutine bits; sync means neither
+        # coroutine function nor async generator nor types.coroutine-style.
+        flags = original & ~(CO_COROUTINE | CO_ASYNC_GENERATOR | CO_ITERABLE_COROUTINE)
+        if self._self_generator is True:
+            flags |= CO_GENERATOR
+        elif self._self_generator is False:
+            flags &= ~CO_GENERATOR
+        else:
+            # Auto: if input was an async generator, preserve generator-ness
+            # on the sync side by setting CO_GENERATOR. Otherwise leave
+            # CO_GENERATOR as-is (already copied from the wrapped flags).
+            if original & CO_ASYNC_GENERATOR:
+                flags |= CO_GENERATOR
+        return flags
 
 
 class _SyncFunctionSurrogate(CallableObjectProxy):
 
+    def __init__(self, wrapped, generator=None):
+        super().__init__(wrapped)
+        self._self_generator = generator
+
     @property
     def __code__(self):
-        return _SyncCodeProxy(self.__wrapped__.__code__)
+        return _SyncCodeProxy(self.__wrapped__.__code__, self._self_generator)
 
 
 class _BoundSyncFunctionWrapper(BoundFunctionWrapper):
@@ -48,77 +73,151 @@ class _BoundSyncFunctionWrapper(BoundFunctionWrapper):
 
     @property
     def __func__(self):
-        return _SyncFunctionSurrogate(self.__wrapped__.__func__)
+        return _SyncFunctionSurrogate(
+            self.__wrapped__.__func__, self._self_parent._self_generator
+        )
 
 
 class _SyncFunctionWrapper(FunctionWrapper):
 
     __bound_function_wrapper__ = _BoundSyncFunctionWrapper
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, wrapped, wrapper, generator=None):
+        super().__init__(wrapped, wrapper)
         self._self_is_not_coroutine = True
+        self._self_generator = generator
 
     @property
     def __code__(self):
-        return _SyncCodeProxy(self.__wrapped__.__code__)
+        return _SyncCodeProxy(self.__wrapped__.__code__, self._self_generator)
 
 
 class _AsyncCodeProxy(CallableObjectProxy):
 
+    def __init__(self, wrapped, generator=None):
+        super().__init__(wrapped)
+        self._self_generator = generator
+
     @property
     def co_flags(self):
-        return (self.__wrapped__.co_flags & ~CO_ASYNC_GENERATOR) | CO_COROUTINE
+        original = self.__wrapped__.co_flags
+        # Strip all four convention bits; we reassert the right ones below.
+        flags = original & ~(
+            CO_GENERATOR | CO_COROUTINE | CO_ITERABLE_COROUTINE | CO_ASYNC_GENERATOR
+        )
+        if self._self_generator is True:
+            flags |= CO_ASYNC_GENERATOR
+        elif self._self_generator is False:
+            flags |= CO_COROUTINE
+        else:
+            # Auto: if input was a generator (sync or async), produce an
+            # async generator; otherwise produce a coroutine function.
+            if original & (CO_GENERATOR | CO_ASYNC_GENERATOR):
+                flags |= CO_ASYNC_GENERATOR
+            else:
+                flags |= CO_COROUTINE
+        return flags
 
 
 class _AsyncFunctionSurrogate(CallableObjectProxy):
 
+    def __init__(self, wrapped, generator=None):
+        super().__init__(wrapped)
+        self._self_generator = generator
+
     @property
     def __code__(self):
-        return _AsyncCodeProxy(self.__wrapped__.__code__)
+        return _AsyncCodeProxy(self.__wrapped__.__code__, self._self_generator)
 
 
 class _BoundAsyncFunctionWrapper(BoundFunctionWrapper):
 
     @property
     def __func__(self):
-        return _AsyncFunctionSurrogate(self.__wrapped__.__func__)
+        return _AsyncFunctionSurrogate(
+            self.__wrapped__.__func__, self._self_parent._self_generator
+        )
 
 
 class _AsyncFunctionWrapper(FunctionWrapper):
 
     __bound_function_wrapper__ = _BoundAsyncFunctionWrapper
 
+    def __init__(self, wrapped, wrapper, generator=None):
+        super().__init__(wrapped, wrapper)
+        self._self_generator = generator
+
     @property
     def __code__(self):
-        return _AsyncCodeProxy(self.__wrapped__.__code__)
+        return _AsyncCodeProxy(self.__wrapped__.__code__, self._self_generator)
 
 
-def mark_as_sync(wrapped):
+def mark_as_sync(wrapped=None, /, *, generator=None):
     """Mark a callable as synchronous from the perspective of calling
     convention detection. The returned wrapper is a pass-through that
     reports `inspect.iscoroutinefunction()` as False regardless of
     whether the underlying callable is declared `async def`. Useful
     when a stacked decorator has already collapsed an async function
-    into a synchronous one (for example by using `asyncio.run()`)."""
+    into a synchronous one (for example by using `asyncio.run()`).
 
-    def wrapper(wrapped, instance, args, kwargs):
-        return wrapped(*args, **kwargs)
+    The `generator` keyword toggles the sync generator bit
+    (`CO_GENERATOR`) on the resulting wrapper. Tri-state:
 
-    return _SyncFunctionWrapper(wrapped, wrapper)
+    - `None` (default): auto. Preserve generator-ness from the input --
+      if the input was an async generator, the wrapper reports as a sync
+      generator; otherwise CO_GENERATOR is copied through unchanged.
+    - `True`: force CO_GENERATOR on. Wrapper reports as a sync generator.
+    - `False`: force CO_GENERATOR off. Wrapper reports as a plain sync
+      function even if the input had CO_GENERATOR set.
+
+    Regardless of `generator`, CO_COROUTINE, CO_ASYNC_GENERATOR, and
+    CO_ITERABLE_COROUTINE are all cleared (sync means none of those).
+    """
+
+    def _decorator(wrapped):
+        def _wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        return _SyncFunctionWrapper(wrapped, _wrapper, generator=generator)
+
+    if wrapped is None:
+        return _decorator
+    return _decorator(wrapped)
 
 
-def mark_as_async(wrapped):
+def mark_as_async(wrapped=None, /, *, generator=None):
     """Mark a callable as asynchronous from the perspective of calling
     convention detection. The returned wrapper reports
     `inspect.iscoroutinefunction()` as True regardless of whether the
     underlying callable is declared `async def`. Useful when a stacked
-    decorator returns a coroutine from a plain `def` wrapper."""
+    decorator returns a coroutine from a plain `def` wrapper.
 
-    async def wrapper(wrapped, instance, args, kwargs):
+    The `generator` keyword chooses between coroutine function and
+    async generator reporting. Tri-state:
+
+    - `None` (default): auto. If the input was a sync or async
+      generator, the wrapper reports as an async generator
+      (`CO_ASYNC_GENERATOR`); otherwise it reports as a coroutine
+      function (`CO_COROUTINE`).
+    - `True`: force async generator reporting (`CO_ASYNC_GENERATOR` set,
+      `CO_COROUTINE` cleared). These two flags are mutually exclusive at
+      the CPython code-object level.
+    - `False`: force coroutine function reporting (`CO_COROUTINE` set,
+      `CO_ASYNC_GENERATOR` cleared).
+
+    CO_GENERATOR and CO_ITERABLE_COROUTINE are always cleared (the
+    async path does not use either).
+    """
+
+    async def _wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
-    return _AsyncFunctionWrapper(wrapped, wrapper)
+    def _decorator(wrapped):
+        return _AsyncFunctionWrapper(wrapped, _wrapper, generator=generator)
+
+    if wrapped is None:
+        return _decorator
+    return _decorator(wrapped)
 
 
 def async_to_sync(wrapped):

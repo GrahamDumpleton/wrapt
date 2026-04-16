@@ -463,5 +463,105 @@ class TestPassThroughStacking(unittest.TestCase):
         self.assertEqual(fn(1, "y"), ((1, "y"), {}))
 
 
+class TestMarkerStacking(unittest.TestCase):
+    """Verify ``with_signature`` composes cleanly with the calling-convention
+    markers ``mark_as_sync`` and ``mark_as_async``.
+
+    These decorators touch disjoint bits of ``co_flags`` --
+    ``with_signature`` owns ``CO_VARARGS`` / ``CO_VARKEYWORDS`` (derived
+    from the signature), while the markers own the convention bits
+    (``CO_COROUTINE``, ``CO_ASYNC_GENERATOR``, ``CO_GENERATOR``,
+    ``CO_ITERABLE_COROUTINE``). Stacking one over the other should
+    preserve each layer's contribution.
+    """
+
+    def test_mark_as_sync_over_with_signature(self):
+        @wrapt.mark_as_sync
+        @wrapt.with_signature(prototype=_proto)
+        async def fn(*args, **kwargs):
+            return args[0]
+
+        self.assertEqual(
+            str(inspect.signature(fn)), "(a: int, b: str = 'x') -> bool"
+        )
+        self.assertEqual(
+            fn.__annotations__, {"a": int, "b": str, "return": bool}
+        )
+        self.assertFalse(inspect.iscoroutinefunction(fn))
+
+    def test_mark_as_async_over_with_signature(self):
+        @wrapt.mark_as_async
+        @wrapt.with_signature(prototype=_proto)
+        def fn(*args, **kwargs):
+            return args[0]
+
+        self.assertEqual(
+            str(inspect.signature(fn)), "(a: int, b: str = 'x') -> bool"
+        )
+        self.assertTrue(inspect.iscoroutinefunction(fn))
+
+    def test_with_signature_over_mark_as_sync(self):
+        # Reverse order also works; signature and convention still compose.
+        @wrapt.with_signature(prototype=_proto)
+        @wrapt.mark_as_sync
+        async def fn(*args, **kwargs):
+            return args[0]
+
+        self.assertEqual(
+            str(inspect.signature(fn)), "(a: int, b: str = 'x') -> bool"
+        )
+        self.assertEqual(
+            fn.__annotations__, {"a": int, "b": str, "return": bool}
+        )
+        self.assertFalse(inspect.iscoroutinefunction(fn))
+
+    def test_mark_as_async_generator_over_with_signature(self):
+        # mark_as_async(generator=True) yields async-generator convention
+        # while with_signature provides the signature.
+        @wrapt.mark_as_async(generator=True)
+        @wrapt.with_signature(prototype=_proto)
+        def fn(*args, **kwargs):
+            yield args[0]
+
+        self.assertTrue(inspect.isasyncgenfunction(fn))
+        self.assertFalse(inspect.iscoroutinefunction(fn))
+        self.assertEqual(
+            str(inspect.signature(fn)), "(a: int, b: str = 'x') -> bool"
+        )
+
+    def test_stacking_on_instance_method(self):
+        # Convention marker + signature override on a method. The bound
+        # view should still have self stripped.
+        class C:
+            @wrapt.mark_as_sync
+            @wrapt.with_signature(prototype=_method_proto)
+            async def scale(self, *args, **kwargs):
+                return args[0] * 10
+
+        c = C()
+        self.assertEqual(
+            str(inspect.signature(C.scale)), "(self, value: int) -> int"
+        )
+        self.assertEqual(
+            str(inspect.signature(c.scale)), "(value: int) -> int"
+        )
+        self.assertFalse(inspect.iscoroutinefunction(C.scale))
+        self.assertFalse(inspect.iscoroutinefunction(c.scale))
+
+    def test_varargs_flag_preserved_through_marker(self):
+        # Prototype with *args / **kwargs must preserve CO_VARARGS and
+        # CO_VARKEYWORDS (owned by with_signature) even after mark_as_sync
+        # strips the convention bits on top.
+        def proto_with_varargs(*args: int, **kwargs: str) -> None: ...
+
+        @wrapt.mark_as_sync
+        @wrapt.with_signature(prototype=proto_with_varargs)
+        async def fn(*args, **kwargs): ...
+
+        self.assertTrue(fn.__code__.co_flags & inspect.CO_VARARGS)
+        self.assertTrue(fn.__code__.co_flags & inspect.CO_VARKEYWORDS)
+        self.assertFalse(inspect.iscoroutinefunction(fn))
+
+
 if __name__ == "__main__":
     unittest.main()

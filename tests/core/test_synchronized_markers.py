@@ -274,5 +274,168 @@ class TestDetectionInternals(unittest.TestCase):
             self._detect(a)
 
 
+class TestMarkAsSyncGenerator(unittest.TestCase):
+    """Exercises the ``generator`` tri-state on ``mark_as_sync``."""
+
+    def test_default_preserves_sync_generator(self):
+        def gen():
+            yield 1
+
+        wrapped = wrapt.mark_as_sync(gen)
+        self.assertTrue(inspect.isgeneratorfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+        self.assertFalse(inspect.isasyncgenfunction(wrapped))
+
+    def test_default_on_async_generator_flips_to_sync_generator(self):
+        async def agen():
+            yield 1
+
+        wrapped = wrapt.mark_as_sync(agen)
+        # Auto: preserve generator-ness across the async->sync flip.
+        self.assertTrue(inspect.isgeneratorfunction(wrapped))
+        self.assertFalse(inspect.isasyncgenfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+
+    def test_default_on_plain_function_is_plain(self):
+        def f():
+            return 1
+
+        wrapped = wrapt.mark_as_sync(f)
+        self.assertFalse(inspect.isgeneratorfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+
+    def test_generator_true_forces_generator(self):
+        def f():
+            return 1
+
+        wrapped = wrapt.mark_as_sync(generator=True)(f)
+        self.assertTrue(inspect.isgeneratorfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+
+    def test_generator_false_clears_existing_generator_bit(self):
+        def gen():
+            yield 1
+
+        wrapped = wrapt.mark_as_sync(generator=False)(gen)
+        self.assertFalse(inspect.isgeneratorfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+
+    def test_generator_true_on_async_generator(self):
+        async def agen():
+            yield 1
+
+        wrapped = wrapt.mark_as_sync(generator=True)(agen)
+        self.assertTrue(inspect.isgeneratorfunction(wrapped))
+        self.assertFalse(inspect.isasyncgenfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+
+
+class TestMarkAsAsyncGenerator(unittest.TestCase):
+    """Exercises the ``generator`` tri-state on ``mark_as_async``."""
+
+    def test_default_on_sync_function_is_coroutine(self):
+        def f():
+            return 1
+
+        wrapped = wrapt.mark_as_async(f)
+        self.assertTrue(inspect.iscoroutinefunction(wrapped))
+        self.assertFalse(inspect.isasyncgenfunction(wrapped))
+
+    def test_default_on_sync_generator_flips_to_async_generator(self):
+        def gen():
+            yield 1
+
+        wrapped = wrapt.mark_as_async(gen)
+        # Auto: input yielded, so output is an async generator.
+        self.assertTrue(inspect.isasyncgenfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+        self.assertFalse(inspect.isgeneratorfunction(wrapped))
+
+    def test_default_on_async_generator_preserves_async_generator(self):
+        async def agen():
+            yield 1
+
+        wrapped = wrapt.mark_as_async(agen)
+        self.assertTrue(inspect.isasyncgenfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+
+    def test_generator_true_forces_async_generator(self):
+        def f():
+            return 1
+
+        wrapped = wrapt.mark_as_async(generator=True)(f)
+        self.assertTrue(inspect.isasyncgenfunction(wrapped))
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+
+    def test_generator_false_forces_coroutine(self):
+        async def agen():
+            yield 1
+
+        wrapped = wrapt.mark_as_async(generator=False)(agen)
+        self.assertTrue(inspect.iscoroutinefunction(wrapped))
+        self.assertFalse(inspect.isasyncgenfunction(wrapped))
+
+    def test_generator_false_on_sync_generator_forces_coroutine(self):
+        def gen():
+            yield 1
+
+        wrapped = wrapt.mark_as_async(generator=False)(gen)
+        # generator=False overrides the auto inference; result is a
+        # plain coroutine function, not an async generator.
+        self.assertTrue(inspect.iscoroutinefunction(wrapped))
+        self.assertFalse(inspect.isasyncgenfunction(wrapped))
+        self.assertFalse(inspect.isgeneratorfunction(wrapped))
+
+
+class TestGeneratorModifierOnMethods(unittest.TestCase):
+    """Verify the ``generator`` parameter behaves correctly across
+    descriptor binding (both the class and instance access paths go
+    through the same surrogate-based code proxy)."""
+
+    def test_mark_as_sync_generator_true_on_method(self):
+        class C:
+            @wrapt.mark_as_sync(generator=True)
+            def m(self):
+                yield 1
+
+        c = C()
+        self.assertTrue(inspect.isgeneratorfunction(C.m))
+        self.assertTrue(inspect.isgeneratorfunction(c.m))
+
+    def test_mark_as_async_generator_true_on_method(self):
+        class C:
+            @wrapt.mark_as_async(generator=True)
+            def m(self):
+                yield 1
+
+        c = C()
+        self.assertTrue(inspect.isasyncgenfunction(C.m))
+        self.assertTrue(inspect.isasyncgenfunction(c.m))
+
+
+class TestIterableCoroutineStripped(unittest.TestCase):
+    """CO_ITERABLE_COROUTINE is always cleared by both markers."""
+
+    def test_mark_as_sync_clears_iterable_coroutine(self):
+        import types
+
+        @types.coroutine
+        def gen():
+            yield 1
+
+        wrapped = wrapt.mark_as_sync(gen)
+        self.assertFalse(wrapped.__code__.co_flags & inspect.CO_ITERABLE_COROUTINE)
+
+    def test_mark_as_async_clears_iterable_coroutine(self):
+        import types
+
+        @types.coroutine
+        def gen():
+            yield 1
+
+        wrapped = wrapt.mark_as_async(gen)
+        self.assertFalse(wrapped.__code__.co_flags & inspect.CO_ITERABLE_COROUTINE)
+
+
 if __name__ == "__main__":
     unittest.main()
