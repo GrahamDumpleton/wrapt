@@ -403,39 +403,39 @@ if sys.version_info >= (3, 10):
 
     # bind_state_to_wrapper()
 
-    class StateBindingWrapper:
+    class _StateBindingWrapper:
         name: str
         wrapper_factory: Descriptor | None
         def __init__(self, *, name: str = "state") -> None: ...
-        def __call__(self, wrapper_factory: Descriptor) -> StateBindingWrapper: ...
+        def __call__(self, wrapper_factory: Descriptor) -> _StateBindingWrapper: ...
         def __get__(
             self, instance: Any, owner: type[Any] | None = None
         ) -> (
-            StateBindingWrapper
+            _StateBindingWrapper
             | Callable[[Callable[..., Any]], FunctionWrapper[..., Any]]
         ): ...
 
-    bind_state_to_wrapper = StateBindingWrapper
+    bind_state_to_wrapper = _StateBindingWrapper
 
     # lru_cache()
 
-    class _LRUCacheBoundWrapper(BoundFunctionWrapper[P1, R1]):
+    class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper[P1, R1]):
         def cache_info(self) -> Any | None: ...
         def cache_clear(self) -> None: ...
         def cache_parameters(self) -> dict[str, Any] | None: ...
 
-    class _LRUCacheWrapper(FunctionWrapper[P1, R1]):
-        __bound_function_wrapper__: type[_LRUCacheBoundWrapper[P1, R1]]
+    class _LRUCacheFunctionWrapper(FunctionWrapper[P1, R1]):
+        __bound_function_wrapper__: type[_BoundLRUCacheFunctionWrapper[P1, R1]]
         def cache_info(self) -> Any | None: ...
         def cache_clear(self) -> None: ...
         def cache_parameters(self) -> dict[str, Any] | None: ...
 
     @overload
-    def lru_cache(func: Callable[P, R], /) -> _LRUCacheWrapper[P, R]: ...
+    def lru_cache(func: Callable[P, R], /) -> _LRUCacheFunctionWrapper[P, R]: ...
     @overload
     def lru_cache(
         func: None = None, /, **kwargs: Any
-    ) -> Callable[[Callable[P, R]], _LRUCacheWrapper[P, R]]: ...
+    ) -> Callable[[Callable[P, R]], _LRUCacheFunctionWrapper[P, R]]: ...
 
     # with_signature()
 
@@ -443,5 +443,7 @@ if sys.version_info >= (3, 10):
         *,
         prototype: Callable[..., Any] | None = None,
         signature: Signature | None = None,
-        factory: Callable[[Callable[..., Any]], Signature | Callable[..., Any]] | None = None,
+        factory: (
+            Callable[[Callable[..., Any]], Signature | Callable[..., Any]] | None
+        ) = None,
     ) -> Callable[[Callable[P, R]], FunctionWrapper[P, R]]: ...

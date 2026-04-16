@@ -1210,14 +1210,14 @@ Version 1.10.0
 
   ::
 
-      class DelegatedAdapterFactory(wrapt.AdapterFactory):
+      class _DelegatedAdapterFactory(wrapt.AdapterFactory):
           def __init__(self, factory):
-              super(DelegatedAdapterFactory, self).__init__()
+              super(_DelegatedAdapterFactory, self).__init__()
               self.factory = factory
           def __call__(self, wrapped):
               return self.factory(wrapped)
 
-      adapter_factory = DelegatedAdapterFactory
+      adapter_factory = _DelegatedAdapterFactory
 
 **Bugs Fixed**
 

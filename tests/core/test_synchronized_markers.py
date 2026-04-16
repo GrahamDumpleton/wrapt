@@ -213,7 +213,7 @@ class TestSynchronizedWithMarkers(unittest.TestCase):
 class TestDetectionInternals(unittest.TestCase):
 
     def _detect(self, obj):
-        from wrapt.decorators import _synchronized_is_async_callable
+        from wrapt.synchronization import _synchronized_is_async_callable
 
         return _synchronized_is_async_callable(obj)
 

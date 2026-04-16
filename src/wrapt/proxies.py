@@ -4,7 +4,7 @@ from collections.abc import Callable
 from types import ModuleType
 
 from .__wrapt__ import BaseObjectProxy
-from .decorators import synchronized
+from .synchronization import synchronized
 
 # Define ObjectProxy which for compatibility adds `__iter__()` support which
 # has been removed from `BaseObjectProxy`.

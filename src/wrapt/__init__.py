@@ -13,14 +13,15 @@ from .__wrapt__ import (
     PartialCallableObjectProxy,
     partial,
 )
+from .caching import lru_cache
 from .decorators import (
     AdapterFactory,
-    StateBindingWrapper,
     adapter_factory,
-    async_to_sync,
     bind_state_to_wrapper,
     decorator,
-    lru_cache,
+)
+from .synchronization import (
+    async_to_sync,
     mark_as_async,
     mark_as_sync,
     sync_to_async,
@@ -57,7 +58,6 @@ __all__ = (
     "PartialCallableObjectProxy",
     "partial",
     "AdapterFactory",
-    "StateBindingWrapper",
     "adapter_factory",
     "bind_state_to_wrapper",
     "async_to_sync",
