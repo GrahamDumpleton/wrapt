@@ -631,15 +631,6 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     def __delitem__(self, key):
         del self.__wrapped__[key]
 
-    def __getslice__(self, i, j):
-        return self.__wrapped__[i:j]
-
-    def __setslice__(self, i, j, value):
-        self.__wrapped__[i:j] = value
-
-    def __delslice__(self, i, j):
-        del self.__wrapped__[i:j]
-
     def __enter__(self):
         return self.__wrapped__.__enter__()
 

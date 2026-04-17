@@ -20,18 +20,17 @@ wrapt\..*\.__self_setattr__
 wrapt\..*\.__object_proxy__
 
 # --- Runtime implementation details on BaseObjectProxy:
-# name/module/qualname forwarding, MRO entry hook, Python 2 slice dunders
-# (the runtime keeps __getslice__/__setslice__/__delslice__ as harmless
-# no-ops but they are not part of the typed surface).
+# name/qualname forwarding and MRO entry hook. Not part of the typed surface.
 wrapt\.BaseObjectProxy\.__name__
+wrapt\.BaseObjectProxy\.__qualname__
 wrapt\.BaseObjectProxy\.__mro_entries__
-wrapt\.BaseObjectProxy\.__(get|set|del)slice__
 
 # --- AutoObjectProxy attaches these dunders to a per-instance subclass
 # based on the wrapped object's interface (see proxies.AutoObjectProxy
 # .__new__). The stub claims them statically because users write code
 # like `await auto_proxy_of_future` and should not be rejected; stubtest
 # cannot see the per-instance attachment.
+wrapt\.AutoObjectProxy\.__call__
 wrapt\.AutoObjectProxy\.__iter__
 wrapt\.AutoObjectProxy\.__next__
 wrapt\.AutoObjectProxy\.__aiter__
@@ -44,10 +43,6 @@ wrapt\.AutoObjectProxy\.__wrapped_setattr_fixups__
 wrapt\.LazyObjectProxy\.__wrapped_factory__
 wrapt\.LazyObjectProxy\.__wrapped_get__
 wrapt\.LazyObjectProxy\.__wrapped_get_called__
-
-# --- FunctionWrapper carries a class-level pointer to its bound variant
-# that isn't part of the public API.
-wrapt\.FunctionWrapper\.__bound_function_wrapper__
 
 # --- __get__ overloads on FunctionWrapper / BoundFunctionWrapper /
 # bind_state_to_wrapper have `owner` defaulted to None in the stub to
