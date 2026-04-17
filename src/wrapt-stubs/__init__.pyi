@@ -255,7 +255,6 @@ if sys.version_info >= (3, 10):
         # object; subclasses may override it to run additional fixup logic
         # when the wrapped object changes.
         def __wrapped_setattr_fixups__(self) -> None: ...
-
         def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
         def __iter__(self) -> Iterator[Any]: ...
         def __next__(self) -> Any: ...
@@ -361,20 +360,22 @@ if sys.version_info >= (3, 10):
             self: BoundFunctionWrapper[Concatenate[_T2, _P2], _R2],
             instance: _T2,
             owner: type[_T2] | None = None,
+            /,
         ) -> BoundFunctionWrapper[_P2, _R2]: ...
         @overload
         def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
             self: BoundFunctionWrapper[Concatenate[_T2, _P2], _R2],
             instance: _T2,
             owner: type[Any] | None = None,
+            /,
         ) -> BoundFunctionWrapper[_P2, _R2]: ...
         @overload
         def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
-            self, instance: None, owner: type[_T1] | None = None
+            self, instance: None, owner: type[_T1] | None = None, /
         ) -> BoundFunctionWrapper[_P1, _R1]: ...
         @overload
         def __get__(  # Required to ensure pyright works correctly
-            self, instance: _T1, owner: type[_T1] | None = None
+            self, instance: _T1, owner: type[_T1] | None = None, /
         ) -> BoundFunctionWrapper[_P1, _R1]: ...
 
     class FunctionWrapper(_FunctionWrapperBase[_P1, _R1]):
@@ -400,20 +401,22 @@ if sys.version_info >= (3, 10):
             self: FunctionWrapper[Concatenate[_T2, _P2], _R2],
             instance: _T2,
             owner: type[Any] | None = None,
+            /,
         ) -> BoundFunctionWrapper[_P2, _R2]: ...
         @overload
         def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
             self: FunctionWrapper[Concatenate[_T2, _P2], _R2],
             instance: _T2,
             owner: type[_T2] | None = None,
+            /,
         ) -> BoundFunctionWrapper[_P2, _R2]: ...
         @overload
         def __get__(  # Required to ensure mypy, pyrefly and ty works correctly
-            self, instance: None, owner: type[_T1] | None = None
+            self, instance: None, owner: type[_T1] | None = None, /
         ) -> BoundFunctionWrapper[_P1, _R1]: ...
         @overload
         def __get__(  # Required to ensure pyright works correctly
-            self, instance: _T1, owner: type[_T1] | None = None
+            self, instance: _T1, owner: type[_T1] | None = None, /
         ) -> BoundFunctionWrapper[_P1, _R1]: ...
 
     # AdapterFactory/adapter_factory()
@@ -645,7 +648,7 @@ if sys.version_info >= (3, 10):
         def __init__(self, *, name: str = "state") -> None: ...
         def __call__(self, wrapper_factory: _Descriptor) -> _StateBindingWrapper: ...
         def __get__(
-            self, instance: Any, owner: type[Any] | None = None
+            self, instance: Any, owner: type[Any]
         ) -> (
             _StateBindingWrapper
             | Callable[[Callable[..., Any]], FunctionWrapper[..., Any]]

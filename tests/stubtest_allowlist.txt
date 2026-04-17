@@ -31,12 +31,6 @@ wrapt\.LazyObjectProxy\.__wrapped_factory__
 wrapt\.LazyObjectProxy\.__wrapped_get__
 wrapt\.LazyObjectProxy\.__wrapped_get_called__
 
-# --- __get__ overloads on FunctionWrapper / BoundFunctionWrapper /
-# bind_state_to_wrapper have `owner` defaulted to None in the stub to
-# keep mypy, pyrefly, ty and pyright inference correct; the runtime
-# signature does not. The stub default is deliberate.
-wrapt\.(FunctionWrapper|BoundFunctionWrapper|bind_state_to_wrapper)\.__get__
-
 # --- adapter_factory is a class alias (= _DelegatedAdapterFactory) at
 # runtime but the stub types it as a function for ergonomic reasons.
 wrapt\.adapter_factory
