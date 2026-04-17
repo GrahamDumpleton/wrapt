@@ -13,12 +13,6 @@ wrapt\.(__wrapt__|arguments|caching|decorators|importer|patches|proxies|signatur
 # don't declare. Stubtest reports "metaclass differs"; benign for users.
 wrapt\.(BaseObjectProxy|ObjectProxy|AutoObjectProxy|CallableObjectProxy|PartialCallableObjectProxy|LazyObjectProxy|FunctionWrapper|BoundFunctionWrapper|WeakFunctionProxy|bind_state_to_wrapper)
 
-# --- Internal attributes on proxy classes (self-dict access, raw setattr,
-# the object-proxy interface hook). Not part of the documented API.
-wrapt\..*\.__self_dict__
-wrapt\..*\.__self_setattr__
-wrapt\..*\.__object_proxy__
-
 # --- Runtime implementation details on BaseObjectProxy:
 # name/qualname forwarding and MRO entry hook. Not part of the typed surface.
 wrapt\.BaseObjectProxy\.__name__
