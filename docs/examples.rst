@@ -673,3 +673,87 @@ where ``vars()`` returns a read-only ``mappingproxy``, along with a dual
 role as both decorator and context manager, and transparent support for
 ``async def`` functions and ``async with`` blocks backed by an
 ``asyncio.Lock``. See :doc:`bundled` for the full description.
+
+Scoped Test Patches
+-------------------
+
+``@wrapt.transient_function_wrapper`` installs a monkey patch for the
+duration of a single call and removes it afterwards, which makes it a
+convenient building block for tests that need to observe or override a
+collaborator without leaking that change into neighbouring tests. The
+introductory API description is covered in :doc:`monkey`; this section
+shows how it composes with the rest of a test's fixtures.
+
+The example below exercises a small function that uses the standard
+library ``tempfile`` module to create a temporary directory. The test
+wants to verify that the function asks for a specific ``prefix``, without
+actually creating a directory on disk.
+
+::
+
+    import tempfile
+    import wrapt
+
+    def build_workspace():
+        return tempfile.mkdtemp(prefix="workspace-")
+
+    def test_build_workspace_uses_prefix():
+        seen = []
+
+        @wrapt.transient_function_wrapper("tempfile", "mkdtemp")
+        def capture(wrapped, instance, args, kwargs):
+            seen.append((args, kwargs))
+            return "/fake/path"
+
+        @capture
+        def run():
+            return build_workspace()
+
+        assert run() == "/fake/path"
+        assert seen == [((), {"prefix": "workspace-"})]
+
+Two things are happening here. The outer ``@wrapt.transient_function_wrapper``
+declaration *describes* the patch: it says "when the wrapped function runs,
+replace ``tempfile.mkdtemp`` with ``capture``". No patch is in effect at this
+point; ``capture`` is a decorator that has not yet been applied to anything.
+The inner ``@capture`` then applies that decorator to ``run``, so ``run``
+becomes the scope within which the patch is active. Calling ``run()``
+installs the patch, executes ``build_workspace()``, and uninstalls the patch
+before returning, regardless of whether ``build_workspace`` returned
+normally or raised.
+
+This pattern composes naturally with test functions themselves. The wrapper
+can be applied directly as a decorator on the test, in which case the patch
+is in force for the duration of that test.
+
+::
+
+    @wrapt.transient_function_wrapper("tempfile", "mkdtemp")
+    def stub_mkdtemp(wrapped, instance, args, kwargs):
+        return "/fake/path"
+
+    @stub_mkdtemp
+    def test_build_workspace_returns_path():
+        assert build_workspace() == "/fake/path"
+
+Unlike a fixture that installs and tears down a patch at the module level,
+the patch applied by ``transient_function_wrapper`` cannot outlive the
+decorated call. There is no per-test cleanup step to forget, and no risk
+that a failing test leaves an earlier test's patch in place.
+
+Because the wrapper function receives ``wrapped`` as the original, still
+usable attribute, a test is free to call it from inside the wrapper when
+it wants to record an interaction without changing behaviour.
+
+::
+
+    @wrapt.transient_function_wrapper("tempfile", "mkdtemp")
+    def record_mkdtemp(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+        created.append(result)
+        return result
+
+Here the real ``mkdtemp`` still runs, so the test can assert on the return
+value the production code saw while also recording it for inspection. This
+is often enough to replace a bespoke stub object in tests that are really
+asking "was the right collaborator called with the right arguments".

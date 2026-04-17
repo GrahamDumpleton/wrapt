@@ -51,6 +51,7 @@ Documentation
    quick-start
    decorators
    wrappers
+   monkey
    typing
    bundled
    examples
