@@ -120,6 +120,14 @@ to use for the decorated function.
 Signature Adapters
 ------------------
 
+.. note::
+
+    The ``adapter`` argument described in this section is planned for
+    deprecation. New code should instead use the ``wrapt.with_signature``
+    decorator, which provides the same signature override capability as a
+    standalone decorator that composes cleanly with ``wrapt.decorator`` and
+    other wrapt decorators. See :doc:`bundled` for details.
+
 Sometimes you want the decorated callable to present a different public
 signature from the underlying implementation (for example, to narrow the
 parameters, rename them, or enforce keyword-only usage). You can express this
