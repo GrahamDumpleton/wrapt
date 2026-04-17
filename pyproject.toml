@@ -47,8 +47,12 @@ zip-safe = false
 # __init__.py, which setuptools' `find` does not pick up by default.
 packages = ["wrapt", "wrapt-stubs"]
 
+# Use "*" rather than "wrapt-stubs" because the pyproject.toml validator only
+# accepts keys that are valid Python module names or "*"; hyphenated PEP 561
+# stub package names are rejected. Since only the wrapt-stubs package contains
+# .pyi files, matching all packages has the same practical effect.
 [tool.setuptools.package-data]
-"wrapt-stubs" = ["*.pyi"]
+"*" = ["*.pyi"]
 
 [tool.setuptools.dynamic]
 version = {attr = "wrapt.__version__"}
