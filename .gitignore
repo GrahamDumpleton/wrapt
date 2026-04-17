@@ -1,4 +1,5 @@
 *.py[cod]
+__pycache__/
 .venv/
 .venv-test-tmp/
 venv
