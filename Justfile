@@ -152,6 +152,13 @@ test-mypy-version version:
     echo "=== Running mypy type checking with Python {{version}} (mypy=={{ if version == '3.9' { '1.19.1' } else { mypy_version } }}) ==="
     uv run --with 'mypy=={{ if version == "3.9" { "1.19.1" } else { mypy_version } }}' mypy --python-version {{version}} src/wrapt
 
+# Run stubtest to compare the wrapt-stubs package against the installed
+# wrapt runtime. Intentional stub-vs-runtime divergences are listed in
+# tests/stubtest_allowlist.txt; adding new ones should be accompanied by
+# a comment there explaining why the divergence is deliberate.
+test-stubtest:
+    uv run --with 'mypy=={{mypy_version}}' --with-editable . python -m mypy.stubtest wrapt --allowlist tests/stubtest_allowlist.txt
+
 view-mypy-test test:
     MYPYPATH=src/ uv run --with 'mypy=={{mypy_version}}' mypy --strict --show-error-codes tests/mypy/{{test}}.py
 

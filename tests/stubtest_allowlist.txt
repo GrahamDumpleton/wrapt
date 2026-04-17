@@ -1,0 +1,69 @@
+# Allowlist for `python -m mypy.stubtest wrapt --allowlist <this>`.
+#
+# wrapt's public API is what's re-exported via wrapt.__all__. Submodules
+# (wrapt.wrappers, wrapt.proxies, etc.) are implementation detail and
+# deliberately unstubbed since the stubs were moved to the wrapt-stubs
+# package (PEP 561). This file whitelists the stubtest discrepancies
+# that are intentional under that contract.
+
+# --- Submodule-level: intentionally unstubbed (see wrapt-stubs/__init__.pyi).
+wrapt\.(__wrapt__|arguments|caching|decorators|importer|patches|proxies|signature|synchronization|weakrefs|wrappers)
+
+# --- wrapt's proxy classes use a C-extension metaclass that the stubs
+# don't declare. Stubtest reports "metaclass differs"; benign for users.
+wrapt\.(BaseObjectProxy|ObjectProxy|AutoObjectProxy|CallableObjectProxy|PartialCallableObjectProxy|LazyObjectProxy|FunctionWrapper|BoundFunctionWrapper|WeakFunctionProxy|bind_state_to_wrapper)
+
+# --- Internal attributes on proxy classes (self-dict access, raw setattr,
+# the object-proxy interface hook). Not part of the documented API.
+wrapt\..*\.__self_dict__
+wrapt\..*\.__self_setattr__
+wrapt\..*\.__object_proxy__
+
+# --- Runtime implementation details on BaseObjectProxy:
+# name/module/qualname forwarding, MRO entry hook, Python 2 slice dunders
+# (the runtime keeps __getslice__/__setslice__/__delslice__ as harmless
+# no-ops but they are not part of the typed surface).
+wrapt\.BaseObjectProxy\.__name__
+wrapt\.BaseObjectProxy\.__mro_entries__
+wrapt\.BaseObjectProxy\.__(get|set|del)slice__
+
+# --- AutoObjectProxy attaches these dunders to a per-instance subclass
+# based on the wrapped object's interface (see proxies.AutoObjectProxy
+# .__new__). The stub claims them statically because users write code
+# like `await auto_proxy_of_future` and should not be rejected; stubtest
+# cannot see the per-instance attachment.
+wrapt\.AutoObjectProxy\.__iter__
+wrapt\.AutoObjectProxy\.__next__
+wrapt\.AutoObjectProxy\.__aiter__
+wrapt\.AutoObjectProxy\.__anext__
+wrapt\.AutoObjectProxy\.__length_hint__
+wrapt\.AutoObjectProxy\.__await__
+wrapt\.AutoObjectProxy\.__wrapped_setattr_fixups__
+
+# --- LazyObjectProxy internal fixup properties.
+wrapt\.LazyObjectProxy\.__wrapped_factory__
+wrapt\.LazyObjectProxy\.__wrapped_get__
+wrapt\.LazyObjectProxy\.__wrapped_get_called__
+
+# --- FunctionWrapper carries a class-level pointer to its bound variant
+# that isn't part of the public API.
+wrapt\.FunctionWrapper\.__bound_function_wrapper__
+
+# --- __get__ overloads on FunctionWrapper / BoundFunctionWrapper /
+# bind_state_to_wrapper have `owner` defaulted to None in the stub to
+# keep mypy, pyrefly, ty and pyright inference correct; the runtime
+# signature does not. The stub default is deliberate.
+wrapt\.(FunctionWrapper|BoundFunctionWrapper|bind_state_to_wrapper)\.__get__
+
+# --- adapter_factory is a class alias (= _DelegatedAdapterFactory) at
+# runtime but the stub types it as a function for ergonomic reasons.
+wrapt\.adapter_factory
+
+# --- Overload-vs-default-None stubtest limitations. These decorators
+# all expose two overloads (bare @x and @x(...)); stubtest picks the
+# wrong overload when checking the default-None shape.
+wrapt\.decorator
+wrapt\.lazy_import
+wrapt\.mark_as_async
+wrapt\.mark_as_sync
+wrapt\.with_signature
