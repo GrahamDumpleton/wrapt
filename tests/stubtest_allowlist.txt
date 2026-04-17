@@ -13,12 +13,6 @@ wrapt\.(__wrapt__|arguments|caching|decorators|importer|patches|proxies|signatur
 # don't declare. Stubtest reports "metaclass differs"; benign for users.
 wrapt\.(BaseObjectProxy|ObjectProxy|AutoObjectProxy|CallableObjectProxy|PartialCallableObjectProxy|LazyObjectProxy|FunctionWrapper|BoundFunctionWrapper|WeakFunctionProxy|bind_state_to_wrapper)
 
-# --- Runtime implementation details on BaseObjectProxy:
-# name/qualname forwarding and MRO entry hook. Not part of the typed surface.
-wrapt\.BaseObjectProxy\.__name__
-wrapt\.BaseObjectProxy\.__qualname__
-wrapt\.BaseObjectProxy\.__mro_entries__
-
 # --- AutoObjectProxy attaches these dunders to a per-instance subclass
 # based on the wrapped object's interface (see proxies.AutoObjectProxy
 # .__new__). The stub claims them statically because users write code
