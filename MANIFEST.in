@@ -3,5 +3,5 @@ include RELEASE.rst
 include LICENSE
 include tox.ini
 
-recursive-include src *.c *.pyi py.typed
+recursive-include src *.c *.pyi
 recursive-include tests *.py *.out

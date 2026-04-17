@@ -16,13 +16,13 @@ _use_extensions = not os.environ.get("WRAPT_DISABLE_EXTENSIONS")
 
 if _use_extensions:
     try:
-        from ._wrappers import (  # type: ignore[no-redef,import-not-found]
+        from ._wrappers import (  # type: ignore[no-redef,import-not-found,import-untyped]
             BoundFunctionWrapper,
             CallableObjectProxy,
             FunctionWrapper,
         )
-        from ._wrappers import ObjectProxy as BaseObjectProxy  # type: ignore[no-redef]
-        from ._wrappers import (  # type: ignore[no-redef,import-not-found]
+        from ._wrappers import ObjectProxy as BaseObjectProxy  # type: ignore[no-redef,import-untyped]
+        from ._wrappers import (  # type: ignore[no-redef,import-not-found,import-untyped]
             PartialCallableObjectProxy,
             _FunctionWrapperBase,
         )
