@@ -31,10 +31,6 @@ wrapt\.LazyObjectProxy\.__wrapped_factory__
 wrapt\.LazyObjectProxy\.__wrapped_get__
 wrapt\.LazyObjectProxy\.__wrapped_get_called__
 
-# --- adapter_factory is a class alias (= _DelegatedAdapterFactory) at
-# runtime but the stub types it as a function for ergonomic reasons.
-wrapt\.adapter_factory
-
 # --- Overload-vs-default-None stubtest limitations. These decorators
 # all expose two overloads (bare @x and @x(...)); stubtest picks the
 # wrong overload when checking the default-None shape.

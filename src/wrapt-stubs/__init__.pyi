@@ -419,12 +419,15 @@ if sys.version_info >= (3, 10):
 
     # AdapterFactory/adapter_factory()
 
-    class AdapterFactory(Protocol):
+    class AdapterFactory:
         def __call__(
             self, wrapped: Callable[..., Any]
         ) -> str | FullArgSpec | Callable[..., Any]: ...
 
-    def adapter_factory(factory: Callable[..., Any]) -> AdapterFactory: ...
+    class _DelegatedAdapterFactory(AdapterFactory):
+        def __init__(self, factory: Callable[..., Any]) -> None: ...
+
+    adapter_factory = _DelegatedAdapterFactory
 
     # decorator()
 
