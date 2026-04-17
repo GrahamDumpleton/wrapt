@@ -103,35 +103,12 @@ if sys.version_info >= (3, 10):
     class BaseObjectProxy(Generic[_T]):
         __wrapped__: _T
 
-        # Object-model attributes forwarded to the wrapped object so that
-        # e.g. wrapping a function still exposes its name/qualname and so
-        # that using the proxy as a base class works via PEP 560.
         __name__: str
         __qualname__: str
-        def __mro_entries__(self, bases: tuple[type, ...]) -> tuple[type, ...]: ...
 
-        # wrapt-specific escape hatches (not Python-language dunders despite
-        # the dunder-shaped names). Ordinary attribute access, __setattr__
-        # and arithmetic operations all forward to the wrapped object; these
-        # hooks let subclasses and wrapt-aware callers reach around the
-        # forwarding layer when they need to.
-        #
-        # __self_dict__: the proxy's own instance dict (since __dict__ is
-        # overridden to delegate to the wrapped object).
-        #
-        # __self_setattr__: set an attribute directly on the proxy, bypassing
-        # the forwarding __setattr__. Used for stashing state onto a wrapper.
-        #
-        # __object_proxy__: the class used to re-wrap results of arithmetic
-        # and bitwise operations (e.g. __add__ returns
-        # ``self.__object_proxy__(self.__wrapped__ + other)``). Subclasses
-        # override it to control the type of proxy produced from operations.
-        __self_dict__: dict[str, Any]
-        @property
-        def __object_proxy__(self) -> type[BaseObjectProxy[Any]]: ...
-        def __self_setattr__(self, name: str, value: Any) -> None: ...
         def __init__(self, wrapped: _T) -> None: ...
         def __getattr__(self, name: str) -> Any: ...
+        def __mro_entries__(self, bases: tuple[type, ...]) -> tuple[type, ...]: ...
 
         # Context managers.
         def __enter__(self) -> _T: ...
@@ -229,6 +206,27 @@ if sys.version_info >= (3, 10):
         def __copy__(self) -> Any: ...
         def __deepcopy__(self, memo: dict[int, Any], /) -> Any: ...
         def __reduce__(self) -> Any: ...
+
+        # wrapt-specific escape hatches (not Python-language dunders despite
+        # the dunder-shaped names). Ordinary attribute access, __setattr__
+        # and arithmetic operations all forward to the wrapped object; these
+        # hooks let subclasses and wrapt-aware callers reach around the
+        # forwarding layer when they need to.
+        #
+        # __self_dict__: the proxy's own instance dict (since __dict__ is
+        # overridden to delegate to the wrapped object).
+        #
+        # __self_setattr__: set an attribute directly on the proxy, bypassing
+        # the forwarding __setattr__. Used for stashing state onto a wrapper.
+        #
+        # __object_proxy__: the class used to re-wrap results of arithmetic
+        # and bitwise operations (e.g. __add__ returns
+        # ``self.__object_proxy__(self.__wrapped__ + other)``). Subclasses
+        # override it to control the type of proxy produced from operations.
+        __self_dict__: dict[str, Any]
+        @property
+        def __object_proxy__(self) -> type[BaseObjectProxy[Any]]: ...
+        def __self_setattr__(self, name: str, value: Any) -> None: ...
 
     class ObjectProxy(BaseObjectProxy[_T]):
         def __new__(cls, *args: Any, **kwargs: Any) -> ObjectProxy[_T]: ...
