@@ -1,3 +1,7 @@
+# Pinned mypy version used by all mypy-related recipes. Override on the
+# command line with `just mypy_version=X.Y.Z <recipe>` if needed.
+mypy_version := "1.20.1"
+
 # Default recipe - show available recipes
 default:
     just --list
@@ -61,7 +65,9 @@ clean: mostlyclean
 test-tox:
     tox --skip-missing-interpreters
 
-# Run tests with uv (modern alternative)
+# Run tests with uv (modern alternative).
+# The per-version recipes auto-select an mypy that is compatible with
+# the target Python (mypy 1.20+ requires Python 3.10+).
 test:
     just test-version 3.9
     just test-version 3.10
@@ -70,7 +76,7 @@ test:
     just test-version 3.13
     just test-version 3.14
 
-# Run mypy type checking for all supported Python versions
+# Run mypy type checking for all supported Python versions.
 test-mypy:
     just test-mypy-version 3.9
     just test-mypy-version 3.10
@@ -84,6 +90,11 @@ test-version version:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    # mypy 1.20+ requires Python 3.10+, so pin an older mypy for 3.9. The
+    # mypy pair tests under tests/mypy/ are skipped on Python < 3.10 by
+    # conftest.py, so the exact 3.9 mypy version only needs to be installable.
+    mypy_ver='{{ if version == "3.9" { "1.19.1" } else { mypy_version } }}'
+
     rm -rf .mypy_cache
     rm -rf .pytest_cache
 
@@ -96,7 +107,7 @@ test-version version:
     python -m ensurepip --upgrade
     python -m pip install --upgrade pip
 
-    pip3 install pytest
+    pip3 install pytest "mypy==$mypy_ver"
 
     # export PYTHONPATH=src
 
@@ -135,19 +146,20 @@ test-version version:
     rm -rf .venv-test-tmp
     echo "All test variants completed for Python {{version}}"
 
-# Run mypy type checking for a specific Python version
+# Run mypy type checking for a specific Python version.
+# mypy 1.20+ requires Python 3.10+, so pin an older mypy when checking 3.9.
 test-mypy-version version:
-    echo "=== Running mypy type checking with Python {{version}} ==="
-    mypy --python-version {{version}} src/wrapt
+    echo "=== Running mypy type checking with Python {{version}} (mypy=={{ if version == '3.9' { '1.19.1' } else { mypy_version } }}) ==="
+    uv run --with 'mypy=={{ if version == "3.9" { "1.19.1" } else { mypy_version } }}' mypy --python-version {{version}} src/wrapt
 
 view-mypy-test test:
-    MYPYPATH=src/ uv run mypy --strict --show-error-codes tests/mypy/{{test}}.py
+    MYPYPATH=src/ uv run --with 'mypy=={{mypy_version}}' mypy --strict --show-error-codes tests/mypy/{{test}}.py
 
 save-mypy-test test:
-    - MYPYPATH=src/ uv run mypy --strict --show-error-codes tests/mypy/{{test}}.py > tests/mypy/{{test}}.out
+    - MYPYPATH=src/ uv run --with 'mypy=={{mypy_version}}' mypy --strict --show-error-codes tests/mypy/{{test}}.py > tests/mypy/{{test}}.out
 
 verify-mypy-test test:
-    - MYPYPATH=src/ uv run mypy --strict --show-error-codes tests/mypy/{{test}}.py | diff -c - tests/mypy/{{test}}.out
+    - MYPYPATH=src/ uv run --with 'mypy=={{mypy_version}}' mypy --strict --show-error-codes tests/mypy/{{test}}.py | diff -c - tests/mypy/{{test}}.out
 
 # Install development dependencies with uv
 dev-install: venv
