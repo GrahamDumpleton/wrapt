@@ -380,6 +380,18 @@ their help is much appreciated.
   modulo either. See the "Ternary ``pow()`` with ObjectProxy" section of
   :doc:`issues` for the resulting calling convention.
 
+* Aligned the C implementation of ``FunctionWrapper.__get__`` with the pure
+  Python implementation when a wrapped descriptor is accessed from a class
+  rather than an instance. The C path was passing ``NULL`` through to the
+  wrapped descriptor's ``__get__`` slot in this case, whereas the pure
+  Python path always passes ``None``. Native CPython descriptors treat the
+  two equivalently so no user visible difference has been observed in
+  practice, but a third party C descriptor which branched on ``NULL``
+  versus ``Py_None`` could have seen the two implementations behave
+  differently. The C path now substitutes ``Py_None`` for ``NULL`` before
+  invoking the wrapped descriptor, so both implementations behave the
+  same regardless of descriptor origin.
+
 Version 2.1.2
 -------------
 

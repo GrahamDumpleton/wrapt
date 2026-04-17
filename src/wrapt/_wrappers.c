@@ -3820,6 +3820,9 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
       return (PyObject *)self;
     }
 
+    if (obj == NULL)
+      obj = Py_None;
+
     descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
         self->object_proxy.wrapped, obj, type);
 
@@ -3840,9 +3843,6 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
         PyErr_Clear();
       }
     }
-
-    if (obj == NULL)
-      obj = Py_None;
 
     result = PyObject_CallFunctionObjArgs(
         bound_type ? bound_type : (PyObject *)state->BoundFunctionWrapper_Type,
@@ -3898,6 +3898,9 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
         return NULL;
       }
 
+      if (obj == NULL)
+        obj = Py_None;
+
       descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
 
       Py_DECREF(wrapped);
@@ -3920,9 +3923,6 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
           PyErr_Clear();
         }
       }
-
-      if (obj == NULL)
-        obj = Py_None;
 
       result = PyObject_CallFunctionObjArgs(
           bound_type ? bound_type : (PyObject *)state->BoundFunctionWrapper_Type,
