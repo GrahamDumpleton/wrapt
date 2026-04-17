@@ -1,12 +1,15 @@
 Assorted Examples
 =================
 
-This document provides practical examples of decorators built using the
-**wrapt** module. These range from common patterns such as tracking decorator
-state, through to more complex examples like thread synchronization. For
-details on the core decorator API and wrapper function signature, see
-:doc:`decorators`. For details on the ``FunctionWrapper`` and other proxy
-types used in these examples, see :doc:`wrappers`.
+This document provides practical examples of decorators and proxy objects
+built using the **wrapt** module. The patterns covered include tracking
+state across invocations of a decorated function, validating arguments
+against type annotations or caller-supplied value constraints, serialising
+proxy objects and decorated callables with ``pickle`` or ``dill``, and
+building thread synchronization primitives. For details on the core
+decorator API and wrapper function signature, see :doc:`decorators`. For
+details on the ``FunctionWrapper`` and other proxy types used in these
+examples, see :doc:`wrappers`.
 
 Tracking Call State
 -------------------
@@ -166,6 +169,210 @@ This allows both styles of usage.
     @CallTracker.track(call_count=10)
     def add_starting_at_ten(x, y):
         return x + y
+
+Checking Argument Types
+-----------------------
+
+The same state class pattern can be used to build a decorator that validates
+the types of arguments passed to a wrapped function against the function's
+type annotations. The state class here holds the decorated function's
+signature, so that it is computed only once and reused on every call.
+
+A key choice is *when* the signature is computed. Rather than deriving it
+from the raw function at decoration time, it is derived from ``wrapped`` on
+the first call and cached on the state instance. When ``wrapped`` is an
+instance method, class method or static method, it has already been bound
+by the descriptor protocol before the wrapper runs, so its signature does
+not include ``self`` or ``cls``. Using ``wrapped`` removes the need for any
+special handling of methods: the wrapper can bind ``args`` and ``kwargs``
+to the signature directly.
+
+::
+
+    import inspect
+    import wrapt
+
+    class TypeChecker:
+        def __init__(self):
+            self.signature = None
+
+        @wrapt.function_wrapper
+        def __call__(self, wrapped, instance, args, kwargs):
+            if self.signature is None:
+                self.signature = inspect.signature(wrapped)
+            bound = self.signature.bind(*args, **kwargs)
+            bound.apply_defaults()
+            for name, value in bound.arguments.items():
+                annotation = self.signature.parameters[name].annotation
+                if annotation is inspect.Parameter.empty:
+                    continue
+                if not isinstance(value, annotation):
+                    raise TypeError(
+                        f"Argument {name!r} must be {annotation.__name__}, "
+                        f"got {type(value).__name__}"
+                    )
+            return wrapped(*args, **kwargs)
+
+        @staticmethod
+        def check(func):
+            return TypeChecker()(func)
+
+    type_checker = TypeChecker.check
+
+The static ``check`` method creates a fresh ``TypeChecker`` instance for
+each decoration and uses it to wrap the function. A module level alias
+``type_checker = TypeChecker.check`` lets callers write ``@type_checker``
+without referring to the class. Unlike the ``CallTracker`` example, there
+is no need for ``@wrapt.bind_state_to_wrapper`` because the state class
+does not need to be accessible from outside the wrapper.
+
+The decorator can be applied to normal functions, instance methods, class
+methods and static methods. Arguments without an annotation are skipped, so
+only those parameters that have been annotated are checked.
+
+::
+
+    @type_checker
+    def add(x: int, y: int) -> int:
+        return x + y
+
+    class Calculator:
+
+        @type_checker
+        def compute(self, x: int, y: int) -> int:
+            return x + y
+
+        @type_checker
+        @classmethod
+        def class_compute(cls, x: int, y: int) -> int:
+            return x + y
+
+        @type_checker
+        @staticmethod
+        def static_compute(x: int, y: int) -> int:
+            return x + y
+
+A valid call returns the result as normal. A call whose argument type does
+not match the annotation raises ``TypeError``.
+
+::
+
+    >>> add(1, 2)
+    3
+    >>> add(1, "2")
+    Traceback (most recent call last):
+      ...
+    TypeError: Argument 'y' must be int, got str
+
+Validating Argument Values
+--------------------------
+
+A related decorator validates argument *values* rather than their types.
+Instead of relying on type annotations, the caller supplies a callable for
+each parameter that should be checked. Each callable is a constraint that
+must return a truthy value for the supplied argument, otherwise the
+decorator raises ``ValueError``.
+
+The implementation mirrors ``TypeChecker`` but takes its configuration from
+the decoration site, so the static ``validate`` method uses the same
+optional arguments pattern as ``CallTracker.track``. When called with
+constraint keyword arguments, it returns a configured ``ValueChecker``
+instance which then wraps the function.
+
+::
+
+    import inspect
+    import wrapt
+
+    class ValueChecker:
+        def __init__(self, constraints):
+            self.constraints = constraints
+            self.signature = None
+
+        @wrapt.function_wrapper
+        def __call__(self, wrapped, instance, args, kwargs):
+            if self.signature is None:
+                self.signature = inspect.signature(wrapped)
+            bound = self.signature.bind(*args, **kwargs)
+            bound.apply_defaults()
+            for name, constraint in self.constraints.items():
+                if name not in bound.arguments:
+                    continue
+                value = bound.arguments[name]
+                if not constraint(value):
+                    raise ValueError(
+                        f"Argument {name!r} with value {value!r} failed "
+                        f"constraint "
+                        f"{getattr(constraint, '__name__', constraint)!s}"
+                    )
+            return wrapped(*args, **kwargs)
+
+        @staticmethod
+        def validate(func=None, /, **constraints):
+            checker = ValueChecker(constraints=constraints)
+            if func is None:
+                return checker
+            return checker(func)
+
+    value_checker = ValueChecker.validate
+
+Binding the arguments to the function signature serves two purposes. It
+resolves positional arguments to their parameter names, so constraints
+written in terms of parameter names work regardless of whether the caller
+passed arguments positionally or by keyword. It also applies defaults, so
+a constraint is still enforced when the caller omits an argument that has
+a default value.
+
+Constraints are ordinary callables that return true or false for a given
+value.
+
+::
+
+    def is_positive(value):
+        return value > 0
+
+    @value_checker(x=is_positive, y=is_positive)
+    def multiply(x, y):
+        return x * y
+
+    >>> multiply(2, 3)
+    6
+    >>> multiply(-1, 3)
+    Traceback (most recent call last):
+      ...
+    ValueError: Argument 'x' with value -1 failed constraint is_positive
+
+As with ``TypeChecker``, the decorator works on instance methods, class
+methods and static methods without any special handling, because the
+signature is taken from the already-bound ``wrapped`` on the first call.
+
+The two decorators can be stacked on the same function, but only in one
+order. ``type_checker`` must be applied as the outer (top) decorator so
+that type validation runs before value validation. If the order is
+reversed, a wrong-typed argument reaches the constraint callable first
+and the constraint itself fails in whatever way it fails on unexpected
+input. For example, comparing a string against zero raises ``TypeError``
+from the ``>`` operator rather than a clear "must be ``int``" message
+from ``TypeChecker``. With ``type_checker`` on top, type errors short
+circuit the value checks and the intended error message is reported.
+
+::
+
+    @type_checker
+    @value_checker(x=is_positive, y=is_positive)
+    def scale(x: int, y: int) -> int:
+        return x * y
+
+    >>> scale(2, 3)
+    6
+    >>> scale(-1, 3)
+    Traceback (most recent call last):
+      ...
+    ValueError: Argument 'x' with value -1 failed constraint is_positive
+    >>> scale("a", 3)
+    Traceback (most recent call last):
+      ...
+    TypeError: Argument 'x' must be int, got str
 
 Serialising an Object Proxy
 ---------------------------
