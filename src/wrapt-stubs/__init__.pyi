@@ -93,12 +93,13 @@ if sys.version_info >= (3, 10):
     # AutoObjectProxy based on the wrapped interface) are intentionally
     # NOT claimed statically on BaseObjectProxy.
     #
-    # `__enter__`/`__aenter__` return `_T` rather than `Any` because the
-    # runtime forwards to the wrapped object's `__enter__`, which for the
-    # common "wrap a context manager" use case returns the wrapped object
-    # itself -- this preserves type information through `with proxy as x`.
-    # Other operator dunders return `Any` since the result depends on the
-    # wrapped type.
+    # `__enter__`/`__aenter__` return `Any` because the runtime forwards to
+    # the wrapped object's `__enter__`, which may return a value of any type
+    # (for example, `threading.Lock.__enter__` returns `bool`, not the lock
+    # itself). Returning `_T` would be a false claim that the value bound by
+    # `with proxy as x` is the wrapped type, which is only sometimes true.
+    # Other operator dunders return `Any` for the same reason: the result
+    # depends on the wrapped type.
 
     class BaseObjectProxy(Generic[_T]):
         __wrapped__: _T
@@ -111,14 +112,14 @@ if sys.version_info >= (3, 10):
         def __mro_entries__(self, bases: tuple[type, ...]) -> tuple[type, ...]: ...
 
         # Context managers.
-        def __enter__(self) -> _T: ...
+        def __enter__(self) -> Any: ...
         def __exit__(
             self,
             exc_type: type[BaseException] | None,
             exc_value: BaseException | None,
             traceback: TracebackType | None,
         ) -> bool | None: ...
-        async def __aenter__(self) -> _T: ...
+        async def __aenter__(self) -> Any: ...
         async def __aexit__(
             self,
             exc_type: type[BaseException] | None,

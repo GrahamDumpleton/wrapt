@@ -253,3 +253,139 @@ constructor of the class at the point it it is being created.
 
     @ClassDecorator("string") # <-- Invalid error warning.
     def function(): ...
+
+Object Proxies
+--------------
+
+In addition to the decorator factories, the **wrapt** module exposes a family
+of object proxy classes that can be used to build custom wrappers for
+arbitrary objects. The core classes are ``wrapt.BaseObjectProxy``,
+``wrapt.ObjectProxy``, ``wrapt.AutoObjectProxy``, ``wrapt.LazyObjectProxy``
+and ``wrapt.CallableObjectProxy``. Each is generic on a single type
+parameter that stands for the type of the wrapped object.
+
+``wrapt.BaseObjectProxy`` is the recommended base for custom proxy
+subclasses; ``wrapt.ObjectProxy`` is retained for backward compatibility
+and is a thin subclass of ``BaseObjectProxy``. The discussion below applies
+equally to both.
+
+Annotating a proxy with the type of its wrapped value lets the type checker
+reason about ``proxy.__wrapped__``:
+
+::
+
+    import wrapt
+
+    proxy: wrapt.ObjectProxy[int] = wrapt.ObjectProxy(5)
+
+    value: int = proxy.__wrapped__
+
+Subclassing a proxy with a specific wrapped type is also supported, and is
+the idiomatic way to define a proxy for a particular kind of object:
+
+::
+
+    from io import TextIOWrapper
+    from typing import Any
+
+    class FileProxy(wrapt.ObjectProxy[TextIOWrapper[Any]]):
+        pass
+
+    fp = FileProxy(open("/path/to/file"))
+
+    wrapped_file: TextIOWrapper[Any] = fp.__wrapped__
+
+What the type parameter does and does not propagate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The type parameter only affects the ``__wrapped__`` attribute directly.
+Most other access through the proxy is intentionally typed as ``Any``,
+because the runtime forwarding depends on the wrapped object's interface,
+which the stubs cannot claim statically without sacrificing flexibility:
+
+* Attribute access via ``proxy.foo`` returns ``Any``, since the proxy's
+  ``__getattr__`` forwards to the wrapped object.
+* Arithmetic and bitwise operators such as ``proxy + 1`` return ``Any``
+  because the result type depends on the wrapped value's implementation.
+* Container operations (``proxy[key]``, ``len(proxy)``, ...) return
+  permissive types.
+* Context-manager usage ``with proxy as v:`` binds ``v`` as ``Any``,
+  because the wrapped object's ``__enter__`` can return a value of any
+  type (for example, ``threading.Lock.__enter__`` returns ``bool``, not
+  the lock itself).
+
+If you need a statically typed view of a specific attribute or operation,
+access the underlying value via ``proxy.__wrapped__`` where it is typed as
+the wrapped type, or assign the result of an expression to a variable with
+an explicit annotation:
+
+::
+
+    proxy: wrapt.ObjectProxy[int] = wrapt.ObjectProxy(5)
+
+    bits: int = proxy.__wrapped__.bit_length()  # Inferred as int.
+
+Using a proxy class without a type parameter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Writing ``wrapt.ObjectProxy`` on its own as a type annotation, without a
+``[T]`` parameter, is equivalent to ``wrapt.ObjectProxy[Any]`` from the type
+checker's perspective. It is valid code, but the wrapped object's type is
+unknown and ``proxy.__wrapped__`` is typed as ``Any`` rather than a specific
+type:
+
+::
+
+    proxy: wrapt.ObjectProxy = wrapt.ObjectProxy(5)  # ObjectProxy[Any].
+
+    value = proxy.__wrapped__  # Any.
+
+Strict type checker modes (for example ``mypy --strict``) flag the
+unparameterised form as missing type parameters, and require you to write
+``wrapt.ObjectProxy[Any]`` explicitly if that is what you intend. Under
+default settings the two forms are interchangeable for type checking
+purposes, but subscripting with a concrete type is preferred whenever the
+wrapped type is known.
+
+Function Wrappers
+-----------------
+
+``wrapt.FunctionWrapper`` and ``wrapt.BoundFunctionWrapper`` are the runtime
+types produced by ``@wrapt.decorator`` and ``@wrapt.function_wrapper``. Both
+are generic on two parameters: a ``ParamSpec`` representing the wrapped
+callable's parameter signature, and a ``TypeVar`` representing its return
+type.
+
+In most cases you do not need to annotate a function wrapper at all. The
+decorator machinery infers the type parameters from the signature of the
+wrapped function, so a decorated function continues to appear to the type
+checker as a callable with the same arguments and return type:
+
+::
+
+    @pass_through
+    def add(a: int, b: int) -> int:
+        return a + b
+
+    # Inferred as wrapt.FunctionWrapper[[int, int], int].
+
+If you want to store a reference to a decorated function in a container,
+pass it to another function, or otherwise name the type explicitly, the
+subscripted form can be used:
+
+::
+
+    wrapped_add: wrapt.FunctionWrapper[[int, int], int] = add
+
+As with object proxies, writing ``wrapt.FunctionWrapper`` on its own is
+equivalent to ``wrapt.FunctionWrapper[Any, Any]``: a callable of any
+signature returning any type. The idiomatic spelling for "any signature" is
+``wrapt.FunctionWrapper[..., Any]``, using ``...`` in the parameter-spec
+position. Strict type checker modes will ask for explicit parameters in
+either case.
+
+``wrapt.BoundFunctionWrapper`` is the type produced when a
+``FunctionWrapper`` is accessed via the descriptor protocol on an instance
+or class (for example, a decorated method accessed through ``self``). You
+rarely need to name this type directly; it is produced automatically and
+flows through type inference.

@@ -3,6 +3,7 @@
 import inspect
 import operator
 import sys
+import types
 
 
 class WrapperNotInitializedError(ValueError):
@@ -162,6 +163,8 @@ class _ObjectProxyMetaType(type):
 class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     """A transparent object proxy that delegates attribute access to a
     wrapped object."""
+
+    __class_getitem__ = classmethod(types.GenericAlias)
 
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""

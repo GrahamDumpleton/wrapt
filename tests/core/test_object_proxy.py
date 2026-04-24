@@ -53,16 +53,27 @@ class TestAttributeAccess(unittest.TestCase):
 
         del a.__wrapped_factory__
 
+        # Removing the class-level __wrapped_factory__ is necessary to
+        # observe the post-init / pre-wrapped state, but the attribute
+        # must be restored so later tests in the suite that construct a
+        # LazyObjectProxy do not see it missing.
+
+        restore = []
         for cls in type(a).__mro__:
             if "__wrapped_factory__" in cls.__dict__:
+                restore.append((cls, cls.__dict__["__wrapped_factory__"]))
                 delattr(cls, "__wrapped_factory__")
                 break
 
-        with self.assertRaises(wrapt.wrappers.WrapperNotInitializedError):
-            a.__wrapped__
+        try:
+            with self.assertRaises(wrapt.wrappers.WrapperNotInitializedError):
+                a.__wrapped__
 
-        with self.assertRaises(ValueError):
-            a.__wrapped__
+            with self.assertRaises(ValueError):
+                a.__wrapped__
+        finally:
+            for cls, attr in restore:
+                setattr(cls, "__wrapped_factory__", attr)
 
     def test_attributes(self):
         def function1(*args, **kwargs):

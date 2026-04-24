@@ -3155,6 +3155,7 @@ static PyMethodDef WraptObjectProxy_methods[] = {
      METH_O, 0},
     {"__subclasscheck__", (PyCFunction)WraptObjectProxy_subclasscheck,
      METH_VARARGS, 0},
+    {"__class_getitem__", Py_GenericAlias, METH_O | METH_CLASS, 0},
     {NULL, NULL},
 };
 
