@@ -292,8 +292,14 @@ of ``@wrapt.decorator``. It intercepts descriptor binding so that
 when the wrapper method is accessed through an instance of the state class,
 the state instance is automatically stored on the resulting wrapper as a
 named attribute. The ``name`` keyword argument controls the attribute name,
-allowing the state to be reached from the decorated function as
-``function.tracker``.
+allowing the state to be reached from the decorated function.
+
+::
+
+    >>> function()
+    >>> function()
+    >>> function.tracker.call_count
+    2
 
 For a more detailed treatment of this pattern, including how it composes
 with instance methods, class methods and static methods, and how to support
