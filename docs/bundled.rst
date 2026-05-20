@@ -801,3 +801,57 @@ keyword on the markers is the right modifier:
 Use ``with_signature`` alone when only the signature needs correcting;
 stack with a marker when the calling convention also needs to be
 asserted independently of the wrapped function's own declaration.
+
+Binding State to a Wrapper
+--------------------------
+
+``wrapt.bind_state_to_wrapper`` is a descriptor decorator that supports
+the pattern of implementing a decorator as a method of a state-holding
+class. It is applied on top of ``@wrapt.function_wrapper`` or
+``@wrapt.decorator`` on the wrapper method, and intercepts descriptor
+binding so that when the method is accessed through an instance of the
+surrounding class, the instance is automatically stored on the
+resulting wrapper as a named attribute. This makes the per-decoration
+state reachable from the decorated function without the user of the
+decorator having to thread it through manually.
+
+::
+
+    import wrapt
+
+    class CallTracker:
+        def __init__(self):
+            self.call_count = 0
+
+        @wrapt.bind_state_to_wrapper(name="tracker")
+        @wrapt.function_wrapper
+        def __call__(self, wrapped, instance, args, kwargs):
+            try:
+                return wrapped(*args, **kwargs)
+            finally:
+                self.call_count += 1
+
+    @CallTracker()
+    def function():
+        pass
+
+    >>> function()
+    >>> function.tracker.call_count
+    1
+
+The ``name`` keyword argument controls the attribute name under which
+the state instance is exposed on the decorated function. Any string
+that is a valid Python identifier can be used, but it should be chosen
+to avoid clashing with attributes the wrapped function itself may
+expose.
+
+``bind_state_to_wrapper`` only has meaning when stacked above
+``@wrapt.function_wrapper`` or ``@wrapt.decorator`` on a method of a
+class which is then used as a callable decorator. It does not work on
+its own; it is purely a convenience for arranging access to
+per-decoration state.
+
+For a worked example of this pattern, including how it composes with
+instance methods, class methods and static methods, and how to support
+optional decorator arguments, see the "Tracking Call State" section of
+:doc:`examples`.

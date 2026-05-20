@@ -254,6 +254,52 @@ would need to match the names mapped by the wrapper function. This is a
 restriction which would need to be documented for the specific decorator to
 ensure that users do not use arbitrary argument names which do not match.
 
+Decorators With State
+---------------------
+
+When a decorator needs to maintain state across invocations of the decorated
+function, a clean approach is to implement the wrapper as a method of a
+class. The state is held on instances of the class, and each application of
+the decorator creates a fresh instance with its own independent state.
+
+The wrapper method is decorated with ``@wrapt.decorator`` so that it
+follows the standard wrapper function signature, with the addition of
+``self`` to access the state. Naming the wrapper method ``__call__`` makes
+each instance of the class a callable decorator.
+
+::
+
+    import wrapt
+
+    class CallTracker:
+        def __init__(self):
+            self.call_count = 0
+
+        @wrapt.bind_state_to_wrapper(name="tracker")
+        @wrapt.decorator
+        def __call__(self, wrapped, instance, args, kwargs):
+            try:
+                return wrapped(*args, **kwargs)
+            finally:
+                self.call_count += 1
+
+    @CallTracker()
+    def function():
+        pass
+
+The ``@wrapt.bind_state_to_wrapper`` descriptor decorator is applied on top
+of ``@wrapt.decorator``. It intercepts descriptor binding so that
+when the wrapper method is accessed through an instance of the state class,
+the state instance is automatically stored on the resulting wrapper as a
+named attribute. The ``name`` keyword argument controls the attribute name,
+allowing the state to be reached from the decorated function as
+``function.tracker``.
+
+For a more detailed treatment of this pattern, including how it composes
+with instance methods, class methods and static methods, and how to support
+optional decorator arguments, see the "Tracking Call State" section of
+:doc:`examples`.
+
 Enabling/Disabling Decorators
 -----------------------------
 
