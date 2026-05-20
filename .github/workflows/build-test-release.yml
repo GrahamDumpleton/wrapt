@@ -7,7 +7,7 @@ on:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
       - "[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
-      - "[0-9]+.[0-9]+.[0-9]+dev[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+.dev[0-9]+"
 
 jobs:
   test_linux:
@@ -283,3 +283,171 @@ jobs:
         with:
           name: dist-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*.whl
+
+  release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs:
+    - sdist
+    - bdist_wheel
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Resolve version and prerelease status
+        id: meta
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG}"
+          BASE_VERSION="$(echo "$VERSION" | sed -E 's/\.?(dev|rc)[0-9]+$//')"
+          ANCHOR="version-$(echo "$BASE_VERSION" | tr '.' '-')"
+          if [[ "$VERSION" == *dev* || "$VERSION" == *rc* ]]; then
+              PRERELEASE="true"
+          else
+              PRERELEASE="false"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "base_version=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "anchor=$ANCHOR" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: Verify version matches tag
+        run: |
+          EXPECTED="${{ steps.meta.outputs.version }}"
+          ACTUAL="$(python -c "import ast, re; src=open('src/wrapt/__init__.py').read(); m=re.search(r'__version_info__\s*=\s*(\([^)]+\))', src); parts=ast.literal_eval(m.group(1)); print(''.join(p if p.startswith('.') else '.'+p for p in parts).lstrip('.'))")"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+              echo "Tag version ($EXPECTED) does not match __version__ ($ACTUAL) in src/wrapt/__init__.py" >&2
+              exit 1
+          fi
+          echo "Version match: $ACTUAL"
+
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List collected artifacts
+        run: ls -las dist
+
+      - name: Generate SHA256SUMS
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Write release notes body
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          BASE_VERSION="${{ steps.meta.outputs.base_version }}"
+          ANCHOR="${{ steps.meta.outputs.anchor }}"
+          DOCS_URL="https://wrapt.readthedocs.io/en/latest/changes.html#${ANCHOR}"
+          if [[ "$VERSION" == *dev* ]]; then
+              cat > body.md <<EOF
+          Development snapshot. Not normally published to PyPi
+          (occasionally uploaded to exercise the release pipeline).
+
+          Release notes for the upcoming ${BASE_VERSION} final (work in
+          progress): ${DOCS_URL}
+
+          Platform wheels and the source distribution are attached. To
+          test against your Python install, either grab a matching wheel
+          or build from the source distribution:
+
+              pip install wrapt-${VERSION}-<python>-<abi>-<platform>.whl
+
+          or
+
+              tar xf wrapt-${VERSION}.tar.gz
+              cd wrapt-${VERSION}
+              pip install .
+
+          \`SHA256SUMS\` is attached for verification of the archives.
+          EOF
+          elif [[ "$VERSION" == *rc* ]]; then
+              cat > body.md <<EOF
+          Release candidate. Release notes for the upcoming
+          ${BASE_VERSION} final (work in progress): ${DOCS_URL}
+
+          May be installable from PyPi:
+
+              pip install wrapt==${VERSION}
+
+          If \`pip\` reports the version is unavailable, this candidate
+          either has not been uploaded yet or is not being published to
+          PyPi. Use the attached wheels or build from the source
+          distribution instead:
+
+              tar xf wrapt-${VERSION}.tar.gz
+              cd wrapt-${VERSION}
+              pip install .
+
+          \`SHA256SUMS\` is attached for verification of the archives.
+          EOF
+          else
+              cat > body.md <<EOF
+          Full release notes: ${DOCS_URL}
+
+          Install from PyPi (recommended):
+
+              pip install wrapt==${VERSION}
+
+          PyPi uploads follow each GitHub release; if \`pip\` reports the
+          version is unavailable, the matching PyPi upload may not have
+          happened yet.
+
+          Pre-built wheels are provided for a range of Python versions
+          and platforms (Linux x86_64/aarch64/riscv64, macOS x86_64 and
+          arm64, Windows x86_64 and arm64, plus PyPy and free-threaded
+          builds). The source distribution is also attached together
+          with \`SHA256SUMS\` for verification.
+          EOF
+          fi
+          cat body.md
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          FLAGS=()
+          if [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]]; then
+              FLAGS+=("--prerelease")
+          fi
+          gh release create "${{ steps.meta.outputs.tag }}" \
+              --title "wrapt ${{ steps.meta.outputs.version }}" \
+              --notes-file body.md \
+              "${FLAGS[@]}" \
+              dist/*
+
+  publish-wrapt:
+    name: Publish wrapt to PyPi
+    runs-on: ubuntu-latest
+    needs:
+    - release
+    if: startsWith(github.ref, 'refs/tags/')
+    environment: pypi-wrapt
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Stage wrapt sdist and wheels
+        run: |
+          mkdir -p stage
+          cp dist/wrapt-[0-9]*.tar.gz stage/
+          cp dist/wrapt-[0-9]*.whl stage/
+          ls -las stage
+
+      - name: Publish wrapt to PyPi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: stage/
