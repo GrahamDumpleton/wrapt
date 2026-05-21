@@ -43,11 +43,17 @@ class Class_2:
         return cls, args, kwargs
 
 
-class Class_2_1(Class_2):
+class Class_2a:
+    @classmethod
+    def method(cls, *args, **kwargs):
+        return cls, args, kwargs
+
+
+class Class_2a_1(Class_2a):
     pass
 
 
-class Class_2_2(Class_2_1):
+class Class_2a_2(Class_2a_1):
     pass
 
 
@@ -238,16 +244,16 @@ class TestMonkeyPatching(unittest.TestCase):
             self.assertEqual(kwargs, _kwargs)
             return wrapped(*args, **kwargs)
 
-        wrapt.wrap_function_wrapper(__name__, "Class_2_1.method", wrapper)
+        wrapt.wrap_function_wrapper(__name__, "Class_2a_1.method", wrapper)
 
-        result = Class_2_1.method(*_args, **_kwargs)
-        self.assertEqual(result, (Class_2_1, _args, _kwargs))
+        result = Class_2a_1.method(*_args, **_kwargs)
+        self.assertEqual(result, (Class_2a_1, _args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
         called.pop()
 
-        result = Class_2_2.method(*_args, **_kwargs)
-        self.assertEqual(result, (Class_2_2, _args, _kwargs))
+        result = Class_2a_2.method(*_args, **_kwargs)
+        self.assertEqual(result, (Class_2a_2, _args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
     def test_wrap_static_method_module_name(self):

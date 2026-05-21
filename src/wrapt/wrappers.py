@@ -1,18 +1,16 @@
+"""Core object proxy and function wrapper implementations."""
+
 import inspect
 import operator
 import sys
+import types
 
 
-def with_metaclass(meta, *bases):
-    """Create a base class with a metaclass."""
-    return meta("NewBase", bases, {})
-
-
-class WrapperNotInitializedError(ValueError, AttributeError):
+class WrapperNotInitializedError(ValueError):
     """
-    Exception raised when a wrapper is accessed before it has been initialized.
-    To satisfy different situations where this could arise, we inherit from both
-    ValueError and AttributeError.
+    Exception raised when a wrapper is in an inconsistent state: __init__ was
+    called but __wrapped__ is not set. Inherits from ValueError only, so it is
+    not silently swallowed by hasattr/getattr/except AttributeError patterns.
     """
 
     pass
@@ -28,6 +26,13 @@ class _ObjectProxyMethods:
     # that, we copy the properties into the derived class type itself
     # via a meta class. In that way the properties will always take
     # precedence.
+    #
+    # Note that because these properties end up in the class __dict__,
+    # type-level access (e.g. ObjectProxy.__module__) would return the
+    # property object rather than a string, since CPython's
+    # type.__module__ getter does a raw dict lookup without invoking the
+    # descriptor protocol. The metaclass has its own __module__ and
+    # __doc__ properties to handle type-level access correctly.
 
     @property
     def __module__(self):
@@ -62,29 +67,104 @@ class _ObjectProxyMethods:
         return self.__wrapped__.__weakref__
 
 
+class _ObjectProxyDictBase:
+    """Base class whose sole purpose is to provide a ``getset_descriptor``
+    for ``__dict__`` that is valid for all ``ObjectProxy`` subclasses.
+    The metaclass installs this descriptor as ``__self_dict__`` so that
+    the real instance dictionary of the proxy can always be accessed,
+    even though ``ObjectProxy`` replaces ``__dict__`` with a property
+    that delegates to the wrapped object."""
+
+    pass
+
+
+_REAL_DICT_DESCRIPTOR = type.__dict__["__dict__"].__get__(_ObjectProxyDictBase)[
+    "__dict__"
+]
+
+
+def _get_self_dict(self):
+    return _REAL_DICT_DESCRIPTOR.__get__(self)
+
+
+# Wrapping the descriptor in a read-only property ensures that
+# ``proxy.__self_dict__ = value`` raises AttributeError rather than
+# replacing the real instance dictionary (which would break the proxy).
+
+_SELF_DICT_PROPERTY = property(_get_self_dict)
+
+
 class _ObjectProxyMetaType(type):
+    # Properties on the metaclass control type-level access to __module__
+    # and __doc__ (e.g. ObjectProxy.__module__). Without these, the
+    # instance-level properties copied from _ObjectProxyMethods into each
+    # class dict would shadow the string values that type.__new__ sets,
+    # causing type.__module__ to return a property object instead of a
+    # string. The metaclass properties read from internal keys where the
+    # real values are saved.
+
+    @property
+    def __module__(cls):
+        return cls.__dict__.get("_cls_real_module", "builtins")
+
+    @__module__.setter
+    def __module__(cls, value):
+        type.__setattr__(cls, "_cls_real_module", value)
+
+    @property
+    def __doc__(cls):
+        return cls.__dict__.get("_cls_real_doc")
+
+    @__doc__.setter
+    def __doc__(cls, value):
+        type.__setattr__(cls, "_cls_real_doc", value)
+
     def __new__(cls, name, bases, dictionary):
         # Copy our special properties into the class so that they
         # always take precedence over attributes of the same name added
         # during construction of a derived class. This is to save
         # duplicating the implementation for them in all derived classes.
+        #
+        # Because this overwrites the __module__ and __doc__ strings
+        # that would normally be in the class dict with property objects,
+        # we save the original values first and store them under internal
+        # keys. The metaclass properties above read from these keys to
+        # ensure type-level access (e.g. MyProxy.__module__) returns a
+        # string rather than a property object.
+
+        real_module = dictionary.get("__module__")
+        real_doc = dictionary.get("__doc__")
+
+        # If the subclass defines its own __dict__ property, preserve it
+        # rather than overwriting it with the default delegating property
+        # from _ObjectProxyMethods. When __dict__ is not explicitly
+        # defined in the class body, it will not be present in the
+        # dictionary at this point.
+
+        custom_dict = dictionary.get("__dict__")
 
         dictionary.update(vars(_ObjectProxyMethods))
 
-        return type.__new__(cls, name, bases, dictionary)
+        if custom_dict is not None:
+            dictionary["__dict__"] = custom_dict
+
+        dictionary.setdefault("__self_dict__", _SELF_DICT_PROPERTY)
+
+        klass = type.__new__(cls, name, bases, dictionary)
+
+        if real_module is not None:
+            type.__setattr__(klass, "_cls_real_module", real_module)
+        if real_doc is not None:
+            type.__setattr__(klass, "_cls_real_doc", real_doc)
+
+        return klass
 
 
-# NOTE: Although Python 3+ supports the newer metaclass=MetaClass syntax,
-# we must continue using with_metaclass() for ObjectProxy. The newer syntax
-# changes how __slots__ is handled during class creation, which would break
-# the ability to set _self_* attributes on ObjectProxy instances. The
-# with_metaclass() approach creates an intermediate base class that allows
-# the necessary attribute flexibility while still applying the metaclass.
+class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
+    """A transparent object proxy that delegates attribute access to a
+    wrapped object."""
 
-
-class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
-
-    __slots__ = "__wrapped__"
+    __class_getitem__ = classmethod(types.GenericAlias)
 
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""
@@ -108,6 +188,8 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
         else:
             object.__setattr__(self, "__wrapped__", wrapped)
 
+        object.__setattr__(self, "__init_called__", True)
+
         # Python 3.2+ has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
         # be an actual string object instead.
@@ -118,12 +200,22 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             pass
 
         # Python 3.10 onwards also does not allow itself to be overridden
-        # using a property and it must instead be set explicitly.
+        # using a property and it must instead be set explicitly. Python
+        # 3.14 onwards uses deferred evaluation of annotations via the
+        # __annotate__ attribute, so we copy that instead to avoid
+        # triggering eager evaluation which can fail if names referenced
+        # in annotations have been shadowed.
 
-        try:
-            object.__setattr__(self, "__annotations__", wrapped.__annotations__)
-        except AttributeError:
-            pass
+        if sys.version_info >= (3, 14):
+            try:
+                object.__setattr__(self, "__annotate__", wrapped.__annotate__)
+            except AttributeError:
+                pass
+        else:
+            try:
+                object.__setattr__(self, "__annotations__", wrapped.__annotations__)
+            except AttributeError:
+                pass
 
     @property
     def __object_proxy__(self):
@@ -197,9 +289,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     def __hash__(self):
         return hash(self.__wrapped__)
 
-    def __nonzero__(self):
-        return bool(self.__wrapped__)
-
     def __bool__(self):
         return bool(self.__wrapped__)
 
@@ -218,14 +307,24 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
                 object.__setattr__(self, "__qualname__", value.__qualname__)
             except AttributeError:
                 pass
-            try:
-                object.__delattr__(self, "__annotations__")
-            except AttributeError:
-                pass
-            try:
-                object.__setattr__(self, "__annotations__", value.__annotations__)
-            except AttributeError:
-                pass
+            if sys.version_info >= (3, 14):
+                try:
+                    object.__delattr__(self, "__annotate__")
+                except AttributeError:
+                    pass
+                try:
+                    object.__setattr__(self, "__annotate__", value.__annotate__)
+                except AttributeError:
+                    pass
+            else:
+                try:
+                    object.__delattr__(self, "__annotations__")
+                except AttributeError:
+                    pass
+                try:
+                    object.__setattr__(self, "__annotations__", value.__annotations__)
+                except AttributeError:
+                    pass
 
             __wrapped_setattr_fixups__ = getattr(
                 self, "__wrapped_setattr_fixups__", None
@@ -239,6 +338,10 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             object.__setattr__(self, name, value)
 
         elif name == "__annotations__":
+            setattr(self.__wrapped__, name, value)
+            object.__setattr__(self, name, value)
+
+        elif name == "__annotate__":
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
 
@@ -268,7 +371,21 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             else:
                 return object.__getattribute__(self, "__wrapped_get__")()
 
-            raise WrapperNotInitializedError("wrapper has not been initialized")
+            # If __init__ was called but __wrapped__ is not set, the wrapper
+            # is in an inconsistent state. Raise WrapperNotInitializedError
+            # (a ValueError, not AttributeError) so it is not silently
+            # swallowed by hasattr/getattr patterns.
+
+            try:
+                object.__getattribute__(self, "__init_called__")
+            except AttributeError:
+                raise AttributeError(
+                    f"'{type(self).__name__}' object has no attribute " f"'__wrapped__'"
+                )
+
+            raise WrapperNotInitializedError(
+                "wrapper is in an inconsistent state: __wrapped__ is not set"
+            )
 
         return getattr(self.__wrapped__, name)
 
@@ -277,14 +394,24 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
             object.__delattr__(self, name)
 
         elif name == "__wrapped__":
-            raise TypeError("__wrapped__ attribute cannot be deleted")
+            raise TypeError("can't delete __wrapped__ attribute")
 
         elif name == "__qualname__":
             object.__delattr__(self, name)
             delattr(self.__wrapped__, name)
 
         elif name == "__annotations__":
-            object.__delattr__(self, name)
+            try:
+                object.__delattr__(self, name)
+            except AttributeError:
+                pass
+            delattr(self.__wrapped__, name)
+
+        elif name == "__annotate__":
+            try:
+                object.__delattr__(self, name)
+            except AttributeError:
+                pass
             delattr(self.__wrapped__, name)
 
         elif hasattr(type(self), name):
@@ -413,8 +540,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
         else:
             return self.__object_proxy__(self.__wrapped__ % other)
 
-        return self
-
     def __ipow__(self, other):  # type: ignore[misc]
         if hasattr(self.__wrapped__, "__ipow__"):
             self.__wrapped__ **= other
@@ -478,12 +603,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     def __complex__(self):
         return complex(self.__wrapped__)
 
-    def __oct__(self):
-        return oct(self.__wrapped__)
-
-    def __hex__(self):
-        return hex(self.__wrapped__)
-
     def __index__(self):
         return operator.index(self.__wrapped__)
 
@@ -515,15 +634,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     def __delitem__(self, key):
         del self.__wrapped__[key]
 
-    def __getslice__(self, i, j):
-        return self.__wrapped__[i:j]
-
-    def __setslice__(self, i, j, value):
-        self.__wrapped__[i:j] = value
-
-    def __delslice__(self, i, j):
-        del self.__wrapped__[i:j]
-
     def __enter__(self):
         return self.__wrapped__.__enter__()
 
@@ -545,11 +655,18 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
     def __reduce__(self):
         raise NotImplementedError("object proxy must define __reduce__()")
 
-    def __reduce_ex__(self, protocol):
-        raise NotImplementedError("object proxy must define __reduce_ex__()")
+    def __instancecheck__(self, instance):
+        return isinstance(instance, self.__wrapped__)
+
+    def __subclasscheck__(self, subclass):
+        if hasattr(subclass, "__wrapped__"):
+            return issubclass(subclass.__wrapped__, self.__wrapped__)
+        else:
+            return issubclass(subclass, self.__wrapped__)
 
 
 class CallableObjectProxy(ObjectProxy):
+    """An object proxy for callable objects that also forwards calls."""
 
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):
@@ -585,6 +702,9 @@ class PartialCallableObjectProxy(ObjectProxy):
         if not callable(wrapped):
             raise TypeError("the first argument must be callable")
 
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(PartialCallableObjectProxy, self).__init__(wrapped)
 
         self._self_args = args
@@ -606,15 +726,6 @@ class PartialCallableObjectProxy(ObjectProxy):
 
 class _FunctionWrapperBase(ObjectProxy):
 
-    __slots__ = (
-        "_self_instance",
-        "_self_wrapper",
-        "_self_enabled",
-        "_self_binding",
-        "_self_parent",
-        "_self_owner",
-    )
-
     def __init__(
         self,
         wrapped,
@@ -626,6 +737,9 @@ class _FunctionWrapperBase(ObjectProxy):
         owner=None,
     ):
 
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
         object.__setattr__(self, "_self_instance", instance)
@@ -636,11 +750,9 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, "_self_owner", owner)
 
     def __get__(self, instance, owner):
-        # This method is actually doing double duty for both unbound and bound
-        # derived wrapper classes. It should possibly be broken up and the
-        # distinct functionality moved into the derived classes. Can't do that
-        # straight away due to some legacy code which is relying on it being
-        # here in this base class.
+        # This method handles both unbound and bound derived wrapper classes.
+        # It is kept in the base class as the amount of common code makes it
+        # impractical to split into the derived classes.
         #
         # The distinguishing attribute which determines whether we are being
         # called in an unbound or bound wrapper is the parent attribute. If
@@ -764,25 +876,36 @@ class _FunctionWrapperBase(ObjectProxy):
         if hasattr(self.__wrapped__, "__set_name__"):
             self.__wrapped__.__set_name__(owner, name)
 
-    def __instancecheck__(self, instance):
-        # This is a special method used by isinstance() to make checks
-        # instance of the `__wrapped__`.
-        return isinstance(instance, self.__wrapped__)
 
-    def __subclasscheck__(self, subclass):
-        # This is a special method used by issubclass() to make checks
-        # about inheritance of classes. We need to upwrap any object
-        # proxy. Not wanting to add this to ObjectProxy as not sure of
-        # broader implications of doing that. Thus restrict to
-        # FunctionWrapper used by decorators.
-
-        if hasattr(subclass, "__wrapped__"):
-            return issubclass(subclass.__wrapped__, self.__wrapped__)
-        else:
-            return issubclass(subclass, self.__wrapped__)
+_FUNCTION_WRAPPER_SLOTS = frozenset(
+    (
+        "_self_instance",
+        "_self_wrapper",
+        "_self_enabled",
+        "_self_binding",
+        "_self_parent",
+        "_self_owner",
+    )
+)
 
 
 class BoundFunctionWrapper(_FunctionWrapperBase):
+    """A wrapper for bound methods, classmethods, and staticmethods."""
+
+    def __setattr__(self, name, value):
+        if name.startswith("_self_") and name not in _FUNCTION_WRAPPER_SLOTS:
+            if self._self_parent is not None:
+                object.__setattr__(self._self_parent, name, value)
+                return
+        super().__setattr__(name, value)
+
+    def __getattr__(self, name):
+        if self._self_parent is not None:
+            try:
+                return getattr(self._self_parent, name)
+            except AttributeError:
+                pass
+        return super().__getattr__(name)
 
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):
@@ -818,7 +941,7 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
             )
 
         elif self._self_binding == "callable":
-            if self._self_instance is None:
+            if self._self_instance is None and args:
                 # This situation can occur where someone is calling the
                 # instancemethod via the class type and passing the instance as
                 # the first argument. We need to shift the args before making
@@ -826,12 +949,10 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
                 # the wrapped function using a partial so the wrapper doesn't
                 # see anything as being different.
 
-                if not args:
-                    raise TypeError("missing 1 required positional argument")
-
-                instance, args = args[0], args[1:]
-                wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
-                return self._self_wrapper(wrapped, instance, args, kwargs)
+                instance, newargs = args[0], args[1:]
+                if isinstance(instance, self._self_owner):
+                    wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
+                    return self._self_wrapper(wrapped, instance, newargs, kwargs)
 
             return self._self_wrapper(
                 self.__wrapped__, self._self_instance, args, kwargs
@@ -981,4 +1102,7 @@ class FunctionWrapper(_FunctionWrapperBase):
             else:
                 binding = "callable"
 
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper, enabled, binding)

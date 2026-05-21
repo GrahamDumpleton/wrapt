@@ -6,8 +6,8 @@ described in PEP-369. Note that it doesn't cope with modules being reloaded.
 import importlib.metadata
 import sys
 import threading
+from collections.abc import Callable
 from importlib.util import find_spec
-from typing import Callable, Dict, List
 
 from .__wrapt__ import BaseObjectProxy
 
@@ -17,7 +17,7 @@ from .__wrapt__ import BaseObjectProxy
 # module will be truncated but the list left in the dictionary. This
 # acts as a flag to indicate that the module had already been imported.
 
-_post_import_hooks: Dict[str, List[Callable]] = {}
+_post_import_hooks: dict[str, list[Callable]] = {}
 _post_import_hooks_init = False
 _post_import_hooks_lock = threading.RLock()
 
@@ -90,22 +90,6 @@ def register_post_import_hook(hook, name):
 # Register post import hooks defined as package entry points.
 
 
-def _create_import_hook_from_entrypoint(entrypoint):
-    def import_hook(module):
-        entrypoint_value = entrypoint.value.split(":")
-        module_name = entrypoint_value[0]
-        __import__(module_name)
-        callback = sys.modules[module_name]
-
-        if len(entrypoint_value) > 1:
-            attrs = entrypoint_value[1].split(".")
-            for attr in attrs:
-                callback = getattr(callback, attr)
-        return callback(module)
-
-    return import_hook
-
-
 def discover_post_import_hooks(group):
     """
     Discover and register post import hooks defined as package entry points
@@ -157,18 +141,12 @@ def notify_module_loaded(module):
 # hooks which are registered will be invoked.
 
 
-class _ImportHookLoader:
-
-    def load_module(self, fullname):
-        module = sys.modules[fullname]
-        notify_module_loaded(module)
-
-        return module
-
-
 class _ImportHookChainedLoader(BaseObjectProxy):
 
     def __init__(self, loader):
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(_ImportHookChainedLoader, self).__init__(loader)
 
         if hasattr(loader, "load_module"):
@@ -230,25 +208,25 @@ class ImportHookFinder:
         self.in_progress = {}
 
     def find_module(self, fullname, path=None):
-        # If the module being imported is not one we have registered
-        # post import hooks for, we can return immediately. We will
-        # take no further part in the importing of this module.
-
         with _post_import_hooks_lock:
+            # If the module being imported is not one we have registered
+            # post import hooks for, we can return immediately. We will
+            # take no further part in the importing of this module.
+
             if fullname not in _post_import_hooks:
                 return None
 
-        # When we are interested in a specific module, we will call back
-        # into the import system a second time to defer to the import
-        # finder that is supposed to handle the importing of the module.
-        # We set an in progress flag for the target module so that on
-        # the second time through we don't trigger another call back
-        # into the import system and cause a infinite loop.
+            # When we are interested in a specific module, we will call back
+            # into the import system a second time to defer to the import
+            # finder that is supposed to handle the importing of the module.
+            # We set an in progress flag for the target module so that on
+            # the second time through we don't trigger another call back
+            # into the import system and cause a infinite loop.
 
-        if fullname in self.in_progress:
-            return None
+            if fullname in self.in_progress:
+                return None
 
-        self.in_progress[fullname] = True
+            self.in_progress[fullname] = True
 
         # Now call back into the import system again.
 
@@ -274,25 +252,25 @@ class ImportHookFinder:
         # instead of find_module() and since Python 3.10 you get deprecation
         # warnings if you don't define find_spec().
 
-        # If the module being imported is not one we have registered
-        # post import hooks for, we can return immediately. We will
-        # take no further part in the importing of this module.
-
         with _post_import_hooks_lock:
+            # If the module being imported is not one we have registered
+            # post import hooks for, we can return immediately. We will
+            # take no further part in the importing of this module.
+
             if fullname not in _post_import_hooks:
                 return None
 
-        # When we are interested in a specific module, we will call back
-        # into the import system a second time to defer to the import
-        # finder that is supposed to handle the importing of the module.
-        # We set an in progress flag for the target module so that on
-        # the second time through we don't trigger another call back
-        # into the import system and cause a infinite loop.
+            # When we are interested in a specific module, we will call back
+            # into the import system a second time to defer to the import
+            # finder that is supposed to handle the importing of the module.
+            # We set an in progress flag for the target module so that on
+            # the second time through we don't trigger another call back
+            # into the import system and cause a infinite loop.
 
-        if fullname in self.in_progress:
-            return None
+            if fullname in self.in_progress:
+                return None
 
-        self.in_progress[fullname] = True
+            self.in_progress[fullname] = True
 
         # Now call back into the import system again.
 

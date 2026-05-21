@@ -42,9 +42,17 @@ dev = [
 [tool.setuptools]
 package-dir = {"" = "src"}
 zip-safe = false
+# Listed explicitly rather than discovered because "wrapt-stubs" (the PEP 561
+# stub-only companion package) has a hyphen in its directory name and no
+# __init__.py, which setuptools' `find` does not pick up by default.
+packages = ["wrapt", "wrapt-stubs"]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+# Use "*" rather than "wrapt-stubs" because the pyproject.toml validator only
+# accepts keys that are valid Python module names or "*"; hyphenated PEP 561
+# stub package names are rejected. Since only the wrapt-stubs package contains
+# .pyi files, matching all packages has the same practical effect.
+[tool.setuptools.package-data]
+"*" = ["*.pyi"]
 
 [tool.setuptools.dynamic]
 version = {attr = "wrapt.__version__"}

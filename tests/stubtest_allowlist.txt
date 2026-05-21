@@ -1,0 +1,41 @@
+# Allowlist for `python -m mypy.stubtest wrapt --allowlist <this>`.
+#
+# wrapt's public API is what's re-exported via wrapt.__all__. Submodules
+# (wrapt.wrappers, wrapt.proxies, etc.) are implementation detail and
+# deliberately unstubbed since the stubs were moved to the wrapt-stubs
+# package (PEP 561). This file whitelists the stubtest discrepancies
+# that are intentional under that contract.
+
+# --- Submodule-level: intentionally unstubbed (see wrapt-stubs/__init__.pyi).
+wrapt\.(__wrapt__|arguments|caching|decorators|importer|patches|proxies|signature|synchronization|weakrefs|wrappers)
+
+# --- wrapt's proxy classes use a C-extension metaclass that the stubs
+# don't declare. Stubtest reports "metaclass differs"; benign for users.
+wrapt\.(BaseObjectProxy|ObjectProxy|AutoObjectProxy|CallableObjectProxy|PartialCallableObjectProxy|LazyObjectProxy|FunctionWrapper|BoundFunctionWrapper|WeakFunctionProxy|bind_state_to_wrapper)
+
+# --- AutoObjectProxy attaches these dunders to a per-instance subclass
+# based on the wrapped object's interface (see proxies.AutoObjectProxy
+# .__new__). The stub claims them statically because users write code
+# like `await auto_proxy_of_future` and should not be rejected; stubtest
+# cannot see the per-instance attachment.
+wrapt\.AutoObjectProxy\.__call__
+wrapt\.AutoObjectProxy\.__iter__
+wrapt\.AutoObjectProxy\.__next__
+wrapt\.AutoObjectProxy\.__aiter__
+wrapt\.AutoObjectProxy\.__anext__
+wrapt\.AutoObjectProxy\.__length_hint__
+wrapt\.AutoObjectProxy\.__await__
+
+# --- LazyObjectProxy internal fixup properties.
+wrapt\.LazyObjectProxy\.__wrapped_factory__
+wrapt\.LazyObjectProxy\.__wrapped_get__
+wrapt\.LazyObjectProxy\.__wrapped_get_called__
+
+# --- Overload-vs-default-None stubtest limitations. These decorators
+# all expose two overloads (bare @x and @x(...)); stubtest picks the
+# wrong overload when checking the default-None shape.
+wrapt\.decorator
+wrapt\.lazy_import
+wrapt\.mark_as_async
+wrapt\.mark_as_sync
+wrapt\.with_signature

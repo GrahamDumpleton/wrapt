@@ -169,7 +169,7 @@ The ``wrapt.PartialCallableObjectProxy()`` object is an implementation of
 wrapped callable object. The example uses the name ``PartialCallableObjectProxy``
 here to make it clear that this is a specialized version of the standard library
 ``functools.partial()`` function, but you can also use ``wrapt.partial()``,
-which is an alias to ``wrapt.PartialCallableObjectProxy()``.
+which is a convenience function for creating a ``wrapt.PartialCallableObjectProxy()``.
 
 Processing Function Arguments
 -----------------------------
@@ -254,6 +254,58 @@ would need to match the names mapped by the wrapper function. This is a
 restriction which would need to be documented for the specific decorator to
 ensure that users do not use arbitrary argument names which do not match.
 
+Decorators With State
+---------------------
+
+When a decorator needs to maintain state across invocations of the decorated
+function, a clean approach is to implement the wrapper as a method of a
+class. The state is held on instances of the class, and each application of
+the decorator creates a fresh instance with its own independent state.
+
+The wrapper method is decorated with ``@wrapt.decorator`` so that it
+follows the standard wrapper function signature, with the addition of
+``self`` to access the state. Naming the wrapper method ``__call__`` makes
+each instance of the class a callable decorator.
+
+::
+
+    import wrapt
+
+    class CallTracker:
+        def __init__(self):
+            self.call_count = 0
+
+        @wrapt.bind_state_to_wrapper(name="tracker")
+        @wrapt.decorator
+        def __call__(self, wrapped, instance, args, kwargs):
+            try:
+                return wrapped(*args, **kwargs)
+            finally:
+                self.call_count += 1
+
+    @CallTracker()
+    def function():
+        pass
+
+The ``@wrapt.bind_state_to_wrapper`` descriptor decorator is applied on top
+of ``@wrapt.decorator``. It intercepts descriptor binding so that
+when the wrapper method is accessed through an instance of the state class,
+the state instance is automatically stored on the resulting wrapper as a
+named attribute. The ``name`` keyword argument controls the attribute name,
+allowing the state to be reached from the decorated function.
+
+::
+
+    >>> function()
+    >>> function()
+    >>> function.tracker.call_count
+    2
+
+For a more detailed treatment of this pattern, including how it composes
+with instance methods, class methods and static methods, and how to support
+optional decorator arguments, see the "Tracking Call State" section of
+:doc:`examples`.
+
 Enabling/Disabling Decorators
 -----------------------------
 
@@ -291,7 +343,7 @@ normal.
         pass
 
     >>> type(function)
-    <type 'FunctionWrapper'>
+    <class 'FunctionWrapper'>
 
 If however the ``enabled`` option was ``False``, then no wrapper is added
 to the target function and the original function returned instead.
@@ -309,7 +361,7 @@ to the target function and the original function returned instead.
         pass
 
     >>> type(function)
-    <type 'function'>
+    <class 'function'>
 
 In this scenario, as no wrapper is applied there is no runtime overhead
 at the point of call when the decorator had been disabled. This therefore
@@ -436,6 +488,14 @@ original source code for the wrapped function.
 Signature Changing Decorators
 -----------------------------
 
+.. note::
+
+    The ``adapter`` argument described in this section is planned for
+    deprecation. New code should instead use the ``wrapt.with_signature``
+    decorator, which provides the same signature override capability as a
+    standalone decorator that composes cleanly with ``wrapt.decorator`` and
+    other wrapt decorators. See :doc:`bundled` for details.
+
 When using ``inspect.getargspec()`` the argument specification for the
 original wrapped function is returned. If however the decorator is a
 signature changing decorator, this is not going to be what is desired.
@@ -554,14 +614,14 @@ example, ``wrapt.adapter_factory()`` is itself implemented as:
 
 ::
 
-  class DelegatedAdapterFactory(wrapt.AdapterFactory):
+  class _DelegatedAdapterFactory(wrapt.AdapterFactory):
       def __init__(self, factory):
-          super(DelegatedAdapterFactory, self).__init__()
+          super(_DelegatedAdapterFactory, self).__init__()
           self.factory = factory
       def __call__(self, wrapped):
           return self.factory(wrapped)
 
-  adapter_factory = DelegatedAdapterFactory
+  adapter_factory = _DelegatedAdapterFactory
 
 Decorating Functions
 --------------------
@@ -794,3 +854,4 @@ These rules can be summarised by the following.
 To be truly robust, if a universal decorator is being applied in a
 scenario it does not support, it should raise a runtime exception
 at the point it is called.
+

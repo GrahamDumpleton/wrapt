@@ -4,7 +4,7 @@ from collections.abc import Callable
 from types import ModuleType
 
 from .__wrapt__ import BaseObjectProxy
-from .decorators import synchronized
+from .synchronization import synchronized
 
 # Define ObjectProxy which for compatibility adds `__iter__()` support which
 # has been removed from `BaseObjectProxy`.
@@ -144,6 +144,9 @@ class AutoObjectProxy(BaseObjectProxy):
         if cls is AutoObjectProxy:
             name = BaseObjectProxy.__name__
 
+        # Explicit class in super() is required here to ensure __new__
+        # is called on the parent of AutoObjectProxy, not the dynamically
+        # created subclass.
         return super(AutoObjectProxy, cls).__new__(type(name, (cls,), namespace))
 
     def __wrapped_setattr_fixups__(self):
@@ -281,6 +284,9 @@ class LazyObjectProxy(AutoObjectProxy):
 
         name = cls.__name__
 
+        # Explicit class in super() is required here to ensure __new__
+        # is called on the parent of AutoObjectProxy, not the dynamically
+        # created subclass.
         return super(AutoObjectProxy, cls).__new__(type(name, (cls,), namespace))
 
     def __init__(self, callback=None, *, interface=...):
@@ -295,7 +301,7 @@ class LazyObjectProxy(AutoObjectProxy):
 
         super().__init__(None)
 
-    __wrapped_initialized__ = False
+    __wrapped_get_called__ = False
 
     def __wrapped_factory__(self):
         return None
@@ -315,12 +321,12 @@ class LazyObjectProxy(AutoObjectProxy):
             # If it is then just return it, otherwise call the factory to
             # create it.
 
-            if self.__wrapped_initialized__:
+            if self.__wrapped_get_called__:
                 return self.__wrapped__
 
             self.__wrapped__ = self.__wrapped_factory__()
 
-            self.__wrapped_initialized__ = True
+            self.__wrapped_get_called__ = True
 
             return self.__wrapped__
 

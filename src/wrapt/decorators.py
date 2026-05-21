@@ -3,12 +3,15 @@ as well as some commonly used decorators.
 
 """
 
-import sys
 from functools import partial
 from inspect import isclass, signature
-from threading import Lock, RLock
 
-from .__wrapt__ import BoundFunctionWrapper, CallableObjectProxy, FunctionWrapper
+from .__wrapt__ import (
+    BaseObjectProxy,
+    BoundFunctionWrapper,
+    CallableObjectProxy,
+    FunctionWrapper,
+)
 from .arguments import formatargspec
 
 # Adapter wrapper for the wrapped function which will overlay certain
@@ -20,6 +23,9 @@ from .arguments import formatargspec
 class _AdapterFunctionCode(CallableObjectProxy):
 
     def __init__(self, wrapped_code, adapter_code):
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(_AdapterFunctionCode, self).__init__(wrapped_code)
         self._self_adapter_code = adapter_code
 
@@ -47,6 +53,9 @@ class _AdapterFunctionCode(CallableObjectProxy):
 class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     def __init__(self, wrapped, adapter):
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
         super(_AdapterFunctionSurrogate, self).__init__(wrapped)
         self._self_adapter = adapter
 
@@ -66,13 +75,10 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     @property
     def __signature__(self):
-        if "signature" not in globals():
-            return self._self_adapter.__signature__
-        else:
-            return signature(self._self_adapter)
+        return signature(self._self_adapter)
 
 
-class _BoundAdapterWrapper(BoundFunctionWrapper):
+class _BoundAdapterFunctionWrapper(BoundFunctionWrapper):
 
     @property
     def __func__(self):
@@ -82,19 +88,19 @@ class _BoundAdapterWrapper(BoundFunctionWrapper):
 
     @property
     def __signature__(self):
-        if "signature" not in globals():
-            return self.__wrapped__.__signature__
-        else:
-            return signature(self._self_parent._self_adapter)
+        return signature(self._self_parent._self_adapter)
 
 
-class AdapterWrapper(FunctionWrapper):
+class _AdapterFunctionWrapper(FunctionWrapper):
 
-    __bound_function_wrapper__ = _BoundAdapterWrapper
+    __bound_function_wrapper__ = _BoundAdapterFunctionWrapper
 
     def __init__(self, *args, **kwargs):
         adapter = kwargs.pop("adapter")
-        super(AdapterWrapper, self).__init__(*args, **kwargs)
+        # Explicit class in super() is used because the proxy overrides
+        # __class__ and MRO-related methods to delegate to the wrapped
+        # object, which can interfere with bare super().
+        super(_AdapterFunctionWrapper, self).__init__(*args, **kwargs)
         self._self_surrogate = _AdapterFunctionSurrogate(self.__wrapped__, adapter)
         self._self_adapter = adapter
 
@@ -120,16 +126,17 @@ class AdapterFactory:
         raise NotImplementedError()
 
 
-class DelegatedAdapterFactory(AdapterFactory):
+class _DelegatedAdapterFactory(AdapterFactory):
     def __init__(self, factory):
-        super(DelegatedAdapterFactory, self).__init__()
+        # Explicit class in super() for consistency with proxy subclasses.
+        super(_DelegatedAdapterFactory, self).__init__()
         self.factory = factory
 
     def __call__(self, wrapped):
         return self.factory(wrapped)
 
 
-adapter_factory = DelegatedAdapterFactory
+adapter_factory = _DelegatedAdapterFactory
 
 # Decorator for creating other decorators. This decorator and the
 # wrappers which they use are designed to properly preserve any name
@@ -203,7 +210,7 @@ def decorator(wrapper=None, /, *, enabled=None, adapter=None, proxy=FunctionWrap
                     if annotations:
                         adapter.__annotations__ = annotations
 
-                return AdapterWrapper(
+                return _AdapterFunctionWrapper(
                     wrapped=wrapped, wrapper=wrapper, enabled=enabled, adapter=adapter
                 )
 
@@ -402,121 +409,72 @@ def decorator(wrapper=None, /, *, enabled=None, adapter=None, proxy=FunctionWrap
         return partial(decorator, enabled=enabled, adapter=adapter, proxy=proxy)
 
 
-# Decorator for implementing thread synchronization. It can be used as a
-# decorator, in which case the synchronization context is determined by
-# what type of function is wrapped, or it can also be used as a context
-# manager, where the user needs to supply the correct synchronization
-# context. It is also possible to supply an object which appears to be a
-# synchronization primitive of some sort, by virtue of having release()
-# and acquire() methods. In that case that will be used directly as the
-# synchronization primitive without creating a separate lock against the
-# derived or supplied context.
+# Descriptor decorator for automatically binding state to a wrapper.
+# When applied to a method decorated with function_wrapper or decorator,
+# it intercepts descriptor access so that when the method is accessed
+# via an instance, the instance is automatically attached to the
+# resulting wrapper using __self_setattr__. This is useful when you
+# want the wrapper to carry a reference back to the object that owns
+# the wrapper factory method, making state accessible through the
+# decorated function without manual setup.
 
 
-def synchronized(wrapped):
-    """Depending on the nature of the `wrapped` object, will either return a
-    decorator which can be used to wrap a function or method, or a context
-    manager, both of which will act accordingly depending on how used, to
-    synchronize access to calling of the wrapped function, or the block of
-    code within the context manager. If it is an object which is a
-    synchronization primitive, such as a threading Lock, RLock, Semaphore,
-    Condition, or Event, then it is assumed that the object is to be used
-    directly as the synchronization primitive, otherwise a lock is created
-    automatically and attached to the wrapped object and used as the
-    synchronization primitive.
+class _StateBindingWrapper(BaseObjectProxy):
+    """A descriptor decorator that binds the owner instance to wrappers
+    produced by a wrapper factory method.
+
+    When applied on top of a method decorated with ``function_wrapper``
+    or ``decorator``, it intercepts the descriptor ``__get__`` so that
+    when the method is accessed through an instance, the owner instance
+    is automatically attached as an attribute on the resulting wrapper
+    via ``__self_setattr__``.
+
+    The *name* keyword argument controls the attribute name under which
+    the owner instance is stored on the wrapper (default ``"state"``).
     """
 
-    # Determine if being passed an object which is a synchronization
-    # primitive. We can't check by type for Lock, RLock, Semaphore etc,
-    # as the means of creating them isn't the type. Therefore use the
-    # existence of acquire() and release() methods. This is more
-    # extensible anyway as it allows custom synchronization mechanisms.
+    def __init__(self, *, name="state"):
+        # Initialise the proxy with a placeholder. The actual wrapper
+        # factory is set later when __call__ is invoked as a decorator.
 
-    if hasattr(wrapped, "acquire") and hasattr(wrapped, "release"):
-        # We remember what the original lock is and then return a new
-        # decorator which accesses and locks it. When returning the new
-        # decorator we wrap it with an object proxy so we can override
-        # the context manager methods in case it is being used to wrap
-        # synchronized statements with a 'with' statement.
+        super().__init__(None)
 
-        lock = wrapped
+        self._self_name = name
 
-        @decorator
-        def _synchronized(wrapped, instance, args, kwargs):
-            # Execute the wrapped function while the original supplied
-            # lock is held.
+    def __call__(self, wrapper_factory):
+        # Called when used as a decorator, receiving the wrapper factory
+        # (the function_wrapper or decorator-decorated method) to wrap.
 
-            with lock:
-                return wrapped(*args, **kwargs)
+        self.__wrapped__ = wrapper_factory
 
-        class _PartialDecorator(CallableObjectProxy):
+        return self
 
-            def __enter__(self):
-                lock.acquire()
-                return lock
+    def __get__(self, instance, owner):
+        # When accessed via the class rather than an instance, return
+        # the descriptor itself unchanged. This preserves introspection
+        # of the underlying wrapper factory via the object proxy.
 
-            def __exit__(self, *args):
-                lock.release()
+        if instance is None:
+            return self
 
-        return _PartialDecorator(wrapped=_synchronized)
+        # Bind the underlying wrapper factory to the instance so it
+        # receives the correct self/cls when called.
 
-    # Following only apply when the lock is being created automatically
-    # based on the context of what was supplied. In this case we supply
-    # a final decorator, but need to use FunctionWrapper directly as we
-    # want to derive from it to add context manager methods in case it is
-    # being used to wrap synchronized statements with a 'with' statement.
+        wrapper_factory = self.__wrapped__.__get__(instance, owner)
 
-    def _synchronized_lock(context):
-        # Attempt to retrieve the lock for the specific context.
+        name = self._self_name
 
-        lock = vars(context).get("_synchronized_lock", None)
+        def _bind(func):
+            wrapper = wrapper_factory(func)
 
-        if lock is None:
-            # There is no existing lock defined for the context we
-            # are dealing with so we need to create one. This needs
-            # to be done in a way to guarantee there is only one
-            # created, even if multiple threads try and create it at
-            # the same time. We can't always use the setdefault()
-            # method on the __dict__ for the context. This is the
-            # case where the context is a class, as __dict__ is
-            # actually a dictproxy. What we therefore do is use a
-            # meta lock on this wrapper itself, to control the
-            # creation and assignment of the lock attribute against
-            # the context.
+            # Attach the owner instance to the wrapper so it can be
+            # accessed as an attribute of the decorated function.
 
-            with synchronized._synchronized_meta_lock:
-                # We need to check again for whether the lock we want
-                # exists in case two threads were trying to create it
-                # at the same time and were competing to create the
-                # meta lock.
+            wrapper.__self_setattr__(name, instance)
 
-                lock = vars(context).get("_synchronized_lock", None)
+            return wrapper
 
-                if lock is None:
-                    lock = RLock()
-                    setattr(context, "_synchronized_lock", lock)
-
-        return lock
-
-    def _synchronized_wrapper(wrapped, instance, args, kwargs):
-        # Execute the wrapped function while the lock for the
-        # desired context is held. If instance is None then the
-        # wrapped function is used as the context.
-
-        with _synchronized_lock(instance if instance is not None else wrapped):
-            return wrapped(*args, **kwargs)
-
-    class _FinalDecorator(FunctionWrapper):
-
-        def __enter__(self):
-            self._self_lock = _synchronized_lock(self.__wrapped__)
-            self._self_lock.acquire()
-            return self._self_lock
-
-        def __exit__(self, *args):
-            self._self_lock.release()
-
-    return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
+        return _bind
 
 
-synchronized._synchronized_meta_lock = Lock()  # type: ignore[attr-defined]
+bind_state_to_wrapper = _StateBindingWrapper

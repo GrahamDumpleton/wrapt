@@ -1,3 +1,5 @@
+"""Weak reference proxy for functions and bound methods."""
+
 import functools
 import weakref
 
@@ -29,8 +31,6 @@ def _weak_function_proxy_callback(ref, proxy, callback):
 
 class WeakFunctionProxy(BaseObjectProxy):
     """A weak function proxy."""
-
-    __slots__ = ("_self_expired", "_self_instance")
 
     def __init__(self, wrapped, callback=None):
         """Create a proxy to object which uses a weak reference. This is
@@ -67,6 +67,10 @@ class WeakFunctionProxy(BaseObjectProxy):
             self._self_instance = weakref.ref(wrapped._self_instance, _callback)
 
             if wrapped._self_parent is not None:
+                # Explicit class in super() is used because the proxy
+                # overrides __class__ and MRO-related methods to delegate
+                # to the wrapped object, which can interfere with bare
+                # super().
                 super(WeakFunctionProxy, self).__init__(
                     weakref.proxy(wrapped._self_parent, _callback)
                 )

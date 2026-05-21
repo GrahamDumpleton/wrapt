@@ -1,13 +1,13 @@
 tests/mypy/mypy_function_wrapper_fn_t5.py:13: error: No overload variant of "function_wrapper" matches argument type "str"  [call-overload]
 tests/mypy/mypy_function_wrapper_fn_t5.py:13: note: Possible overload variants:
-tests/mypy/mypy_function_wrapper_fn_t5.py:13: note:     def function_wrapper(wrapper: type[Any]) -> FunctionDecorator
-tests/mypy/mypy_function_wrapper_fn_t5.py:13: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator
-tests/mypy/mypy_function_wrapper_fn_t5.py:13: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[type[Any], Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator
-tests/mypy/mypy_function_wrapper_fn_t5.py:13: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Any, Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator
+tests/mypy/mypy_function_wrapper_fn_t5.py:13: note:     def function_wrapper(wrapper: type[Any]) -> _FunctionDecorator
+tests/mypy/mypy_function_wrapper_fn_t5.py:13: note:     def [_P, _R] function_wrapper(wrapper: Callable[[Callable[_P, _R], Any, tuple[Any, ...], dict[str, Any]], _R]) -> _FunctionDecorator
+tests/mypy/mypy_function_wrapper_fn_t5.py:13: note:     def [_P, _R] function_wrapper(wrapper: Callable[[type[Any], Callable[_P, _R], Any, tuple[Any, ...], dict[str, Any]], _R]) -> _FunctionDecorator
+tests/mypy/mypy_function_wrapper_fn_t5.py:13: note:     def [_P, _R] function_wrapper(wrapper: Callable[[Any, Callable[_P, _R], Any, tuple[Any, ...], dict[str, Any]], _R]) -> _FunctionDecorator
 tests/mypy/mypy_function_wrapper_fn_t5.py:14: error: No overload variant of "function_wrapper" matches argument type "None"  [call-overload]
 tests/mypy/mypy_function_wrapper_fn_t5.py:14: note: Possible overload variants:
-tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def function_wrapper(wrapper: type[Any]) -> FunctionDecorator
-tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator
-tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[type[Any], Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator
-tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [P`-1, R] function_wrapper(wrapper: Callable[[Any, Callable[P, R], Any, tuple[Any, ...], dict[str, Any]], R]) -> FunctionDecorator
+tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def function_wrapper(wrapper: type[Any]) -> _FunctionDecorator
+tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [_P, _R] function_wrapper(wrapper: Callable[[Callable[_P, _R], Any, tuple[Any, ...], dict[str, Any]], _R]) -> _FunctionDecorator
+tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [_P, _R] function_wrapper(wrapper: Callable[[type[Any], Callable[_P, _R], Any, tuple[Any, ...], dict[str, Any]], _R]) -> _FunctionDecorator
+tests/mypy/mypy_function_wrapper_fn_t5.py:14: note:     def [_P, _R] function_wrapper(wrapper: Callable[[Any, Callable[_P, _R], Any, tuple[Any, ...], dict[str, Any]], _R]) -> _FunctionDecorator
 Found 2 errors in 1 file (checked 1 source file)

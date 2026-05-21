@@ -1,7 +1,10 @@
+"""Utilities for monkey patching and wrapping object attributes."""
+
 import inspect
 import sys
 
 from .__wrapt__ import FunctionWrapper
+from .importer import register_post_import_hook
 
 # Helper functions for applying wrappers to existing functions.
 
@@ -60,15 +63,14 @@ def resolve_path(target, name):
 
 def apply_patch(parent, attribute, replacement):
     """
-    Convenience function for applying a patch to an attribute. Currently this
-    maps to the standard setattr() function, but in the future may be extended
-    to support more complex patching strategies.
+    Convenience function for applying a patch to an attribute. This maps to
+    the standard setattr() function.
     """
 
     setattr(parent, attribute, replacement)
 
 
-def wrap_object(target, name, factory, args=(), kwargs={}):
+def wrap_object(target, name, factory, args=(), kwargs=None):
     """
     Wraps an object which is the attribute of a target object with a wrapper
     object created by the `factory` function. The `target` can be a module,
@@ -81,6 +83,9 @@ def wrap_object(target, name, factory, args=(), kwargs={}):
     `*args` and `**kwargs` calling conventions. The factory function should
     return a new object that will replace the original object.
     """
+
+    if kwargs is None:
+        kwargs = {}
 
     (parent, attribute, original) = resolve_path(target, name)
     wrapper = factory(original, *args, **kwargs)
@@ -97,6 +102,8 @@ def wrap_object(target, name, factory, args=(), kwargs={}):
 
 
 class AttributeWrapper:
+    """A descriptor that intercepts access to an instance attribute to apply
+    a wrapper factory."""
 
     def __init__(self, attribute, factory, args, kwargs):
         self.attribute = attribute
@@ -115,7 +122,7 @@ class AttributeWrapper:
         del instance.__dict__[self.attribute]
 
 
-def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
+def wrap_object_attribute(module, name, factory, args=(), kwargs=None):
     """
     Wraps an object which is the attribute of a class instance with a wrapper
     object created by the `factory` function. It does this by patching the
@@ -130,6 +137,9 @@ def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
     conventions. The factory function should return a new object that will
     replace the original object.
     """
+
+    if kwargs is None:
+        kwargs = {}
 
     path, attribute = name.rsplit(".", 1)
     parent = resolve_path(module, path)[2]
@@ -173,12 +183,28 @@ def wrap_function_wrapper(target, name, wrapper):
     Wraps a function which is the attribute of a target object with a `wrapper`
     function. The `target` can be a module, class, or instance of a class. In
     the special case of `target` being a string, it is assumed to be the name
-    of a module, with the module being imported if necessary. The `name` is a
-    string representing the dotted path to the attribute. The `wrapper` function
-    should accept the `wrapped` function, `instance`, `args`, and `kwargs`
-    arguments, and would return the result of calling the wrapped attribute or
-    some other appropriate value.
+    of a module, with the module being imported if necessary. If the `target`
+    is a string with a trailing ``?``, the wrapping will be deferred until the
+    module is imported. If the module is already imported, the wrapping will be
+    applied immediately. The `name` is a string representing the dotted path to
+    the attribute. The `wrapper` function should accept the `wrapped` function,
+    `instance`, `args`, and `kwargs` arguments, and would return the result of
+    calling the wrapped attribute or some other appropriate value. Returns the
+    wrapped target function if the wrapping was applied immediately, or ``None``
+    if the wrapping was deferred.
     """
+
+    if isinstance(target, str) and target.endswith("?"):
+        target = target[:-1]
+
+        if target in sys.modules:
+            return wrap_object(sys.modules[target], name, FunctionWrapper, (wrapper,))
+
+        def callback(module):
+            wrap_object(module, name, FunctionWrapper, (wrapper,))
+
+        register_post_import_hook(callback, target)
+        return None
 
     return wrap_object(target, name, FunctionWrapper, (wrapper,))
 
@@ -187,19 +213,38 @@ def patch_function_wrapper(target, name, enabled=None):
     """
     Creates a decorator which can be applied to a wrapper function, where the
     wrapper function will be used to wrap a function which is the attribute of
-    a target object. The `target` can be a module, class, or instance of a class.
-    In the special case of `target` being a string, it is assumed to be the name
-    of a module, with the module being imported if necessary. The `name` is a
-    string representing the dotted path to the attribute. The `enabled`
-    argument can be a boolean or a callable that returns a boolean. When a
-    callable is provided, it will be called each time the wrapper is invoked to
-    determine if the wrapper function should be executed or whether the wrapped
-    function should be called directly. If `enabled` is not provided, the
-    wrapper is enabled by default.
+    a target object. The decorator returns the original wrapper function. The
+    `target` can be a module, class, or instance of a class. In the special case
+    of `target` being a string, it is assumed to be the name of a module, with
+    the module being imported if necessary. If the `target` is a string with a
+    trailing ``?``, the wrapping will be deferred until the module is imported.
+    If the module is already imported, the wrapping will be applied immediately.
+    The `name` is a string representing the dotted path to the attribute. The
+    `enabled` argument can be a boolean or a callable that returns a boolean.
+    When a callable is provided, it will be called each time the wrapper is
+    invoked to determine if the wrapper function should be executed or whether
+    the wrapped function should be called directly. If `enabled` is not
+    provided, the wrapper is enabled by default.
     """
 
     def _wrapper(wrapper):
-        return wrap_object(target, name, FunctionWrapper, (wrapper, enabled))
+        if isinstance(target, str) and target.endswith("?"):
+            _target = target[:-1]
+
+            if _target in sys.modules:
+                wrap_object(
+                    sys.modules[_target], name, FunctionWrapper, (wrapper, enabled)
+                )
+                return wrapper
+
+            def callback(module):
+                wrap_object(module, name, FunctionWrapper, (wrapper, enabled))
+
+            register_post_import_hook(callback, _target)
+            return wrapper
+
+        wrap_object(target, name, FunctionWrapper, (wrapper, enabled))
+        return wrapper
 
     return _wrapper
 

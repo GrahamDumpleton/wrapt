@@ -2,8 +2,15 @@
 Wrapt is a library for decorators, wrappers and monkey patching.
 """
 
-__version_info__ = ("2", "1", "2")
-__version__ = ".".join(__version_info__)
+def _format_version(parts):
+    base = ".".join(parts[:3])
+    if len(parts) == 3:
+        return base
+    suffix = parts[3]
+    return f"{base}.{suffix}" if suffix.startswith(("dev", "post")) else f"{base}{suffix}"
+
+__version_info__ = ("2", "2", "0")
+__version__ = _format_version(__version_info__)
 
 from .__wrapt__ import (
     BaseObjectProxy,
@@ -13,7 +20,13 @@ from .__wrapt__ import (
     PartialCallableObjectProxy,
     partial,
 )
-from .decorators import AdapterFactory, adapter_factory, decorator, synchronized
+from .caching import lru_cache
+from .decorators import (
+    AdapterFactory,
+    adapter_factory,
+    bind_state_to_wrapper,
+    decorator,
+)
 from .importer import (
     discover_post_import_hooks,
     notify_module_loaded,
@@ -31,6 +44,14 @@ from .patches import (
     wrap_object_attribute,
 )
 from .proxies import AutoObjectProxy, LazyObjectProxy, ObjectProxy, lazy_import
+from .signature import with_signature
+from .synchronization import (
+    async_to_sync,
+    mark_as_async,
+    mark_as_sync,
+    sync_to_async,
+    synchronized,
+)
 from .weakrefs import WeakFunctionProxy
 
 __all__ = (
@@ -45,8 +66,15 @@ __all__ = (
     "partial",
     "AdapterFactory",
     "adapter_factory",
+    "bind_state_to_wrapper",
+    "async_to_sync",
     "decorator",
+    "lru_cache",
+    "mark_as_async",
+    "mark_as_sync",
+    "sync_to_async",
     "synchronized",
+    "with_signature",
     "discover_post_import_hooks",
     "notify_module_loaded",
     "register_post_import_hook",

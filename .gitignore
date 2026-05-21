@@ -1,4 +1,5 @@
 *.py[cod]
+__pycache__/
 .venv/
 .venv-test-tmp/
 venv
@@ -46,6 +47,9 @@ nosetests.xml
 
 # Editor save files.
 .*.swp
+
+# Claude Code local settings.
+.claude/
 
 # Sphinx documentation.
 docs/venv
