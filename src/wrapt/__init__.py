@@ -9,7 +9,7 @@ def _format_version(parts):
     suffix = parts[3]
     return f"{base}.{suffix}" if suffix.startswith(("dev", "post")) else f"{base}{suffix}"
 
-__version_info__ = ("2", "2", "0", "rc12")
+__version_info__ = ("2", "2", "0")
 __version__ = _format_version(__version_info__)
 
 from .__wrapt__ import (
