@@ -318,7 +318,21 @@ jobs:
       - name: Verify version matches tag
         run: |
           EXPECTED="${{ steps.meta.outputs.version }}"
-          ACTUAL="$(python -c "import ast, re; src=open('src/wrapt/__init__.py').read(); m=re.search(r'__version_info__\s*=\s*(\([^)]+\))', src); parts=ast.literal_eval(m.group(1)); print(''.join(p if p.startswith('.') else '.'+p for p in parts).lstrip('.'))")"
+          ACTUAL="$(python <<'PY'
+          import ast
+          src = open('src/wrapt/__init__.py').read()
+          tree = ast.parse(src)
+          ns = {}
+          for node in tree.body:
+              if isinstance(node, ast.FunctionDef) and node.name == "_format_version":
+                  exec(compile(ast.Module(body=[node], type_ignores=[]), '<v>', 'exec'), ns)
+              elif isinstance(node, ast.Assign):
+                  names = [t.id for t in node.targets if isinstance(t, ast.Name)]
+                  if any(n.startswith('__version') for n in names):
+                      exec(compile(ast.Module(body=[node], type_ignores=[]), '<v>', 'exec'), ns)
+          print(ns['__version__'])
+          PY
+          )"
           if [ "$ACTUAL" != "$EXPECTED" ]; then
               echo "Tag version ($EXPECTED) does not match __version__ ($ACTUAL) in src/wrapt/__init__.py" >&2
               exit 1
