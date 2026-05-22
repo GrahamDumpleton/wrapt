@@ -1,6 +1,46 @@
 Release Notes
 =============
 
+Version 2.2.1
+-------------
+
+**Bugs Fixed**
+
+* Reverted the change in 2.2.0 which had aligned the C implementation of
+  ``FunctionWrapper.__get__`` with the pure Python implementation by
+  substituting ``Py_None`` for ``NULL`` before invoking the wrapped
+  descriptor's ``__get__`` slot. The change was based on a misreading of
+  what the pure Python path does once it crosses back into C. The pure
+  Python path calls ``self.__wrapped__.__get__(None, owner)`` from Python,
+  and for any built-in descriptor that call is dispatched through the
+  ``__get__`` slot wrapper inside CPython, which converts ``Py_None`` back
+  to ``NULL`` before the wrapped descriptor's ``tp_descr_get`` is invoked.
+  The pre 2.2.0 C path called ``tp_descr_get`` directly with ``obj`` as
+  received, which is ``NULL`` on class access, so it was already producing
+  the same value the Python path produces after the slot wrapper's
+  ``Py_None`` to ``NULL`` conversion. Substituting ``Py_None`` for ``NULL``
+  before ``tp_descr_get`` was called caused the wrapped descriptor to see
+  a value it would never see during ordinary class attribute lookup.
+  Native CPython descriptors other than ``func_descr_get`` fast path on
+  ``obj == NULL`` and return the descriptor unchanged. With ``Py_None``
+  substituted in they fall through to a type check against the owner type
+  of the descriptor, and ``NoneType`` does not satisfy that check, so a
+  ``TypeError`` is raised. This broke class attribute access for any
+  built-in or C extension descriptor (``method_descriptor``,
+  ``wrapper_descriptor``, ``getset_descriptor``, ``member_descriptor``)
+  wrapped by ``@wrapt.decorator`` or ``@wrapt.function_wrapper``. The
+  failure mode is most likely to show up in instrumentation libraries that
+  monkey patch built-in methods onto classes and where some inspection or
+  binding step then accesses the wrapped attribute through the class. The
+  existing test suite did not catch the regression because all wrappers in
+  the test suite are applied to pure Python functions, whose
+  ``func_descr_get`` slot treats ``NULL`` and ``Py_None`` equivalently. A
+  new regression test has been added which wraps a ``method_descriptor``
+  and exercises class attribute access, so the missing coverage of
+  non-function descriptors is now in place. With thanks to
+  `brettlangdon <https://github.com/brettlangdon>`_ for reporting the
+  regression and identifying the underlying cause.
+
 Version 2.2.0
 -------------
 
