@@ -1,7 +1,20 @@
-"""Tests for ``FunctionWrapper.__get__`` with native C descriptors (slot
-wrappers, method descriptors, getset descriptors, member descriptors) and
-Python descriptors (property, classmethod, staticmethod) at both class-level
-and instance-level access.
+"""Tests for ``FunctionWrapper.__get__`` against the full range of descriptor
+types found in CPython: the native C descriptor types (slot wrappers, method
+descriptors, classmethod descriptors, getset descriptors, member descriptors)
+as well as the Python-level descriptors (property, classmethod, staticmethod,
+and user-defined descriptors). Each is exercised at class-level access (where
+the C descriptor protocol passes ``NULL`` for the instance argument of the
+``tp_descr_get`` slot) and at instance-level access where applicable.
+
+These cases verify that ``FunctionWrapper.__get__`` forwards the instance
+argument it receives through to the wrapped descriptor's ``__get__`` slot
+without modification. Native CPython descriptor types other than the
+descriptor for ordinary Python functions distinguish between ``NULL`` and
+``Py_None`` for the instance argument and raise ``TypeError`` if ``Py_None``
+is passed where ``NULL`` is expected, so any future change which substitutes
+``Py_None`` for ``NULL`` before invoking the wrapped descriptor is detected
+here. The same tests are executed against the C and pure Python wrapper
+implementations.
 """
 
 import io
@@ -12,18 +25,6 @@ import unittest
 import _pickle
 
 import wrapt
-import wrapt.__wrapt__
-
-# ``wrapt.FunctionWrapper`` resolves to the C type when the extension is
-# loaded, so the pure-Python class is only reachable via ``wrapt.wrappers``.
-from wrapt.wrappers import FunctionWrapper as PurePythonFunctionWrapper
-
-USING_C_EXTENSION = wrapt.__wrapt__._using_c_extension
-
-c_extension_only = unittest.skipUnless(
-    USING_C_EXTENSION,
-    "exercises a code path that only exists in the C extension",
-)
 
 
 def _wrapper(wrapped, instance, args, kwargs):
@@ -44,18 +45,17 @@ def _find_member_descriptor():
 
 
 class TestSlotWrapperDescriptor(unittest.TestCase):
-    # ``wrapper_descriptor`` — the descriptor type for C-level type slots,
-    # e.g. ``_pickle.Unpickler.load`` (displayed as
-    # ``<slot wrapper 'load' of '_pickle.Unpickler' objects>``).
-    # A C extension type is used so the slot is not a plain Python function.
+    # ``wrapper_descriptor`` is the descriptor type for C-level type slots
+    # such as ``_pickle.Unpickler.load`` (displayed as
+    # ``<slot wrapper 'load' of '_pickle.Unpickler' objects>``). A C
+    # extension type is used so the slot wrapper is backed by a C function
+    # rather than a Python function.
 
-    @c_extension_only
     def test_class_level_get(self):
         wrapped = _wrap(_pickle.Unpickler.load)
         result = wrapped.__get__(None, _pickle.Unpickler)
         self.assertIsNotNone(result.__doc__)
 
-    @c_extension_only
     def test_subclass_class_level_get(self):
         class Sub(_pickle.Unpickler):
             pass
@@ -64,7 +64,6 @@ class TestSlotWrapperDescriptor(unittest.TestCase):
         result = wrapped.__get__(None, Sub)
         self.assertIsNotNone(result.__doc__)
 
-    @c_extension_only
     def test_instance_level_get(self):
         wrapped = _wrap(_pickle.Unpickler.load)
         instance = _pickle.Unpickler(io.BytesIO())
@@ -73,13 +72,14 @@ class TestSlotWrapperDescriptor(unittest.TestCase):
 
 
 class TestMethodDescriptor(unittest.TestCase):
-    @c_extension_only
+    # ``method_descriptor`` is the descriptor type for built-in methods
+    # defined in C such as ``str.upper``.
+
     def test_class_level_get(self):
         wrapped = _wrap(str.upper)
         result = wrapped.__get__(None, str)
         self.assertIsNotNone(result.__doc__)
 
-    @c_extension_only
     def test_subclass_class_level_get(self):
         class SubStr(str):
             pass
@@ -88,7 +88,6 @@ class TestMethodDescriptor(unittest.TestCase):
         result = wrapped.__get__(None, SubStr)
         self.assertIsNotNone(result.__doc__)
 
-    @c_extension_only
     def test_instance_level_call(self):
         wrapped = _wrap(str.upper)
         bound = wrapped.__get__("hello", str)
@@ -96,10 +95,11 @@ class TestMethodDescriptor(unittest.TestCase):
 
 
 class TestClassMethodDescriptor(unittest.TestCase):
-    # ``classmethod_descriptor`` — classmethod descriptors ignore ``obj``
-    # entirely, so class-level and instance-level access behave identically.
+    # ``classmethod_descriptor`` is the descriptor type for C-level
+    # classmethods such as ``dict.fromkeys``. A classmethod descriptor
+    # ignores the instance argument entirely, so class-level and
+    # instance-level access behave identically.
 
-    @c_extension_only
     def test_class_level_get(self):
         wrapped = _wrap(dict.fromkeys)
         bound = wrapped.__get__(None, dict)
@@ -107,6 +107,9 @@ class TestClassMethodDescriptor(unittest.TestCase):
 
 
 class TestGetSetDescriptor(unittest.TestCase):
+    # ``getset_descriptor`` is the descriptor type generated for attributes
+    # defined via ``PyGetSetDef`` in C, such as ``type.__name__``.
+
     @staticmethod
     def _descriptor():
         # Resolve via __dict__ so the lookup doesn't run the descriptor itself.
@@ -114,20 +117,24 @@ class TestGetSetDescriptor(unittest.TestCase):
         assert isinstance(descr, types.GetSetDescriptorType)
         return descr
 
-    @c_extension_only
     def test_class_level_get(self):
+        # Class-level access must return the descriptor itself rather than
+        # invoking the getter.
         wrapped = _wrap(self._descriptor())
         result = wrapped.__get__(None, type)
         self.assertIsInstance(result, types.GetSetDescriptorType)
 
-    @c_extension_only
     def test_instance_level_get(self):
+        # Instance-level access must invoke the getter and return the value
+        # of the attribute on the instance.
         wrapped = _wrap(self._descriptor())
         self.assertEqual(wrapped.__get__(str, type), "str")
 
 
 class TestMemberDescriptor(unittest.TestCase):
-    @c_extension_only
+    # ``member_descriptor`` is the descriptor type generated for slots
+    # defined via ``PyMemberDef`` in C and for entries in ``__slots__``.
+
     def test_class_level_get(self):
         descr = _find_member_descriptor()
         if descr is None:
@@ -138,6 +145,10 @@ class TestMemberDescriptor(unittest.TestCase):
 
 
 class TestProperty(unittest.TestCase):
+    # ``property`` is the Python-level descriptor for read/write computed
+    # attributes. Class-level access returns the property object itself
+    # whereas instance-level access invokes the getter.
+
     def test_class_level_get(self):
         class C:
             @property
@@ -159,6 +170,11 @@ class TestProperty(unittest.TestCase):
 
 
 class TestClassMethod(unittest.TestCase):
+    # ``classmethod`` is the Python-level descriptor which binds the owning
+    # class as the first argument. The wrapper must forward to the
+    # classmethod's ``__get__`` so that calling the bound result invokes
+    # the underlying function with the class.
+
     def test_class_level_get(self):
         class C:
             @classmethod
@@ -170,6 +186,11 @@ class TestClassMethod(unittest.TestCase):
 
 
 class TestStaticMethod(unittest.TestCase):
+    # ``staticmethod`` is the Python-level descriptor which returns the
+    # underlying function unchanged. The wrapper must forward to the
+    # staticmethod's ``__get__`` so that calling the bound result invokes
+    # the function with no implicit first argument.
+
     def test_class_level_get(self):
         class C:
             @staticmethod
@@ -181,6 +202,12 @@ class TestStaticMethod(unittest.TestCase):
 
 
 class TestCustomDescriptor(unittest.TestCase):
+    # A user-defined Python descriptor receives the arguments
+    # ``FunctionWrapper.__get__`` was called with. This case asserts on the
+    # exact ``(instance, owner)`` tuple seen by the inner descriptor's
+    # ``__get__`` so that any modification of the instance argument by the
+    # wrapper between caller and wrapped descriptor is detected.
+
     def test_class_level_get_forwards_to_descriptor_get(self):
         calls = []
 
@@ -197,7 +224,12 @@ class TestCustomDescriptor(unittest.TestCase):
 
 
 class TestSubclassAttributeAccess(unittest.TestCase):
-    @c_extension_only
+    # A wrapped descriptor installed on a subclass must remain accessible
+    # via class attribute access on that subclass. This is the realistic
+    # monkey patching pattern used by instrumentation libraries: take an
+    # existing descriptor off a parent class, wrap it, and install the
+    # wrapper as an attribute of a subclass.
+
     def test_wrapped_slot_wrapper_via_subclass(self):
         class Sub(_pickle.Unpickler):
             pass
@@ -206,7 +238,6 @@ class TestSubclassAttributeAccess(unittest.TestCase):
         Sub.load = wrapped
         self.assertIsNotNone(Sub.load.__doc__)
 
-    @c_extension_only
     def test_wrapped_dict_slot_via_subclass(self):
         class SubDict(dict):
             pass
@@ -225,18 +256,6 @@ class TestSubclassAttributeAccess(unittest.TestCase):
 
         Child.method = _wrap(Parent.__dict__["method"])
         self.assertEqual(Child().method(), "parent")
-
-
-class TestPurePythonWraptPath(unittest.TestCase):
-    def test_slot_wrapper(self):
-        wrapped = PurePythonFunctionWrapper(_pickle.Unpickler.load, _wrapper)
-        result = wrapped.__get__(None, _pickle.Unpickler)
-        self.assertIsNotNone(result.__doc__)
-
-    def test_method_descriptor(self):
-        wrapped = PurePythonFunctionWrapper(str.upper, _wrapper)
-        result = wrapped.__get__(None, str)
-        self.assertIsNotNone(result.__doc__)
 
 
 if __name__ == "__main__":
