@@ -18,13 +18,32 @@ implementations.
 """
 
 import io
+import platform
 import socket
 import types
 import unittest
 
-import _pickle
-
 import wrapt
+
+# The native CPython descriptor types tested below (slot wrappers, method
+# descriptors, classmethod descriptors, getset descriptors, member
+# descriptors) are CPython implementation details. PyPy implements its
+# descriptor protocol differently and does not always expose the same
+# distinct types, and modules such as ``_pickle`` which are used here to
+# obtain a C-extension backed slot wrapper are also absent. The tests
+# guarding behaviour of these CPython specific descriptors are skipped
+# on PyPy. The bug they guard against was specific to the wrapt C
+# extension which is not built on PyPy in any case.
+
+IS_PYPY = platform.python_implementation() == "PyPy"
+
+skip_on_pypy = unittest.skipIf(
+    IS_PYPY,
+    "exercises CPython specific native descriptor types not present on PyPy",
+)
+
+if not IS_PYPY:
+    import _pickle  # type: ignore[import-not-found]
 
 
 def _wrapper(wrapped, instance, args, kwargs):
@@ -44,6 +63,7 @@ def _find_member_descriptor():
     return None
 
 
+@skip_on_pypy
 class TestSlotWrapperDescriptor(unittest.TestCase):
     # ``wrapper_descriptor`` is the descriptor type for C-level type slots
     # such as ``_pickle.Unpickler.load`` (displayed as
@@ -71,6 +91,7 @@ class TestSlotWrapperDescriptor(unittest.TestCase):
         self.assertIsNotNone(bound)
 
 
+@skip_on_pypy
 class TestMethodDescriptor(unittest.TestCase):
     # ``method_descriptor`` is the descriptor type for built-in methods
     # defined in C such as ``str.upper``.
@@ -94,6 +115,7 @@ class TestMethodDescriptor(unittest.TestCase):
         self.assertEqual(bound(), "HELLO")
 
 
+@skip_on_pypy
 class TestClassMethodDescriptor(unittest.TestCase):
     # ``classmethod_descriptor`` is the descriptor type for C-level
     # classmethods such as ``dict.fromkeys``. A classmethod descriptor
@@ -106,6 +128,7 @@ class TestClassMethodDescriptor(unittest.TestCase):
         self.assertEqual(bound(["a", "b"], 1), {"a": 1, "b": 1})
 
 
+@skip_on_pypy
 class TestGetSetDescriptor(unittest.TestCase):
     # ``getset_descriptor`` is the descriptor type generated for attributes
     # defined via ``PyGetSetDef`` in C, such as ``type.__name__``.
@@ -131,6 +154,7 @@ class TestGetSetDescriptor(unittest.TestCase):
         self.assertEqual(wrapped.__get__(str, type), "str")
 
 
+@skip_on_pypy
 class TestMemberDescriptor(unittest.TestCase):
     # ``member_descriptor`` is the descriptor type generated for slots
     # defined via ``PyMemberDef`` in C and for entries in ``__slots__``.
@@ -230,6 +254,7 @@ class TestSubclassAttributeAccess(unittest.TestCase):
     # existing descriptor off a parent class, wrap it, and install the
     # wrapper as an attribute of a subclass.
 
+    @skip_on_pypy
     def test_wrapped_slot_wrapper_via_subclass(self):
         class Sub(_pickle.Unpickler):
             pass
@@ -238,6 +263,7 @@ class TestSubclassAttributeAccess(unittest.TestCase):
         Sub.load = wrapped
         self.assertIsNotNone(Sub.load.__doc__)
 
+    @skip_on_pypy
     def test_wrapped_dict_slot_via_subclass(self):
         class SubDict(dict):
             pass
