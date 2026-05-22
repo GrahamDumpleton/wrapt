@@ -54,6 +54,7 @@ Documentation
    monkey
    typing
    bundled
+   api
    examples
    benchmarks
    changes

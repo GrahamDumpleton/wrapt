@@ -201,6 +201,122 @@ This is an inherent limitation of the transparent proxy pattern: the
 proxy can override ``__class__`` at the Python level, but it cannot
 change the object's C-level type.
 
+Deriving from ObjectProxy alongside an ABCMeta-based class
+----------------------------------------------------------
+
+A custom proxy that derives from both ``ObjectProxy`` and a second base
+class whose metaclass is ``abc.ABCMeta`` will fail when used with
+``isinstance()`` or ``issubclass()``::
+
+    from abc import ABC
+    from wrapt import ObjectProxy
+
+    class Base(ABC):
+        pass
+
+    class Proxy(ObjectProxy, Base):
+        pass
+
+    isinstance(1, Proxy)
+    # TypeError: descriptor '__subclasscheck__' for '_wrappers.ObjectProxy'
+    # objects doesn't apply to a 'type' object
+
+The same failure occurs when the second base class is one of the
+abstract base classes exported from ``collections.abc`` (for example
+``Hashable``, ``Iterable``, ``Container``), since they too use
+``ABCMeta`` as their metaclass.
+
+The cause is the way ``ObjectProxy`` implements ``__instancecheck__``
+and ``__subclasscheck__``. These are defined as instance methods on the
+proxy class so that an ``ObjectProxy`` instance can appear on the right
+hand side of an ``isinstance()`` or ``issubclass()`` check and have the
+check delegate to the wrapped type. They rely on ``self`` being a real
+proxy instance, and the C extension enforces this at the descriptor
+level.
+
+When ``ObjectProxy`` is mixed in as a base class alongside an
+``ABCMeta``-based class, those methods are inherited as ordinary
+instance methods on the resulting class. Unlike the default
+``type.__instancecheck__``, ``ABCMeta.__instancecheck__`` performs its
+work by calling ``cls.__subclasscheck__(...)`` via normal attribute
+access on the class. That attribute access finds the inherited
+``__subclasscheck__`` from ``ObjectProxy`` and invokes it with a class
+as the first argument. The C descriptor sees that the first argument is
+not an ``ObjectProxy`` instance and raises the ``TypeError`` shown
+above.
+
+Mixing ``ObjectProxy`` with one of these abstract base classes at
+runtime is almost always the wrong approach to begin with.
+``ObjectProxy`` is designed to be used as a single base class, with
+derived classes overriding only the specific methods that need to
+change. Adding a second, unrelated base class brings in extra
+protocol-level behaviour which interacts poorly with what
+``ObjectProxy`` already does internally.
+
+The usual motivation for adding an abstract base class such as
+``Hashable`` to the base list is to satisfy a static type checker which
+has been told to expect the proxy to be declared as a subtype of that
+abstract base class. At runtime the inheritance is typically redundant.
+The abstract base classes in ``collections.abc`` use a structural
+``__subclasshook__`` (``Hashable`` is satisfied by anything that
+defines ``__hash__``, ``Iterable`` by anything that defines
+``__iter__``, and so on), and ``ObjectProxy`` already defines those
+methods where appropriate, forwarding to the wrapped object. So
+``isinstance(proxy, Hashable)`` is already ``True`` for an
+``ObjectProxy`` instance without any explicit inheritance::
+
+    from collections.abc import Hashable
+    import wrapt
+
+    isinstance(wrapt.ObjectProxy("s"), Hashable)    # True
+
+The runtime inheritance from the abstract base class adds nothing
+useful in this case, and brings in the ``ABCMeta`` metaclass which then
+collides with ``ObjectProxy`` as described above.
+
+The recommended approach is to keep the runtime class hierarchy clean
+and present the type-checker-required relationship using typing
+constructs rather than runtime inheritance. When the annotation site is
+under your own control, the cleanest option is to define a
+``typing.Protocol`` that captures the required structural shape and use
+that as the annotation, instead of inheriting from an abstract base
+class. ``ObjectProxy`` will structurally satisfy such a ``Protocol``
+through the dunder methods it already forwards, with no inheritance and
+no runtime change at all.
+
+When the annotation site is not under your own control and demands a
+nominal subtype of a specific abstract base class, the class can be
+declared twice in the same file, guarded by ``typing.TYPE_CHECKING``::
+
+    from typing import TYPE_CHECKING
+
+    from wrapt import ObjectProxy
+
+    if TYPE_CHECKING:
+        from collections.abc import Hashable
+
+        class Proxy(ObjectProxy, Hashable):
+            ...
+    else:
+        class Proxy(ObjectProxy):
+            pass
+
+``TYPE_CHECKING`` is ``False`` at runtime and ``True`` during static
+analysis, and both mypy and pyright honour this. The type checker sees
+the multi-base version, which satisfies whatever annotation required
+``Hashable`` to appear in the inheritance chain. The Python interpreter
+only ever executes the ``else`` branch, so at runtime ``Proxy`` is a
+plain ``ObjectProxy`` subclass with no ``ABCMeta`` in the picture and
+the original ``TypeError`` does not occur.
+
+The same trick generalises to any case where the view of a class
+presented to a static type checker needs to differ from the runtime
+class hierarchy. If several such declarations need to be maintained
+together it can be cleaner to lift them into a sibling ``.pyi`` stub
+file, which the type checker will honour in preference to the ``.py``
+source. For a single case the inline ``TYPE_CHECKING`` form is usually
+enough.
+
 Using the json module with ObjectProxy
 --------------------------------------
 
