@@ -112,6 +112,35 @@ single shared cache.
     >>> fibonacci.cache_parameters()
     {'maxsize': 128, 'typed': False}
 
+Because the per-instance cache is stored as an attribute on the instance, an
+instance whose cached method has been called holds a
+``functools._lru_cache_wrapper`` object in its ``__dict__``, and that object
+is not picklable. If instances of the class need to be pickled, override
+``__getstate__`` to drop the cache attributes from the pickled state. The
+cache attribute names all begin with ``_lru_cache_``, so filtering on that
+prefix excludes every per-instance cache. The caches are recreated lazily on
+the next call after unpickling.
+
+::
+
+    class MyClass:
+
+        @wrapt.lru_cache
+        def compute(self, x):
+            return x * 2
+
+        def __getstate__(self):
+            return {
+                key: value
+                for key, value in self.__dict__.items()
+                if not key.startswith("_lru_cache_")
+            }
+
+To target the cache for a particular method rather than all of them, filter
+on the more specific ``_lru_cache_<name>_`` prefix, where ``<name>`` is the
+method name. For example, ``_lru_cache_compute_`` matches only the cache for
+the ``compute`` method above.
+
 Thread Synchronization
 ----------------------
 
