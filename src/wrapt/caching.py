@@ -137,7 +137,17 @@ class _LRUCacheFunctionWrapper(FunctionWrapper):
         if name is None:
             name = wrapped.__func__.__name__
 
-        self._self_cache_attr = "_lru_cache_" + name
+        # The cache attribute name must be unique per decorated method so
+        # that a method overridden in a subclass does not share the same
+        # per-instance cache slot as the method it overrides. If they shared
+        # a slot, a subclass method calling super() would find the subclass
+        # cache and re-enter its own body, recursing forever. The owning
+        # class is not known here, since the decorator runs on the raw
+        # function before the class exists, but each decorated method has its
+        # own wrapper instance, so id(self) is a stable discriminator unique
+        # to this method definition.
+
+        self._self_cache_attr = "_lru_cache_" + name + "_" + str(id(self))
 
     def __call__(self, *args, **kwargs):
         # Plain function or static method — single cache stored

@@ -1,6 +1,25 @@
 Release Notes
 =============
 
+Version 2.2.2
+-------------
+
+**Bugs Fixed**
+
+* When ``@wrapt.lru_cache`` was applied to an instance method that was
+  overridden in a subclass, and the subclass method called the base class
+  method via ``super()``, a ``RecursionError`` was raised instead of the
+  base class method being invoked. The per-instance cache for each method
+  was stored as an attribute on the instance whose name was derived only
+  from the method ``__name__``, so the base and derived methods shared a
+  single cache slot. The subclass cache was therefore found again when the
+  base method was reached through ``super()``, re-entering the subclass body
+  and recursing without end. The cache attribute name now incorporates a
+  unique identifier for each decorated method so that a base method and a
+  method that overrides it use distinct per-instance caches. With thanks to
+  the reporter of `issue #342
+  <https://github.com/GrahamDumpleton/wrapt/issues/342>`_.
+
 Version 2.2.1
 -------------
 
