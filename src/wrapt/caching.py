@@ -9,7 +9,7 @@ methods a single shared cache is used, matching ``functools.lru_cache``.
 from functools import lru_cache as _functools_lru_cache
 from functools import partial
 
-from .__wrapt__ import BoundFunctionWrapper, FunctionWrapper
+from .__wrapt__ import BaseObjectProxy, BoundFunctionWrapper, FunctionWrapper
 from .decorators import decorator
 from .synchronization import synchronized
 
@@ -74,14 +74,14 @@ class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper):
                     # If the instance the method is bound to is a wrapt
                     # object proxy, a plain setattr() would fall through and
                     # store the cache on the wrapped object rather than the
-                    # proxy. Proxies expose __self_setattr__() which stores
-                    # the attribute on the proxy itself, so use it when it is
-                    # available and fall back to setattr() otherwise.
+                    # proxy. Use type() rather than isinstance() so the check
+                    # sees the real proxy type and is not fooled by the proxy
+                    # overriding __class__ to report the wrapped object's
+                    # type. Proxies expose __self_setattr__() which stores the
+                    # attribute on the proxy itself.
 
-                    set_attr = getattr(instance, "__self_setattr__", None)
-
-                    if set_attr is not None:
-                        set_attr(cache_attr, cache)
+                    if issubclass(type(instance), BaseObjectProxy):
+                        instance.__self_setattr__(cache_attr, cache)
                     else:
                         setattr(instance, cache_attr, cache)
 
