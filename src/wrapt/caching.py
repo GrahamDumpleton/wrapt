@@ -71,7 +71,19 @@ class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper):
                         self.__wrapped__
                     )
 
-                    setattr(instance, cache_attr, cache)
+                    # If the instance the method is bound to is a wrapt
+                    # object proxy, a plain setattr() would fall through and
+                    # store the cache on the wrapped object rather than the
+                    # proxy. Proxies expose __self_setattr__() which stores
+                    # the attribute on the proxy itself, so use it when it is
+                    # available and fall back to setattr() otherwise.
+
+                    set_attr = getattr(instance, "__self_setattr__", None)
+
+                    if set_attr is not None:
+                        set_attr(cache_attr, cache)
+                    else:
+                        setattr(instance, cache_attr, cache)
 
         return cache(*args, **kwargs)
 

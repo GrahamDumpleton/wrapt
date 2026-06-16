@@ -336,6 +336,92 @@ class TestOverriddenMethodWithSuper(unittest.TestCase):
         self.assertEqual(obj2.base_calls, 1)
 
 
+class ProxyWrapped:
+    def __init__(self, a):
+        self.a = a
+
+
+class ProxyCached(wrapt.ObjectProxy):
+    @wrapt.lru_cache
+    def compute(self, x):
+        return self.a + x
+
+
+class ProxyCachedWithState(wrapt.ObjectProxy):
+    def __init__(self, wrapped, factor):
+        super().__init__(wrapped)
+        self._self_factor = factor
+
+    @wrapt.lru_cache
+    def compute(self, x):
+        return self._self_factor * x
+
+
+class SlottedWrapped:
+    __slots__ = ("a",)
+
+    def __init__(self, a):
+        self.a = a
+
+
+class TestObjectProxySubclass(unittest.TestCase):
+    def test_returns_correct_result(self):
+        obj = ProxyCached(ProxyWrapped(1))
+        self.assertEqual(obj.compute(10), 11)
+
+    def test_caching(self):
+        obj = ProxyCached(ProxyWrapped(1))
+        obj.compute(10)
+        obj.compute(10)
+        info = obj.compute.cache_info()
+        self.assertEqual(info.hits, 1)
+        self.assertEqual(info.misses, 1)
+
+    def test_cache_not_stored_on_wrapped_object(self):
+        wrapped = ProxyWrapped(1)
+        obj = ProxyCached(wrapped)
+        obj.compute(10)
+        cache_attrs = [k for k in vars(wrapped) if k.startswith("_lru_cache_")]
+        self.assertEqual(cache_attrs, [])
+
+    def test_per_proxy_state_not_shared_for_same_wrapped_object(self):
+        # Two proxies over the same wrapped object must keep independent
+        # per-instance caches keyed to their own proxy state, not a single
+        # cache stored on the shared wrapped object.
+        wrapped = ProxyWrapped(1)
+        obj1 = ProxyCachedWithState(wrapped, 2)
+        obj2 = ProxyCachedWithState(wrapped, 10)
+        self.assertEqual(obj1.compute(5), 10)
+        self.assertEqual(obj2.compute(5), 50)
+
+    def test_proxy_garbage_collected_with_long_lived_wrapped(self):
+        # The cache must be stored on the proxy, not the wrapped object, so
+        # a proxy is not kept alive by a wrapped object that outlives it.
+        registry = []
+
+        def make_and_use():
+            backing = ProxyWrapped(7)
+            registry.append(backing)
+            proxy = ProxyCached(backing)
+            proxy.compute(4)
+            return weakref.ref(proxy)
+
+        ref = make_and_use()
+        gc.collect()
+        self.assertIsNone(ref())
+
+    def test_wrapped_object_without_dict(self):
+        # A wrapped object that does not accept arbitrary attributes (for
+        # example one using __slots__) must not cause the cache storage to
+        # fail, since the cache is stored on the proxy.
+        obj = ProxyCached(SlottedWrapped(1))
+        self.assertEqual(obj.compute(10), 11)
+        self.assertEqual(obj.compute(10), 11)
+        info = obj.compute.cache_info()
+        self.assertEqual(info.hits, 1)
+        self.assertEqual(info.misses, 1)
+
+
 class TestIntrospection(unittest.TestCase):
     def test_function_name(self):
         self.assertEqual(cached_function.__name__, "cached_function")

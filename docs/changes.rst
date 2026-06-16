@@ -20,6 +20,23 @@ Version 2.2.2
   the reporter of `issue #342
   <https://github.com/GrahamDumpleton/wrapt/issues/342>`_.
 
+* When ``@wrapt.lru_cache`` was applied to a method of a class deriving from
+  ``wrapt.ObjectProxy``, the per-instance cache was stored on the wrapped
+  object rather than on the proxy. This is because the proxy ``__setattr__``
+  forwards attribute assignment to the wrapped object for any name that is
+  not a recognised proxy attribute, and the cache attribute name was not one.
+  Storing the cache on the wrapped object had several consequences: the
+  wrapped object was polluted with cache attributes it never defined; the
+  cache held a reference back to the proxy through the bound method it
+  wrapped, so a wrapped object that outlived the proxy kept the proxy alive
+  and prevented its collection; wrapping an object that does not accept
+  arbitrary attributes, such as one using ``__slots__``, caused the first
+  cached call to fail with an ``AttributeError``; and two proxies sharing a
+  single wrapped object shared one cache and could return results computed
+  for the wrong proxy. The cache attribute is now stored on the proxy itself
+  using the proxy ``__self_setattr__`` method when the instance is a wrapt
+  object proxy, falling back to ``setattr`` for ordinary instances.
+
 Version 2.2.1
 -------------
 
