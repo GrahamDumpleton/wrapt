@@ -221,6 +221,25 @@ class whose metaclass is ``abc.ABCMeta`` will fail when used with
     # TypeError: descriptor '__subclasscheck__' for '_wrappers.ObjectProxy'
     # objects doesn't apply to a 'type' object
 
+Under the pure Python implementation of ``ObjectProxy`` (used when the
+C extension is not available, including on PyPy or when
+``WRAPT_DISABLE_EXTENSIONS`` is set in the environment), the failure
+surfaces earlier, at the ``class Proxy(...)`` statement itself, with a
+different message::
+
+    TypeError: metaclass conflict: the metaclass of a derived class
+    must be a (non-strict) subclass of the metaclasses of all its bases
+
+The pure Python ``ObjectProxy`` carries a custom metaclass, used to
+make type-level access to ``__module__`` and ``__doc__`` return strings
+rather than property objects, whereas the C extension's ``ObjectProxy``
+has plain ``type`` as its metaclass. When a second base class with
+``ABCMeta`` as its metaclass is mixed in, the pure Python build cannot
+find a common metaclass and aborts class creation. The C build
+proceeds and only fails later at the first ``isinstance()`` call. The
+underlying problem is the same in both cases; only the point at which
+it surfaces differs.
+
 The same failure occurs when the second base class is one of the
 abstract base classes exported from ``collections.abc`` (for example
 ``Hashable``, ``Iterable``, ``Container``), since they too use

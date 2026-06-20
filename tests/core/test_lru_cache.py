@@ -267,6 +267,161 @@ class TestStaticMethod(unittest.TestCase):
         self.assertEqual(info.misses, 1)
 
 
+class OverrideBase:
+    def __init__(self):
+        self.base_calls = 0
+        self.derived_calls = 0
+
+    @wrapt.lru_cache
+    def compute(self, x):
+        self.base_calls += 1
+        return x * 2
+
+
+class OverrideDerived(OverrideBase):
+    @wrapt.lru_cache
+    def compute(self, x):
+        self.derived_calls += 1
+        return super().compute(x) + 1
+
+
+class TestOverriddenMethodWithSuper(unittest.TestCase):
+    def test_super_call_returns_correct_result(self):
+        obj = OverrideDerived()
+        self.assertEqual(obj.compute(10), 21)
+
+    def test_super_call_does_not_recurse(self):
+        # Regression test: a subclass method decorated with lru_cache that
+        # called the base method via super() used to recurse forever because
+        # the base and derived methods shared a single per-instance cache
+        # slot derived from the method name alone.
+        obj = OverrideDerived()
+        try:
+            result = obj.compute(10)
+        except RecursionError:
+            self.fail("super() call recursed instead of reaching base method")
+        self.assertEqual(result, 21)
+
+    def test_both_bodies_execute_once(self):
+        obj = OverrideDerived()
+        obj.compute(10)
+        self.assertEqual(obj.derived_calls, 1)
+        self.assertEqual(obj.base_calls, 1)
+
+    def test_base_and_derived_cached_independently(self):
+        obj = OverrideDerived()
+        obj.compute(10)
+        obj.compute(10)
+        # Second call is served from both caches, so neither body re-runs.
+        self.assertEqual(obj.derived_calls, 1)
+        self.assertEqual(obj.base_calls, 1)
+        info = obj.compute.cache_info()
+        self.assertEqual(info.hits, 1)
+        self.assertEqual(info.misses, 1)
+
+    def test_base_class_instance_unaffected(self):
+        obj = OverrideBase()
+        self.assertEqual(obj.compute(10), 20)
+        self.assertEqual(obj.base_calls, 1)
+        self.assertEqual(obj.derived_calls, 0)
+
+    def test_separate_instances_have_separate_caches(self):
+        obj1 = OverrideDerived()
+        obj2 = OverrideDerived()
+        obj1.compute(10)
+        obj2.compute(10)
+        self.assertEqual(obj1.derived_calls, 1)
+        self.assertEqual(obj2.derived_calls, 1)
+        self.assertEqual(obj1.base_calls, 1)
+        self.assertEqual(obj2.base_calls, 1)
+
+
+class ProxyWrapped:
+    def __init__(self, a):
+        self.a = a
+
+
+class ProxyCached(wrapt.ObjectProxy):
+    @wrapt.lru_cache
+    def compute(self, x):
+        return self.a + x
+
+
+class ProxyCachedWithState(wrapt.ObjectProxy):
+    def __init__(self, wrapped, factor):
+        super().__init__(wrapped)
+        self._self_factor = factor
+
+    @wrapt.lru_cache
+    def compute(self, x):
+        return self._self_factor * x
+
+
+class SlottedWrapped:
+    __slots__ = ("a",)
+
+    def __init__(self, a):
+        self.a = a
+
+
+class TestObjectProxySubclass(unittest.TestCase):
+    def test_returns_correct_result(self):
+        obj = ProxyCached(ProxyWrapped(1))
+        self.assertEqual(obj.compute(10), 11)
+
+    def test_caching(self):
+        obj = ProxyCached(ProxyWrapped(1))
+        obj.compute(10)
+        obj.compute(10)
+        info = obj.compute.cache_info()
+        self.assertEqual(info.hits, 1)
+        self.assertEqual(info.misses, 1)
+
+    def test_cache_not_stored_on_wrapped_object(self):
+        wrapped = ProxyWrapped(1)
+        obj = ProxyCached(wrapped)
+        obj.compute(10)
+        cache_attrs = [k for k in vars(wrapped) if k.startswith("_lru_cache_")]
+        self.assertEqual(cache_attrs, [])
+
+    def test_per_proxy_state_not_shared_for_same_wrapped_object(self):
+        # Two proxies over the same wrapped object must keep independent
+        # per-instance caches keyed to their own proxy state, not a single
+        # cache stored on the shared wrapped object.
+        wrapped = ProxyWrapped(1)
+        obj1 = ProxyCachedWithState(wrapped, 2)
+        obj2 = ProxyCachedWithState(wrapped, 10)
+        self.assertEqual(obj1.compute(5), 10)
+        self.assertEqual(obj2.compute(5), 50)
+
+    def test_proxy_garbage_collected_with_long_lived_wrapped(self):
+        # The cache must be stored on the proxy, not the wrapped object, so
+        # a proxy is not kept alive by a wrapped object that outlives it.
+        registry = []
+
+        def make_and_use():
+            backing = ProxyWrapped(7)
+            registry.append(backing)
+            proxy = ProxyCached(backing)
+            proxy.compute(4)
+            return weakref.ref(proxy)
+
+        ref = make_and_use()
+        gc.collect()
+        self.assertIsNone(ref())
+
+    def test_wrapped_object_without_dict(self):
+        # A wrapped object that does not accept arbitrary attributes (for
+        # example one using __slots__) must not cause the cache storage to
+        # fail, since the cache is stored on the proxy.
+        obj = ProxyCached(SlottedWrapped(1))
+        self.assertEqual(obj.compute(10), 11)
+        self.assertEqual(obj.compute(10), 11)
+        info = obj.compute.cache_info()
+        self.assertEqual(info.hits, 1)
+        self.assertEqual(info.misses, 1)
+
+
 class TestIntrospection(unittest.TestCase):
     def test_function_name(self):
         self.assertEqual(cached_function.__name__, "cached_function")

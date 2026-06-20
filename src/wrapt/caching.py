@@ -9,7 +9,7 @@ methods a single shared cache is used, matching ``functools.lru_cache``.
 from functools import lru_cache as _functools_lru_cache
 from functools import partial
 
-from .__wrapt__ import BoundFunctionWrapper, FunctionWrapper
+from .__wrapt__ import BaseObjectProxy, BoundFunctionWrapper, FunctionWrapper
 from .decorators import decorator
 from .synchronization import synchronized
 
@@ -71,7 +71,19 @@ class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper):
                         self.__wrapped__
                     )
 
-                    setattr(instance, cache_attr, cache)
+                    # If the instance the method is bound to is a wrapt
+                    # object proxy, a plain setattr() would fall through and
+                    # store the cache on the wrapped object rather than the
+                    # proxy. Use type() rather than isinstance() so the check
+                    # sees the real proxy type and is not fooled by the proxy
+                    # overriding __class__ to report the wrapped object's
+                    # type. Proxies expose __self_setattr__() which stores the
+                    # attribute on the proxy itself.
+
+                    if issubclass(type(instance), BaseObjectProxy):
+                        instance.__self_setattr__(cache_attr, cache)
+                    else:
+                        setattr(instance, cache_attr, cache)
 
         return cache(*args, **kwargs)
 
@@ -137,7 +149,17 @@ class _LRUCacheFunctionWrapper(FunctionWrapper):
         if name is None:
             name = wrapped.__func__.__name__
 
-        self._self_cache_attr = "_lru_cache_" + name
+        # The cache attribute name must be unique per decorated method so
+        # that a method overridden in a subclass does not share the same
+        # per-instance cache slot as the method it overrides. If they shared
+        # a slot, a subclass method calling super() would find the subclass
+        # cache and re-enter its own body, recursing forever. The owning
+        # class is not known here, since the decorator runs on the raw
+        # function before the class exists, but each decorated method has its
+        # own wrapper instance, so id(self) is a stable discriminator unique
+        # to this method definition.
+
+        self._self_cache_attr = "_lru_cache_" + name + "_" + str(id(self))
 
     def __call__(self, *args, **kwargs):
         # Plain function or static method — single cache stored
