@@ -1973,6 +1973,34 @@ class SpecialMethods(unittest.TestCase):
         self.assertEqual(round(instance, 3), round(proxy, 3))
         self.assertEqual(round(instance, ndigits=3), round(proxy, ndigits=3))
 
+    def test_float_trunc(self):
+        import math
+
+        instance = 1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(instance), math.trunc(proxy))
+        self.assertEqual(math.trunc(instance), 1)
+
+    def test_negative_float_trunc(self):
+        import math
+
+        instance = -1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(instance), math.trunc(proxy))
+        self.assertEqual(math.trunc(instance), -1)
+
+    def test_fractions_trunc(self):
+        import fractions
+        import math
+
+        instance = fractions.Fraction("7/3")
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(instance), math.trunc(proxy))
+        self.assertEqual(math.trunc(instance), 2)
+
 
 class TestArgumentUnpacking(unittest.TestCase):
 
