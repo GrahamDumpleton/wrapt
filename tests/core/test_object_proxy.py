@@ -1973,6 +1973,26 @@ class SpecialMethods(unittest.TestCase):
         self.assertEqual(round(instance, 3), round(proxy, 3))
         self.assertEqual(round(instance, ndigits=3), round(proxy, ndigits=3))
 
+    def test_math_integral_protocol_methods(self):
+        import math
+
+        class Instance:
+            def __trunc__(self):
+                return "truncated"
+
+            def __floor__(self):
+                return "floored"
+
+            def __ceil__(self):
+                return "ceiled"
+
+        instance = Instance()
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(proxy), "truncated")
+        self.assertEqual(math.floor(proxy), "floored")
+        self.assertEqual(math.ceil(proxy), "ceiled")
+
     def test_float_trunc(self):
         import math
 

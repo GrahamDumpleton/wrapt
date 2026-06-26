@@ -265,6 +265,12 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     def __trunc__(self):
         return math.trunc(self.__wrapped__)
 
+    def __floor__(self):
+        return math.floor(self.__wrapped__)
+
+    def __ceil__(self):
+        return math.ceil(self.__wrapped__)
+
     def __mro_entries__(self, bases):
         if not isinstance(self.__wrapped__, type) and hasattr(
             self.__wrapped__, "__mro_entries__"
