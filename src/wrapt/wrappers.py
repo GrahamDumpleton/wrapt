@@ -165,7 +165,9 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     """A transparent object proxy that delegates attribute access to a
     wrapped object."""
 
-    __class_getitem__ = classmethod(types.GenericAlias)
+    @classmethod
+    def __class_getitem__(cls, item):
+        return types.GenericAlias(cls, item)
 
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""
