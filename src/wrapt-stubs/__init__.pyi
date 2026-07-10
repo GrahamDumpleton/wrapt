@@ -227,7 +227,8 @@ if sys.version_info >= (3, 10):
         # and bitwise operations (e.g. __add__ returns
         # ``self.__object_proxy__(self.__wrapped__ + other)``). Subclasses
         # override it to control the type of proxy produced from operations.
-        __self_dict__: dict[str, Any]
+        @property
+        def __self_dict__(self) -> dict[str, Any]: ...
         @property
         def __object_proxy__(self) -> type[BaseObjectProxy[Any]]: ...
         def __self_setattr__(self, name: str, value: Any) -> None: ...
