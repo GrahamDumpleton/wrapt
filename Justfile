@@ -153,11 +153,16 @@ test-mypy-version version:
     uv run --with 'mypy=={{ if version == "3.9" { "1.19.1" } else { mypy_version } }}' mypy --python-version {{version}} src/wrapt
 
 # Run stubtest to compare the wrapt-stubs package against the installed
-# wrapt runtime. Intentional stub-vs-runtime divergences are listed in
+# wrapt runtime, once against the C extension and once against the pure
+# Python implementation, as the runtime surface stubtest sees differs
+# between the two. Intentional stub-vs-runtime divergences are listed in
 # tests/stubtest_allowlist.txt; adding new ones should be accompanied by
-# a comment there explaining why the divergence is deliberate.
+# a comment there explaining why the divergence is deliberate. The pure
+# Python run passes --ignore-unused-allowlist since entries which only
+# apply to the C extension are legitimately unused in that run.
 test-stubtest:
     uv run --with 'mypy=={{mypy_version}}' --with-editable . python -m mypy.stubtest wrapt --allowlist tests/stubtest_allowlist.txt
+    WRAPT_DISABLE_EXTENSIONS=true uv run --with 'mypy=={{mypy_version}}' --with-editable . python -m mypy.stubtest wrapt --allowlist tests/stubtest_allowlist.txt --ignore-unused-allowlist
 
 view-mypy-test test:
     MYPYPATH=src/ uv run --with 'mypy=={{mypy_version}}' mypy --strict --show-error-codes tests/mypy/{{test}}.py
