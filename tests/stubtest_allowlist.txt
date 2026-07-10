@@ -17,8 +17,9 @@ wrapt\.(BaseObjectProxy|ObjectProxy|AutoObjectProxy|CallableObjectProxy|PartialC
 # based on the wrapped object's interface (see proxies.AutoObjectProxy
 # .__new__). The stub claims them statically because users write code
 # like `await auto_proxy_of_future` and should not be rejected; stubtest
-# cannot see the per-instance attachment.
-wrapt\.AutoObjectProxy\.__call__
+# cannot see the per-instance attachment. Note that __call__ is also
+# attached per instance but needs no entry here, as stubtest skips
+# existence checks for __call__ entirely.
 wrapt\.AutoObjectProxy\.__iter__
 wrapt\.AutoObjectProxy\.__next__
 wrapt\.AutoObjectProxy\.__aiter__
