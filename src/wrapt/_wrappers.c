@@ -2537,8 +2537,8 @@ static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptObjectProxy_call_math_unary(WraptObjectProxyObject *self,
-                                                  const char *name)
+static PyObject *wrapt_call_math_unary(WraptObjectProxyObject *self,
+                                       const char *name)
 {
   PyObject *module = NULL;
   PyObject *function = NULL;
@@ -2574,23 +2574,26 @@ static PyObject *WraptObjectProxy_call_math_unary(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptObjectProxy_trunc(WraptObjectProxyObject *self)
+static PyObject *WraptObjectProxy_trunc(WraptObjectProxyObject *self,
+                                        PyObject *Py_UNUSED(ignored))
 {
-  return WraptObjectProxy_call_math_unary(self, "trunc");
+  return wrapt_call_math_unary(self, "trunc");
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptObjectProxy_floor(WraptObjectProxyObject *self)
+static PyObject *WraptObjectProxy_floor(WraptObjectProxyObject *self,
+                                        PyObject *Py_UNUSED(ignored))
 {
-  return WraptObjectProxy_call_math_unary(self, "floor");
+  return wrapt_call_math_unary(self, "floor");
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *WraptObjectProxy_ceil(WraptObjectProxyObject *self)
+static PyObject *WraptObjectProxy_ceil(WraptObjectProxyObject *self,
+                                       PyObject *Py_UNUSED(ignored))
 {
-  return WraptObjectProxy_call_math_unary(self, "ceil");
+  return wrapt_call_math_unary(self, "ceil");
 }
 
 /* ------------------------------------------------------------------------- */

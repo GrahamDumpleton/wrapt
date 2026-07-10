@@ -2021,6 +2021,109 @@ class SpecialMethods(unittest.TestCase):
         self.assertEqual(math.trunc(instance), math.trunc(proxy))
         self.assertEqual(math.trunc(instance), 2)
 
+    def test_float_floor(self):
+        import math
+
+        instance = 1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.floor(instance), math.floor(proxy))
+        self.assertEqual(math.floor(instance), 1)
+
+    def test_negative_float_floor(self):
+        import math
+
+        instance = -1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.floor(instance), math.floor(proxy))
+        self.assertEqual(math.floor(instance), -2)
+
+    def test_fractions_floor(self):
+        import fractions
+        import math
+
+        instance = fractions.Fraction("7/3")
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.floor(instance), math.floor(proxy))
+        self.assertEqual(math.floor(instance), 2)
+
+    def test_float_ceil(self):
+        import math
+
+        instance = 1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.ceil(instance), math.ceil(proxy))
+        self.assertEqual(math.ceil(instance), 2)
+
+    def test_negative_float_ceil(self):
+        import math
+
+        instance = -1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.ceil(instance), math.ceil(proxy))
+        self.assertEqual(math.ceil(instance), -1)
+
+    def test_fractions_ceil(self):
+        import fractions
+        import math
+
+        instance = fractions.Fraction("7/3")
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.ceil(instance), math.ceil(proxy))
+        self.assertEqual(math.ceil(instance), 3)
+
+    def test_math_integral_protocol_methods_override_float(self):
+        # The __floor__() and __ceil__() methods of the wrapped object must
+        # take precedence over any __float__() fallback in math.floor() and
+        # math.ceil(), the same as if the wrapped object was used directly.
+
+        import math
+
+        class Instance:
+            def __float__(self):
+                return 3.5
+
+            def __trunc__(self):
+                return "truncated"
+
+            def __floor__(self):
+                return "floored"
+
+            def __ceil__(self):
+                return "ceiled"
+
+        instance = Instance()
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(proxy), math.trunc(instance))
+        self.assertEqual(math.floor(proxy), math.floor(instance))
+        self.assertEqual(math.ceil(proxy), math.ceil(instance))
+
+    def test_math_float_fallback(self):
+        # An object which only provides __float__() still works with
+        # math.floor() and math.ceil() via the proxy, the same as it does
+        # when used directly, and math.trunc() fails the same way for both.
+
+        import math
+
+        class Instance:
+            def __float__(self):
+                return 3.5
+
+        instance = Instance()
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.floor(proxy), math.floor(instance))
+        self.assertEqual(math.ceil(proxy), math.ceil(instance))
+
+        self.assertRaises(TypeError, math.trunc, instance)
+        self.assertRaises(TypeError, math.trunc, proxy)
+
 
 class TestArgumentUnpacking(unittest.TestCase):
 

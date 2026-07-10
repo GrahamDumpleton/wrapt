@@ -4,6 +4,31 @@ Release Notes
 Version 2.3.0
 -------------
 
+**New Features**
+
+* The ``__trunc__()``, ``__floor__()`` and ``__ceil__()`` special methods
+  are now implemented by object proxies, delegating to ``math.trunc()``,
+  ``math.floor()`` and ``math.ceil()`` applied to the wrapped object. As
+  with other special methods, these are only looked up on the class type
+  and not the instance, so they cannot rely on the ``__getattr__()``
+  fallback of the proxy and must be implemented explicitly. Previously
+  calling ``math.trunc()`` on an object proxy raised ``TypeError``. These
+  special methods sit somewhat outside the core Python object model in that
+  they are not used by any builtin operators, with the ``math`` module
+  being their only consumer. They are however documented as part of the
+  Python data model and the ``math`` module is a key module in the standard
+  library, so supporting them is warranted, in the same way as the existing
+  support for ``__round__()``, which is consumed by the ``round()``
+  builtin. Note that although ``math.floor()`` and ``math.ceil()``
+  previously appeared to work when used on an object proxy, they were
+  silently falling back to converting the proxy using ``__float__()``. If
+  the wrapped object provided its own ``__floor__()`` or ``__ceil__()``
+  special methods these were ignored and the result could differ from that
+  when the wrapped object was used directly. These now yield the same
+  result as using the wrapped object directly. With thanks to Vincent Gao
+  for `pull request #344
+  <https://github.com/GrahamDumpleton/wrapt/pull/344>`_.
+
 Version 2.2.2
 -------------
 
