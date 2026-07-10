@@ -582,6 +582,10 @@ invoking. The most common examples are:
 * ``__fspath__``, whose presence on the type is what marks an object as
   path-like for ``os.fspath()`` and ``isinstance(obj, os.PathLike)``.
   See the `Wrapping path-like objects and os.PathLike`_ section below.
+* ``__buffer__`` and ``__release_buffer__``, whose presence on the type
+  is what marks an object as bytes-like for the buffer protocol. See
+  the `Wrapping bytes-like objects and the buffer protocol`_ section
+  below.
 
 If ``ObjectProxy`` defined these unconditionally, ``callable(proxy)``
 would always be ``True`` even when wrapping a non-callable, every
@@ -722,6 +726,80 @@ significant memory overhead. ``AutoObjectProxy`` is only appropriate
 when a process holds a small number of such proxies. For anything
 high-frequency, use a derived proxy class with an explicit
 ``__fspath__()`` method as shown above.
+
+Wrapping bytes-like objects and the buffer protocol
+----------------------------------------------------
+
+The buffer protocol is the mechanism through which ``memoryview()``,
+the ``bytes()`` and ``bytearray()`` constructors, binary file
+``write()``, ``struct``, ``socket``, ``hashlib`` and many other
+consumers of "bytes-like" objects obtain direct access to an object's
+underlying memory. Historically the protocol existed only at the C
+level, so a pure Python class could not participate in it at all.
+Since Python 3.12 a class can implement it by defining the
+``__buffer__()`` and ``__release_buffer__()`` special methods, which
+Python wires into the same C-level type slots that the builtin types
+use.
+
+Like ``__fspath__()`` described in the preceding section, the mere
+presence of the protocol on a type is used to classify objects. C code
+checks whether the type slot is populated before using an object as a
+buffer, raising the familiar ``TypeError: a bytes-like object is
+required`` when it is not, and on Python 3.12+ the
+``collections.abc.Buffer`` abstract base class performs a structural
+check for ``__buffer__()``. The base object proxy therefore does not
+implement the protocol, and wrapping a bytes-like object exhibits the
+same confusing inconsistency as for path-like objects, and for the
+same reason. The ``isinstance()`` check consults the delegated
+``__class__`` and reflects the wrapped object, while actual use looks
+up the protocol on the actual type of the proxy at the C level and
+fails::
+
+    import collections.abc
+    import wrapt
+
+    proxy = wrapt.ObjectProxy(bytearray(b"data"))
+
+    isinstance(proxy, collections.abc.Buffer)    # True (Python 3.12+)
+    memoryview(proxy)                            # TypeError
+
+Note that unlike the other presence-sensitive dunder methods,
+``__buffer__()`` and ``__release_buffer__()`` are not included in the
+set which ``AutoObjectProxy`` detects and adds. They only work at all
+on Python 3.12+, so support would be version dependent, and bytes-like
+objects such as I/O buffers and arrays are the classic example of
+objects created in large numbers, where the per-instance class created
+by ``AutoObjectProxy`` is inappropriate due to memory overhead.
+
+If a proxy around a bytes-like object needs to be usable as a buffer,
+on Python 3.12+ define a derived proxy class which delegates the
+protocol explicitly::
+
+    class BufferProxy(wrapt.BaseObjectProxy):
+        def __buffer__(self, flags):
+            return self.__wrapped__.__buffer__(flags)
+
+        def __release_buffer__(self, view):
+            view.release()
+
+A proxy of this type supports read and write access through
+``memoryview()``, and exporter side effects such as a ``bytearray``
+refusing to be resized while a view is outstanding work correctly
+through the proxy.
+
+Note that ``__release_buffer__()`` releases the view it is given
+rather than delegating to the wrapped object. Immutable exporters such
+as ``bytes`` define ``__buffer__()`` but not ``__release_buffer__()``,
+since they have no locking or cleanup to perform, so blind delegation
+would raise ``AttributeError`` for them. Releasing the passed view is
+the pattern shown in the Python data model documentation and works for
+any wrapped object.
+
+On Python versions before 3.12 there is no way for a pure Python class
+to participate in the buffer protocol, so this recipe does not work
+there and a proxy around a bytes-like object cannot be passed to
+buffer consumers at all. Unwrap the proxy at the boundary instead,
+passing ``proxy.__wrapped__`` to the consumer.
 
 \_\_qualname\_\_ snapshot vs live-read divergence
 --------------------------------------------------
