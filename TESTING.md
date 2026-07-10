@@ -17,18 +17,12 @@ The project uses a special naming convention to ensure certain tests only run on
 
 Test files can include version suffixes to indicate minimum Python version requirements:
 
-- `test_name_py3.py` - Runs only on Python 3.x (skipped on Python 2.x)
-- `test_name_py2.py` - Runs only on Python 2.x (skipped on Python 3.x)
-- `test_name_py36.py` - Runs only on Python 3.6 and later
-- `test_name_py37.py` - Runs only on Python 3.7 and later
-- `test_name_py38.py` - Runs only on Python 3.8 and later
+- `test_name_py310.py` - Runs only on Python 3.10 and later
+- `test_name_py312.py` - Runs only on Python 3.12 and later
 
-### Examples in the Codebase
-
-- `test_class_py37.py` - Tests class-related features that require Python 3.7+
-- `test_descriptors_py36.py` - Tests descriptor features that require Python 3.6+
-- `test_inheritance_py37.py` - Tests inheritance features that require Python 3.7+
-- `test_adapter_py33.py` - Tests adapter features that require Python 3.3+ (keyword-only arguments)
+There are currently no version-specific test files in the codebase, as all
+tests run on the oldest supported Python version, but the mechanism remains
+available for tests which need features from a newer Python version.
 
 ### How It Works
 

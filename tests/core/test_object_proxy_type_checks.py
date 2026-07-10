@@ -105,7 +105,7 @@ class TestIssubclassProxyOnLeftWithABC(unittest.TestCase):
     When the right-hand side uses ABCMeta, its C-level __subclasscheck__
     strictly requires the left argument to be a real class. A proxy is not
     a class, so this raises TypeError. This is the same limitation documented
-    in test_inheritance_py37.py for decorated classes.
+    in test_inheritance.py for decorated classes.
     """
 
     @unittest.skipIf(
