@@ -161,7 +161,8 @@ test-mypy-version version:
 # Python run passes --ignore-unused-allowlist since entries which only
 # apply to the C extension are legitimately unused in that run.
 test-stubtest:
-    uv run --with 'mypy=={{mypy_version}}' --with-editable . python -m mypy.stubtest wrapt --allowlist tests/stubtest_allowlist.txt
+    WRAPT_INSTALL_EXTENSIONS=true uv run --reinstall-package wrapt --with 'mypy=={{mypy_version}}' --with-editable . python -c "import wrapt.__wrapt__; assert wrapt.__wrapt__._using_c_extension, 'C extension not loaded'"
+    WRAPT_INSTALL_EXTENSIONS=true uv run --with 'mypy=={{mypy_version}}' --with-editable . python -m mypy.stubtest wrapt --allowlist tests/stubtest_allowlist.txt
     WRAPT_DISABLE_EXTENSIONS=true uv run --with 'mypy=={{mypy_version}}' --with-editable . python -m mypy.stubtest wrapt --allowlist tests/stubtest_allowlist.txt --ignore-unused-allowlist
 
 view-mypy-test test:
