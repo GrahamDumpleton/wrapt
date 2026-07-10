@@ -761,7 +761,7 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, "_self_parent", parent)
         object.__setattr__(self, "_self_owner", owner)
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, owner=None):
         # This method handles both unbound and bound derived wrapper classes.
         # It is kept in the base class as the amount of common code makes it
         # impractical to split into the derived classes.
