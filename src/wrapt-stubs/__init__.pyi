@@ -383,6 +383,12 @@ if sys.version_info >= (3, 10):
         ) -> BoundFunctionWrapper[_P1, _R1]: ...
 
     class FunctionWrapper(_FunctionWrapperBase[_P1, _R1]):
+        # The class used to construct the bound wrapper when the function
+        # wrapper is bound to an instance via the descriptor protocol.
+        # Subclasses override it to control the type of bound wrapper
+        # produced.
+        __bound_function_wrapper__: type[BoundFunctionWrapper[_P1, _R1]]
+
         def __init__(
             self,
             wrapped: _WrappedFunction[_P1, _R1],
