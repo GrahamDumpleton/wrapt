@@ -296,7 +296,7 @@ if sys.version_info >= (3, 10):
 
     # PartialCallableObjectProxy
 
-    class PartialCallableObjectProxy:
+    class PartialCallableObjectProxy(BaseObjectProxy[Callable[..., Any]]):
         def __init__(
             self, func: Callable[..., Any], *args: Any, **kwargs: Any
         ) -> None: ...
@@ -308,7 +308,7 @@ if sys.version_info >= (3, 10):
 
     # WeakFunctionProxy
 
-    class WeakFunctionProxy:
+    class WeakFunctionProxy(BaseObjectProxy[Callable[..., Any]]):
         def __init__(
             self,
             wrapped: Callable[..., Any],
@@ -648,7 +648,7 @@ if sys.version_info >= (3, 10):
 
     # bind_state_to_wrapper()
 
-    class _StateBindingWrapper:
+    class _StateBindingWrapper(BaseObjectProxy[Any]):
         name: str
         wrapper_factory: _Descriptor | None
         def __init__(self, *, name: str = "state") -> None: ...
