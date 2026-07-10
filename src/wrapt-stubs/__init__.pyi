@@ -2,7 +2,7 @@ import sys
 
 if sys.version_info >= (3, 10):
     from inspect import FullArgSpec, Signature
-    from types import ModuleType, TracebackType
+    from types import GenericAlias, ModuleType, TracebackType
     from typing import (
         Any,
         AsyncIterator,
@@ -109,6 +109,7 @@ if sys.version_info >= (3, 10):
 
         def __init__(self, wrapped: _T) -> None: ...
         def __getattr__(self, name: str) -> Any: ...
+        def __class_getitem__(cls, item: Any, /) -> GenericAlias: ...
         def __mro_entries__(self, bases: tuple[type, ...]) -> tuple[type, ...]: ...
 
         # Context managers.

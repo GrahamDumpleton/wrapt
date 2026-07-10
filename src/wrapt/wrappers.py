@@ -166,7 +166,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     wrapped object."""
 
     @classmethod
-    def __class_getitem__(cls, item):
+    def __class_getitem__(cls, item, /):
         return types.GenericAlias(cls, item)
 
     def __init__(self, wrapped):
