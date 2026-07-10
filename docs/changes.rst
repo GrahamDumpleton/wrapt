@@ -29,6 +29,31 @@ Version 2.3.0
   for `pull request #344
   <https://github.com/GrahamDumpleton/wrapt/pull/344>`_.
 
+**Features Changed**
+
+* The type stubs have been aligned with the runtime behaviour of the code
+  and are now verified by ``stubtest`` against both the C extension and
+  pure Python implementations. If using a type checker there are a couple
+  of changes in what will be accepted which may be noticed. The
+  ``__self_dict__`` attribute of proxy objects is now declared as a read
+  only property, matching the runtime where assignment to it deliberately
+  raises ``AttributeError``, so assignment to it will now be rejected by
+  type checkers. The ``PartialCallableObjectProxy``, ``WeakFunctionProxy``
+  and ``bind_state_to_wrapper`` classes, which always derived from the base
+  object proxy at runtime, are now also declared that way in the stubs.
+  This means use of the object proxy interface on instances of these
+  classes, such as accessing ``__wrapped__``, is no longer falsely
+  rejected, although as a consequence of inheriting the permissive
+  ``__getattr__()`` of the proxy, attribute typos on these classes will no
+  longer be caught. The ``__class_getitem__()`` special method and the
+  ``__bound_function_wrapper__`` attribute of ``FunctionWrapper`` are now
+  also declared in the stubs. Finally, the pure Python implementation was
+  brought into line with the C implementation and the descriptor protocol
+  in two small ways. The ``owner`` argument of ``__get__()`` on function
+  wrappers now defaults to ``None``, so manual binding using the one
+  argument form works, and the argument to ``__class_getitem__()`` is now
+  positional only.
+
 Version 2.2.2
 -------------
 
