@@ -28,6 +28,7 @@ wrapt\.AutoObjectProxy\.__next__
 wrapt\.AutoObjectProxy\.__aiter__
 wrapt\.AutoObjectProxy\.__anext__
 wrapt\.AutoObjectProxy\.__length_hint__
+wrapt\.AutoObjectProxy\.__fspath__
 wrapt\.AutoObjectProxy\.__await__
 
 # --- LazyObjectProxy internal fixup properties.

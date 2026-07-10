@@ -181,5 +181,59 @@ class TestIssubclassBothProxied(unittest.TestCase):
         self.assertFalse(issubclass(proxy_base, proxy_child))
 
 
+class TestPathLikeProtocol(unittest.TestCase):
+    """Tests pinning the documented behaviour of object proxies with the
+    os.PathLike protocol. The base object proxy deliberately does not
+    implement __fspath__, as its presence on the proxy type would cause
+    every proxy to be classified as path like by code branching on
+    isinstance(obj, os.PathLike). See the section on os.PathLike in
+    docs/issues.rst. If these tests start failing on a new Python
+    version, the interaction between the proxy and the protocol has
+    changed and the documentation needs to be revisited.
+    """
+
+    def test_isinstance_pathlike_true_for_wrapped_path(self):
+        # ABCMeta.__instancecheck__ consults the instance __class__,
+        # which the proxy delegates to the wrapped object, so the
+        # classification reflects the wrapped object.
+
+        import os
+        import pathlib
+
+        proxy = wrapt.ObjectProxy(pathlib.PurePath("/path/to/file"))
+
+        self.assertTrue(isinstance(proxy, os.PathLike))
+
+    def test_isinstance_pathlike_false_for_wrapped_non_path(self):
+        import os
+
+        proxy = wrapt.ObjectProxy(42)
+
+        self.assertFalse(isinstance(proxy, os.PathLike))
+
+    def test_fspath_fails_for_wrapped_path(self):
+        # os.fspath() looks up __fspath__ on the actual type of the
+        # proxy, not via __class__, so it fails even though the
+        # isinstance() check above says the proxy is path like.
+
+        import os
+        import pathlib
+
+        proxy = wrapt.ObjectProxy(pathlib.PurePath("/path/to/file"))
+
+        self.assertRaises(TypeError, os.fspath, proxy)
+
+    def test_fspath_via_instance_access(self):
+        # Instance level access still forwards via __getattr__.
+
+        import os
+        import pathlib
+
+        instance = pathlib.PurePath("/path/to/file")
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(proxy.__fspath__(), os.fspath(instance))
+
+
 if __name__ == "__main__":
     unittest.main()

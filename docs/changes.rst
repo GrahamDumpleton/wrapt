@@ -29,6 +29,22 @@ Version 2.3.0
   for `pull request #344
   <https://github.com/GrahamDumpleton/wrapt/pull/344>`_.
 
+* The ``__fspath__()`` special method of the ``os.PathLike`` protocol has
+  been added to the set of dunder methods which ``AutoObjectProxy``
+  detects on the wrapped object and adds to the class it generates, so a
+  proxy it creates around a path-like object can now be used with
+  ``os.fspath()``, the builtin ``open()`` and other standard library
+  functions accepting paths. Note that ``__fspath__()`` is deliberately
+  not implemented by the base object proxy, since its presence on the
+  proxy type would cause every proxy to be classified as path-like by
+  code branching on ``isinstance(obj, os.PathLike)``. Also be aware that
+  ``AutoObjectProxy`` creates a new class for every proxy instance, so it
+  should not be used to wrap path-like objects in large numbers due to
+  the memory overhead. For high-frequency use define a custom proxy class
+  which adds an explicit ``__fspath__()`` method instead. See the section
+  on wrapping path-like objects in the known issues documentation for
+  more details.
+
 **Features Changed**
 
 * The type stubs have been aligned with the runtime behaviour of the code

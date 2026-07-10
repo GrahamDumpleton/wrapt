@@ -134,6 +134,41 @@ class TestAutoObjectProxy(unittest.TestCase):
 
         self.assertEqual(asyncio.run(await_proxy()), 42)
 
+    def test_fspath(self):
+        import os
+
+        class PathLike:
+            def __fspath__(self):
+                return "/path/to/file"
+
+        base = wrapt.BaseObjectProxy(PathLike())
+
+        self.assertRaises(TypeError, os.fspath, base)
+
+        proxy = wrapt.AutoObjectProxy(PathLike())
+
+        self.assertEqual(os.fspath(proxy), "/path/to/file")
+        self.assertTrue(isinstance(proxy, os.PathLike))
+
+    def test_fspath_pathlib(self):
+        import os
+        import pathlib
+
+        instance = pathlib.PurePath("/path/to/file")
+        proxy = wrapt.AutoObjectProxy(instance)
+
+        self.assertEqual(os.fspath(proxy), os.fspath(instance))
+        self.assertTrue(isinstance(proxy, os.PathLike))
+
+    def test_fspath_not_pathlike(self):
+        import os
+
+        proxy = wrapt.AutoObjectProxy(42)
+
+        self.assertFalse(hasattr(type(proxy), "__fspath__"))
+        self.assertRaises(TypeError, os.fspath, proxy)
+        self.assertFalse(isinstance(proxy, os.PathLike))
+
     def test_descriptor(self):
         class Descriptor:
             def __init__(self, value):
@@ -211,6 +246,24 @@ class TestAutoObjectProxyReassignment(unittest.TestCase):
         self.assertTrue(hasattr(proxy, "__iter__"))
         proxy.__wrapped__ = object()
         self.assertFalse(hasattr(proxy, "__iter__"))
+
+    def test_fspath_added_on_reassignment(self):
+        import os
+        import pathlib
+
+        proxy = wrapt.AutoObjectProxy(object())
+        self.assertRaises(TypeError, os.fspath, proxy)
+        proxy.__wrapped__ = pathlib.PurePath("/path/to/file")
+        self.assertEqual(os.fspath(proxy), os.fspath(proxy.__wrapped__))
+
+    def test_fspath_removed_on_reassignment(self):
+        import os
+        import pathlib
+
+        proxy = wrapt.AutoObjectProxy(pathlib.PurePath("/path/to/file"))
+        self.assertEqual(os.fspath(proxy), os.fspath(proxy.__wrapped__))
+        proxy.__wrapped__ = object()
+        self.assertRaises(TypeError, os.fspath, proxy)
 
     def test_next_added_on_reassignment(self):
         class Iterator:

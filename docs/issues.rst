@@ -579,6 +579,9 @@ invoking. The most common examples are:
   changes how Python treats that attribute.
 * ``__length_hint__``, consulted by built-ins as an optimisation hint;
   its presence implies the object can cheaply estimate its length.
+* ``__fspath__``, whose presence on the type is what marks an object as
+  path-like for ``os.fspath()`` and ``isinstance(obj, os.PathLike)``.
+  See the `Wrapping path-like objects and os.PathLike`_ section below.
 
 If ``ObjectProxy`` defined these unconditionally, ``callable(proxy)``
 would always be ``True`` even when wrapping a non-callable, every
@@ -611,9 +614,9 @@ There are two ways to opt in:
    wrapped object at construction time and dynamically creates a
    subclass that defines exactly those problematic dunder methods
    (``__call__``, ``__iter__``, ``__next__``, ``__aiter__``,
-   ``__anext__``, ``__await__``, ``__length_hint__``, ``__get__``,
-   ``__set__``, ``__delete__``, ``__set_name__``) that the wrapped
-   object actually supports::
+   ``__anext__``, ``__await__``, ``__length_hint__``, ``__fspath__``,
+   ``__get__``, ``__set__``, ``__delete__``, ``__set_name__``) that the
+   wrapped object actually supports::
 
        import wrapt
 
@@ -643,6 +646,82 @@ provided via subclassing or ``AutoObjectProxy``. Code that relies on
 for the pre-defined set, and should either test the wrapped object
 directly (via ``proxy.__wrapped__``) or use the feature and handle any
 resulting ``AttributeError`` rather than probing for it.
+
+Wrapping path-like objects and os.PathLike
+------------------------------------------
+
+The ``__fspath__()`` special method defined by the ``os.PathLike``
+protocol is one of the dunder methods whose *existence* is meaningful,
+as described in the preceding section, and so is not defined by the
+base object proxy. Wrapping a path-like object such as a
+``pathlib.Path`` with ``ObjectProxy`` therefore produces a proxy which
+cannot be used where a path is expected, and it fails in a way which
+can be confusing::
+
+    import os
+    import pathlib
+    import wrapt
+
+    proxy = wrapt.ObjectProxy(pathlib.Path("/path/to/file"))
+
+    isinstance(proxy, os.PathLike)    # True
+    os.fspath(proxy)                  # TypeError
+
+    open(wrapt.ObjectProxy("/path/to/file"))    # TypeError
+
+The inconsistency between the two results has a specific cause. The
+``isinstance()`` check is dispatched through
+``ABCMeta.__instancecheck__``, which consults the instance
+``__class__`` attribute. The proxy forwards ``__class__`` to the
+wrapped object, so the check sees the wrapped ``Path`` type, which
+does provide ``__fspath__()``, and the answer accurately reflects the
+wrapped object. The ``os.fspath()`` function and the many standard
+library functions which accept paths (the builtin ``open()``, most of
+``os``, ``os.path``, ``shutil`` and so on) instead perform the lookup
+of ``__fspath__()`` on the actual type of the object at the C level,
+where the ``__class__`` forwarding does not apply. The proxy type does
+not define the method, so a ``TypeError`` is raised. The proxy thus
+claims to be path-like when asked, but fails when used as a path.
+
+The reason ``__fspath__()`` is not simply defined on the base proxy is
+that its presence on the type is precisely what code uses to classify
+an object as path-like. A very common idiom is::
+
+    def process(f):
+        if isinstance(f, (str, os.PathLike)):
+            f = open(f)
+        ...
+
+If the base proxy defined ``__fspath__()``, every object proxy would
+satisfy ``isinstance(obj, os.PathLike)`` regardless of what it
+wrapped, and code using this idiom would misclassify a proxy around a
+file object, or any other non-path object, then fail attempting to use
+it as a path. This is the same trade-off described in the preceding
+section for ``__call__()`` and ``__iter__()``.
+
+If a proxy around a path-like object needs to be usable as a path, the
+recommended approach is a derived proxy class which adds the method
+explicitly::
+
+    class PathProxy(wrapt.BaseObjectProxy):
+        def __fspath__(self):
+            return os.fspath(self.__wrapped__)
+
+This is cheap, and the proxy will only claim to be path-like when you
+have declared that it should.
+
+Alternatively, ``AutoObjectProxy`` includes ``__fspath__()`` in the set
+of dunder methods it detects on the wrapped object and adds to the
+per-instance class it generates, so a proxy it creates around a
+path-like object works with ``os.fspath()`` and functions which accept
+paths. Be aware, however, of the memory cost described in the
+preceding section: ``AutoObjectProxy`` creates a **new class for every
+proxy instance**. Path-like objects are frequently created in large
+numbers, and creating a distinct class per wrapped path can add up to
+significant memory overhead. ``AutoObjectProxy`` is only appropriate
+when a process holds a small number of such proxies. For anything
+high-frequency, use a derived proxy class with an explicit
+``__fspath__()`` method as shown above.
 
 \_\_qualname\_\_ snapshot vs live-read divergence
 --------------------------------------------------
