@@ -2537,6 +2537,64 @@ static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *WraptObjectProxy_call_math_unary(WraptObjectProxyObject *self,
+                                                  const char *name)
+{
+  PyObject *module = NULL;
+  PyObject *function = NULL;
+  PyObject *result = NULL;
+
+  if (!self->wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(self) == -1)
+      return NULL;
+  }
+
+  module = PyImport_ImportModule("math");
+
+  if (!module)
+    return NULL;
+
+  function = PyObject_GetAttrString(module, name);
+
+  if (!function)
+  {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  Py_DECREF(module);
+
+  result = PyObject_CallFunctionObjArgs(function, self->wrapped, NULL);
+
+  Py_DECREF(function);
+
+  return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_trunc(WraptObjectProxyObject *self)
+{
+  return WraptObjectProxy_call_math_unary(self, "trunc");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_floor(WraptObjectProxyObject *self)
+{
+  return WraptObjectProxy_call_math_unary(self, "floor");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_ceil(WraptObjectProxyObject *self)
+{
+  return WraptObjectProxy_call_math_unary(self, "ceil");
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_complex(WraptObjectProxyObject *self,
                                           PyObject *args)
 {
@@ -3148,6 +3206,9 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     {"__reversed__", (PyCFunction)WraptObjectProxy_reversed, METH_NOARGS, 0},
     {"__round__", (PyCFunction)WraptObjectProxy_round,
      METH_VARARGS | METH_KEYWORDS, 0},
+    {"__trunc__", (PyCFunction)WraptObjectProxy_trunc, METH_NOARGS, 0},
+    {"__floor__", (PyCFunction)WraptObjectProxy_floor, METH_NOARGS, 0},
+    {"__ceil__", (PyCFunction)WraptObjectProxy_ceil, METH_NOARGS, 0},
     {"__complex__", (PyCFunction)WraptObjectProxy_complex, METH_NOARGS, 0},
     {"__mro_entries__", (PyCFunction)WraptObjectProxy_mro_entries,
      METH_VARARGS | METH_KEYWORDS, 0},

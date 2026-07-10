@@ -1,6 +1,7 @@
 """Core object proxy and function wrapper implementations."""
 
 import inspect
+import math
 import operator
 import sys
 import types
@@ -260,6 +261,15 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
 
     def __round__(self, ndigits=None):
         return round(self.__wrapped__, ndigits)
+
+    def __trunc__(self):
+        return math.trunc(self.__wrapped__)
+
+    def __floor__(self):
+        return math.floor(self.__wrapped__)
+
+    def __ceil__(self):
+        return math.ceil(self.__wrapped__)
 
     def __mro_entries__(self, bases):
         if not isinstance(self.__wrapped__, type) and hasattr(
