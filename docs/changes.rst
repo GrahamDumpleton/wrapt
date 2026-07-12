@@ -70,6 +70,19 @@ Version 2.3.0
   argument form works, and the argument to ``__class_getitem__()`` is now
   positional only.
 
+**Bugs Fixed**
+
+* Calling ``bytes()`` on an object proxy did not match calling ``bytes()``
+  on the wrapped object directly when the wrapped object did not implement
+  ``__bytes__()``. The C extension implementation of ``__bytes__()`` used
+  ``PyObject_Bytes()``, which only honours the ``__bytes__()`` protocol, so
+  ``bytes(wrapt.ObjectProxy(3))`` raised ``TypeError`` even though
+  ``bytes(3)`` returns a zero filled buffer. The pure Python implementation
+  already used the ``bytes()`` constructor and was unaffected. The C
+  extension now uses the ``bytes()`` constructor as well, so both
+  implementations yield the same result as using the wrapped object
+  directly.
+
 Version 2.2.2
 -------------
 

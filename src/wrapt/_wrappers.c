@@ -2450,7 +2450,8 @@ static PyObject *WraptObjectProxy_bytes(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_Bytes(self->wrapped);
+  return PyObject_CallFunctionObjArgs((PyObject *)&PyBytes_Type,
+                                      self->wrapped, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
