@@ -1932,6 +1932,16 @@ class SpecialMethods(unittest.TestCase):
 
         self.assertEqual(bytes(instance), bytes(proxy))
 
+    def test_int_bytes(self):
+        # bytes(proxy) should behave like bytes() on the wrapped object even
+        # when it has no __bytes__ (e.g. an int, where bytes(n) yields a
+        # zero-filled buffer of length n).
+        instance = 3
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(bytes(instance), bytes(proxy))
+
     def test_str_format(self):
         instance = "abcd"
 
