@@ -1942,6 +1942,45 @@ class SpecialMethods(unittest.TestCase):
 
         self.assertEqual(bytes(instance), bytes(proxy))
 
+    def test_index_bytes(self):
+        # An object with __index__() but no __bytes__ converts like an int,
+        # yielding a zero-filled buffer.
+        class Class:
+            def __index__(self):
+                return 2
+
+        instance = Class()
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(bytes(instance), bytes(proxy))
+
+    def test_buffer_bytes(self):
+        # An object supporting the buffer protocol but no __bytes__.
+        instance = bytearray(b"abcd")
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(bytes(instance), bytes(proxy))
+
+    def test_iterable_bytes(self):
+        # An iterable of ints, converted element by element.
+        instance = [1, 2, 3]
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(bytes(instance), bytes(proxy))
+
+    def test_str_bytes(self):
+        # bytes() on a str without an encoding raises TypeError, and the
+        # proxy should match rather than fall back to some other conversion.
+        instance = "abcd"
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        with self.assertRaises(TypeError):
+            bytes(proxy)
+
     def test_str_format(self):
         instance = "abcd"
 
