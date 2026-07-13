@@ -81,7 +81,8 @@ Version 2.3.0
   already used the ``bytes()`` constructor and was unaffected. The C
   extension now uses the ``bytes()`` constructor as well, so both
   implementations yield the same result as using the wrapped object
-  directly.
+  directly. With thanks to Sanjay Santhanam for `pull request #345
+  <https://github.com/GrahamDumpleton/wrapt/pull/345>`_.
 
 Version 2.2.2
 -------------
