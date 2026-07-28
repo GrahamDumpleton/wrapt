@@ -2,6 +2,7 @@ import unittest
 
 import abc
 import platform
+import sys
 
 import wrapt
 
@@ -105,7 +106,7 @@ class TestIssubclassProxyOnLeftWithABC(unittest.TestCase):
     When the right-hand side uses ABCMeta, its C-level __subclasscheck__
     strictly requires the left argument to be a real class. A proxy is not
     a class, so this raises TypeError. This is the same limitation documented
-    in test_inheritance_py37.py for decorated classes.
+    in test_inheritance.py for decorated classes.
     """
 
     @unittest.skipIf(
@@ -179,6 +180,154 @@ class TestIssubclassBothProxied(unittest.TestCase):
         proxy_child = wrapt.ObjectProxy(Child)
         proxy_base = wrapt.ObjectProxy(Base)
         self.assertFalse(issubclass(proxy_base, proxy_child))
+
+
+class TestPathLikeProtocol(unittest.TestCase):
+    """Tests pinning the documented behaviour of object proxies with the
+    os.PathLike protocol. The base object proxy deliberately does not
+    implement __fspath__, as its presence on the proxy type would cause
+    every proxy to be classified as path like by code branching on
+    isinstance(obj, os.PathLike). See the section on os.PathLike in
+    docs/issues.rst. If these tests start failing on a new Python
+    version, the interaction between the proxy and the protocol has
+    changed and the documentation needs to be revisited.
+    """
+
+    def test_isinstance_pathlike_true_for_wrapped_path(self):
+        # ABCMeta.__instancecheck__ consults the instance __class__,
+        # which the proxy delegates to the wrapped object, so the
+        # classification reflects the wrapped object.
+
+        import os
+        import pathlib
+
+        proxy = wrapt.ObjectProxy(pathlib.PurePath("/path/to/file"))
+
+        self.assertTrue(isinstance(proxy, os.PathLike))
+
+    def test_isinstance_pathlike_false_for_wrapped_non_path(self):
+        import os
+
+        proxy = wrapt.ObjectProxy(42)
+
+        self.assertFalse(isinstance(proxy, os.PathLike))
+
+    def test_fspath_fails_for_wrapped_path(self):
+        # os.fspath() looks up __fspath__ on the actual type of the
+        # proxy, not via __class__, so it fails even though the
+        # isinstance() check above says the proxy is path like.
+
+        import os
+        import pathlib
+
+        proxy = wrapt.ObjectProxy(pathlib.PurePath("/path/to/file"))
+
+        self.assertRaises(TypeError, os.fspath, proxy)
+
+    def test_fspath_via_instance_access(self):
+        # Instance level access still forwards via __getattr__.
+
+        import os
+        import pathlib
+
+        instance = pathlib.PurePath("/path/to/file")
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(proxy.__fspath__(), os.fspath(instance))
+
+
+class TestBufferProtocol(unittest.TestCase):
+    """Tests pinning the documented behaviour of object proxies with the
+    buffer protocol. The base object proxy deliberately does not
+    implement __buffer__ or __release_buffer__, as their presence on
+    the proxy type would cause every proxy to be classified as
+    bytes-like. See the section on the buffer protocol in
+    docs/issues.rst. If these tests start failing on a new Python
+    version, the interaction between the proxy and the protocol has
+    changed and the documentation needs to be revisited.
+    """
+
+    def test_memoryview_fails_for_wrapped_bytes_like(self):
+        # The buffer protocol is looked up on the actual type of the
+        # proxy at the C level, so a proxy around a bytes-like object
+        # cannot be used as a buffer.
+
+        proxy = wrapt.ObjectProxy(bytearray(b"data"))
+
+        self.assertRaises(TypeError, memoryview, proxy)
+
+    @unittest.skipIf(sys.version_info < (3, 12), "requires Python 3.12+")
+    def test_isinstance_buffer_true_for_wrapped_bytes_like(self):
+        # ABCMeta.__instancecheck__ consults the instance __class__,
+        # which the proxy delegates to the wrapped object, so the
+        # classification reflects the wrapped object even though
+        # memoryview() on the same proxy fails.
+
+        import collections.abc
+
+        proxy = wrapt.ObjectProxy(bytearray(b"data"))
+
+        self.assertTrue(isinstance(proxy, collections.abc.Buffer))
+
+    @unittest.skipIf(sys.version_info < (3, 12), "requires Python 3.12+")
+    def test_isinstance_buffer_false_for_wrapped_non_buffer(self):
+        import collections.abc
+
+        proxy = wrapt.ObjectProxy(42)
+
+        self.assertFalse(isinstance(proxy, collections.abc.Buffer))
+
+    @unittest.skipIf(sys.version_info < (3, 12), "requires Python 3.12+")
+    def test_buffer_proxy_subclass(self):
+        # The recipe documented in docs/issues.rst for opting in to the
+        # buffer protocol on a derived proxy class.
+
+        class BufferProxy(wrapt.BaseObjectProxy):
+            def __buffer__(self, flags):
+                return self.__wrapped__.__buffer__(flags)
+
+            def __release_buffer__(self, view):
+                view.release()
+
+        proxy = BufferProxy(bytearray(b"world"))
+
+        view = memoryview(proxy)
+
+        self.assertEqual(bytes(view), b"world")
+
+        view[0] = ord("W")
+
+        # Exporter side effects apply through the proxy, so the wrapped
+        # bytearray cannot be resized while the view is outstanding.
+
+        self.assertRaises(BufferError, proxy.append, ord("!"))
+
+        view.release()
+
+        proxy.append(ord("!"))
+
+        self.assertEqual(proxy, bytearray(b"World!"))
+
+    @unittest.skipIf(sys.version_info < (3, 12), "requires Python 3.12+")
+    def test_buffer_proxy_subclass_immutable(self):
+        # Immutable exporters such as bytes define __buffer__ but not
+        # __release_buffer__, which is why the recipe releases the view
+        # it is given rather than delegating.
+
+        class BufferProxy(wrapt.BaseObjectProxy):
+            def __buffer__(self, flags):
+                return self.__wrapped__.__buffer__(flags)
+
+            def __release_buffer__(self, view):
+                view.release()
+
+        proxy = BufferProxy(b"data")
+
+        view = memoryview(proxy)
+
+        self.assertEqual(bytes(view), b"data")
+
+        view.release()
 
 
 if __name__ == "__main__":

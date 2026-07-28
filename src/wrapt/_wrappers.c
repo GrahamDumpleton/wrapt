@@ -2450,7 +2450,8 @@ static PyObject *WraptObjectProxy_bytes(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_Bytes(self->wrapped);
+  return PyObject_CallFunctionObjArgs((PyObject *)&PyBytes_Type,
+                                      self->wrapped, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2533,6 +2534,67 @@ static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
   Py_DECREF(round);
 
   return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *wrapt_call_math_unary(WraptObjectProxyObject *self,
+                                       const char *name)
+{
+  PyObject *module = NULL;
+  PyObject *function = NULL;
+  PyObject *result = NULL;
+
+  if (!self->wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(self) == -1)
+      return NULL;
+  }
+
+  module = PyImport_ImportModule("math");
+
+  if (!module)
+    return NULL;
+
+  function = PyObject_GetAttrString(module, name);
+
+  if (!function)
+  {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  Py_DECREF(module);
+
+  result = PyObject_CallFunctionObjArgs(function, self->wrapped, NULL);
+
+  Py_DECREF(function);
+
+  return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_trunc(WraptObjectProxyObject *self,
+                                        PyObject *Py_UNUSED(ignored))
+{
+  return wrapt_call_math_unary(self, "trunc");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_floor(WraptObjectProxyObject *self,
+                                        PyObject *Py_UNUSED(ignored))
+{
+  return wrapt_call_math_unary(self, "floor");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptObjectProxy_ceil(WraptObjectProxyObject *self,
+                                       PyObject *Py_UNUSED(ignored))
+{
+  return wrapt_call_math_unary(self, "ceil");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3148,6 +3210,9 @@ static PyMethodDef WraptObjectProxy_methods[] = {
     {"__reversed__", (PyCFunction)WraptObjectProxy_reversed, METH_NOARGS, 0},
     {"__round__", (PyCFunction)WraptObjectProxy_round,
      METH_VARARGS | METH_KEYWORDS, 0},
+    {"__trunc__", (PyCFunction)WraptObjectProxy_trunc, METH_NOARGS, 0},
+    {"__floor__", (PyCFunction)WraptObjectProxy_floor, METH_NOARGS, 0},
+    {"__ceil__", (PyCFunction)WraptObjectProxy_ceil, METH_NOARGS, 0},
     {"__complex__", (PyCFunction)WraptObjectProxy_complex, METH_NOARGS, 0},
     {"__mro_entries__", (PyCFunction)WraptObjectProxy_mro_entries,
      METH_VARARGS | METH_KEYWORDS, 0},

@@ -1,6 +1,89 @@
 Release Notes
 =============
 
+Version 2.3.0
+-------------
+
+**New Features**
+
+* The ``__trunc__()``, ``__floor__()`` and ``__ceil__()`` special methods
+  are now implemented by object proxies, delegating to ``math.trunc()``,
+  ``math.floor()`` and ``math.ceil()`` applied to the wrapped object. As
+  with other special methods, these are only looked up on the class type
+  and not the instance, so they cannot rely on the ``__getattr__()``
+  fallback of the proxy and must be implemented explicitly. Previously
+  calling ``math.trunc()`` on an object proxy raised ``TypeError``. These
+  special methods sit somewhat outside the core Python object model in that
+  they are not used by any builtin operators, with the ``math`` module
+  being their only consumer. They are however documented as part of the
+  Python data model and the ``math`` module is a key module in the standard
+  library, so supporting them is warranted, in the same way as the existing
+  support for ``__round__()``, which is consumed by the ``round()``
+  builtin. Note that although ``math.floor()`` and ``math.ceil()``
+  previously appeared to work when used on an object proxy, they were
+  silently falling back to converting the proxy using ``__float__()``. If
+  the wrapped object provided its own ``__floor__()`` or ``__ceil__()``
+  special methods these were ignored and the result could differ from that
+  when the wrapped object was used directly. These now yield the same
+  result as using the wrapped object directly. With thanks to Vincent Gao
+  for `pull request #344
+  <https://github.com/GrahamDumpleton/wrapt/pull/344>`_.
+
+* The ``__fspath__()`` special method of the ``os.PathLike`` protocol has
+  been added to the set of dunder methods which ``AutoObjectProxy``
+  detects on the wrapped object and adds to the class it generates, so a
+  proxy it creates around a path-like object can now be used with
+  ``os.fspath()``, the builtin ``open()`` and other standard library
+  functions accepting paths. Note that ``__fspath__()`` is deliberately
+  not implemented by the base object proxy, since its presence on the
+  proxy type would cause every proxy to be classified as path-like by
+  code branching on ``isinstance(obj, os.PathLike)``. Also be aware that
+  ``AutoObjectProxy`` creates a new class for every proxy instance, so it
+  should not be used to wrap path-like objects in large numbers due to
+  the memory overhead. For high-frequency use define a custom proxy class
+  which adds an explicit ``__fspath__()`` method instead. See the section
+  on wrapping path-like objects in the known issues documentation for
+  more details.
+
+**Features Changed**
+
+* The type stubs have been aligned with the runtime behaviour of the code
+  and are now verified by ``stubtest`` against both the C extension and
+  pure Python implementations. If using a type checker there are a couple
+  of changes in what will be accepted which may be noticed. The
+  ``__self_dict__`` attribute of proxy objects is now declared as a read
+  only property, matching the runtime where assignment to it deliberately
+  raises ``AttributeError``, so assignment to it will now be rejected by
+  type checkers. The ``PartialCallableObjectProxy``, ``WeakFunctionProxy``
+  and ``bind_state_to_wrapper`` classes, which always derived from the base
+  object proxy at runtime, are now also declared that way in the stubs.
+  This means use of the object proxy interface on instances of these
+  classes, such as accessing ``__wrapped__``, is no longer falsely
+  rejected, although as a consequence of inheriting the permissive
+  ``__getattr__()`` of the proxy, attribute typos on these classes will no
+  longer be caught. The ``__class_getitem__()`` special method and the
+  ``__bound_function_wrapper__`` attribute of ``FunctionWrapper`` are now
+  also declared in the stubs. Finally, the pure Python implementation was
+  brought into line with the C implementation and the descriptor protocol
+  in two small ways. The ``owner`` argument of ``__get__()`` on function
+  wrappers now defaults to ``None``, so manual binding using the one
+  argument form works, and the argument to ``__class_getitem__()`` is now
+  positional only.
+
+**Bugs Fixed**
+
+* Calling ``bytes()`` on an object proxy did not match calling ``bytes()``
+  on the wrapped object directly when the wrapped object did not implement
+  ``__bytes__()``. The C extension implementation of ``__bytes__()`` used
+  ``PyObject_Bytes()``, which only honours the ``__bytes__()`` protocol, so
+  ``bytes(wrapt.ObjectProxy(3))`` raised ``TypeError`` even though
+  ``bytes(3)`` returns a zero filled buffer. The pure Python implementation
+  already used the ``bytes()`` constructor and was unaffected. The C
+  extension now uses the ``bytes()`` constructor as well, so both
+  implementations yield the same result as using the wrapped object
+  directly. With thanks to Sanjay Santhanam for `pull request #345
+  <https://github.com/GrahamDumpleton/wrapt/pull/345>`_.
+
 Version 2.2.2
 -------------
 

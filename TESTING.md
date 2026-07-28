@@ -17,18 +17,12 @@ The project uses a special naming convention to ensure certain tests only run on
 
 Test files can include version suffixes to indicate minimum Python version requirements:
 
-- `test_name_py3.py` - Runs only on Python 3.x (skipped on Python 2.x)
-- `test_name_py2.py` - Runs only on Python 2.x (skipped on Python 3.x)
-- `test_name_py36.py` - Runs only on Python 3.6 and later
-- `test_name_py37.py` - Runs only on Python 3.7 and later
-- `test_name_py38.py` - Runs only on Python 3.8 and later
+- `test_name_py310.py` - Runs only on Python 3.10 and later
+- `test_name_py312.py` - Runs only on Python 3.12 and later
 
-### Examples in the Codebase
-
-- `test_class_py37.py` - Tests class-related features that require Python 3.7+
-- `test_descriptors_py36.py` - Tests descriptor features that require Python 3.6+
-- `test_inheritance_py37.py` - Tests inheritance features that require Python 3.7+
-- `test_adapter_py33.py` - Tests adapter features that require Python 3.3+ (keyword-only arguments)
+There are currently no version-specific test files in the codebase, as all
+tests run on the oldest supported Python version, but the mechanism remains
+available for tests which need features from a newer Python version.
 
 ### How It Works
 
@@ -83,6 +77,12 @@ just test-mypy-version 3.13
 ```
 Runs mypy type checking for a specific Python version. Replace `3.13` with any supported version.
 
+#### Checking Type Stubs with stubtest
+```bash
+just test-stubtest
+```
+Runs `stubtest` to compare the `wrapt-stubs` package against the installed wrapt runtime. Intentional stub-vs-runtime divergences are listed in `tests/stubtest_allowlist.txt`; new entries should be accompanied by a comment there explaining why the divergence is deliberate.
+
 ### Test Variants
 
 Each `test-version` run includes three important test scenarios:
@@ -106,7 +106,7 @@ Each `test-version` run includes three important test scenarios:
 
 ## Mypy Type Checking Tests
 
-The project includes custom pytest handlers for testing mypy type checking behavior. These tests ensure that the wrapt library's type annotations work correctly and produce expected mypy error messages. Note that `mypy` must exist in your `PATH` else the tests related to type checking which be skipped.
+The project includes custom pytest handlers for testing mypy type checking behavior. These tests ensure that the wrapt library's type annotations work correctly and produce expected mypy error messages. Note that `mypy` must exist in your `PATH` else the tests related to type checking will be skipped.
 
 ### Test File Convention
 
@@ -119,11 +119,13 @@ Mypy tests follow a specific naming pattern in the `tests/mypy/` directory:
 
 The custom test handler in `conftest.py` automatically discovers pairs of `mypy_*.py` and `mypy_*.out` files and:
 
-1. Runs `mypy --show-error-codes --python-version X.Y` on the `.py` file
+1. Runs `mypy --strict --show-error-codes --python-version X.Y` on the `.py` file
 2. Compares the actual output with the expected output in the `.out` file
 3. Fails the test if the outputs don't match
 
-These tests only run on Python 3.9+ to ensure consistent mypy behavior.
+These tests only run on Python 3.10+ to ensure consistent mypy behavior, and are skipped on PyPy.
+
+The expected `.out` files are generated with the mypy version pinned by the `mypy_version` variable in the `Justfile`. Running the tests with a different mypy version may produce differing output and false failures, so always use the `Justfile` recipes, or install the pinned mypy version, when working with these tests.
 
 ### Creating New Mypy Tests
 
@@ -144,12 +146,12 @@ To create a new mypy test case:
    just save-mypy-test mypy_your_test_name
    ```
 
-3. **Verify the output**: Check the output from running the test against expected output, by running: 
+4. **Verify the output**: Check the output from running the test against expected output, by running: 
    ```bash
-   just check-mypy-test mypy_your_test_name
+   just verify-mypy-test mypy_your_test_name
    ```
 
-4. **Run the test**: The test will automatically be discovered and run with pytest:
+5. **Run the test**: The test will automatically be discovered and run with pytest:
    ```bash
    uv run pytest tests/ -k mypy_your_test_name
    ```

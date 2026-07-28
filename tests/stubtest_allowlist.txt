@@ -17,13 +17,18 @@ wrapt\.(BaseObjectProxy|ObjectProxy|AutoObjectProxy|CallableObjectProxy|PartialC
 # based on the wrapped object's interface (see proxies.AutoObjectProxy
 # .__new__). The stub claims them statically because users write code
 # like `await auto_proxy_of_future` and should not be rejected; stubtest
-# cannot see the per-instance attachment.
+# cannot see the per-instance attachment. Note that stubtest only
+# reports __call__ as missing when run against the C extension; under
+# the pure Python implementation it is not reported, so that entry is
+# unused there (which is why the pure Python stubtest run passes
+# --ignore-unused-allowlist).
 wrapt\.AutoObjectProxy\.__call__
 wrapt\.AutoObjectProxy\.__iter__
 wrapt\.AutoObjectProxy\.__next__
 wrapt\.AutoObjectProxy\.__aiter__
 wrapt\.AutoObjectProxy\.__anext__
 wrapt\.AutoObjectProxy\.__length_hint__
+wrapt\.AutoObjectProxy\.__fspath__
 wrapt\.AutoObjectProxy\.__await__
 
 # --- LazyObjectProxy internal fixup properties.

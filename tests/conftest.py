@@ -37,14 +37,8 @@ def construct_dummy(path, parent):
 def pytest_pycollect_makemodule(module_path, parent):
     basename = module_path.name
 
-    # Handle Python 2/3 general cases
-    if "_py2" in basename and version >= (3, 0):
-        return construct_dummy(module_path, parent)
-    if "_py3" in basename and version < (3, 0):
-        return construct_dummy(module_path, parent)
-
     # Handle specific Python version cases using regex
-    # Match patterns like "_py33", "_py34", "_py310", etc.
+    # Match patterns like "_py310", "_py312", etc.
     version_match = re.search(r"_py(\d)(\d*)", basename)
     if version_match:
         major = int(version_match.group(1))

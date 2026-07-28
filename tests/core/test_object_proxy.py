@@ -1932,6 +1932,55 @@ class SpecialMethods(unittest.TestCase):
 
         self.assertEqual(bytes(instance), bytes(proxy))
 
+    def test_int_bytes(self):
+        # bytes(proxy) should behave like bytes() on the wrapped object even
+        # when it has no __bytes__ (e.g. an int, where bytes(n) yields a
+        # zero-filled buffer of length n).
+        instance = 3
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(bytes(instance), bytes(proxy))
+
+    def test_index_bytes(self):
+        # An object with __index__() but no __bytes__ converts like an int,
+        # yielding a zero-filled buffer.
+        class Class:
+            def __index__(self):
+                return 2
+
+        instance = Class()
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(bytes(instance), bytes(proxy))
+
+    def test_buffer_bytes(self):
+        # An object supporting the buffer protocol but no __bytes__.
+        instance = bytearray(b"abcd")
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(bytes(instance), bytes(proxy))
+
+    def test_iterable_bytes(self):
+        # An iterable of ints, converted element by element.
+        instance = [1, 2, 3]
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(bytes(instance), bytes(proxy))
+
+    def test_str_bytes(self):
+        # bytes() on a str without an encoding raises TypeError, and the
+        # proxy should match rather than fall back to some other conversion.
+        instance = "abcd"
+
+        proxy = wrapt.ObjectProxy(instance)
+
+        with self.assertRaises(TypeError):
+            bytes(proxy)
+
     def test_str_format(self):
         instance = "abcd"
 
@@ -1972,6 +2021,157 @@ class SpecialMethods(unittest.TestCase):
         self.assertEqual(round(instance), round(proxy))
         self.assertEqual(round(instance, 3), round(proxy, 3))
         self.assertEqual(round(instance, ndigits=3), round(proxy, ndigits=3))
+
+    def test_math_integral_protocol_methods(self):
+        import math
+
+        class Instance:
+            def __trunc__(self):
+                return "truncated"
+
+            def __floor__(self):
+                return "floored"
+
+            def __ceil__(self):
+                return "ceiled"
+
+        instance = Instance()
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(proxy), "truncated")
+        self.assertEqual(math.floor(proxy), "floored")
+        self.assertEqual(math.ceil(proxy), "ceiled")
+
+    def test_float_trunc(self):
+        import math
+
+        instance = 1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(instance), math.trunc(proxy))
+        self.assertEqual(math.trunc(instance), 1)
+
+    def test_negative_float_trunc(self):
+        import math
+
+        instance = -1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(instance), math.trunc(proxy))
+        self.assertEqual(math.trunc(instance), -1)
+
+    def test_fractions_trunc(self):
+        import fractions
+        import math
+
+        instance = fractions.Fraction("7/3")
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(instance), math.trunc(proxy))
+        self.assertEqual(math.trunc(instance), 2)
+
+    def test_float_floor(self):
+        import math
+
+        instance = 1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.floor(instance), math.floor(proxy))
+        self.assertEqual(math.floor(instance), 1)
+
+    def test_negative_float_floor(self):
+        import math
+
+        instance = -1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.floor(instance), math.floor(proxy))
+        self.assertEqual(math.floor(instance), -2)
+
+    def test_fractions_floor(self):
+        import fractions
+        import math
+
+        instance = fractions.Fraction("7/3")
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.floor(instance), math.floor(proxy))
+        self.assertEqual(math.floor(instance), 2)
+
+    def test_float_ceil(self):
+        import math
+
+        instance = 1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.ceil(instance), math.ceil(proxy))
+        self.assertEqual(math.ceil(instance), 2)
+
+    def test_negative_float_ceil(self):
+        import math
+
+        instance = -1.7
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.ceil(instance), math.ceil(proxy))
+        self.assertEqual(math.ceil(instance), -1)
+
+    def test_fractions_ceil(self):
+        import fractions
+        import math
+
+        instance = fractions.Fraction("7/3")
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.ceil(instance), math.ceil(proxy))
+        self.assertEqual(math.ceil(instance), 3)
+
+    def test_math_integral_protocol_methods_override_float(self):
+        # The __floor__() and __ceil__() methods of the wrapped object must
+        # take precedence over any __float__() fallback in math.floor() and
+        # math.ceil(), the same as if the wrapped object was used directly.
+
+        import math
+
+        class Instance:
+            def __float__(self):
+                return 3.5
+
+            def __trunc__(self):
+                return "truncated"
+
+            def __floor__(self):
+                return "floored"
+
+            def __ceil__(self):
+                return "ceiled"
+
+        instance = Instance()
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.trunc(proxy), math.trunc(instance))
+        self.assertEqual(math.floor(proxy), math.floor(instance))
+        self.assertEqual(math.ceil(proxy), math.ceil(instance))
+
+    def test_math_float_fallback(self):
+        # An object which only provides __float__() still works with
+        # math.floor() and math.ceil() via the proxy, the same as it does
+        # when used directly, and math.trunc() fails the same way for both.
+
+        import math
+
+        class Instance:
+            def __float__(self):
+                return 3.5
+
+        instance = Instance()
+        proxy = wrapt.ObjectProxy(instance)
+
+        self.assertEqual(math.floor(proxy), math.floor(instance))
+        self.assertEqual(math.ceil(proxy), math.ceil(instance))
+
+        self.assertRaises(TypeError, math.trunc, instance)
+        self.assertRaises(TypeError, math.trunc, proxy)
 
 
 class TestArgumentUnpacking(unittest.TestCase):

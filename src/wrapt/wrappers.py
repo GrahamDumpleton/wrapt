@@ -1,6 +1,7 @@
 """Core object proxy and function wrapper implementations."""
 
 import inspect
+import math
 import operator
 import sys
 import types
@@ -164,7 +165,9 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     """A transparent object proxy that delegates attribute access to a
     wrapped object."""
 
-    __class_getitem__ = classmethod(types.GenericAlias)
+    @classmethod
+    def __class_getitem__(cls, item, /):
+        return types.GenericAlias(cls, item)
 
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""
@@ -260,6 +263,15 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
 
     def __round__(self, ndigits=None):
         return round(self.__wrapped__, ndigits)
+
+    def __trunc__(self):
+        return math.trunc(self.__wrapped__)
+
+    def __floor__(self):
+        return math.floor(self.__wrapped__)
+
+    def __ceil__(self):
+        return math.ceil(self.__wrapped__)
 
     def __mro_entries__(self, bases):
         if not isinstance(self.__wrapped__, type) and hasattr(
@@ -749,7 +761,7 @@ class _FunctionWrapperBase(ObjectProxy):
         object.__setattr__(self, "_self_parent", parent)
         object.__setattr__(self, "_self_owner", owner)
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, owner=None):
         # This method handles both unbound and bound derived wrapper classes.
         # It is kept in the base class as the amount of common code makes it
         # impractical to split into the derived classes.

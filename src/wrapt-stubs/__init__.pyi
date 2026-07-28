@@ -2,7 +2,7 @@ import sys
 
 if sys.version_info >= (3, 10):
     from inspect import FullArgSpec, Signature
-    from types import ModuleType, TracebackType
+    from types import GenericAlias, ModuleType, TracebackType
     from typing import (
         Any,
         AsyncIterator,
@@ -109,6 +109,7 @@ if sys.version_info >= (3, 10):
 
         def __init__(self, wrapped: _T) -> None: ...
         def __getattr__(self, name: str) -> Any: ...
+        def __class_getitem__(cls, item: Any, /) -> GenericAlias: ...
         def __mro_entries__(self, bases: tuple[type, ...]) -> tuple[type, ...]: ...
 
         # Context managers.
@@ -149,6 +150,9 @@ if sys.version_info >= (3, 10):
         def __bytes__(self) -> bytes: ...
         def __index__(self) -> int: ...
         def __round__(self, ndigits: int | None = ..., /) -> Any: ...
+        def __trunc__(self) -> Any: ...
+        def __floor__(self) -> Any: ...
+        def __ceil__(self) -> Any: ...
 
         # Unary arithmetic.
         def __neg__(self) -> Any: ...
@@ -224,7 +228,8 @@ if sys.version_info >= (3, 10):
         # and bitwise operations (e.g. __add__ returns
         # ``self.__object_proxy__(self.__wrapped__ + other)``). Subclasses
         # override it to control the type of proxy produced from operations.
-        __self_dict__: dict[str, Any]
+        @property
+        def __self_dict__(self) -> dict[str, Any]: ...
         @property
         def __object_proxy__(self) -> type[BaseObjectProxy[Any]]: ...
         def __self_setattr__(self, name: str, value: Any) -> None: ...
@@ -260,6 +265,7 @@ if sys.version_info >= (3, 10):
         def __aiter__(self) -> AsyncIterator[Any]: ...
         async def __anext__(self) -> Any: ...
         def __length_hint__(self) -> int: ...
+        def __fspath__(self) -> str | bytes: ...
         def __await__(self) -> Generator[Any, Any, Any]: ...
 
     # LazyObjectProxy
@@ -292,7 +298,7 @@ if sys.version_info >= (3, 10):
 
     # PartialCallableObjectProxy
 
-    class PartialCallableObjectProxy:
+    class PartialCallableObjectProxy(BaseObjectProxy[Callable[..., Any]]):
         def __init__(
             self, func: Callable[..., Any], *args: Any, **kwargs: Any
         ) -> None: ...
@@ -304,7 +310,7 @@ if sys.version_info >= (3, 10):
 
     # WeakFunctionProxy
 
-    class WeakFunctionProxy:
+    class WeakFunctionProxy(BaseObjectProxy[Callable[..., Any]]):
         def __init__(
             self,
             wrapped: Callable[..., Any],
@@ -378,6 +384,12 @@ if sys.version_info >= (3, 10):
         ) -> BoundFunctionWrapper[_P1, _R1]: ...
 
     class FunctionWrapper(_FunctionWrapperBase[_P1, _R1]):
+        # The class used to construct the bound wrapper when the function
+        # wrapper is bound to an instance via the descriptor protocol.
+        # Subclasses override it to control the type of bound wrapper
+        # produced.
+        __bound_function_wrapper__: type[BoundFunctionWrapper[_P1, _R1]]
+
         def __init__(
             self,
             wrapped: _WrappedFunction[_P1, _R1],
@@ -644,7 +656,7 @@ if sys.version_info >= (3, 10):
 
     # bind_state_to_wrapper()
 
-    class _StateBindingWrapper:
+    class _StateBindingWrapper(BaseObjectProxy[Any]):
         name: str
         wrapper_factory: _Descriptor | None
         def __init__(self, *, name: str = "state") -> None: ...

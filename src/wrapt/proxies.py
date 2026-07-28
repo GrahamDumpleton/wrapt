@@ -62,6 +62,10 @@ def __wrapper_length_hint__(self):
     return self.__wrapped__.__length_hint__()
 
 
+def __wrapper_fspath__(self):
+    return self.__wrapped__.__fspath__()
+
+
 def __wrapper_await__(self):
     return (yield from self.__wrapped__.__await__())
 
@@ -119,6 +123,9 @@ class AutoObjectProxy(BaseObjectProxy):
 
         if "__length_hint__" in wrapped_attrs and "__length_hint__" not in class_attrs:
             namespace["__length_hint__"] = __wrapper_length_hint__
+
+        if "__fspath__" in wrapped_attrs and "__fspath__" not in class_attrs:
+            namespace["__fspath__"] = __wrapper_fspath__
 
         # Note that not providing compatibility with generator-based coroutines
         # (PEP 342) here as they are removed in Python 3.11+ and were deprecated
@@ -192,6 +199,12 @@ class AutoObjectProxy(BaseObjectProxy):
                 cls.__length_hint__ = __wrapper_length_hint__
         elif getattr(cls, "__length_hint__", None) is __wrapper_length_hint__:
             delattr(cls, "__length_hint__")
+
+        if hasattr(self.__wrapped__, "__fspath__"):
+            if "__fspath__" not in class_attrs:
+                cls.__fspath__ = __wrapper_fspath__
+        elif getattr(cls, "__fspath__", None) is __wrapper_fspath__:
+            delattr(cls, "__fspath__")
 
         if hasattr(self.__wrapped__, "__await__"):
             if "__await__" not in class_attrs:
