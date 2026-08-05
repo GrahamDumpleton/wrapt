@@ -153,6 +153,15 @@ static PyObject *PyType_GetModuleByDef(PyTypeObject *type,
 }
 #endif
 
+/* Polyfill the critical section API for Python < 3.13. Free-threaded
+ * builds only exist on 3.13+, where the real macros are provided (and are
+ * no-ops on GIL builds), so expanding to plain blocks here is safe. */
+
+#if PY_VERSION_HEX < 0x030D0000
+#define Py_BEGIN_CRITICAL_SECTION(op) {
+#define Py_END_CRITICAL_SECTION() }
+#endif
+
 /* Polyfill PyObject_GetOptionalAttrString for Python < 3.13. Matches the
  * 3.13+ semantics: returns 1 if found, 0 if not found (AttributeError
  * only), -1 on other errors with exception set. */
@@ -2973,8 +2982,16 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
     return -1;
   }
 
+  /* On free-threaded builds the swap must be serialised, otherwise two
+   * threads assigning __wrapped__ on the same proxy can both read the same
+   * old value and both decref it, releasing it twice. The critical section
+   * covers only the swap; __wrapped_setattr_fixups__ below runs arbitrary
+   * Python code and must stay outside it. */
+
   Py_INCREF(value);
+  Py_BEGIN_CRITICAL_SECTION(self);
   Py_XSETREF(self->wrapped, value);
+  Py_END_CRITICAL_SECTION();
 
   fixups = PyObject_GetAttr((PyObject *)self, state->str_setattr_fixups);
 
