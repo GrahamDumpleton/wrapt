@@ -270,7 +270,7 @@ jobs:
         if: ${{ matrix.arch == 'riscv64' }}
         uses: docker/setup-qemu-action@v4
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.3.0
+        uses: pypa/cibuildwheel@v4.2.0
         with:
           output-dir: dist
         env:
