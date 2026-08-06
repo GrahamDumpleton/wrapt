@@ -4114,6 +4114,12 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
 {
   PyObject *param_kwds = NULL;
 
+  PyObject *wrapped = NULL;
+  PyObject *instance = NULL;
+  PyObject *wrapper = NULL;
+  PyObject *enabled = NULL;
+  PyObject *binding = NULL;
+
   PyObject *result = NULL;
 
   if (!self->object_proxy.wrapped)
@@ -4126,36 +4132,53 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   if (!state)
     return NULL;
 
-  if (self->enabled != Py_None)
+  /* Hold strong references to the fields used across the call so a
+   * concurrent re-initialization of the wrapper cannot release them
+   * while in use. Fields are acquired independently, so a consistent
+   * snapshot across all of them is not guaranteed, as documented. */
+
+  wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+  instance = wrapt_acquire_field((PyObject *)self, &self->instance);
+  wrapper = wrapt_acquire_field((PyObject *)self, &self->wrapper);
+  enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
+  binding = wrapt_acquire_field((PyObject *)self, &self->binding);
+
+  if (enabled != Py_None)
   {
-    if (PyCallable_Check(self->enabled))
+    if (PyCallable_Check(enabled))
     {
       PyObject *object = NULL;
       int is_false;
 
-      object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
+      object = PyObject_CallFunctionObjArgs(enabled, NULL);
 
       if (!object)
-        return NULL;
+        goto finally;
 
       is_false = PyObject_Not(object);
       Py_DECREF(object);
 
       if (is_false < 0)
-        return NULL;
+        goto finally;
 
       if (is_false)
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      {
+        result = PyObject_Call(wrapped, args, kwds);
+        goto finally;
+      }
     }
     else
     {
-      int is_false = PyObject_Not(self->enabled);
+      int is_false = PyObject_Not(enabled);
 
       if (is_false < 0)
-        return NULL;
+        goto finally;
 
       if (is_false)
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      {
+        result = PyObject_Call(wrapped, args, kwds);
+        goto finally;
+      }
     }
   }
 
@@ -4163,54 +4186,53 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   {
     param_kwds = PyDict_New();
     if (!param_kwds)
-      return NULL;
+      goto finally;
     kwds = param_kwds;
   }
 
-  if (self->instance == Py_None)
+  if (instance == Py_None)
   {
     int matched =
-        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "instancemethod") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "classmethod") == 0;
+        PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "instancemethod") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "callable") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "classmethod") == 0;
 
     if (matched)
     {
-      PyObject *instance = NULL;
+      PyObject *bound_instance = NULL;
 
-      instance =
-          PyObject_GetAttr(self->object_proxy.wrapped, state->str_self);
+      bound_instance = PyObject_GetAttr(wrapped, state->str_self);
 
-      if (instance)
+      if (bound_instance)
       {
-        result = PyObject_CallFunctionObjArgs(self->wrapper,
-                                              self->object_proxy.wrapped,
-                                              instance, args, kwds, NULL);
+        result = PyObject_CallFunctionObjArgs(wrapper, wrapped, bound_instance,
+                                              args, kwds, NULL);
 
-        Py_XDECREF(param_kwds);
+        Py_DECREF(bound_instance);
 
-        Py_DECREF(instance);
-
-        return result;
+        goto finally;
       }
       else
       {
         if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-        {
-          Py_XDECREF(param_kwds);
-          return NULL;
-        }
+          goto finally;
         PyErr_Clear();
       }
     }
   }
 
-  result =
-      PyObject_CallFunctionObjArgs(self->wrapper, self->object_proxy.wrapped,
-                                   self->instance, args, kwds, NULL);
+  result = PyObject_CallFunctionObjArgs(wrapper, wrapped, instance, args, kwds,
+                                        NULL);
 
+finally:
   Py_XDECREF(param_kwds);
+
+  Py_DECREF(wrapped);
+  Py_XDECREF(instance);
+  Py_XDECREF(wrapper);
+  Py_XDECREF(enabled);
+  Py_XDECREF(binding);
 
   return result;
 }
@@ -4223,6 +4245,14 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
 {
   PyObject *bound_type = NULL;
   PyObject *descriptor = NULL;
+
+  PyObject *wrapped = NULL;
+  PyObject *instance = NULL;
+  PyObject *wrapper = NULL;
+  PyObject *enabled = NULL;
+  PyObject *binding = NULL;
+  PyObject *parent = NULL;
+
   PyObject *result = NULL;
 
   wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
@@ -4237,31 +4267,45 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
       return NULL;
   }
 
-  if (self->parent == Py_None)
+  /* Hold strong references to the fields used across the binding so a
+   * concurrent re-initialization of the wrapper cannot release them
+   * while in use. Fields are acquired independently, so a consistent
+   * snapshot across all of them is not guaranteed, as documented. */
+
+  wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+  instance = wrapt_acquire_field((PyObject *)self, &self->instance);
+  wrapper = wrapt_acquire_field((PyObject *)self, &self->wrapper);
+  enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
+  binding = wrapt_acquire_field((PyObject *)self, &self->binding);
+  parent = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+  if (parent == Py_None)
   {
-    if (PyUnicode_CompareWithASCIIString(self->binding, "builtin") == 0)
+    if (PyUnicode_CompareWithASCIIString(binding, "builtin") == 0)
     {
       Py_INCREF(self);
-      return (PyObject *)self;
+      result = (PyObject *)self;
+      goto finally;
     }
 
-    if (PyUnicode_CompareWithASCIIString(self->binding, "class") == 0)
+    if (PyUnicode_CompareWithASCIIString(binding, "class") == 0)
     {
       Py_INCREF(self);
-      return (PyObject *)self;
+      result = (PyObject *)self;
+      goto finally;
     }
 
-    if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL)
+    if (Py_TYPE(wrapped)->tp_descr_get == NULL)
     {
       Py_INCREF(self);
-      return (PyObject *)self;
+      result = (PyObject *)self;
+      goto finally;
     }
 
-    descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
-        self->object_proxy.wrapped, obj, type);
+    descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
 
     if (!descriptor)
-      return NULL;
+      goto finally;
 
     if (Py_TYPE(self) != state->FunctionWrapper_Type)
     {
@@ -4270,10 +4314,7 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
       if (!bound_type)
       {
         if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-        {
-          Py_DECREF(descriptor);
-          return NULL;
-        }
+          goto finally;
         PyErr_Clear();
       }
     }
@@ -4283,76 +4324,68 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
 
     result = PyObject_CallFunctionObjArgs(
         bound_type ? bound_type : (PyObject *)state->BoundFunctionWrapper_Type,
-        descriptor, obj, self->wrapper, self->enabled, self->binding, self,
-        type, NULL);
+        descriptor, obj, wrapper, enabled, binding, self, type, NULL);
 
-    Py_XDECREF(bound_type);
-    Py_DECREF(descriptor);
-
-    return result;
+    goto finally;
   }
 
-  if (self->instance == Py_None)
+  if (instance == Py_None)
   {
     int matched =
-        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "instancemethod") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0;
+        PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "instancemethod") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "callable") == 0;
 
     if (matched)
     {
-      PyObject *wrapped = NULL;
+      PyObject *parent_wrapped = NULL;
 
-      if (PyObject_TypeCheck(self->parent, state->ObjectProxy_Type))
+      if (PyObject_TypeCheck(parent, state->ObjectProxy_Type))
       {
-        WraptObjectProxyObject *parent_proxy =
-            (WraptObjectProxyObject *)self->parent;
+        WraptObjectProxyObject *parent_proxy = (WraptObjectProxyObject *)parent;
 
         if (!parent_proxy->wrapped)
         {
           if (raise_uninitialized_wrapper_error(parent_proxy) == -1)
-            return NULL;
+            goto finally;
         }
 
-        wrapped = wrapt_acquire_wrapped(parent_proxy);
+        parent_wrapped = wrapt_acquire_wrapped(parent_proxy);
       }
       else
       {
         /* Fallback for the unusual case where parent is not a wrapt proxy. */
-        wrapped = PyObject_GetAttr((PyObject *)self->parent, state->str_wrapped);
+        parent_wrapped = PyObject_GetAttr(parent, state->str_wrapped);
 
-        if (!wrapped)
-          return NULL;
+        if (!parent_wrapped)
+          goto finally;
       }
 
-      if (Py_TYPE(wrapped)->tp_descr_get == NULL)
+      if (Py_TYPE(parent_wrapped)->tp_descr_get == NULL)
       {
         PyErr_Format(PyExc_AttributeError,
                      "'%s' object has no attribute '__get__'",
-                     Py_TYPE(wrapped)->tp_name);
-        Py_DECREF(wrapped);
-        return NULL;
+                     Py_TYPE(parent_wrapped)->tp_name);
+        Py_DECREF(parent_wrapped);
+        goto finally;
       }
 
-      descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
+      descriptor =
+          (Py_TYPE(parent_wrapped)->tp_descr_get)(parent_wrapped, obj, type);
 
-      Py_DECREF(wrapped);
+      Py_DECREF(parent_wrapped);
 
       if (!descriptor)
-        return NULL;
+        goto finally;
 
-      if (Py_TYPE(self->parent) != state->FunctionWrapper_Type)
+      if (Py_TYPE(parent) != state->FunctionWrapper_Type)
       {
-        bound_type =
-            PyObject_GenericGetAttr((PyObject *)self->parent, bound_type_str);
+        bound_type = PyObject_GenericGetAttr(parent, bound_type_str);
 
         if (!bound_type)
         {
           if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-          {
-            Py_DECREF(descriptor);
-            return NULL;
-          }
+            goto finally;
           PyErr_Clear();
         }
       }
@@ -4362,18 +4395,27 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
 
       result = PyObject_CallFunctionObjArgs(
           bound_type ? bound_type : (PyObject *)state->BoundFunctionWrapper_Type,
-          descriptor, obj, self->wrapper, self->enabled, self->binding,
-          self->parent, type, NULL);
+          descriptor, obj, wrapper, enabled, binding, parent, type, NULL);
 
-      Py_XDECREF(bound_type);
-      Py_DECREF(descriptor);
-
-      return result;
+      goto finally;
     }
   }
 
   Py_INCREF(self);
-  return (PyObject *)self;
+  result = (PyObject *)self;
+
+finally:
+  Py_XDECREF(bound_type);
+  Py_XDECREF(descriptor);
+
+  Py_DECREF(wrapped);
+  Py_XDECREF(instance);
+  Py_XDECREF(wrapper);
+  Py_XDECREF(enabled);
+  Py_XDECREF(binding);
+  Py_XDECREF(parent);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4581,6 +4623,12 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
 
   PyObject *wrapped = NULL;
   PyObject *instance = NULL;
+  PyObject *wrapper = NULL;
+  PyObject *enabled = NULL;
+  PyObject *binding = NULL;
+  PyObject *owner = NULL;
+
+  PyObject *call_instance = NULL;
 
   PyObject *result = NULL;
 
@@ -4596,36 +4644,57 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   if (!state)
     return NULL;
 
-  if (self->enabled != Py_None)
+  /* Hold strong references to the fields used across the call so a
+   * concurrent re-initialization of the wrapper cannot release them
+   * while in use. Fields are acquired independently, so a consistent
+   * snapshot across all of them is not guaranteed, as documented. The
+   * call_instance local always holds an owned reference to whichever
+   * instance value is passed through to the wrapper. */
+
+  instance = wrapt_acquire_field((PyObject *)self, &self->instance);
+  wrapper = wrapt_acquire_field((PyObject *)self, &self->wrapper);
+  enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
+  binding = wrapt_acquire_field((PyObject *)self, &self->binding);
+  owner = wrapt_acquire_field((PyObject *)self, &self->owner);
+
+  if (enabled != Py_None)
   {
-    if (PyCallable_Check(self->enabled))
+    if (PyCallable_Check(enabled))
     {
       PyObject *object = NULL;
       int is_false;
 
-      object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
+      object = PyObject_CallFunctionObjArgs(enabled, NULL);
 
       if (!object)
-        return NULL;
+        goto finally;
 
       is_false = PyObject_Not(object);
       Py_DECREF(object);
 
       if (is_false < 0)
-        return NULL;
+        goto finally;
 
       if (is_false)
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      {
+        wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+        result = PyObject_Call(wrapped, args, kwds);
+        goto finally;
+      }
     }
     else
     {
-      int is_false = PyObject_Not(self->enabled);
+      int is_false = PyObject_Not(enabled);
 
       if (is_false < 0)
-        return NULL;
+        goto finally;
 
       if (is_false)
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      {
+        wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+        result = PyObject_Call(wrapped, args, kwds);
+        goto finally;
+      }
     }
   }
 
@@ -4635,13 +4704,13 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
    */
 
   matched =
-      PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
-      PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0;
+      PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
+      PyUnicode_CompareWithASCIIString(binding, "callable") == 0;
 
   if (matched)
   {
 
-    if (self->instance == Py_None && PyTuple_GET_SIZE(args) != 0)
+    if (instance == Py_None && PyTuple_GET_SIZE(args) != 0)
     {
       /*
        * This situation can occur where someone is calling the
@@ -4652,46 +4721,49 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
        * so the wrapper doesn't see anything as being different.
        */
 
-      instance = PyTuple_GetItem(args, 0);
+      call_instance = PyTuple_GetItem(args, 0);
 
-      if (!instance)
-        return NULL;
+      if (!call_instance)
+        goto finally;
 
-      int check = PyObject_IsInstance(instance, self->owner);
+      Py_INCREF(call_instance);
+
+      int check = PyObject_IsInstance(call_instance, owner);
 
       if (check < 0)
-        return NULL;
+        goto finally;
 
       if (check)
       {
-        wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
-        if (!state)
-          return NULL;
+        PyObject *inner_wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+
         wrapped = PyObject_CallFunctionObjArgs(
             (PyObject *)state->PartialCallableObjectProxy_Type,
-            self->object_proxy.wrapped, instance, NULL);
+            inner_wrapped, call_instance, NULL);
+
+        Py_DECREF(inner_wrapped);
 
         if (!wrapped)
-          return NULL;
+          goto finally;
 
         param_args = PyTuple_GetSlice(args, 1, PyTuple_GET_SIZE(args));
 
         if (!param_args)
-        {
-          Py_DECREF(wrapped);
-          return NULL;
-        }
+          goto finally;
 
         args = param_args;
       }
       else
       {
-        instance = self->instance;
+        Py_DECREF(call_instance);
+        call_instance = instance;
+        Py_XINCREF(call_instance);
       }
     }
     else
     {
-      instance = self->instance;
+      call_instance = instance;
+      Py_XINCREF(call_instance);
     }
 
     if (!wrapped)
@@ -4703,22 +4775,12 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
     {
       param_kwds = PyDict_New();
       if (!param_kwds)
-      {
-        Py_XDECREF(param_args);
-        Py_DECREF(wrapped);
-        return NULL;
-      }
+        goto finally;
       kwds = param_kwds;
     }
 
-    result = PyObject_CallFunctionObjArgs(self->wrapper, wrapped, instance,
+    result = PyObject_CallFunctionObjArgs(wrapper, wrapped, call_instance,
                                           args, kwds, NULL);
-
-    Py_XDECREF(param_args);
-    Py_XDECREF(param_kwds);
-    Py_DECREF(wrapped);
-
-    return result;
   }
   else
   {
@@ -4737,37 +4799,45 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
      * available in the decoratored function.
      */
 
-    instance = PyObject_GetAttr(self->object_proxy.wrapped, state->str_self);
+    wrapped = wrapt_acquire_wrapped(&self->object_proxy);
 
-    if (!instance)
+    call_instance = PyObject_GetAttr(wrapped, state->str_self);
+
+    if (!call_instance)
     {
       if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-        return NULL;
+        goto finally;
       PyErr_Clear();
       Py_INCREF(Py_None);
-      instance = Py_None;
+      call_instance = Py_None;
     }
 
     if (!kwds)
     {
       param_kwds = PyDict_New();
       if (!param_kwds)
-      {
-        Py_DECREF(instance);
-        return NULL;
-      }
+        goto finally;
       kwds = param_kwds;
     }
 
-    result = PyObject_CallFunctionObjArgs(
-        self->wrapper, self->object_proxy.wrapped, instance, args, kwds, NULL);
-
-    Py_XDECREF(param_kwds);
-
-    Py_DECREF(instance);
-
-    return result;
+    result = PyObject_CallFunctionObjArgs(wrapper, wrapped, call_instance,
+                                          args, kwds, NULL);
   }
+
+finally:
+  Py_XDECREF(param_args);
+  Py_XDECREF(param_kwds);
+
+  Py_XDECREF(call_instance);
+
+  Py_XDECREF(wrapped);
+  Py_XDECREF(instance);
+  Py_XDECREF(wrapper);
+  Py_XDECREF(enabled);
+  Py_XDECREF(binding);
+  Py_XDECREF(owner);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4780,18 +4850,28 @@ static PyObject *WraptBoundFunctionWrapper_getattr(
   if (!PyArg_ParseTuple(args, "U:__getattr__", &name))
     return NULL;
 
-  if (self->parent && self->parent != Py_None)
+  PyObject *parent = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+  if (parent && parent != Py_None)
   {
-    PyObject *result = PyObject_GetAttr(self->parent, name);
+    PyObject *result = PyObject_GetAttr(parent, name);
 
     if (result)
+    {
+      Py_DECREF(parent);
       return result;
+    }
 
     if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+    {
+      Py_DECREF(parent);
       return NULL;
+    }
 
     PyErr_Clear();
   }
+
+  Py_XDECREF(parent);
 
   return WraptObjectProxy_getattr((WraptObjectProxyObject *)self, args);
 }
@@ -4817,8 +4897,18 @@ static int WraptBoundFunctionWrapper_setattro(
       return PyObject_GenericSetAttr((PyObject *)self, name, value);
 
     /* User-defined _self_ attribute — delegate to parent */
-    if (self->parent && self->parent != Py_None)
-      return PyObject_GenericSetAttr(self->parent, name, value);
+    PyObject *parent = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+    if (parent && parent != Py_None)
+    {
+      int result = PyObject_GenericSetAttr(parent, name, value);
+
+      Py_DECREF(parent);
+
+      return result;
+    }
+
+    Py_XDECREF(parent);
   }
 
   /* Fall through to base ObjectProxy setattro for everything else */
