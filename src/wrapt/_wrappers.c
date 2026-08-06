@@ -1078,7 +1078,16 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    /* As in the __wrapped__ setter, serialise the swap so that concurrent
+     * in-place operations on the same proxy cannot decref the same old
+     * wrapped object twice on a free-threaded build. The wrapped object
+     * was read before the operation ran, so a concurrent mutation can
+     * still be lost, matching pure Python semantics. The same applies to
+     * all of the in-place operators which follow. */
+
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1160,7 +1169,9 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1242,7 +1253,9 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1325,7 +1338,9 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1408,7 +1423,9 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1490,7 +1507,9 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1572,7 +1591,9 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1654,7 +1675,9 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1736,7 +1759,9 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1818,7 +1843,9 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -1959,7 +1986,9 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -2042,7 +2071,9 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -2166,7 +2197,9 @@ static PyObject *WraptObjectProxy_inplace_matrix_multiply(
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
