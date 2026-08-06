@@ -455,8 +455,16 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
     }
   }
 
+  /* Serialise the swap for the same reason as in the __wrapped__ setter.
+   * Normally __init__ runs before the proxy is shared, but it can be
+   * re-invoked on an already published proxy, in which case concurrent
+   * callers on a free-threaded build could otherwise decref the same old
+   * wrapped object twice. */
+
   Py_INCREF(wrapped);
+  Py_BEGIN_CRITICAL_SECTION(self);
   Py_XSETREF(self->wrapped, wrapped);
+  Py_END_CRITICAL_SECTION();
 
   self->init_called = 1;
 
