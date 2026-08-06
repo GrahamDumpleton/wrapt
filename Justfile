@@ -74,7 +74,11 @@ test:
     just test-version 3.11
     just test-version 3.12
     just test-version 3.13
+    just test-version 3.13t
     just test-version 3.14
+    just test-version 3.14t
+    just test-version 3.15
+    just test-version 3.15t
 
 # Run mypy type checking for all supported Python versions.
 test-mypy:
@@ -84,6 +88,7 @@ test-mypy:
     just test-mypy-version 3.12
     just test-mypy-version 3.13
     just test-mypy-version 3.14
+    just test-mypy-version 3.15
 
 # Run tests with uv for a specific Python version
 test-version version:
