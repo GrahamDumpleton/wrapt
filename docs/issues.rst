@@ -879,16 +879,22 @@ one of the updates is lost, matching the behaviour of the pure Python
 implementation, where concurrent attribute assignment has always been
 a last writer wins race rather than a crash.
 
-This protection covers only competing writers. Mutation is still not
-atomic with respect to a concurrent reader. A reader may observe a
-torn view of multiple fields that a writer updates as a group, and
-internally the C extension reads its fields as borrowed references,
-so a mutation racing an in-flight call or operation on the same
-instance can still invalidate a value the reader is part way through
-using. The torn view hazard exists equally in the pure Python
-implementation; the borrowed reference hazard is specific to the C
-extension and is the reason concurrent mutation of a shared instance
-remains unsupported rather than merely inadvisable.
+The attribute getters which expose internal fields, namely
+``__wrapped__`` on the object proxies and the ``_self_`` accessors on
+function wrappers, also acquire the reference they return inside the
+same critical sections, so directly reading one of these attributes is
+safe even while another thread concurrently replaces the field.
+
+Beyond these cases, mutation is still not atomic with respect to a
+concurrent reader. A reader may observe a torn view of multiple fields
+that a writer updates as a group, and internally the C extension uses
+its fields during calls and operations as borrowed references, so a
+mutation racing an in-flight call or operation on the same instance
+can still invalidate a value the reader is part way through using.
+The torn view hazard exists equally in the pure Python implementation;
+the borrowed reference hazard is specific to the C extension and is
+the reason concurrent mutation of a shared instance remains
+unsupported rather than merely inadvisable.
 
 The recommended pattern on free-threaded builds is therefore the same
 as the pattern on GIL builds: construct the proxy or wrapper once,
@@ -896,11 +902,13 @@ publish it, and treat it as immutable thereafter. Concurrent readers
 and concurrent calls are supported; concurrent mutation of a shared
 instance is not.
 
-The per-instance critical sections covering mutation described above
-are the first stage of more robust free-threading support. The
-remaining stage, making reads of proxy fields take strong references
-under the same protection so that mutation racing a reader is also
-safe, is being investigated for a future release. Until then,
+The per-instance critical sections covering mutation and attribute
+access described above are the first stage of more robust
+free-threading support. The remaining stage, converting the internal
+borrowed reference uses of proxy fields during calls and operations to
+strong references acquired under the same protection so that mutation
+racing a reader is also safe, is being investigated for a future
+release. Until then,
 applications that genuinely need to mutate a shared proxy from
 multiple threads should serialise those mutations externally (for
 example, with a ``threading.Lock`` held across both the write and any

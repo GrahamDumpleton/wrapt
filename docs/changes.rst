@@ -30,11 +30,20 @@ Version 2.4.0
   serialised using per-object critical sections, which are no-ops on
   builds with the GIL. The outcome of such a race is now that one of the
   competing updates is lost, matching the behaviour of the pure Python
-  implementation, rather than memory corruption. Note that this protects
-  competing writers only. As described in the known issues documentation,
-  mutation of a shared proxy while another thread is concurrently reading
-  from or calling the same instance still requires external locking.
-  With thanks to the reporter of `issue #347
+  implementation, rather than memory corruption. In addition, the
+  attribute getters which expose internal fields, namely ``__wrapped__``
+  on the object proxies and the ``_self_instance``, ``_self_wrapper``,
+  ``_self_enabled``, ``_self_binding``, ``_self_parent`` and
+  ``_self_owner`` accessors on function wrappers, now read the field and
+  acquire the reference they return inside the same critical sections,
+  so reading one of these attributes can no longer increment the
+  reference count of a value which a concurrent mutation of the same
+  instance has already released. Other internal uses of the fields
+  during calls and operations still access them as borrowed references,
+  so as described in the known issues documentation, mutation of a
+  shared proxy while another thread is concurrently reading from or
+  calling the same instance still requires external locking. With
+  thanks to the reporter of `issue #347
   <https://github.com/GrahamDumpleton/wrapt/issues/347>`_.
 
 Version 2.3.0
