@@ -43,12 +43,17 @@ Version 2.4.0
   strong reference to the wrapped object across the lookup. That path
   is reached from the ``__wrapped__`` setter itself when it checks for
   setattr fixups, so without this a workload consisting purely of
-  writers could still crash. Other internal uses of the fields
-  during calls and operations still access them as borrowed references,
-  so as described in the known issues documentation, mutation of a
-  shared proxy while another thread is concurrently reading from or
-  calling the same instance still requires external locking. With
-  thanks to the reporter of `issue #347
+  writers could still crash. The binary and in-place operator paths
+  likewise now unwrap their operands to strong references which are
+  held for the duration of the operation, where previously a concurrent
+  swap of the wrapped object could release an operand another thread
+  was part way through using. Other internal uses of the fields, such
+  as the remaining delegation methods and the function wrapper call
+  paths, still access them as borrowed references, so as described in
+  the known issues documentation, mutation of a shared proxy while
+  another thread is concurrently reading from or calling the same
+  instance still requires external locking. With thanks to the
+  reporter of `issue #347
   <https://github.com/GrahamDumpleton/wrapt/issues/347>`_.
 
 Version 2.3.0
