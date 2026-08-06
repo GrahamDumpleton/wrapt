@@ -277,7 +277,6 @@ jobs:
           WRAPT_INSTALL_EXTENSIONS: true
           CIBW_BUILD_VERBOSITY: 1
           CIBW_ARCHS: ${{ matrix.arch }}
-          CIBW_ENABLE: cpython-freethreading
           CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
       - uses: actions/upload-artifact@v7
         with:
