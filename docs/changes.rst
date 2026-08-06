@@ -47,13 +47,18 @@ Version 2.4.0
   likewise now unwrap their operands to strong references which are
   held for the duration of the operation, where previously a concurrent
   swap of the wrapped object could release an operand another thread
-  was part way through using. Other internal uses of the fields, such
-  as the remaining delegation methods and the function wrapper call
-  paths, still access them as borrowed references, so as described in
-  the known issues documentation, mutation of a shared proxy while
-  another thread is concurrently reading from or calling the same
-  instance still requires external locking. With thanks to the
-  reporter of `issue #347
+  was part way through using. The same conversion has been applied to
+  all of the delegation methods on the object proxies, covering
+  operations such as ``str()``, ``hash()``, comparison, item access,
+  attribute forwarding and the context manager protocol, and to the
+  wrapped object and captured arguments used when calling a partial
+  callable object proxy. The remaining borrowed reference uses are
+  confined to the function wrapper call and descriptor binding paths,
+  so as described in the known issues documentation, mutation of a
+  shared function wrapper while another thread is concurrently calling
+  or binding the same instance still requires external locking, as
+  does any use which needs a consistent view of multiple fields
+  updated together. With thanks to the reporter of `issue #347
   <https://github.com/GrahamDumpleton/wrapt/issues/347>`_.
 
 Version 2.3.0
