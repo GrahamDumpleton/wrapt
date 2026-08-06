@@ -868,13 +868,27 @@ same instance is shared across threads:
 * Replacing the captured ``args`` or ``kwargs`` on a
   ``PartialCallableObjectProxy`` while another thread is calling it.
 
-In each case the writer's update is not atomic with respect to a
-concurrent reader. A reader may observe a torn view of multiple proxy
-fields, or, in the worst case, a use-after-free of an object that the
-writer has just released. The same hazards exist in the pure-Python
-implementation — Python attribute assignment is not atomic with respect
-to readers in any meaningful sense — so the limitation is a property of
-the proxy model, not specifically of the C extension.
+As of wrapt 2.4.0, the C extension serialises its internal field
+updates using per-object critical sections on free-threaded builds.
+Two threads which concurrently mutate the same field of the same
+instance, for example both assigning to ``__wrapped__`` or both
+applying an in-place operator such as ``+=``, can no longer cause the
+previous value to be released twice, which in earlier releases could
+crash the interpreter. The outcome of such a race is now simply that
+one of the updates is lost, matching the behaviour of the pure Python
+implementation, where concurrent attribute assignment has always been
+a last writer wins race rather than a crash.
+
+This protection covers only competing writers. Mutation is still not
+atomic with respect to a concurrent reader. A reader may observe a
+torn view of multiple fields that a writer updates as a group, and
+internally the C extension reads its fields as borrowed references,
+so a mutation racing an in-flight call or operation on the same
+instance can still invalidate a value the reader is part way through
+using. The torn view hazard exists equally in the pure Python
+implementation; the borrowed reference hazard is specific to the C
+extension and is the reason concurrent mutation of a shared instance
+remains unsupported rather than merely inadvisable.
 
 The recommended pattern on free-threaded builds is therefore the same
 as the pattern on GIL builds: construct the proxy or wrapper once,
@@ -882,13 +896,15 @@ publish it, and treat it as immutable thereafter. Concurrent readers
 and concurrent calls are supported; concurrent mutation of a shared
 instance is not.
 
-More robust support for free-threaded Python — covering the
-shared-mutation case via atomic field access and per-instance critical
-sections — is being investigated for a future release. Until then,
-applications that genuinely need to mutate a shared proxy from multiple
-threads should serialise those mutations externally (for example, with
-a ``threading.Lock`` held across both the write and any concurrent
-read).
+The per-instance critical sections covering mutation described above
+are the first stage of more robust free-threading support. The
+remaining stage, making reads of proxy fields take strong references
+under the same protection so that mutation racing a reader is also
+safe, is being investigated for a future release. Until then,
+applications that genuinely need to mutate a shared proxy from
+multiple threads should serialise those mutations externally (for
+example, with a ``threading.Lock`` held across both the write and any
+concurrent read).
 
 Introspecting the ObjectProxy instance \_\_dict\_\_
 ----------------------------------------------------
