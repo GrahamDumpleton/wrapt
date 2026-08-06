@@ -182,6 +182,39 @@ PyObject_GetOptionalAttrString(PyObject *obj, const char *name, PyObject **resul
 }
 #endif
 
+/* Atomically read a PyObject field of an instance and return a new
+ * reference to it, or NULL if the field is NULL (no exception is set).
+ * The read and the incref are performed together inside the owning
+ * object's critical section so the incref cannot race a writer which
+ * has swapped in a new value and is releasing the old one. On builds
+ * with the GIL the critical section is a no-op and this reduces to a
+ * plain load and incref. This is deliberately used on all builds rather
+ * than only free-threaded ones, so that both build variants exercise
+ * the same reference lifetimes, and so that a field value can never be
+ * freed while still in use when code invoked while operating on the
+ * field mutates the instance. */
+
+static inline PyObject *wrapt_acquire_field(PyObject *owner, PyObject **field)
+{
+  PyObject *value = NULL;
+
+  Py_BEGIN_CRITICAL_SECTION(owner);
+  value = *field;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  return value;
+}
+
+/* Convenience form for the common case of the wrapped object field. */
+
+static inline PyObject *wrapt_acquire_wrapped(WraptObjectProxyObject *self)
+{
+  return wrapt_acquire_field((PyObject *)self, &self->wrapped);
+}
+
+/* ------------------------------------------------------------------------- */
+
 /* Get module state for the wrapt module given any type whose MRO includes
  * one of our heap types. Returns NULL and sets an exception on miss. */
 
@@ -3000,14 +3033,7 @@ static PyObject *WraptObjectProxy_get_wrapped(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  /* Read the field and acquire the reference inside a critical section
-   * so the incref cannot race a writer which has swapped in a new value
-   * and is releasing the old one. */
-
-  Py_BEGIN_CRITICAL_SECTION(self);
-  value = self->wrapped;
-  Py_XINCREF(value);
-  Py_END_CRITICAL_SECTION();
+  value = wrapt_acquire_wrapped(self);
 
   return value;
 }
@@ -4030,10 +4056,7 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
             return NULL;
         }
 
-        Py_BEGIN_CRITICAL_SECTION(parent_proxy);
-        wrapped = parent_proxy->wrapped;
-        Py_XINCREF(wrapped);
-        Py_END_CRITICAL_SECTION();
+        wrapped = wrapt_acquire_wrapped(parent_proxy);
       }
       else
       {
@@ -4140,15 +4163,7 @@ WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
 {
   PyObject *value = NULL;
 
-  /* As in the __wrapped__ getter, read the field and acquire the
-   * reference inside a critical section so the incref cannot race a
-   * writer releasing the old value. The same applies to the other
-   * _self_ getters which follow. */
-
-  Py_BEGIN_CRITICAL_SECTION(self);
-  value = self->instance;
-  Py_XINCREF(value);
-  Py_END_CRITICAL_SECTION();
+  value = wrapt_acquire_field((PyObject *)self, &self->instance);
 
   if (!value)
   {
@@ -4166,10 +4181,7 @@ WraptFunctionWrapperBase_get_self_wrapper(WraptFunctionWrapperObject *self,
 {
   PyObject *value = NULL;
 
-  Py_BEGIN_CRITICAL_SECTION(self);
-  value = self->wrapper;
-  Py_XINCREF(value);
-  Py_END_CRITICAL_SECTION();
+  value = wrapt_acquire_field((PyObject *)self, &self->wrapper);
 
   if (!value)
   {
@@ -4187,10 +4199,7 @@ WraptFunctionWrapperBase_get_self_enabled(WraptFunctionWrapperObject *self,
 {
   PyObject *value = NULL;
 
-  Py_BEGIN_CRITICAL_SECTION(self);
-  value = self->enabled;
-  Py_XINCREF(value);
-  Py_END_CRITICAL_SECTION();
+  value = wrapt_acquire_field((PyObject *)self, &self->enabled);
 
   if (!value)
   {
@@ -4208,10 +4217,7 @@ WraptFunctionWrapperBase_get_self_binding(WraptFunctionWrapperObject *self,
 {
   PyObject *value = NULL;
 
-  Py_BEGIN_CRITICAL_SECTION(self);
-  value = self->binding;
-  Py_XINCREF(value);
-  Py_END_CRITICAL_SECTION();
+  value = wrapt_acquire_field((PyObject *)self, &self->binding);
 
   if (!value)
   {
@@ -4229,10 +4235,7 @@ WraptFunctionWrapperBase_get_self_parent(WraptFunctionWrapperObject *self,
 {
   PyObject *value = NULL;
 
-  Py_BEGIN_CRITICAL_SECTION(self);
-  value = self->parent;
-  Py_XINCREF(value);
-  Py_END_CRITICAL_SECTION();
+  value = wrapt_acquire_field((PyObject *)self, &self->parent);
 
   if (!value)
   {
@@ -4250,10 +4253,7 @@ WraptFunctionWrapperBase_get_self_owner(WraptFunctionWrapperObject *self,
 {
   PyObject *value = NULL;
 
-  Py_BEGIN_CRITICAL_SECTION(self);
-  value = self->owner;
-  Py_XINCREF(value);
-  Py_END_CRITICAL_SECTION();
+  value = wrapt_acquire_field((PyObject *)self, &self->owner);
 
   if (!value)
   {
@@ -4434,10 +4434,7 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
 
     if (!wrapped)
     {
-      Py_BEGIN_CRITICAL_SECTION(self);
-      wrapped = self->object_proxy.wrapped;
-      Py_XINCREF(wrapped);
-      Py_END_CRITICAL_SECTION();
+      wrapped = wrapt_acquire_wrapped(&self->object_proxy);
     }
 
     if (!kwds)
