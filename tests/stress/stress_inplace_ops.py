@@ -5,20 +5,16 @@ Multiple threads concurrently apply ``+=`` to a single shared C
 object each time, so every operation swaps the identity of the wrapped
 object and releases the previous, uniquely held one.
 
-The swap itself is serialised by a per-object critical section as of
-wrapt 2.4.0, but the in-place operators still read the wrapped object as
-a borrowed reference before operating on it, so a concurrent swap can
-release the object another thread is part way through using. This
-scenario is therefore EXPECTED TO CRASH until the borrowed reference
-uses in the operator paths are converted to strong references, and is
-skipped by default so the default stress run reflects the guarantees
-the current implementation actually makes. Set WRAPT_STRESS_UNSAFE=1 to
-run it, either to demonstrate the outstanding hazard or, once the
-conversion lands, to promote it into the default set by removing the
-gate.
+Serialising the swap alone was not enough to make this survive: the
+in-place operators also read the wrapped object before operating on it,
+and while that read was a borrowed reference a concurrent swap could
+release the object another thread was part way through using, crashing
+the interpreter within seconds. With the operator paths holding strong
+references for the duration of the operation the process must survive,
+with competing updates simply being lost.
 
 Exits 0 on survival, is killed by a signal on failure, and exits 77
-(skip) if gated off or the C extension is not available.
+(skip) if the C extension is not available.
 """
 
 import os
@@ -40,15 +36,6 @@ class Value:
 
 
 def main():
-    if os.environ.get("WRAPT_STRESS_UNSAFE") != "1":
-        print(
-            "skipped: expected to crash until borrowed references in the "
-            "in-place operator paths are converted to strong references; "
-            "set WRAPT_STRESS_UNSAFE=1 to run",
-            flush=True,
-        )
-        return 77
-
     try:
         from wrapt._wrappers import ObjectProxy
     except ImportError:
