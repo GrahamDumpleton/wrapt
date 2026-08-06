@@ -2992,14 +2992,24 @@ static PyObject *WraptObjectProxy_get_self_dict(WraptObjectProxyObject *self)
 
 static PyObject *WraptObjectProxy_get_wrapped(WraptObjectProxyObject *self)
 {
+  PyObject *value = NULL;
+
   if (!self->wrapped)
   {
     if (raise_uninitialized_wrapper_error(self) == -1)
       return NULL;
   }
 
-  Py_INCREF(self->wrapped);
-  return self->wrapped;
+  /* Read the field and acquire the reference inside a critical section
+   * so the incref cannot race a writer which has swapped in a new value
+   * and is releasing the old one. */
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  value = self->wrapped;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4020,8 +4030,10 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
             return NULL;
         }
 
+        Py_BEGIN_CRITICAL_SECTION(parent_proxy);
         wrapped = parent_proxy->wrapped;
-        Py_INCREF(wrapped);
+        Py_XINCREF(wrapped);
+        Py_END_CRITICAL_SECTION();
       }
       else
       {
@@ -4126,13 +4138,24 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
                                            void *closure)
 {
-  if (!self->instance)
+  PyObject *value = NULL;
+
+  /* As in the __wrapped__ getter, read the field and acquire the
+   * reference inside a critical section so the incref cannot race a
+   * writer releasing the old value. The same applies to the other
+   * _self_ getters which follow. */
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  value = self->instance;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->instance);
-  return self->instance;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4141,13 +4164,19 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_wrapper(WraptFunctionWrapperObject *self,
                                           void *closure)
 {
-  if (!self->wrapper)
+  PyObject *value = NULL;
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  value = self->wrapper;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->wrapper);
-  return self->wrapper;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4156,13 +4185,19 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_enabled(WraptFunctionWrapperObject *self,
                                           void *closure)
 {
-  if (!self->enabled)
+  PyObject *value = NULL;
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  value = self->enabled;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->enabled);
-  return self->enabled;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4171,13 +4206,19 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_binding(WraptFunctionWrapperObject *self,
                                           void *closure)
 {
-  if (!self->binding)
+  PyObject *value = NULL;
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  value = self->binding;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->binding);
-  return self->binding;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4186,13 +4227,19 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_parent(WraptFunctionWrapperObject *self,
                                          void *closure)
 {
-  if (!self->parent)
+  PyObject *value = NULL;
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  value = self->parent;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->parent);
-  return self->parent;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4201,13 +4248,19 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_owner(WraptFunctionWrapperObject *self,
                                         void *closure)
 {
-  if (!self->owner)
+  PyObject *value = NULL;
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  value = self->owner;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->owner);
-  return self->owner;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */;
@@ -4381,8 +4434,10 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
 
     if (!wrapped)
     {
-      Py_INCREF(self->object_proxy.wrapped);
+      Py_BEGIN_CRITICAL_SECTION(self);
       wrapped = self->object_proxy.wrapped;
+      Py_XINCREF(wrapped);
+      Py_END_CRITICAL_SECTION();
     }
 
     if (!kwds)
