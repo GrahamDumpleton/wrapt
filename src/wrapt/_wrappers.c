@@ -3444,11 +3444,19 @@ static int WraptPartialCallableObjectProxy_raw_init(
 
   if (result == 0)
   {
-    Py_INCREF(args);
-    Py_XSETREF(self->args, args);
+    /* Serialise the swaps for the same reason as in the __wrapped__
+     * setter. Initialisation normally happens before the proxy is shared,
+     * but __init__ can be re-invoked on an already published proxy, in
+     * which case concurrent callers on a free-threaded build could
+     * otherwise decref the same old args or kwargs twice. */
 
+    Py_INCREF(args);
     Py_XINCREF(kwargs);
+
+    Py_BEGIN_CRITICAL_SECTION(self);
+    Py_XSETREF(self->args, args);
     Py_XSETREF(self->kwargs, kwargs);
+    Py_END_CRITICAL_SECTION();
   }
 
   return result;
