@@ -3152,6 +3152,8 @@ static PyObject *WraptObjectProxy_getattr(WraptObjectProxyObject *self,
                                           PyObject *args)
 {
   PyObject *name = NULL;
+  PyObject *wrapped = NULL;
+  PyObject *result = NULL;
 
   if (!PyArg_ParseTuple(args, "U:__getattr__", &name))
     return NULL;
@@ -3162,7 +3164,19 @@ static PyObject *WraptObjectProxy_getattr(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_GetAttr(self->wrapped, name);
+  /* Hold a strong reference across the attribute lookup so a concurrent
+   * swap of the wrapped object cannot release it mid lookup. Note this
+   * path is reached from the __wrapped__ setter itself via the lookup
+   * of __wrapped_setattr_fixups__, so even a workload consisting purely
+   * of writers performs this read. */
+
+  wrapped = wrapt_acquire_wrapped(self);
+
+  result = PyObject_GetAttr(wrapped, name);
+
+  Py_XDECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */

@@ -38,7 +38,12 @@ Version 2.4.0
   acquire the reference they return inside the same critical sections,
   so reading one of these attributes can no longer increment the
   reference count of a value which a concurrent mutation of the same
-  instance has already released. Other internal uses of the fields
+  instance has already released. The ``__getattr__`` fallback which
+  delegates attribute lookup to the wrapped object likewise now holds a
+  strong reference to the wrapped object across the lookup. That path
+  is reached from the ``__wrapped__`` setter itself when it checks for
+  setattr fixups, so without this a workload consisting purely of
+  writers could still crash. Other internal uses of the fields
   during calls and operations still access them as borrowed references,
   so as described in the known issues documentation, mutation of a
   shared proxy while another thread is concurrently reading from or
