@@ -4,6 +4,17 @@ Release Notes
 Version 2.4.0
 -------------
 
+**New Features**
+
+* Binary wheels for Python 3.15, including the free threaded variant, are
+  now built and published to PyPi. This was enabled by updating the
+  version of ``cibuildwheel`` used by the release workflow. The newer
+  ``cibuildwheel`` builds free threaded variants of CPython by default,
+  so they no longer need to be explicitly enabled and the free threaded
+  wheels for Python 3.13 and 3.14 continue to be provided as before. The
+  Python 3.15 trove classifier has also been added to the package
+  metadata.
+
 **Bugs Fixed**
 
 * On free-threaded Python builds, two threads concurrently assigning to
