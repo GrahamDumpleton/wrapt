@@ -151,6 +151,49 @@ test-version version:
     rm -rf .venv-test-tmp
     echo "All test variants completed for Python {{version}}"
 
+# Run the free threading stress tests on the free-threaded Python
+# builds, which are the only builds where the races being hunted are
+# physically possible.
+test-stress:
+    just test-stress-version 3.13t
+    just test-stress-version 3.14t
+    just test-stress-version 3.15t
+
+# Run the free threading stress tests for a specific Python version.
+# Each scenario under tests/stress/ hammers a shared proxy from
+# multiple threads in its own subprocess looking for interpreter
+# crashes. These are probabilistic rather than deterministic tests, so
+# they are deliberately not part of the main test matrix. Control the
+# duration and concurrency with the WRAPT_STRESS_SECONDS and
+# WRAPT_STRESS_THREADS environment variables.
+test-stress-version version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    rm -rf src/wrapt/__pycache__
+    rm -rf src/wrapt/_wrappers.*.so
+
+    rm -rf .venv-stress-tmp
+    uv venv .venv-stress-tmp --python {{version}}
+    source .venv-stress-tmp/bin/activate
+    python -m ensurepip --upgrade
+    python -m pip install --upgrade pip
+
+    echo "=== Stress testing Python {{version}} - with C extensions ==="
+
+    export WRAPT_INSTALL_EXTENSIONS=true
+
+    pip3 install -e . --no-cache
+
+    python -c "import wrapt.__wrapt__; assert wrapt.__wrapt__._using_c_extension, 'C extension not loaded'"
+
+    python tests/stress/runner.py
+
+    deactivate
+
+    rm -rf .venv-stress-tmp
+    echo "Stress tests completed for Python {{version}}"
+
 # Run mypy type checking for a specific Python version.
 # mypy 1.20+ requires Python 3.10+, so pin an older mypy when checking 3.9.
 test-mypy-version version:

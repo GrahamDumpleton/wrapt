@@ -83,6 +83,27 @@ just test-stubtest
 ```
 Runs `stubtest` to compare the `wrapt-stubs` package against the installed wrapt runtime. Intentional stub-vs-runtime divergences are listed in `tests/stubtest_allowlist.txt`; new entries should be accompanied by a comment there explaining why the divergence is deliberate.
 
+#### Free Threading Stress Tests
+```bash
+just test-stress
+```
+Runs the stress scenarios under `tests/stress/` against the free-threaded Python builds (3.13t, 3.14t, 3.15t), the only builds where the races being hunted are physically possible.
+
+```bash
+just test-stress-version 3.14t
+```
+Runs the stress scenarios for a specific Python version. Running against a GIL build is permitted and acts as a sanity check that the scenarios themselves are sound.
+
+The stress scenarios are deliberately not part of the main pytest suite or the `just test` matrix. They hammer a single shared proxy from many threads looking for interpreter crashes, so they are probabilistic rather than deterministic: a crash proves a bug, while a clean run only gives confidence proportional to how long it ran. Each `stress_*.py` file is a self-contained script, runnable on its own as a reproducer, and is executed in its own subprocess by `tests/stress/runner.py` since a crash would otherwise take out the test runner itself. The `stress_*.py` naming (rather than `test_*.py`) keeps pytest from ever collecting them.
+
+A scenario exits 0 if it survives, 77 if skipped (for example when the C extension is not available, or the scenario is gated off), and any other outcome, including death by signal, is a failure.
+
+Environment variables:
+
+- `WRAPT_STRESS_SECONDS` - Duration each scenario runs for (default 5)
+- `WRAPT_STRESS_THREADS` - Number of threads hammering the shared object (default 8)
+- `WRAPT_STRESS_UNSAFE=1` - Also run scenarios which are expected to crash because they exercise known hazards not yet fixed
+
 ### Test Variants
 
 Each `test-version` run includes three important test scenarios:
@@ -222,7 +243,8 @@ When adding new test files:
 1. **Standard unit tests**: Use the `test_*.py` naming convention for general tests
 2. **Version-specific tests**: Use the `test_*_pyXX.py` convention if your test requires features from a specific Python version
 3. **Mypy type tests**: Use the `mypy_*.py` naming convention for type checking tests (see the Mypy Type Checking Tests section above)
-4. The version detection is automatic - no additional configuration needed
+4. **Free threading stress scenarios**: Use the `stress_*.py` naming convention under `tests/stress/` for probabilistic crash-hunting scripts run via `just test-stress` (see the Free Threading Stress Tests section above)
+5. The version detection is automatic - no additional configuration needed
 
 ### Test Dependencies
 
