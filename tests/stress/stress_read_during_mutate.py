@@ -10,11 +10,11 @@ an already freed object. With the read and incref performed atomically
 inside the per-object critical section the process must survive and
 every value the readers observe must remain valid while they hold it.
 
-Note that the readers deliberately only use the ``__wrapped__``
-attribute. Reads which delegate through the proxy, such as ``str()`` or
-operators, still use borrowed references internally and are expected to
-be hardened by a later stage of the free threading work, at which point
-this scenario should be extended to cover them.
+The readers exercise both direct ``__wrapped__`` attribute access and
+reads which delegate through the proxy, such as ``str()``, ``hash()``
+and comparison, all of which must hold their own reference to the
+wrapped object for the duration of the delegated operation rather than
+using the raw field pointer.
 
 Exits 0 on survival, is killed by a signal on failure, and exits 77
 (skip) if the C extension is not available.
@@ -63,6 +63,9 @@ def main():
             # Touch the value so a stale reference to a freed object
             # cannot go unnoticed.
             assert type(value) is object
+            str(shared)
+            hash(shared)
+            _ = shared == value
             counts[index] += 1
 
     threads = [threading.Thread(target=writer, args=(0,))]
