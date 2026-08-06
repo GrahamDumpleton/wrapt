@@ -2970,15 +2970,22 @@ static int WraptObjectProxy_set_dict(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_get_self_dict(WraptObjectProxyObject *self)
 {
-  if (!self->dict)
-  {
-    self->dict = PyDict_New();
-    if (!self->dict)
-      return NULL;
-  }
+  PyObject *result = NULL;
 
-  Py_INCREF(self->dict);
-  return self->dict;
+  /* self->dict is only NULL after tp_clear has run. Perform the lazy
+   * recreation and the reference acquisition inside a critical section
+   * so that two threads racing here on a free-threaded build cannot both
+   * create a dict, leaking one of them, or return a dict which the other
+   * thread has already replaced. */
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  if (!self->dict)
+    self->dict = PyDict_New();
+  result = self->dict;
+  Py_XINCREF(result);
+  Py_END_CRITICAL_SECTION();
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
