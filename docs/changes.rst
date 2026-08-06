@@ -52,13 +52,16 @@ Version 2.4.0
   operations such as ``str()``, ``hash()``, comparison, item access,
   attribute forwarding and the context manager protocol, and to the
   wrapped object and captured arguments used when calling a partial
-  callable object proxy. The remaining borrowed reference uses are
-  confined to the function wrapper call and descriptor binding paths,
-  so as described in the known issues documentation, mutation of a
-  shared function wrapper while another thread is concurrently calling
-  or binding the same instance still requires external locking, as
-  does any use which needs a consistent view of multiple fields
-  updated together. With thanks to the reporter of `issue #347
+  callable object proxy. The function wrapper call and descriptor
+  binding paths likewise acquire the fields they use as strong
+  references, completing the conversion: no internal use of a proxy or
+  wrapper field now retains a raw field pointer across an operation.
+  Fields are acquired individually rather than as a group, so as
+  described in the known issues documentation, a reader racing a
+  mutation can still observe a torn view of multiple fields updated
+  together and competing updates can be lost, matching pure Python
+  semantics, with external locking still required where cross field
+  consistency matters. With thanks to the reporter of `issue #347
   <https://github.com/GrahamDumpleton/wrapt/issues/347>`_.
 
 Version 2.3.0

@@ -851,11 +851,12 @@ time, the resulting wrapper or proxy is published once, and from then on
 it is only *read* (called, introspected, used as a descriptor) from
 multiple threads. That pattern is safe on free-threaded builds.
 
-The current implementation does **not**, however, guarantee safety when
-a single proxy or wrapper instance is **mutated** from one thread while
-another thread concurrently reads from or calls it. In particular, the
-following operations are not race-free on free-threaded builds when the
-same instance is shared across threads:
+Earlier releases did **not**, however, guarantee safety when a single
+proxy or wrapper instance was **mutated** from one thread while another
+thread concurrently read from or called it. In particular, the
+following operations could in the worst case corrupt memory and crash
+the interpreter on free-threaded builds when the same instance was
+shared across threads:
 
 * Assigning to ``__wrapped__`` (or any other proxy attribute) on an
   ``ObjectProxy`` while another thread is calling, iterating, or
@@ -885,34 +886,30 @@ function wrappers, also acquire the reference they return inside the
 same critical sections, so directly reading one of these attributes is
 safe even while another thread concurrently replaces the field.
 
-Beyond these cases, mutation is still not atomic with respect to a
-concurrent reader. A reader may observe a torn view of multiple fields
-that a writer updates as a group, and internally the C extension uses
-its fields during calls and operations as borrowed references, so a
-mutation racing an in-flight call or operation on the same instance
-can still invalidate a value the reader is part way through using.
-The torn view hazard exists equally in the pure Python implementation;
-the borrowed reference hazard is specific to the C extension and is
-the reason concurrent mutation of a shared instance remains
-unsupported rather than merely inadvisable.
+All other internal uses of these fields during calls, operators and
+delegation likewise acquire a strong reference to the field value for
+the duration of the operation, rather than retaining a raw field
+pointer which a concurrent mutation could invalidate. Taken together,
+these measures mean that mutating a shared proxy or wrapper from one
+thread while another thread reads from or calls the same instance can
+no longer corrupt memory or crash the interpreter.
 
-The recommended pattern on free-threaded builds is therefore the same
-as the pattern on GIL builds: construct the proxy or wrapper once,
-publish it, and treat it as immutable thereafter. Concurrent readers
-and concurrent calls are supported; concurrent mutation of a shared
-instance is not.
+What concurrent mutation does not provide is consistency. Fields are
+protected individually, not as a group, so a reader racing a writer
+may observe a torn view of multiple fields which are updated together,
+and competing updates can be lost. This is the same behaviour as the
+pure Python implementation, where attribute assignment provides no
+cross-attribute atomicity either.
 
-The per-instance critical sections covering mutation and attribute
-access described above are the first stage of more robust
-free-threading support. The remaining stage, converting the internal
-borrowed reference uses of proxy fields during calls and operations to
-strong references acquired under the same protection so that mutation
-racing a reader is also safe, is being investigated for a future
-release. Until then,
-applications that genuinely need to mutate a shared proxy from
-multiple threads should serialise those mutations externally (for
-example, with a ``threading.Lock`` held across both the write and any
-concurrent read).
+The recommended pattern on free-threaded builds is therefore still the
+same as the pattern on GIL builds: construct the proxy or wrapper
+once, publish it, and treat it as immutable thereafter. Concurrent
+readers and concurrent calls are fully supported. Concurrent mutation
+of a shared instance is now memory safe, but remains subject to the
+consistency caveats above, so applications which need readers to see
+a consistent view across a mutation should still serialise access
+externally (for example, with a ``threading.Lock`` held across both
+the write and any concurrent read).
 
 Introspecting the ObjectProxy instance \_\_dict\_\_
 ----------------------------------------------------
