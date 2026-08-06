@@ -17,11 +17,20 @@ Version 2.4.0
 
 **Bugs Fixed**
 
-* On free-threaded Python builds, two threads concurrently assigning to
-  ``__wrapped__`` on the same object proxy could crash the interpreter.
-  The C extension updated its reference to the wrapped object using an
-  unprotected pointer swap, so both threads could read the same old value
-  and both release it, freeing the previous wrapped object twice. The
+* The lack of safety when a proxy or wrapper instance shared between
+  threads was mutated while concurrently being used from other threads
+  was a known limitation of the free threading support, documented in
+  the known issues section of the documentation along with guidance to
+  serialise such mutation externally. That documented position still
+  left the C extension able to crash the interpreter where the pure
+  Python implementation would merely misbehave, and prompted by the
+  report in issue #347, which demonstrated that two threads
+  concurrently assigning to ``__wrapped__`` on the same object proxy
+  could crash within seconds on a free-threaded build, this class of
+  limitation has now been addressed at the memory safety level. The C
+  extension updated its reference to the wrapped object using an
+  unprotected pointer swap, so both threads could read the same old
+  value and both release it, freeing the previous wrapped object twice. The
   same unprotected swap pattern existed in the in-place operators such as
   ``+=``, in re-invocation of ``__init__`` on an already published object
   proxy, partial callable object proxy or function wrapper, and in the
@@ -62,7 +71,8 @@ Version 2.4.0
   together and competing updates can be lost, matching pure Python
   semantics, with external locking still required where cross field
   consistency matters. With thanks to the reporter of `issue #347
-  <https://github.com/GrahamDumpleton/wrapt/issues/347>`_.
+  <https://github.com/GrahamDumpleton/wrapt/issues/347>`_ for
+  prompting this work.
 
 Version 2.3.0
 -------------
