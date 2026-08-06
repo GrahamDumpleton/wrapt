@@ -3684,23 +3684,27 @@ static int WraptFunctionWrapperBase_raw_init(
 
   if (result == 0)
   {
+    /* Serialise the swaps for the same reason as in the __wrapped__
+     * setter. These fields have no setters, so re-invocation of __init__
+     * on an already published wrapper is the only path by which
+     * concurrent callers on a free-threaded build could otherwise decref
+     * the same old field values twice. */
+
     Py_INCREF(instance);
-    Py_XSETREF(self->instance, instance);
-
     Py_INCREF(wrapper);
-    Py_XSETREF(self->wrapper, wrapper);
-
     Py_INCREF(enabled);
-    Py_XSETREF(self->enabled, enabled);
-
     Py_INCREF(binding);
-    Py_XSETREF(self->binding, binding);
-
     Py_INCREF(parent);
-    Py_XSETREF(self->parent, parent);
-
     Py_INCREF(owner);
+
+    Py_BEGIN_CRITICAL_SECTION(self);
+    Py_XSETREF(self->instance, instance);
+    Py_XSETREF(self->wrapper, wrapper);
+    Py_XSETREF(self->enabled, enabled);
+    Py_XSETREF(self->binding, binding);
+    Py_XSETREF(self->parent, parent);
     Py_XSETREF(self->owner, owner);
+    Py_END_CRITICAL_SECTION();
   }
 
   return result;
