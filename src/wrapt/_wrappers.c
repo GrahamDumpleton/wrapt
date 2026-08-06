@@ -43,10 +43,8 @@ typedef struct
 static struct PyModuleDef moduledef;
 
 /* Per-interpreter module state. Holds the heap type objects so that methods
- * can reach them via PyType_GetModuleByDef without using static globals.
- *
- * Cached interned strings will be added here in a later stage of the
- * sub-interpreter / free-threading migration. */
+ * can reach them via PyType_GetModuleByDef without using static globals,
+ * along with the cached interned strings and exception type below. */
 
 typedef struct
 {
