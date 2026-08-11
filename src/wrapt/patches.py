@@ -255,7 +255,12 @@ def transient_function_wrapper(target, name):
     applied to. The `target` can be a module, class, or instance of a class.
     In the special case of `target` being a string, it is assumed to be the name
     of a module, with the module being imported if necessary. The `name` is a
-    string representing the dotted path to the attribute.
+    string representing the dotted path to the attribute. The patch is applied
+    to the object the path resolves to, so patching an attribute reached
+    through inheritance, or through an instance, only affects lookups made
+    through that object and not the class where the attribute is defined. In
+    that case the temporary attribute which shadowed the inherited definition
+    is removed again when the call exits, restoring the original lookup.
     """
 
     def _decorator(wrapper):
@@ -271,11 +276,32 @@ def transient_function_wrapper(target, name):
             def _execute(wrapped, instance, args, kwargs):
                 (parent, attribute, original) = resolve_path(target, name)
                 replacement = FunctionWrapper(original, target_wrapper)
+
+                # The attribute may not be defined directly on the parent,
+                # instead being found on a base class of the parent via the
+                # MRO, or via some dynamic lookup mechanism. In those cases
+                # applying the patch creates a new attribute on the parent
+                # which shadows where the original was found. Restoration
+                # must then remove that shadowing attribute again rather
+                # than set the original on the parent, else a permanent
+                # copy of the original is left behind on the parent.
+
+                try:
+                    direct = attribute in vars(parent)
+                except TypeError:
+                    direct = True
+
                 setattr(parent, attribute, replacement)
                 try:
                     return wrapped(*args, **kwargs)
                 finally:
-                    setattr(parent, attribute, original)
+                    if direct:
+                        setattr(parent, attribute, original)
+                    else:
+                        try:
+                            delattr(parent, attribute)
+                        except AttributeError:
+                            pass
 
             return FunctionWrapper(target_wrapped, _execute)
 

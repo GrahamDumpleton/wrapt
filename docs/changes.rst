@@ -17,6 +17,22 @@ Version 2.4.0
 
 **Bugs Fixed**
 
+* When ``transient_function_wrapper`` targeted an attribute which was not
+  defined directly on the object the target path resolved to, such as a
+  method reached through class inheritance, or an attribute reached
+  through an instance, applying the temporary patch created a shadowing
+  attribute on that object, and restoration on exit then assigned the
+  original value into the shadowing location instead of removing it. The
+  shadowing attribute persisted after the transient scope exited, so
+  although behaviour appeared restored, the object was left with its own
+  permanent copy of the inherited value, and later monkey patching of the
+  class which actually defined the attribute would silently not be seen
+  through the object which had been transiently patched. Restoration now
+  removes the shadowing attribute when the attribute was not originally
+  defined directly on the resolved object, so the original lookup path is
+  reinstated. The same applies to attributes satisfied by dynamic lookup
+  mechanisms such as a module level ``__getattr__``.
+
 * The lack of safety when a proxy or wrapper instance shared between
   threads was mutated while concurrently being used from other threads
   was a known limitation of the free threading support, documented in
