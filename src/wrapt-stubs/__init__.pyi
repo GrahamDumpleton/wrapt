@@ -542,6 +542,7 @@ if sys.version_info >= (3, 10):
     def patch_function_wrapper(
         target: ModuleType | type[Any] | Any | str,
         name: str,
+        *,
         enabled: bool | _Boolean | Callable[[], bool] | None = None,
     ) -> _WrapperDecorator: ...
 

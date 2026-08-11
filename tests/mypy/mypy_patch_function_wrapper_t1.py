@@ -94,3 +94,14 @@ def incorrect_type_for_enabled_argument(
     kwargs: dict[str, Any],
 ) -> Any:
     return wrapped(*args, **kwargs)
+
+
+# Deprecated positional form of enabled argument. (FAIL)
+@patch_function_wrapper(this_module, "function", True)
+def positional_for_enabled_argument(
+    wrapped: Callable[..., Any],
+    instance: Any,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> Any:
+    return wrapped(*args, **kwargs)

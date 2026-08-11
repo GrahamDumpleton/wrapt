@@ -2,6 +2,7 @@
 
 import inspect
 import sys
+import warnings
 
 from .__wrapt__ import FunctionWrapper
 from .importer import register_post_import_hook
@@ -209,7 +210,10 @@ def wrap_function_wrapper(target, name, wrapper):
     return wrap_object(target, name, FunctionWrapper, (wrapper,))
 
 
-def patch_function_wrapper(target, name, enabled=None):
+_MISSING = object()
+
+
+def patch_function_wrapper(target, name, _enabled=_MISSING, *, enabled=None):
     """
     Creates a decorator which can be applied to a wrapper function, where the
     wrapper function will be used to wrap a function which is the attribute of
@@ -220,12 +224,27 @@ def patch_function_wrapper(target, name, enabled=None):
     trailing ``?``, the wrapping will be deferred until the module is imported.
     If the module is already imported, the wrapping will be applied immediately.
     The `name` is a string representing the dotted path to the attribute. The
-    `enabled` argument can be a boolean or a callable that returns a boolean.
-    When a callable is provided, it will be called each time the wrapper is
-    invoked to determine if the wrapper function should be executed or whether
-    the wrapped function should be called directly. If `enabled` is not
-    provided, the wrapper is enabled by default.
+    `enabled` argument is keyword only and can be a boolean or a callable that
+    returns a boolean. When a callable is provided, it will be called each time
+    the wrapper is invoked to determine if the wrapper function should be
+    executed or whether the wrapped function should be called directly. If
+    `enabled` is not provided, the wrapper is enabled by default.
     """
+
+    if _enabled is not _MISSING:
+        if enabled is not None:
+            raise TypeError(
+                "patch_function_wrapper() got multiple values for "
+                "argument 'enabled'"
+            )
+        warnings.warn(
+            "Passing 'enabled' positionally to patch_function_wrapper() is "
+            "deprecated and will be an error in a future version of wrapt; "
+            "pass it as a keyword argument.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        enabled = _enabled
 
     def _wrapper(wrapper):
         if isinstance(target, str) and target.endswith("?"):

@@ -15,6 +15,14 @@ Version 2.4.0
   Python 3.15 trove classifier has also been added to the package
   metadata.
 
+**Features Changed**
+
+* The ``enabled`` argument of ``patch_function_wrapper()`` is now keyword
+  only. Passing it positionally still works for now, but raises a
+  ``DeprecationWarning`` and will become an error in a future version of
+  wrapt. The type stubs already declare the argument as keyword only, so
+  type checkers will flag the deprecated calling convention.
+
 **Bugs Fixed**
 
 * When ``transient_function_wrapper`` targeted an attribute which was not

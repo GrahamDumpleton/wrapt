@@ -1,5 +1,6 @@
 import unittest
 import sys
+import warnings
 
 import wrapt
 
@@ -25,6 +26,10 @@ def global_function_3_enabled_literal_true(*args, **kwargs):
 
 
 def global_function_3_enabled_callable(*args, **kwargs):
+    return args, kwargs
+
+
+def global_function_3_enabled_positional(*args, **kwargs):
     return args, kwargs
 
 
@@ -374,6 +379,38 @@ class TestMonkeyPatching(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
+
+    def test_patch_function_module_name_enabled_positional(self):
+
+        _args = (1, 2)
+        _kwargs = {"one": 1, "two": 2}
+
+        called = []
+
+        with warnings.catch_warnings(record=True) as warned:
+            warnings.simplefilter("always")
+
+            @wrapt.patch_function_wrapper(
+                __name__, "global_function_3_enabled_positional", False
+            )
+            def wrapper(wrapped, instance, args, kwargs):
+                called.append((args, kwargs))
+                return wrapped(*args, **kwargs)
+
+        self.assertEqual(len(warned), 1)
+        self.assertTrue(issubclass(warned[0].category, DeprecationWarning))
+
+        result = global_function_3_enabled_positional(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called, [])
+
+    def test_patch_function_enabled_positional_and_keyword(self):
+
+        with self.assertRaises(TypeError):
+            wrapt.patch_function_wrapper(
+                __name__, "global_function_3_enabled_positional", False, enabled=True
+            )
 
     def test_patch_function_module(self):
 

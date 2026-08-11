@@ -81,8 +81,8 @@ The patch is applied as a side effect of evaluating the decorator, so simply
 importing the module that contains the decorated wrapper is enough to install
 the patch.
 
-The decorator accepts an optional ``enabled`` argument which controls whether
-the wrapper actually runs. This follows the same rules as the ``enabled``
+The decorator accepts an optional keyword only ``enabled`` argument which
+controls whether the wrapper actually runs. This follows the same rules as the ``enabled``
 argument of ``@wrapt.decorator``. A boolean value is read once: if ``False``,
 the wrapper is bypassed and the original function is called directly. A
 callable is invoked on every call and its result decides each time whether
