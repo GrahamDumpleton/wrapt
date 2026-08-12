@@ -29,6 +29,9 @@ if sys.version_info >= (3, 10):
         "LazyObjectProxy",
         "ObjectProxy",
         "PartialCallableObjectProxy",
+        "PathResolutionError",
+        "TargetModuleNotFoundError",
+        "WrapperNotInitializedError",
         "partial",
         "AdapterFactory",
         "adapter_factory",
@@ -554,6 +557,14 @@ if sys.version_info >= (3, 10):
     def transient_function_wrapper(
         target: ModuleType | type[Any] | Any | str, name: str
     ) -> _TransientDecorator: ...
+
+    # Exceptions.
+
+    class WrapperNotInitializedError(ValueError): ...
+
+    class PathResolutionError(AttributeError): ...
+
+    class TargetModuleNotFoundError(ModuleNotFoundError): ...
 
     # resolve_path()
 

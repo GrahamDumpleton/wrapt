@@ -23,6 +23,34 @@ Version 2.4.0
   wrapt. The type stubs already declare the argument as keyword only, so
   type checkers will flag the deprecated calling convention.
 
+* The ``resolve_path()`` function now reports failures using two new
+  exception types. When the dotted attribute path cannot be resolved on
+  the patch target, it raises ``PathResolutionError``, a subclass of
+  ``AttributeError``, with a message naming the failing attribute, the
+  full dotted path, and the target, rather than letting the low-level
+  ``AttributeError`` escape with none of that context. When the target
+  is supplied as a string naming a module which cannot be imported, it
+  raises ``TargetModuleNotFoundError``, a subclass of
+  ``ModuleNotFoundError``, naming the module and the attribute path
+  being resolved. In both cases the original exception is preserved as
+  the ``__cause__`` attribute using exception chaining, so the
+  low-level diagnosis still appears in the traceback. Because the new
+  exceptions derive from the exceptions previously raised, existing
+  code catching ``AttributeError``, ``ModuleNotFoundError`` or
+  ``ImportError`` continues to work unchanged. The same errors surface
+  from the functions built on ``resolve_path()``, such as
+  ``wrap_object()`` and ``wrap_function_wrapper()``. Both exception
+  types are exported from the top-level ``wrapt`` package.
+
+* The ``WrapperNotInitializedError`` exception is now part of the public
+  API, exported from the top-level ``wrapt`` package and included in
+  ``__all__`` and the type stubs. The exception classes now live in a
+  new ``wrapt.exceptions`` module, with ``wrapt`` itself being the
+  supported location to import them from. Previously
+  ``WrapperNotInitializedError`` was only reachable via the internal
+  ``wrapt.wrappers`` module; any code importing it from there needs to
+  switch to ``wrapt.WrapperNotInitializedError``.
+
 **Bugs Fixed**
 
 * When ``transient_function_wrapper`` targeted an attribute which was not

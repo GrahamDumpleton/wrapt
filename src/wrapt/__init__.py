@@ -31,6 +31,11 @@ from .decorators import (
     bind_state_to_wrapper,
     decorator,
 )
+from .exceptions import (
+    PathResolutionError,
+    TargetModuleNotFoundError,
+    WrapperNotInitializedError,
+)
 from .importer import (
     discover_post_import_hooks,
     notify_module_loaded,
@@ -67,6 +72,9 @@ __all__ = (
     "LazyObjectProxy",
     "ObjectProxy",
     "PartialCallableObjectProxy",
+    "PathResolutionError",
+    "TargetModuleNotFoundError",
+    "WrapperNotInitializedError",
     "partial",
     "AdapterFactory",
     "adapter_factory",

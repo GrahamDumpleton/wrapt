@@ -5315,18 +5315,20 @@ static int wrapt_exec(PyObject *module)
   }
   Py_DECREF(bases);
 
-  /* Cache WrapperNotInitializedError from wrapt.wrappers. The module is
-   * already in sys.modules because __wrapt__.py imports it before us. */
+  /* Cache WrapperNotInitializedError from wrapt.exceptions. The module is
+   * already in sys.modules because wrapt.wrappers imports it before
+   * __wrapt__.py imports us. */
 
   {
-    PyObject *wrapt_wrappers_module = PyImport_ImportModule("wrapt.wrappers");
-    if (!wrapt_wrappers_module)
+    PyObject *wrapt_exceptions_module =
+        PyImport_ImportModule("wrapt.exceptions");
+    if (!wrapt_exceptions_module)
       return -1;
 
     state->WrapperNotInitializedError = PyObject_GetAttrString(
-        wrapt_wrappers_module, "WrapperNotInitializedError");
+        wrapt_exceptions_module, "WrapperNotInitializedError");
 
-    Py_DECREF(wrapt_wrappers_module);
+    Py_DECREF(wrapt_exceptions_module);
 
     if (!state->WrapperNotInitializedError)
       return -1;

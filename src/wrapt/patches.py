@@ -5,6 +5,7 @@ import sys
 import warnings
 
 from .__wrapt__ import FunctionWrapper
+from .exceptions import PathResolutionError, TargetModuleNotFoundError
 from .importer import register_post_import_hook
 
 # Helper functions for applying wrappers to existing functions.
@@ -18,11 +19,20 @@ def resolve_path(target, name):
     which will be imported if necessary and then used as the target object.
     Returns a tuple containing the parent object holding the attribute lookup
     resolved to, the attribute name (path prefix removed if present), and the
-    original attribute value.
+    original attribute value. If the module cannot be imported, raises
+    `TargetModuleNotFoundError`, and if the attribute path cannot be resolved,
+    raises `PathResolutionError`, in both cases with the original exception
+    preserved as the `__cause__` attribute.
     """
 
     if isinstance(target, str):
-        __import__(target)
+        try:
+            __import__(target)
+        except ModuleNotFoundError as exc:
+            raise TargetModuleNotFoundError(
+                f"unable to import module {target!r} while resolving "
+                f"the target for {name!r}"
+            ) from exc
         target = sys.modules[target]
 
     parent = target
@@ -44,14 +54,20 @@ def resolve_path(target, name):
     # exist, then that will fail.
 
     def lookup_attribute(parent, attribute):
-        if inspect.isclass(parent):
-            for cls in inspect.getmro(parent):
-                if attribute in vars(cls):
-                    return vars(cls)[attribute]
+        try:
+            if inspect.isclass(parent):
+                for cls in inspect.getmro(parent):
+                    if attribute in vars(cls):
+                        return vars(cls)[attribute]
+                else:
+                    return getattr(parent, attribute)
             else:
                 return getattr(parent, attribute)
-        else:
-            return getattr(parent, attribute)
+        except AttributeError as exc:
+            raise PathResolutionError(
+                f"unable to resolve attribute {attribute!r} in path "
+                f"{name!r} on {target!r}"
+            ) from exc
 
     original = lookup_attribute(parent, attribute)
 

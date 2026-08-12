@@ -7,7 +7,7 @@
 # that are intentional under that contract.
 
 # --- Submodule-level: intentionally unstubbed (see wrapt-stubs/__init__.pyi).
-wrapt\.(__wrapt__|arguments|caching|decorators|importer|patches|proxies|signature|synchronization|weakrefs|wrappers)
+wrapt\.(__wrapt__|arguments|caching|decorators|exceptions|importer|patches|proxies|signature|synchronization|weakrefs|wrappers)
 
 # --- wrapt's proxy classes use a C-extension metaclass that the stubs
 # don't declare. Stubtest reports "metaclass differs"; benign for users.
