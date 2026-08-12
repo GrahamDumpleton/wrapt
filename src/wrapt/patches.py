@@ -4,7 +4,7 @@ import inspect
 import sys
 import warnings
 
-from .__wrapt__ import FunctionWrapper
+from .__wrapt__ import BaseObjectProxy, FunctionWrapper
 from .exceptions import PathResolutionError, TargetModuleNotFoundError
 from .importer import register_post_import_hook
 
@@ -143,29 +143,93 @@ def wrap_object(target, name, factory, args=(), kwargs=None):
 # Function for applying a proxy object to an attribute of a class
 # instance. The wrapper works by defining an attribute of the same name
 # on the class which is a descriptor and which intercepts access to the
-# instance attribute. Note that this cannot be used on attributes which
-# are themselves defined by a property object.
+# instance attribute. The descriptor is itself an object proxy wrapping
+# whatever previously occupied the class attribute, be that another
+# AttributeWrapper, some other descriptor such as a property, a plain
+# class default, or the MISSING sentinel when nothing was defined, so
+# stacked applications compose rather than replace one another and the
+# prior definition keeps working beneath the interception.
 
 
-class AttributeWrapper:
+class AttributeWrapper(BaseObjectProxy):
     """A descriptor that intercepts access to an instance attribute to apply
-    a wrapper factory."""
+    a wrapper factory. The descriptor is an object proxy whose wrapped object
+    is whatever previously occupied the class attribute, or the MISSING
+    sentinel when nothing did, so stacked applications compose and a prior
+    descriptor keeps executing its own logic beneath the interception."""
 
-    def __init__(self, attribute, factory, args, kwargs):
-        self.attribute = attribute
-        self.factory = factory
-        self.args = args
-        self.kwargs = kwargs
+    def __init__(self, wrapped, attribute, factory, args=(), kwargs=None):
+        super(AttributeWrapper, self).__init__(wrapped)
+        self._self_attribute = attribute
+        self._self_factory = factory
+        self._self_args = args
+        self._self_kwargs = kwargs if kwargs is not None else {}
 
-    def __get__(self, instance, owner):
-        value = instance.__dict__[self.attribute]
-        return self.factory(value, *self.args, **self.kwargs)
+    def __get__(self, instance, owner=None):
+        # Class level access returns the descriptor itself. Being a
+        # transparent proxy, introspection of the prior definition then
+        # works through delegation.
+
+        if instance is None:
+            return self
+
+        # Reads follow the standard attribute lookup precedence: a data
+        # descriptor prior takes precedence over the instance
+        # dictionary, a non-data descriptor prior yields to it, and a
+        # plain class default is the fallback when no instance value
+        # exists. Only when the prior is the MISSING sentinel, meaning
+        # no definition of any sort existed, is AttributeError raised.
+
+        prior = self.__wrapped__
+        prior_type = type(prior)
+
+        if hasattr(prior_type, "__get__") and (
+            hasattr(prior_type, "__set__") or hasattr(prior_type, "__delete__")
+        ):
+            value = prior.__get__(instance, owner)
+        elif self._self_attribute in instance.__dict__:
+            value = instance.__dict__[self._self_attribute]
+        elif hasattr(prior_type, "__get__"):
+            value = prior.__get__(instance, owner)
+        elif prior is not MISSING:
+            value = prior
+        else:
+            raise AttributeError(
+                f"{type(instance).__name__!r} object has no attribute "
+                f"{self._self_attribute!r}"
+            )
+
+        return self._self_factory(value, *self._self_args, **self._self_kwargs)
 
     def __set__(self, instance, value):
-        instance.__dict__[self.attribute] = value
+        # Writes delegate to a prior descriptor which implements
+        # __set__, so its validation and storage are honoured, and
+        # otherwise store into the instance dictionary.
+
+        prior = self.__wrapped__
+
+        if hasattr(type(prior), "__set__"):
+            prior.__set__(instance, value)
+        else:
+            instance.__dict__[self._self_attribute] = value
 
     def __delete__(self, instance):
-        del instance.__dict__[self.attribute]
+        prior = self.__wrapped__
+
+        if hasattr(type(prior), "__delete__"):
+            prior.__delete__(instance)
+        else:
+            # Match the exception deleting the attribute would raise if
+            # the wrapper had not been applied, which is AttributeError
+            # rather than the KeyError of the raw dictionary lookup.
+
+            try:
+                del instance.__dict__[self._self_attribute]
+            except KeyError:
+                raise AttributeError(
+                    f"{type(instance).__name__!r} object has no attribute "
+                    f"{self._self_attribute!r}"
+                ) from None
 
 
 def wrap_object_attribute(module, name, factory, args=(), kwargs=None):
@@ -181,7 +245,10 @@ def wrap_object_attribute(module, name, factory, args=(), kwargs=None):
     object and may accept additional positional and keyword arguments which will
     be set by unpacking input arguments using `*args` and `**kwargs` calling
     conventions. The factory function should return a new object that will
-    replace the original object.
+    replace the original object. Returns the `AttributeWrapper` descriptor
+    installed on the class, which wraps whatever previously occupied the
+    class attribute, or the `MISSING` sentinel when nothing did, so repeated
+    applications compose rather than replace one another.
     """
 
     if kwargs is None:
@@ -189,7 +256,8 @@ def wrap_object_attribute(module, name, factory, args=(), kwargs=None):
 
     path, attribute = name.rsplit(".", 1)
     parent = resolve_path(module, path)[2]
-    wrapper = AttributeWrapper(attribute, factory, args, kwargs)
+    prior = vars(parent).get(attribute, MISSING)
+    wrapper = AttributeWrapper(prior, attribute, factory, args, kwargs)
     apply_patch(parent, attribute, wrapper)
     return wrapper
 

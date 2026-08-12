@@ -51,6 +51,7 @@ if sys.version_info >= (3, 10):
         "register_post_import_hook",
         "when_imported",
         "MISSING",
+        "AttributeWrapper",
         "apply_patch",
         "function_wrapper",
         "lazy_import",
@@ -608,13 +609,30 @@ if sys.version_info >= (3, 10):
 
     # wrap_object_attribute()
 
+    class AttributeWrapper(BaseObjectProxy[Any]):
+        _self_attribute: str
+        _self_factory: Callable[..., Any]
+        _self_args: tuple[Any, ...]
+        _self_kwargs: dict[str, Any]
+        def __init__(
+            self,
+            wrapped: Any,
+            attribute: str,
+            factory: Callable[..., Any],
+            args: tuple[Any, ...] = (),
+            kwargs: dict[str, Any] | None = None,
+        ) -> None: ...
+        def __get__(self, instance: Any, owner: type[Any] | None = None) -> Any: ...
+        def __set__(self, instance: Any, value: Any) -> None: ...
+        def __delete__(self, instance: Any) -> None: ...
+
     def wrap_object_attribute(
         module: ModuleType | type[Any] | Any | str,
         name: str,
         factory: _WrapperFactory | type[ObjectProxy[Any]],
         args: tuple[Any, ...] = (),
         kwargs: dict[str, Any] | None = None,
-    ) -> Any: ...
+    ) -> AttributeWrapper: ...
 
     # register_post_import_hook()
 

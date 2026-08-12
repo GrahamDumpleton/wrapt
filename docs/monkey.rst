@@ -207,14 +207,20 @@ value each time.
     LoggedValue('spinner')
 
 The attribute name must be a dotted path that identifies the owning class and
-the attribute on it. The factory receives the current value stored in the
-instance dictionary and must return a replacement.
+the attribute on it. The factory receives the current value and must return
+a replacement.
 
-Because the hook is a descriptor installed on the class, it cannot be
-applied to an attribute that is already implemented by a ``property`` or
-other data descriptor on the same class: the original descriptor would take
-precedence and the value would never be read from the instance dictionary.
-Apply ``wrap_object_attribute`` only to plain instance attributes.
+The descriptor installed on the class is an ``AttributeWrapper``, which
+``wrap_object_attribute`` returns. It is an object proxy wrapping whatever
+previously occupied the class attribute, or the ``wrapt.MISSING`` sentinel
+when nothing did, so the prior definition keeps working beneath the
+interception. If the attribute was already implemented by a ``property`` or
+other descriptor, reads, writes and deletes delegate to it, with the factory
+wrapping the values it serves. If the class defined a plain default, it is
+used as the fallback when no instance value exists. Applying
+``wrap_object_attribute`` twice to the same attribute stacks the two
+interceptions, with the outer factory wrapping the result of the inner one,
+rather than the second application replacing the first.
 
 Deferring Patches Until Import
 ------------------------------
@@ -384,11 +390,14 @@ been bound, so always call it as ``wrapped(*args, **kwargs)``, without
 inserting ``instance`` yourself. These rules match the decorator wrapper
 rules described in :doc:`decorators`.
 
-Do not use ``wrap_object_attribute`` over a ``property``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``wrap_object_attribute`` composes with prior definitions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``wrap_object_attribute`` installs a descriptor that reads from
-``instance.__dict__``. If the class already defines a data descriptor such as
-a ``property`` for the same attribute, the existing descriptor will take
-precedence and the wrap will have no effect. Apply it only to plain instance
-attributes.
+The descriptor installed by ``wrap_object_attribute`` wraps whatever
+previously occupied the class attribute. A prior ``property`` or other
+descriptor keeps executing its own logic beneath the interception, a prior
+plain class default serves as the fallback when no instance value exists,
+and a second application stacks over the first rather than replacing it.
+Earlier versions of wrapt replaced the class attribute outright, could not
+be used over a ``property``, and broke class-level access to the attribute;
+none of those limitations apply any longer.

@@ -25,6 +25,57 @@ Version 2.4.0
 
 **Features Changed**
 
+* The ``AttributeWrapper`` descriptor installed by
+  ``wrap_object_attribute()`` has been redesigned as an object proxy
+  layer deriving from ``BaseObjectProxy``, and is now part of the public
+  API, exported from the top-level ``wrapt`` package and declared in the
+  type stubs, with ``wrap_object_attribute()`` returning it. The wrapped
+  object held by the proxy is whatever previously occupied the class
+  attribute, be that another ``AttributeWrapper``, some other descriptor
+  such as a ``property``, a plain class default, or the new
+  ``wrapt.MISSING`` sentinel when nothing was defined. This changes
+  behaviour in several ways, all previously broken or lossy:
+
+  - Applying ``wrap_object_attribute()`` twice to the same attribute now
+    composes the two interceptions, with the second factory wrapping the
+    result of the first, where previously the second application
+    silently replaced the first. Code which relied on reapplication to
+    refresh an interception must now remove the old one first.
+
+  - A prior descriptor keeps executing its own logic beneath the
+    interception. Reads follow the standard attribute lookup precedence,
+    with a data descriptor prior taking precedence over the instance
+    dictionary and a non-data descriptor prior yielding to it. Writes
+    and deletes likewise delegate to a prior descriptor's ``__set__``
+    and ``__delete__``, so its validation and storage are honoured. One
+    consequence is that the documented limitation that
+    ``wrap_object_attribute()`` cannot be used on an attribute defined
+    by a ``property`` is lifted; the getter, setter and deleter all work
+    through the interception.
+
+  - Class-level access to the intercepted attribute now returns the
+    descriptor itself, which being a transparent proxy exposes the prior
+    definition for introspection, where previously it failed with an
+    exception. Code which type-checks or reads attributes of a replaced
+    custom descriptor cannot tell the interceptor is there.
+
+  - When no instance value exists, reads now fall back to the prior
+    class default, and raise ``AttributeError`` only when no prior
+    definition of any sort existed, where previously ``KeyError``
+    escaped from the instance dictionary lookup. Deletes likewise now
+    raise the same ``AttributeError`` that deleting the attribute
+    would raise had the wrapper not been applied, instead of
+    ``KeyError``.
+
+  - The attributes of ``AttributeWrapper`` holding its own state are
+    renamed with the ``_self_`` prefix used by object proxies:
+    ``_self_attribute``, ``_self_factory``, ``_self_args`` and
+    ``_self_kwargs`` in place of ``attribute``, ``factory``, ``args``
+    and ``kwargs``. The constructor also now takes the prior definition
+    as its first argument, ahead of the existing arguments. Code which
+    introspected the old attribute names or constructed
+    ``AttributeWrapper`` directly needs updating.
+
 * The ``enabled`` argument of ``patch_function_wrapper()`` is now keyword
   only. Passing it positionally still works for now, but raises a
   ``DeprecationWarning`` and will become an error in a future version of

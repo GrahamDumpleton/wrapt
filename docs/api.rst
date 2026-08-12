@@ -167,8 +167,19 @@ Monkey Patching
 
 ``wrapt.wrap_object_attribute``
     Variant of ``wrap_object`` that wraps an instance attribute by
-    installing a descriptor on the owning class. Useful when the
-    attribute is not defined at the class level itself.
+    installing an ``AttributeWrapper`` descriptor on the owning class.
+    Useful when the attribute is not defined at the class level itself.
+
+``wrapt.AttributeWrapper``
+    The descriptor class installed by ``wrapt.wrap_object_attribute``.
+    An object proxy layer wrapping whatever previously occupied the
+    class attribute, or ``wrapt.MISSING`` when nothing did, so stacked
+    applications compose and a prior descriptor such as a ``property``
+    keeps working beneath the interception. Subclassable for custom
+    interception layers, in which case installation is manual:
+    capture the prior definition with
+    ``vars(cls).get(attribute, wrapt.MISSING)`` and apply the patch
+    with ``wrapt.apply_patch``.
 
 ``wrapt.wrap_function_wrapper``
     Convenience wrapper that combines ``resolve_path`` and

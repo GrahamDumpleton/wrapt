@@ -44,6 +44,7 @@ from .importer import (
 )
 from .patches import (
     MISSING,
+    AttributeWrapper,
     apply_patch,
     function_wrapper,
     patch_function_wrapper,
@@ -93,6 +94,7 @@ __all__ = (
     "register_post_import_hook",
     "when_imported",
     "MISSING",
+    "AttributeWrapper",
     "apply_patch",
     "function_wrapper",
     "lazy_import",
