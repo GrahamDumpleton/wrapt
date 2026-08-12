@@ -232,6 +232,21 @@ Wrapper Chains
     contract of ``wrapt.wrapper_chain``, including the traversal
     limit and lazy proxy materialization.
 
+``wrapt.find_wrapper``
+    Scans the chain of wrappers followed from the supplied object for
+    a specific wrapper and returns it, or ``None`` when not present.
+    The wrapper is identified by its handle, the object returned by
+    the wrap functions when it was installed, matched by identity
+    only, or by a ``predicate`` function. When checking a wrapped
+    method of a class, obtain the object to scan with
+    ``wrapt.resolve_path``, not ``getattr``, since descriptor binding
+    yields a fresh bound wrapper in which the handle is not found.
+
+``wrapt.is_wrapped_by``
+    Boolean convenience form of ``wrapt.find_wrapper``, answering
+    whether the wrapper a handle was returned for when installed is
+    still in place.
+
 Post Import Hooks
 ~~~~~~~~~~~~~~~~~
 

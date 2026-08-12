@@ -516,3 +516,52 @@ def unwrapped(obj, *, limit=64):
         pass
 
     return result
+
+
+def find_wrapper(obj, handle=None, *, predicate=None, limit=64):
+    """
+    Scans the chain of wrappers followed from `obj` by the
+    `wrapper_chain()` function for a specific wrapper and returns it, or
+    `None` when it is not present. The `handle` argument is the wrapper
+    object to look for, as returned by the wrap functions when the wrapper
+    was installed, and is matched by object identity only, never equality,
+    which proxies delegate to the wrapped object. Alternatively a
+    `predicate` function may be supplied, in which case the first chain
+    entry for which it returns true is returned, and is itself usable as a
+    handle thereafter. When both are supplied, both must match. At least
+    one of the two must be supplied, since testing for the mere presence
+    of any wrapper is fragile: were the target library to adopt wrapt for
+    its own purposes, such a test would wrongly conclude a wrapper of
+    yours was installed. Shares the full contract of `wrapper_chain()`,
+    including raising `WrapperChainTooDeepError` when the scan is
+    indeterminate, rather than returning `None` as a false negative.
+    """
+
+    if handle is None and predicate is None:
+        raise TypeError(
+            "find_wrapper() requires a wrapper handle or a predicate"
+        )
+
+    for entry in wrapper_chain(obj, limit=limit):
+        if handle is not None and entry is not handle:
+            continue
+        if predicate is not None and not predicate(entry):
+            continue
+        return entry
+
+    return None
+
+
+def is_wrapped_by(obj, handle=None, *, predicate=None, limit=64):
+    """
+    Boolean convenience form of the `find_wrapper()` function, returning
+    whether the wrapper is present in the chain of wrappers followed from
+    `obj`. With a `handle`, this answers whether the wrapper it was
+    returned for when installed is still in place, which is the check to
+    run when a third party may have replaced the attribute wholesale.
+    Shares the full contract of `find_wrapper()`, including raising
+    `WrapperChainTooDeepError` when the scan is indeterminate, rather
+    than returning `False` as a false negative.
+    """
+
+    return find_wrapper(obj, handle, predicate=predicate, limit=limit) is not None

@@ -40,6 +40,30 @@ Version 2.4.0
   object factory propagates to the caller rather than being treated as
   the end of the chain.
 
+* New ``find_wrapper()`` and ``is_wrapped_by()`` functions for detecting
+  whether a specific wrapper is installed on an attribute.
+  ``find_wrapper()`` scans the chain of wrappers followed from the
+  supplied object for a wrapper and returns it, or ``None`` when not
+  present, with ``is_wrapped_by()`` as the boolean convenience form. The
+  wrapper to look for is identified by its handle, being the wrapper
+  object which the wrap functions return when it is installed, and is
+  matched by object identity only, never equality, which proxies
+  delegate to the wrapped object. Alternatively a ``predicate`` function
+  may be supplied, in which case the first chain entry for which it
+  returns true is returned, and is itself usable as a handle
+  thereafter. At least one of the two must be supplied, and
+  ``TypeError`` is raised otherwise, since testing for the mere
+  presence of any wrapper is fragile: were the target library to adopt
+  wrapt for its own purposes, such a test would wrongly conclude a
+  wrapper of yours was installed. Both functions share the full
+  contract of ``wrapper_chain()``, including raising
+  ``WrapperChainTooDeepError`` when the scan is indeterminate rather
+  than reporting a false negative. Note that when checking a wrapped
+  method of a class, the object scanned should be obtained using
+  ``resolve_path()`` rather than ``getattr()``, since accessing the
+  method on the class triggers descriptor binding and yields a fresh
+  bound wrapper in which the installed handle is not found.
+
 * A ``wrapt.MISSING`` sentinel has been added to the public API. It marks
   the absence of a value, or of a prior attribute definition, in places
   where ``None`` is itself meaningful. It is a singleton which survives

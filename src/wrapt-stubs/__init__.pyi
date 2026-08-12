@@ -54,7 +54,9 @@ if sys.version_info >= (3, 10):
         "MISSING",
         "AttributeWrapper",
         "apply_patch",
+        "find_wrapper",
         "function_wrapper",
+        "is_wrapped_by",
         "lazy_import",
         "patch_function_wrapper",
         "resolve_path",
@@ -646,6 +648,26 @@ if sys.version_info >= (3, 10):
     # unwrapped()
 
     def unwrapped(obj: Any, *, limit: int = 64) -> Any: ...
+
+    # find_wrapper()
+
+    def find_wrapper(
+        obj: Any,
+        handle: Any | None = None,
+        *,
+        predicate: Callable[[Any], bool] | None = None,
+        limit: int = 64,
+    ) -> Any | None: ...
+
+    # is_wrapped_by()
+
+    def is_wrapped_by(
+        obj: Any,
+        handle: Any | None = None,
+        *,
+        predicate: Callable[[Any], bool] | None = None,
+        limit: int = 64,
+    ) -> bool: ...
 
     # register_post_import_hook()
 
