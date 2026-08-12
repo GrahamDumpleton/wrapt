@@ -33,3 +33,15 @@ class TargetModuleNotFoundError(ModuleNotFoundError):
     """
 
     pass
+
+
+class WrapperChainTooDeepError(RuntimeError):
+    """
+    Exception raised when a scan of a chain of wrappers reached the traversal
+    limit with a further link still pending, so the result of the scan would
+    be indeterminate. Inherits from RuntimeError, following the precedent of
+    RecursionError for exhaustion of a depth limit, as it reports an
+    execution limit rather than a contract violation.
+    """
+
+    pass

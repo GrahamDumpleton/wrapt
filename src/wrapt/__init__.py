@@ -34,6 +34,7 @@ from .decorators import (
 from .exceptions import (
     PathResolutionError,
     TargetModuleNotFoundError,
+    WrapperChainTooDeepError,
     WrapperNotInitializedError,
 )
 from .importer import (
@@ -50,9 +51,11 @@ from .patches import (
     patch_function_wrapper,
     resolve_path,
     transient_function_wrapper,
+    unwrapped,
     wrap_function_wrapper,
     wrap_object,
     wrap_object_attribute,
+    wrapper_chain,
 )
 from .proxies import AutoObjectProxy, LazyObjectProxy, ObjectProxy, lazy_import
 from .signature import with_signature
@@ -76,6 +79,7 @@ __all__ = (
     "PartialCallableObjectProxy",
     "PathResolutionError",
     "TargetModuleNotFoundError",
+    "WrapperChainTooDeepError",
     "WrapperNotInitializedError",
     "partial",
     "AdapterFactory",
@@ -101,8 +105,10 @@ __all__ = (
     "patch_function_wrapper",
     "resolve_path",
     "transient_function_wrapper",
+    "unwrapped",
     "wrap_function_wrapper",
     "wrap_object",
     "wrap_object_attribute",
+    "wrapper_chain",
     "WeakFunctionProxy",
 )

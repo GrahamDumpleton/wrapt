@@ -5,7 +5,11 @@ import sys
 import warnings
 
 from .__wrapt__ import BaseObjectProxy, FunctionWrapper
-from .exceptions import PathResolutionError, TargetModuleNotFoundError
+from .exceptions import (
+    PathResolutionError,
+    TargetModuleNotFoundError,
+    WrapperChainTooDeepError,
+)
 from .importer import register_post_import_hook
 
 # Sentinel used where the absence of a value must be distinguishable from
@@ -133,7 +137,7 @@ def wrap_object(target, name, factory, args=(), kwargs=None):
     if kwargs is None:
         kwargs = {}
 
-    (parent, attribute, original) = resolve_path(target, name)
+    parent, attribute, original = resolve_path(target, name)
     wrapper = factory(original, *args, **kwargs)
     apply_patch(parent, attribute, wrapper)
 
@@ -345,8 +349,7 @@ def patch_function_wrapper(target, name, _enabled=MISSING, *, enabled=MISSING):
     if _enabled is not MISSING:
         if enabled is not MISSING:
             raise TypeError(
-                "patch_function_wrapper() got multiple values for "
-                "argument 'enabled'"
+                "patch_function_wrapper() got multiple values for " "argument 'enabled'"
             )
         warnings.warn(
             "Passing 'enabled' positionally to patch_function_wrapper() is "
@@ -407,7 +410,7 @@ def transient_function_wrapper(target, name):
                 target_wrapper = wrapper.__get__(instance, type(instance))
 
             def _execute(wrapped, instance, args, kwargs):
-                (parent, attribute, original) = resolve_path(target, name)
+                parent, attribute, original = resolve_path(target, name)
                 replacement = FunctionWrapper(original, target_wrapper)
 
                 # The attribute may not be defined directly on the parent,
@@ -441,3 +444,75 @@ def transient_function_wrapper(target, name):
         return FunctionWrapper(wrapper, _wrapper)
 
     return _decorator
+
+
+# Functions for introspecting chains of wrappers, linked by each wrapper
+# holding the object it wraps as the __wrapped__ attribute. The chain
+# protocol is shared by wrapt proxies and wrappers, functions decorated
+# using functools.wraps(), and anything else honouring the convention.
+
+
+def wrapper_chain(obj, *, limit=64):
+    """
+    Returns an iterator yielding `obj`, then each successive object found
+    by following the `__wrapped__` attribute, outermost wrapper first. The
+    final item yielded is the innermost object of the chain, which is not
+    itself a wrapper. Traversal ends cleanly at an object with no
+    `__wrapped__` attribute, or upon returning to an object already seen.
+    If the `limit` on the number of items yielded is reached with a further
+    chain link still pending, `WrapperChainTooDeepError` is raised, as a
+    truncated scan would otherwise be indistinguishable from a complete
+    one. A chain of exactly `limit` items which ends naturally is not an
+    error. Note that reading `__wrapped__` from a lazy object proxy will
+    cause it to materialize, and an exception raised by a broken proxy or
+    a lazy object factory will propagate to the caller.
+    """
+
+    # Cycle detection must use identity, not equality or a set of the
+    # objects themselves, since proxies delegate __eq__ and __hash__ to
+    # the wrapped object. Objects seen are therefore tracked by id(),
+    # with strong references also held so no visited object can be
+    # garbage collected and have its id reused while the scan runs, ids
+    # being unique among simultaneously live objects.
+
+    seen = []
+    seen_ids = set()
+
+    current = obj
+
+    while True:
+        if id(current) in seen_ids:
+            return
+
+        if len(seen) >= limit:
+            raise WrapperChainTooDeepError(
+                f"wrapper chain of {obj!r} exceeded {limit} levels"
+            )
+
+        seen.append(current)
+        seen_ids.add(id(current))
+
+        yield current
+
+        try:
+            current = current.__wrapped__
+        except AttributeError:
+            return
+
+
+def unwrapped(obj, *, limit=64):
+    """
+    Returns the innermost object of the chain of wrappers followed from
+    `obj` by the `wrapper_chain()` function, or `obj` itself when it is not
+    wrapped. Shares the full contract of `wrapper_chain()`, including
+    raising `WrapperChainTooDeepError` when the scan is indeterminate,
+    rather than returning a mid chain wrapper as if it were the innermost
+    object.
+    """
+
+    result = obj
+
+    for result in wrapper_chain(obj, limit=limit):
+        pass
+
+    return result

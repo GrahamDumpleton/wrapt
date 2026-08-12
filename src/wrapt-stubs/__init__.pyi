@@ -33,6 +33,7 @@ if sys.version_info >= (3, 10):
         "PartialCallableObjectProxy",
         "PathResolutionError",
         "TargetModuleNotFoundError",
+        "WrapperChainTooDeepError",
         "WrapperNotInitializedError",
         "partial",
         "AdapterFactory",
@@ -58,9 +59,11 @@ if sys.version_info >= (3, 10):
         "patch_function_wrapper",
         "resolve_path",
         "transient_function_wrapper",
+        "unwrapped",
         "wrap_function_wrapper",
         "wrap_object",
         "wrap_object_attribute",
+        "wrapper_chain",
         "WeakFunctionProxy",
     )
 
@@ -570,6 +573,8 @@ if sys.version_info >= (3, 10):
 
     class TargetModuleNotFoundError(ModuleNotFoundError): ...
 
+    class WrapperChainTooDeepError(RuntimeError): ...
+
     # MISSING sentinel. The class stays private, matching the runtime
     # (the dataclasses.MISSING/_MISSING_TYPE arrangement): signatures
     # reference _MissingType while callers only ever write wrapt.MISSING.
@@ -633,6 +638,14 @@ if sys.version_info >= (3, 10):
         args: tuple[Any, ...] = (),
         kwargs: dict[str, Any] | None = None,
     ) -> AttributeWrapper: ...
+
+    # wrapper_chain()
+
+    def wrapper_chain(obj: Any, *, limit: int = 64) -> Iterator[Any]: ...
+
+    # unwrapped()
+
+    def unwrapped(obj: Any, *, limit: int = 64) -> Any: ...
 
     # register_post_import_hook()
 

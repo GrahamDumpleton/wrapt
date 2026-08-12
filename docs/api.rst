@@ -210,6 +210,28 @@ Monkey Patching
     argument of ``wrapt.patch_function_wrapper``; using it as an
     ordinary value elsewhere confers no special behaviour.
 
+Wrapper Chains
+~~~~~~~~~~~~~~
+
+``wrapt.wrapper_chain``
+    Returns an iterator yielding the supplied object, then each
+    successive object found by following the ``__wrapped__``
+    attribute, outermost wrapper first, ending with the innermost
+    object. Sees through wrapt proxies and wrappers, functions
+    decorated using ``functools.wraps``, and anything else honouring
+    the ``__wrapped__`` convention. Raises
+    ``wrapt.WrapperChainTooDeepError`` if the traversal limit is
+    reached with a further link still pending. Note that traversing a
+    chain containing a lazy object proxy causes it to materialize.
+
+``wrapt.unwrapped``
+    Returns the innermost object of the chain of wrappers followed
+    from the supplied object, or the object itself when it is not
+    wrapped. The ergonomic way of recovering the original object from
+    a proxy without writing the traversal loop. Shares the full
+    contract of ``wrapt.wrapper_chain``, including the traversal
+    limit and lazy proxy materialization.
+
 Post Import Hooks
 ~~~~~~~~~~~~~~~~~
 
@@ -334,6 +356,13 @@ Exceptions
     string names a module that cannot be imported. Inherits from
     ``ModuleNotFoundError``, with the low-level error preserved as
     ``__cause__``.
+
+``wrapt.WrapperChainTooDeepError``
+    Raised when a scan of a chain of wrappers reaches the traversal
+    limit with a further link still pending, meaning the result of the
+    scan would be indeterminate. Inherits from ``RuntimeError``,
+    following the precedent of ``RecursionError`` for exhaustion of a
+    depth limit.
 
 Type Hints and the Public API
 -----------------------------

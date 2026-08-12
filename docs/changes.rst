@@ -15,6 +15,31 @@ Version 2.4.0
   Python 3.15 trove classifier has also been added to the package
   metadata.
 
+* New ``wrapper_chain()`` and ``unwrapped()`` functions for introspecting
+  chains of wrappers. ``wrapper_chain()`` returns an iterator yielding the
+  supplied object, then each successive object found by following the
+  ``__wrapped__`` attribute, outermost wrapper first, with the final item
+  being the innermost object of the chain. It relies only on the
+  ``__wrapped__`` convention, so it sees through wrapt proxies and
+  wrappers, functions decorated using ``functools.wraps()``, and anything
+  else honouring the protocol. ``unwrapped()`` returns the innermost
+  object directly, providing the ergonomic way of recovering the original
+  object from a proxy without writing the loop. Traversal ends cleanly at
+  an object with no ``__wrapped__`` attribute or upon a cycle, and is
+  bounded by a ``limit`` keyword argument defaulting to 64 levels as a
+  backstop against pathological cases such as a ``__wrapped__`` property
+  which manufactures a fresh object on every read. Reaching the limit
+  with a further chain link still pending raises the new
+  ``WrapperChainTooDeepError`` exception rather than silently truncating,
+  since a truncated scan would be indistinguishable from a complete one.
+  The exception inherits from ``RuntimeError``, following the precedent
+  of ``RecursionError`` for exhaustion of a depth limit, and is exported
+  from the top-level ``wrapt`` package along with both functions. Note
+  that traversing a chain containing a lazy object proxy will cause it to
+  materialize, and that an exception raised by a broken proxy or a lazy
+  object factory propagates to the caller rather than being treated as
+  the end of the chain.
+
 * A ``wrapt.MISSING`` sentinel has been added to the public API. It marks
   the absence of a value, or of a prior attribute definition, in places
   where ``None`` is itself meaningful. It is a singleton which survives
