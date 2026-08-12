@@ -9,6 +9,8 @@ from .exceptions import (
     PathResolutionError,
     TargetModuleNotFoundError,
     WrapperChainTooDeepError,
+    WrapperNotFoundError,
+    WrapperNotOutermostError,
 )
 from .importer import register_post_import_hook
 
@@ -613,3 +615,135 @@ def is_wrapped_by(obj, handle=None, *, predicate=None, limit=64):
     """
 
     return find_wrapper(obj, handle, predicate=predicate, limit=limit) is not None
+
+
+def unwrap_object(target, name, handle, *, missing_ok=False):
+    """
+    Removes a wrapper which was installed on an attribute of a target
+    object, the inverse of the `wrap_object()` function and the removal
+    call for every wrap form, `wrap_function_wrapper()` and
+    `wrap_object_attribute()` included. The `target` and `name` arguments
+    take the same form as for `resolve_path()`. The `handle` argument is
+    the wrapper object which was returned when the wrapper was installed,
+    and is matched by object identity only. Note that it is not the
+    wrapper function: passing the wrapper function surfaces immediately
+    as `WrapperNotFoundError`, since a function is never a chain entry.
+
+    When the wrapper is found and is outermost, the attribute is restored
+    to the object the wrapper wrapped, at the location where the attribute
+    is actually defined per `resolve_owner()`, so removal through a
+    subclass restores the defining base class rather than leaving a
+    shadowing copy. If restoring would merely shadow the identical object
+    already reachable through the MRO, or the wrapper was installed where
+    no prior definition existed (a `MISSING` terminal), the attribute is
+    instead removed so no residue is left behind. When the wrapper is
+    found buried beneath other wrapt wrappers, it is spliced out of the
+    chain in place, without touching the attribute or disturbing the
+    wrappers above it. When what sits directly above it is not a wrapt
+    wrapper, such as a plain `functools.wraps()` closure whose
+    `__wrapped__` is only metadata, `WrapperNotOutermostError` is raised
+    naming what is above, since splicing there would silently not take
+    effect.
+
+    When the wrapper is not found, because the attribute was never
+    wrapped, the wrapper was already removed, or a third party replaced
+    the attribute wholesale, `WrapperNotFoundError` is raised by default.
+    Passing `missing_ok=True` returns `None` instead, for shutdown paths
+    which must tolerate third party interference. In either case nothing
+    is mutated. The wrapper which was removed is returned. Note that
+    `missing_ok` does not suppress `WrapperChainTooDeepError` from the
+    underlying scan, since an indeterminate scan is not the same thing as
+    the wrapper being gone.
+    """
+
+    try:
+        owner, attribute, current = resolve_owner(target, name)
+    except PathResolutionError as exc:
+        # The attribute is either wholly absent or served dynamically
+        # with no owning location. In neither case is anything of the
+        # caller's statically installed, so both are the not-found
+        # case, except when the wrapper is present in the dynamically
+        # served value, where removal is simply not possible.
+
+        try:
+            current = resolve_path(target, name)[2]
+        except PathResolutionError:
+            current = None
+
+        if current is not None and find_wrapper(current, handle) is not None:
+            raise WrapperNotOutermostError(
+                f"cannot remove {type(handle).__name__} from "
+                f"{target!r}.{name}: the attribute is served dynamically "
+                f"and has no owning location to restore"
+            ) from exc
+
+        if missing_ok:
+            return None
+
+        raise WrapperNotFoundError(
+            f"handle {handle!r} not found on {target!r}.{name}"
+        ) from exc
+
+    found = find_wrapper(current, handle)
+
+    if found is not None:
+        try:
+            restored = found.__wrapped__
+        except AttributeError:
+            # The terminal original object was matched, which the chain
+            # also yields; not being a wrapper, it is not a legitimate
+            # handle.
+            found = None
+
+    if found is None:
+        if missing_ok:
+            return None
+        raise WrapperNotFoundError(
+            f"handle {handle!r} not found on {target!r}.{name}"
+        )
+
+    if found is not current:
+        chain = list(wrapper_chain(current))
+
+        # The scan must use identity, since list.index() would use
+        # __eq__, which proxies delegate to the wrapped object.
+
+        position = next(
+            index for index, entry in enumerate(chain) if entry is found
+        )
+        neighbour = chain[position - 1]
+
+        if not issubclass(type(neighbour), BaseObjectProxy):
+            above = [type(entry).__name__ for entry in chain[:position]]
+            raise WrapperNotOutermostError(
+                f"cannot remove {type(found).__name__} from "
+                f"{target!r}.{name}: wrapped by {above}"
+            )
+
+        neighbour.__wrapped__ = restored
+        return found
+
+    if restored is MISSING:
+        # The wrapper was installed where no prior definition existed.
+        delattr(owner, attribute)
+        return found
+
+    if inspect.isclass(owner):
+        inherited = next(
+            (
+                vars(cls)[attribute]
+                for cls in inspect.getmro(owner)[1:]
+                if attribute in vars(cls)
+            ),
+            None,
+        )
+        if inherited is restored:
+            # Installing the wrapper created a shadow of an inherited
+            # definition, so restoring by assignment would leave a
+            # permanent copy behind; removing the attribute reinstates
+            # the original lookup instead.
+            delattr(owner, attribute)
+            return found
+
+    apply_patch(owner, attribute, restored)
+    return found

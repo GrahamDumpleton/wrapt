@@ -40,6 +40,40 @@ Version 2.4.0
   object factory propagates to the caller rather than being treated as
   the end of the chain.
 
+* New ``unwrap_object()`` function for removing a wrapper installed by
+  ``wrap_object()``, ``wrap_function_wrapper()`` or
+  ``wrap_object_attribute()``, completing the monkey patching lifecycle:
+  the wrap functions return the installed wrapper as a handle, the new
+  detection functions answer whether it is still in place, and
+  ``unwrap_object()`` removes it. The wrapper to remove is identified by
+  its handle, matched by object identity, and the removed wrapper is
+  returned. When the wrapper is outermost, the attribute is restored to
+  the object it wrapped, at the location where the attribute is actually
+  defined per ``resolve_owner()``, so removal through a subclass
+  restores the defining base class rather than leaving a shadowing copy;
+  if restoring would merely shadow the identical inherited object, or
+  the wrapper was installed where no prior definition existed, the
+  attribute is deleted instead so no residue is left behind. When the
+  wrapper is buried beneath other wrapt wrappers, it is spliced out of
+  the chain in place without touching the attribute or disturbing the
+  wrappers above it. When what sits directly above it is not a wrapt
+  wrapper, such as a plain ``functools.wraps()`` closure whose
+  ``__wrapped__`` is only metadata, the new ``WrapperNotOutermostError``
+  exception is raised naming what is above, since splicing there would
+  silently not take effect. When the wrapper is not found at all,
+  because the attribute was never wrapped, the wrapper was already
+  removed, or a third party replaced the attribute wholesale, the new
+  ``WrapperNotFoundError`` exception is raised by default; passing
+  ``missing_ok=True`` returns ``None`` instead, the mode for shutdown
+  paths which must tolerate third party interference. Both new
+  exceptions inherit from ``ValueError`` and are exported from the
+  top-level ``wrapt`` package. Note that ``missing_ok`` does not
+  suppress ``WrapperChainTooDeepError``, since an indeterminate scan is
+  not the same thing as the wrapper being gone, and that a wrap deferred
+  with the ``?`` target syntax returns no handle, with the installed
+  wrapper recoverable after the module is imported using
+  ``find_wrapper()`` with a predicate.
+
 * New ``resolve_owner()`` function, a sibling of ``resolve_path()``
   resolving the same dotted attribute path in the same way and returning
   a tuple of the same shape, with one difference: the first element is

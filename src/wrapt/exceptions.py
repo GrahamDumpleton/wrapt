@@ -45,3 +45,25 @@ class WrapperChainTooDeepError(RuntimeError):
     """
 
     pass
+
+
+class WrapperNotFoundError(ValueError):
+    """
+    Exception raised when the wrapper to be removed was not found in the
+    chain of wrappers of the attribute, meaning nothing of the caller's is
+    installed there: it was never wrapped, was already removed, or the
+    attribute was replaced wholesale by a third party.
+    """
+
+    pass
+
+
+class WrapperNotOutermostError(ValueError):
+    """
+    Exception raised when the wrapper to be removed was found but cannot be
+    removed, because what sits directly above it in the chain is not a wrapt
+    wrapper whose link to it can be updated in place, or because the
+    attribute is served dynamically and has no owning location to restore.
+    """
+
+    pass

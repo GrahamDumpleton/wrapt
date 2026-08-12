@@ -34,7 +34,9 @@ if sys.version_info >= (3, 10):
         "PathResolutionError",
         "TargetModuleNotFoundError",
         "WrapperChainTooDeepError",
+        "WrapperNotFoundError",
         "WrapperNotInitializedError",
+        "WrapperNotOutermostError",
         "partial",
         "AdapterFactory",
         "adapter_factory",
@@ -62,6 +64,7 @@ if sys.version_info >= (3, 10):
         "resolve_owner",
         "resolve_path",
         "transient_function_wrapper",
+        "unwrap_object",
         "unwrapped",
         "wrap_function_wrapper",
         "wrap_object",
@@ -578,6 +581,10 @@ if sys.version_info >= (3, 10):
 
     class WrapperChainTooDeepError(RuntimeError): ...
 
+    class WrapperNotFoundError(ValueError): ...
+
+    class WrapperNotOutermostError(ValueError): ...
+
     # MISSING sentinel. The class stays private, matching the runtime
     # (the dataclasses.MISSING/_MISSING_TYPE arrangement): signatures
     # reference _MissingType while callers only ever write wrapt.MISSING.
@@ -675,6 +682,16 @@ if sys.version_info >= (3, 10):
         predicate: Callable[[Any], bool] | None = None,
         limit: int = 64,
     ) -> bool: ...
+
+    # unwrap_object()
+
+    def unwrap_object(
+        target: ModuleType | type[Any] | Any | str,
+        name: str,
+        handle: Any,
+        *,
+        missing_ok: bool = False,
+    ) -> Any | None: ...
 
     # register_post_import_hook()
 

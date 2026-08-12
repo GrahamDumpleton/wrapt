@@ -211,6 +211,17 @@ Monkey Patching
     the duration of a single call to the decorated function. Useful
     for scoped test fixtures and similar narrow patches.
 
+``wrapt.unwrap_object``
+    Removes a wrapper installed by ``wrap_object``,
+    ``wrap_function_wrapper`` or ``wrap_object_attribute``, identified
+    by its handle, the wrapper object those functions returned.
+    Restores the attribute at the location where it is actually
+    defined when the wrapper is outermost, splices the wrapper out of
+    the chain in place when it is buried beneath other wrapt wrappers,
+    and raises ``wrapt.WrapperNotFoundError`` when it is not present,
+    or returns ``None`` instead with ``missing_ok=True``. See
+    :doc:`monkey`.
+
 ``wrapt.MISSING``
     Sentinel singleton marking the absence of a value, or of a prior
     attribute definition, in places where ``None`` is itself
@@ -389,6 +400,19 @@ Exceptions
     scan would be indeterminate. Inherits from ``RuntimeError``,
     following the precedent of ``RecursionError`` for exhaustion of a
     depth limit.
+
+``wrapt.WrapperNotFoundError``
+    Raised by ``wrapt.unwrap_object`` when the wrapper to be removed
+    is not found in the chain of wrappers of the attribute, meaning
+    nothing of the caller's is installed there. Suppressible per call
+    with ``missing_ok=True``. Inherits from ``ValueError``.
+
+``wrapt.WrapperNotOutermostError``
+    Raised by ``wrapt.unwrap_object`` when the wrapper was found but
+    cannot be removed, because what sits directly above it in the
+    chain is not a wrapt wrapper whose link can be updated in place,
+    or because the attribute is served dynamically and has no owning
+    location to restore. Inherits from ``ValueError``.
 
 Type Hints and the Public API
 -----------------------------

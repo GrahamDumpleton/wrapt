@@ -351,6 +351,91 @@ to replacing ``unittest.mock.patch`` in cases where you want the richer wrapt
 wrapper signature and the correct handling of bound methods. A fuller
 testing example that builds on this pattern is covered in :doc:`examples`.
 
+Inspecting and Removing Patches
+-------------------------------
+
+Every wrap function returns the wrapper object it installed:
+``wrap_function_wrapper`` and ``wrap_object`` return the wrapper placed
+on the attribute, and ``wrap_object_attribute`` returns the descriptor
+installed on the class. That returned object is the *handle* for the
+patch, and it is the identity used for detecting and removing wrappers.
+Code which may later need to check on or remove its patches should keep
+the handles it receives, typically in a registry keyed by target and
+attribute name.
+
+::
+
+    import wrapt
+
+    registry = {}
+
+    def instrument(module, name, wrapper):
+        if (module, name) not in registry:
+            registry[(module, name)] = wrapt.wrap_function_wrapper(
+                module, name, wrapper)
+
+    def uninstrument():
+        while registry:
+            (module, name), handle = registry.popitem()
+            wrapt.unwrap_object(module, name, handle, missing_ok=True)
+
+``wrapt.is_wrapped_by()`` answers whether the wrapper a handle was
+returned for is still installed, and ``wrapt.find_wrapper()`` returns
+the matching chain entry itself. Both match by object identity only,
+never equality, which proxies delegate to the wrapped object, and both
+accept a ``predicate`` function as an alternative to a handle. The
+underlying traversal is exposed as ``wrapt.wrapper_chain()``, which
+yields the wrapper stack outermost first ending with the original
+object, and ``wrapt.unwrapped()``, which returns the original object
+directly.
+
+``wrapt.unwrap_object()`` removes the wrapper identified by a handle
+and returns it. Several patches may have been applied over one another,
+and removal handles each arrangement:
+
+* When the wrapper is outermost, the attribute is restored to the
+  object the wrapper wrapped, at the location where the attribute is
+  actually defined per ``resolve_owner()``. Removal through a subclass
+  therefore restores the defining base class, and if restoring would
+  merely shadow the identical inherited object, or the wrapper was
+  installed where nothing was defined before, the attribute is deleted
+  instead, leaving no residue.
+
+* When the wrapper is buried beneath other wrapt wrappers, it is
+  spliced out of the chain in place. The attribute itself is untouched
+  and the wrappers above keep working, so independent parties can
+  remove their patches in any order.
+
+* When what sits directly above the wrapper is not a wrapt wrapper,
+  for example a plain closure created with ``functools.wraps()``, its
+  ``__wrapped__`` attribute is only metadata and updating it would not
+  change behaviour, so ``WrapperNotOutermostError`` is raised naming
+  what is above.
+
+When the wrapper is not found at all, because the attribute was never
+wrapped, the wrapper was already removed, or a third party replaced the
+attribute wholesale, ``WrapperNotFoundError`` is raised by default so
+that mistakes surface immediately. Cleanup code which must tolerate
+such interference passes ``missing_ok=True`` to get ``None`` back
+instead.
+
+Note that a wrap deferred with the ``?`` target syntax returns ``None``
+rather than a handle, since the wrapper does not exist until the module
+is imported. If such a patch may need removing, either use a post
+import hook so your own callback receives the handle, or recover the
+installed wrapper after the import using ``find_wrapper()`` with a
+predicate::
+
+    handle = wrapt.find_wrapper(
+        wrapt.resolve_path(module, "function")[2],
+        predicate=lambda entry: getattr(
+            entry, "_self_wrapper", None) is my_wrapper)
+
+When checking a wrapped method of a class, obtain the object to scan
+using ``wrapt.resolve_path()``, not ``getattr()``: accessing the method
+on the class triggers descriptor binding and returns a fresh bound
+wrapper in which the installed handle will not be found.
+
 Pitfalls and Guidelines
 -----------------------
 
