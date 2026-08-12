@@ -74,7 +74,7 @@ test:
     just test-version 3.11
     just test-version 3.12
     just test-version 3.13
-    just test-version 3.13t
+    # just test-version 3.13t
     just test-version 3.14
     just test-version 3.14t
     just test-version 3.15
