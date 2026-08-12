@@ -8,6 +8,35 @@ from .__wrapt__ import FunctionWrapper
 from .exceptions import PathResolutionError, TargetModuleNotFoundError
 from .importer import register_post_import_hook
 
+# Sentinel used where the absence of a value must be distinguishable from
+# None being supplied, or where an attribute having had no prior definition
+# must be represented as a value. Exposed as public API since code walking
+# wrapper chains needs to be able to test for it by identity, but only
+# meaningful where wrapt itself checks for it.
+
+
+class _MissingType:
+    """The type of the MISSING sentinel, which marks the absence of a value
+    or attribute definition where None is itself meaningful."""
+
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __repr__(self):
+        return "<wrapt.MISSING>"
+
+    def __reduce__(self):
+        # Pickle and copy resolve back to the singleton so identity
+        # comparison against MISSING survives a round trip.
+        return (_MissingType, ())
+
+
+MISSING = _MissingType()
+
 # Helper functions for applying wrappers to existing functions.
 
 
@@ -226,10 +255,7 @@ def wrap_function_wrapper(target, name, wrapper):
     return wrap_object(target, name, FunctionWrapper, (wrapper,))
 
 
-_MISSING = object()
-
-
-def patch_function_wrapper(target, name, _enabled=_MISSING, *, enabled=None):
+def patch_function_wrapper(target, name, _enabled=MISSING, *, enabled=MISSING):
     """
     Creates a decorator which can be applied to a wrapper function, where the
     wrapper function will be used to wrap a function which is the attribute of
@@ -244,11 +270,12 @@ def patch_function_wrapper(target, name, _enabled=_MISSING, *, enabled=None):
     returns a boolean. When a callable is provided, it will be called each time
     the wrapper is invoked to determine if the wrapper function should be
     executed or whether the wrapped function should be called directly. If
-    `enabled` is not provided, the wrapper is enabled by default.
+    `enabled` is not provided, or an explicit value of `None` is supplied,
+    the wrapper is enabled by default.
     """
 
-    if _enabled is not _MISSING:
-        if enabled is not None:
+    if _enabled is not MISSING:
+        if enabled is not MISSING:
             raise TypeError(
                 "patch_function_wrapper() got multiple values for "
                 "argument 'enabled'"
@@ -261,6 +288,9 @@ def patch_function_wrapper(target, name, _enabled=_MISSING, *, enabled=None):
             stacklevel=2,
         )
         enabled = _enabled
+
+    if enabled is MISSING:
+        enabled = None
 
     def _wrapper(wrapper):
         if isinstance(target, str) and target.endswith("?"):

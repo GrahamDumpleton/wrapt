@@ -189,6 +189,16 @@ Monkey Patching
     the duration of a single call to the decorated function. Useful
     for scoped test fixtures and similar narrow patches.
 
+``wrapt.MISSING``
+    Sentinel singleton marking the absence of a value, or of a prior
+    attribute definition, in places where ``None`` is itself
+    meaningful. Always test for it by identity using
+    ``is wrapt.MISSING``; it survives pickling and copying with its
+    identity preserved. The sentinel is only meaningful where wrapt
+    itself checks for it, such as the default for the ``enabled``
+    argument of ``wrapt.patch_function_wrapper``; using it as an
+    ordinary value elsewhere confers no special behaviour.
+
 Post Import Hooks
 ~~~~~~~~~~~~~~~~~
 
@@ -291,6 +301,28 @@ Weak References
     instance and unbound function separately and rebinding on call.
     Accepts an optional callback invoked when the underlying object is
     garbage collected.
+
+Exceptions
+~~~~~~~~~~
+
+``wrapt.WrapperNotInitializedError``
+    Raised when a wrapper is in an inconsistent state where
+    ``__init__`` was called but ``__wrapped__`` was never set.
+    Inherits from ``ValueError`` only, so it is not silently swallowed
+    by ``hasattr``/``getattr``/``except AttributeError`` patterns.
+
+``wrapt.PathResolutionError``
+    Raised by ``wrapt.resolve_path`` when the dotted attribute path
+    cannot be resolved on the patch target. Inherits from
+    ``AttributeError``, with the message naming the failing attribute,
+    the full dotted path, and the target, and the low-level error
+    preserved as ``__cause__``.
+
+``wrapt.TargetModuleNotFoundError``
+    Raised by ``wrapt.resolve_path`` when a patch target supplied as a
+    string names a module that cannot be imported. Inherits from
+    ``ModuleNotFoundError``, with the low-level error preserved as
+    ``__cause__``.
 
 Type Hints and the Public API
 -----------------------------

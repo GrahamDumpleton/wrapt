@@ -8,12 +8,14 @@ if sys.version_info >= (3, 10):
         AsyncIterator,
         Callable,
         Concatenate,
+        Final,
         Generator,
         Generic,
         Iterator,
         ParamSpec,
         Protocol,
         TypeVar,
+        final,
         overload,
     )
 
@@ -48,6 +50,7 @@ if sys.version_info >= (3, 10):
         "notify_module_loaded",
         "register_post_import_hook",
         "when_imported",
+        "MISSING",
         "apply_patch",
         "function_wrapper",
         "lazy_import",
@@ -546,7 +549,7 @@ if sys.version_info >= (3, 10):
         target: ModuleType | type[Any] | Any | str,
         name: str,
         *,
-        enabled: bool | _Boolean | Callable[[], bool] | None = None,
+        enabled: bool | _Boolean | Callable[[], bool] | None | _MissingType = ...,
     ) -> _WrapperDecorator: ...
 
     # transient_function_wrapper()
@@ -565,6 +568,15 @@ if sys.version_info >= (3, 10):
     class PathResolutionError(AttributeError): ...
 
     class TargetModuleNotFoundError(ModuleNotFoundError): ...
+
+    # MISSING sentinel. The class stays private, matching the runtime
+    # (the dataclasses.MISSING/_MISSING_TYPE arrangement): signatures
+    # reference _MissingType while callers only ever write wrapt.MISSING.
+
+    @final
+    class _MissingType: ...
+
+    MISSING: Final[_MissingType]
 
     # resolve_path()
 

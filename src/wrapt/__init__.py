@@ -43,6 +43,7 @@ from .importer import (
     when_imported,
 )
 from .patches import (
+    MISSING,
     apply_patch,
     function_wrapper,
     patch_function_wrapper,
@@ -91,6 +92,7 @@ __all__ = (
     "notify_module_loaded",
     "register_post_import_hook",
     "when_imported",
+    "MISSING",
     "apply_patch",
     "function_wrapper",
     "lazy_import",

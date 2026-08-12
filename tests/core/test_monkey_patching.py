@@ -33,6 +33,10 @@ def global_function_3_enabled_positional(*args, **kwargs):
     return args, kwargs
 
 
+def global_function_3_enabled_none(*args, **kwargs):
+    return args, kwargs
+
+
 def global_function_4(*args, **kwargs):
     return args, kwargs
 
@@ -411,6 +415,39 @@ class TestMonkeyPatching(unittest.TestCase):
             wrapt.patch_function_wrapper(
                 __name__, "global_function_3_enabled_positional", False, enabled=True
             )
+
+    def test_patch_function_enabled_positional_and_keyword_none(self):
+
+        # Passing enabled both positionally and by keyword is an error
+        # even when the keyword value is None, since an explicit None is
+        # distinguishable from the argument not being supplied.
+
+        with self.assertRaises(TypeError):
+            wrapt.patch_function_wrapper(
+                __name__, "global_function_3_enabled_positional", False, enabled=None
+            )
+
+    def test_patch_function_module_name_enabled_none(self):
+
+        # An explicit enabled=None behaves the same as not supplying the
+        # argument, with the wrapper enabled.
+
+        _args = (1, 2)
+        _kwargs = {"one": 1, "two": 2}
+
+        called = []
+
+        @wrapt.patch_function_wrapper(
+            __name__, "global_function_3_enabled_none", enabled=None
+        )
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            return wrapped(*args, **kwargs)
+
+        result = global_function_3_enabled_none(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
 
     def test_patch_function_module(self):
 

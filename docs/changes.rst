@@ -15,13 +15,29 @@ Version 2.4.0
   Python 3.15 trove classifier has also been added to the package
   metadata.
 
+* A ``wrapt.MISSING`` sentinel has been added to the public API. It marks
+  the absence of a value, or of a prior attribute definition, in places
+  where ``None`` is itself meaningful. It is a singleton which survives
+  pickling and copying with its identity preserved, so it can always be
+  tested for using ``is wrapt.MISSING``. Note that the sentinel is only
+  meaningful where wrapt itself checks for it; using it as an ordinary
+  value elsewhere confers no special behaviour.
+
 **Features Changed**
 
 * The ``enabled`` argument of ``patch_function_wrapper()`` is now keyword
   only. Passing it positionally still works for now, but raises a
   ``DeprecationWarning`` and will become an error in a future version of
   wrapt. The type stubs already declare the argument as keyword only, so
-  type checkers will flag the deprecated calling convention.
+  type checkers will flag the deprecated calling convention. The default
+  value of the argument is now the new ``wrapt.MISSING`` sentinel in
+  place of ``None``, so that an explicitly supplied value is
+  distinguishable from the argument not being supplied. Passing
+  ``enabled=None`` explicitly still behaves the same as not supplying
+  the argument. One consequence is that passing ``enabled`` both
+  positionally and by keyword now always raises ``TypeError``, where
+  previously an explicit keyword value of ``None`` alongside a
+  positional value went undetected and the positional value was used.
 
 * The ``resolve_path()`` function now reports failures using two new
   exception types. When the dotted attribute path cannot be resolved on
