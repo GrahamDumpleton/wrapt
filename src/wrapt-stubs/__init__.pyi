@@ -59,6 +59,7 @@ if sys.version_info >= (3, 10):
         "is_wrapped_by",
         "lazy_import",
         "patch_function_wrapper",
+        "resolve_owner",
         "resolve_path",
         "transient_function_wrapper",
         "unwrapped",
@@ -589,6 +590,12 @@ if sys.version_info >= (3, 10):
     # resolve_path()
 
     def resolve_path(
+        target: ModuleType | type[Any] | Any | str, name: str
+    ) -> tuple[ModuleType | type[Any] | Any, str, Callable[..., Any]]: ...
+
+    # resolve_owner()
+
+    def resolve_owner(
         target: ModuleType | type[Any] | Any | str, name: str
     ) -> tuple[ModuleType | type[Any] | Any, str, Callable[..., Any]]: ...
 

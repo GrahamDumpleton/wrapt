@@ -111,6 +111,54 @@ def resolve_path(target, name):
     return (parent, attribute, original)
 
 
+def resolve_owner(target, name):
+    """
+    Sibling of the `resolve_path()` function, resolving the dotted path
+    supplied as `name` on a target object in the same way and returning a
+    tuple of the same shape, with one difference: the first element is the
+    object whose `__dict__` actually defines the attribute, rather than
+    the object the path resolved to. The two answer different questions.
+    `resolve_path()` answers where to write so that lookups through the
+    named object are affected, which is the correct location for
+    installing a wrapper, and shadowing an inherited definition is
+    legitimate there. `resolve_owner()` answers where the attribute
+    physically lives, which is the correct location for removing a
+    wrapper, since restoring anywhere other than the defining location
+    would leave a shadowing copy behind. For a class target the owner is
+    the defining class found by walking the MRO, for an instance target
+    it is the instance itself if the attribute is in its `__dict__` and
+    otherwise the defining class, and for a module target it is the
+    module. For dotted paths the owner logic applies to the final segment
+    only. An attribute served dynamically, such as by a module level or
+    metaclass `__getattr__`, exists in no `__dict__`, and rather than
+    guess, `PathResolutionError` is raised, where `resolve_path()` would
+    return the value happily. Failures resolving the path itself raise
+    exactly as for `resolve_path()`.
+    """
+
+    parent, attribute, original = resolve_path(target, name)
+
+    if inspect.isclass(parent):
+        candidates = inspect.getmro(parent)
+    elif inspect.ismodule(parent):
+        candidates = (parent,)
+    else:
+        candidates = (parent,) + tuple(inspect.getmro(type(parent)))
+
+    for candidate in candidates:
+        try:
+            if attribute in vars(candidate):
+                return (candidate, attribute, original)
+        except TypeError:
+            continue
+
+    raise PathResolutionError(
+        f"attribute {attribute!r} of {parent!r} is not defined in any "
+        f"__dict__; it is served dynamically, so there is no owning "
+        f"location to patch"
+    )
+
+
 def apply_patch(parent, attribute, replacement):
     """
     Convenience function for applying a patch to an attribute. This maps to

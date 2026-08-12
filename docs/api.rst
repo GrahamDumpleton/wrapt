@@ -155,6 +155,17 @@ Monkey Patching
     returns a ``(parent, attribute, original)`` tuple suitable for
     subsequent patching. See :doc:`monkey`.
 
+``wrapt.resolve_owner``
+    Sibling of ``resolve_path`` returning a tuple of the same shape,
+    but with the first element being the object whose ``__dict__``
+    actually defines the attribute rather than the object the path
+    resolved to. Where ``resolve_path`` answers where to write so that
+    lookups through the named object are affected (the correct
+    location for installing a wrapper), ``resolve_owner`` answers
+    where the attribute physically lives (the correct location for
+    removing one). Raises ``wrapt.PathResolutionError`` for an
+    attribute served dynamically, which exists in no ``__dict__``.
+
 ``wrapt.apply_patch``
     Thin convenience over ``setattr`` for setting a replacement
     attribute on a parent object as the final step of a patch. Pairs

@@ -1,7 +1,7 @@
 import unittest
 
 import wrapt
-from wrapt.patches import resolve_path
+from wrapt.patches import resolve_owner, resolve_path
 
 
 class TestResolvePath(unittest.TestCase):
@@ -219,3 +219,135 @@ class TestResolvePathErrors(unittest.TestCase):
             wrapt.wrap_function_wrapper(
                 "nonexistent_module_xyz", "function", lambda *args: None
             )
+
+
+class TestResolveOwner(unittest.TestCase):
+
+    def test_directly_defined(self):
+        # An attribute defined directly on the asked-about class, module
+        # or instance resolves to a tuple identical to resolve_path.
+
+        import os
+
+        self.assertEqual(resolve_owner(os, "getcwd"), resolve_path(os, "getcwd"))
+
+        class MyClass:
+            def method(self):
+                pass
+
+        self.assertEqual(
+            resolve_owner(MyClass, "method"), resolve_path(MyClass, "method")
+        )
+
+    def test_inherited_attribute(self):
+        # An attribute inherited from a base class, asked about via the
+        # subclass, resolves to the defining base class as the owner,
+        # where resolve_path returns the subclass, with the value
+        # identical between the two.
+
+        class Base:
+            def method(self):
+                pass
+
+        class Child(Base):
+            pass
+
+        parent, attribute, original = resolve_path(Child, "method")
+        owner, owner_attribute, owner_original = resolve_owner(Child, "method")
+
+        self.assertIs(parent, Child)
+        self.assertIs(owner, Base)
+        self.assertEqual(owner_attribute, attribute)
+        self.assertIs(owner_original, original)
+
+    def test_instance_attribute(self):
+        # An attribute in the instance dictionary resolves to the
+        # instance itself as the owner.
+
+        class MyClass:
+            def __init__(self):
+                self.value = 99
+
+        instance = MyClass()
+        owner, attribute, original = resolve_owner(instance, "value")
+
+        self.assertIs(owner, instance)
+        self.assertEqual(attribute, "value")
+        self.assertEqual(original, 99)
+
+    def test_instance_attribute_on_class(self):
+        # An attribute reached through an instance but defined only on
+        # the class resolves to the defining class in the type's MRO as
+        # the owner.
+
+        class Base:
+            value = 42
+
+        class Child(Base):
+            pass
+
+        instance = Child()
+        owner, attribute, original = resolve_owner(instance, "value")
+
+        self.assertIs(owner, Base)
+        self.assertEqual(attribute, "value")
+        self.assertEqual(original, 42)
+
+    def test_dynamic_attribute_raises(self):
+        # An attribute served dynamically exists in no __dict__, so
+        # where resolve_path returns the value happily, resolve_owner
+        # raises rather than guess at an owning location.
+
+        class Meta(type):
+            def __getattr__(cls, name):
+                if name == "dynamic":
+                    return 42
+                raise AttributeError(name)
+
+        class MyClass(metaclass=Meta):
+            pass
+
+        self.assertEqual(resolve_path(MyClass, "dynamic")[2], 42)
+
+        with self.assertRaises(wrapt.PathResolutionError) as cm:
+            resolve_owner(MyClass, "dynamic")
+
+        self.assertIn("served dynamically", str(cm.exception))
+
+    def test_absent_attribute_propagates(self):
+        # A wholly absent attribute fails inside resolve_path and the
+        # error propagates through resolve_owner unchanged, still
+        # catchable as AttributeError.
+
+        import os
+
+        with self.assertRaises(wrapt.PathResolutionError):
+            resolve_owner(os, "nonexistent_attribute_xyz")
+
+        try:
+            resolve_owner(os, "nonexistent_attribute_xyz")
+        except AttributeError:
+            pass
+        else:
+            self.fail("PathResolutionError was not raised")
+
+    def test_dotted_path_inherited_final_segment(self):
+        # Intermediate segments of a dotted path resolve exactly as for
+        # resolve_path, with the owner logic applied to the final
+        # segment only.
+
+        class Base:
+            def method(self):
+                pass
+
+        class Child(Base):
+            pass
+
+        class Outer:
+            Inner = Child
+
+        owner, attribute, original = resolve_owner(Outer, "Inner.method")
+
+        self.assertIs(owner, Base)
+        self.assertEqual(attribute, "method")
+        self.assertIs(original, vars(Base)["method"])

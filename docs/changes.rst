@@ -40,6 +40,29 @@ Version 2.4.0
   object factory propagates to the caller rather than being treated as
   the end of the chain.
 
+* New ``resolve_owner()`` function, a sibling of ``resolve_path()``
+  resolving the same dotted attribute path in the same way and returning
+  a tuple of the same shape, with one difference: the first element is
+  the object whose ``__dict__`` actually defines the attribute, rather
+  than the object the path resolved to. The two answer different
+  questions. ``resolve_path()`` answers where to write so that lookups
+  through the named object are affected, which is the correct location
+  for installing a wrapper, where shadowing an inherited definition from
+  a named subclass is legitimate. ``resolve_owner()`` answers where the
+  attribute physically lives, which is the correct location for removing
+  a wrapper, since restoring an original anywhere other than the
+  defining location would leave a shadowing copy behind. For example,
+  with a method defined on a base class and resolved via a subclass,
+  ``resolve_path()`` returns the subclass as the parent while
+  ``resolve_owner()`` returns the base class as the owner, both with the
+  identical attribute value. For an instance target the owner is the
+  instance itself if the attribute is in its instance dictionary,
+  otherwise the defining class in the MRO of its type. An attribute
+  served dynamically, such as by a module level or metaclass
+  ``__getattr__``, exists in no ``__dict__``, and ``resolve_owner()``
+  raises ``PathResolutionError`` for it rather than guess, where
+  ``resolve_path()`` returns the value happily.
+
 * New ``find_wrapper()`` and ``is_wrapped_by()`` functions for detecting
   whether a specific wrapper is installed on an attribute.
   ``find_wrapper()`` scans the chain of wrappers followed from the
