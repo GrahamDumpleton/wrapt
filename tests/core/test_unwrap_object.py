@@ -486,3 +486,103 @@ class TestUnwrapObjectAttribute(unittest.TestCase):
         self.assertIs(wrapt.unwrap_object(MyClass, "value", handle), handle)
         self.assertEqual(vars(MyClass)["value"], "default")
         self.assertEqual(MyClass().value, "default")
+
+
+class TestUnwrapObjectCreatedSlot(unittest.TestCase):
+
+    # The wrap functions record on the wrapper whether applying the
+    # patch created the attribute slot, and unwrap_object() consults
+    # that record to decide between restoring by assignment and
+    # removing the attribute.
+
+    def setUp(self):
+        self.module = types.ModuleType("unwrap_created_target")
+        sys.modules["unwrap_created_target"] = self.module
+
+    def tearDown(self):
+        del sys.modules["unwrap_created_target"]
+
+    def test_instance_target_no_residue(self):
+        # A wrapper installed through an instance for a method defined
+        # on its class creates a shadowing entry in the instance
+        # dictionary. Removal deletes that entry rather than leaving a
+        # bound copy of the method behind on the instance.
+
+        class MyClass:
+            def method(self):
+                return "original"
+
+        instance = MyClass()
+
+        handle = wrapt.wrap_function_wrapper(instance, "method", wrapper_a)
+
+        self.assertIn("method", vars(instance))
+
+        self.assertIs(wrapt.unwrap_object(instance, "method", handle), handle)
+        self.assertNotIn("method", vars(instance))
+        self.assertEqual(instance.method(), "original")
+
+    def test_dynamic_attribute_no_residue(self):
+        # A wrapper installed over a value served by a module level
+        # __getattr__ creates a static shadowing attribute on the
+        # module. Removal deletes it again, so the dynamic lookup is
+        # reinstated rather than a static copy of the original being
+        # left behind.
+
+        def module_getattr(name):
+            if name == "dynamic":
+                return lambda: "original"
+            raise AttributeError(name)
+
+        self.module.__getattr__ = module_getattr
+
+        handle = wrapt.wrap_function_wrapper(self.module, "dynamic", wrapper_a)
+
+        self.assertIn("dynamic", vars(self.module))
+
+        self.assertIs(wrapt.unwrap_object(self.module, "dynamic", handle), handle)
+        self.assertNotIn("dynamic", vars(self.module))
+        self.assertEqual(self.module.dynamic(), "original")
+
+    def test_fallback_without_record(self):
+        # A wrapper installed manually with apply_patch() carries no
+        # installation record, so removal falls back to the MRO check,
+        # which still removes a class level shadow of an inherited
+        # definition.
+
+        class Base:
+            def method(self):
+                return "original"
+
+        class Derived(Base):
+            pass
+
+        original = wrapt.resolve_path(Derived, "method")[2]
+        handle = wrapt.FunctionWrapper(original, wrapper_a)
+        wrapt.apply_patch(Derived, "method", handle)
+
+        self.assertIs(wrapt.unwrap_object(Derived, "method", handle), handle)
+        self.assertNotIn("method", vars(Derived))
+        self.assertEqual(Derived().method(), "original")
+
+    def test_record_not_read_through_delegation(self):
+        # The installation record must be read from the wrapper's own
+        # local state only. A handle installed manually over a wrapper
+        # which does carry a record must not have the inner wrapper's
+        # record answered through attribute delegation, which here
+        # would wrongly delete the module attribute.
+
+        self.module.function = lambda: "original"
+
+        inner = wrapt.wrap_function_wrapper(self.module, "function", wrapper_a)
+
+        outer = wrapt.FunctionWrapper(inner, wrapper_b)
+        wrapt.apply_patch(self.module, "function", outer)
+
+        self.assertIs(wrapt.unwrap_object(self.module, "function", outer), outer)
+
+        # The attribute must have been restored by assignment to the
+        # inner wrapper, not deleted.
+
+        self.assertIn("function", vars(self.module))
+        self.assertIs(self.module.function, inner)

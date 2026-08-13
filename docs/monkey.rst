@@ -351,6 +351,16 @@ to replacing ``unittest.mock.patch`` in cases where you want the richer wrapt
 wrapper signature and the correct handling of bound methods. A fuller
 testing example that builds on this pattern is covered in :doc:`examples`.
 
+Removal on exit is deliberately loud about interference. If code called
+within the scope of the patch removed or replaced the temporary wrapper,
+``WrapperNotFoundError`` is raised, and if it wrapped over the top with
+something other than a wrapt wrapper and left it there,
+``WrapperNotOutermostError`` is raised; a wrapt wrapper left applied on
+top is tolerated, with the temporary wrapper spliced out beneath it.
+Both errors indicate the surrounding code is not managing its own
+patches properly, and are raised so the problem surfaces at the test
+responsible rather than as unexplained failures in later tests.
+
 Inspecting and Removing Patches
 -------------------------------
 
@@ -396,10 +406,12 @@ and removal handles each arrangement:
 * When the wrapper is outermost, the attribute is restored to the
   object the wrapper wrapped, at the location where the attribute is
   actually defined per ``resolve_owner()``. Removal through a subclass
-  therefore restores the defining base class, and if restoring would
-  merely shadow the identical inherited object, or the wrapper was
-  installed where nothing was defined before, the attribute is deleted
-  instead, leaving no residue.
+  therefore restores the defining base class, and if the wrap had
+  created a shadowing slot, such as on a subclass, on an instance, or
+  over a dynamically served value, the attribute is deleted instead,
+  leaving no residue. The wrap functions record whether they created
+  the slot on the wrapper itself at installation time, so this
+  decision is exact for wrappers they installed.
 
 * When the wrapper is buried beneath other wrapt wrappers, it is
   spliced out of the chain in place. The attribute itself is untouched

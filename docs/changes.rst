@@ -53,7 +53,22 @@ Version 2.4.0
   restores the defining base class rather than leaving a shadowing copy;
   if restoring would merely shadow the identical inherited object, or
   the wrapper was installed where no prior definition existed, the
-  attribute is deleted instead so no residue is left behind. When the
+  attribute is deleted instead so no residue is left behind. To make
+  such decisions exact, ``wrap_object()`` records on the wrapper it
+  installs, in the local state of the proxy under the reserved
+  ``__wrapt_wrap_object_created_slot__`` key, whether applying the
+  patch created the attribute slot or overwrote one which already
+  existed, and ``unwrap_object()`` treats that record as authoritative.
+  Removal of a wrapper installed through an instance for an attribute
+  defined on its class, or over a value served by a dynamic
+  ``__getattr__``, therefore also deletes the shadowing slot rather
+  than leaving a copy of the original behind, cases which cannot be
+  determined from the state at removal time alone. A check against the
+  MRO remains as the fallback for wrappers which do not carry the
+  record, such as those installed manually with ``apply_patch()``. For
+  this to work the factory given to ``wrap_object()`` should be a
+  ``BaseObjectProxy`` subclass or return an instance of one, which was
+  always the convention and is what the type hints require. When the
   wrapper is buried beneath other wrapt wrappers, it is spliced out of
   the chain in place without touching the attribute or disturbing the
   wrappers above it. When what sits directly above it is not a wrapt
@@ -181,6 +196,27 @@ Version 2.4.0
     as its first argument, ahead of the existing arguments. Code which
     introspected the old attribute names or constructed
     ``AttributeWrapper`` directly needs updating.
+
+* The ``transient_function_wrapper()`` decorator is now implemented on
+  top of ``wrap_object()`` and ``unwrap_object()``, and restoration of
+  the patched attribute when the call exits is no longer a blind
+  overwrite of whatever the attribute holds at that point. If code
+  called within the scope of the patch wrapped over the top of the
+  temporary wrapper with a wrapt wrapper and left it there, the
+  temporary wrapper is now spliced out from beneath it, with the other
+  wrapper left in place, where previously it would have been silently
+  destroyed by the restore. If something removed or replaced the
+  temporary wrapper during the call, ``WrapperNotFoundError`` is now
+  raised, and if what was applied on top of the temporary wrapper is
+  not a wrapt wrapper and so cannot be spliced past,
+  ``WrapperNotOutermostError`` is raised, where previously both cases
+  were silently clobbered by the restore. The errors are deliberate:
+  both situations indicate the surrounding code, typically a test
+  harness, is not managing its own patches properly, and the leaked
+  patch state would otherwise surface as hard to diagnose failures in
+  later tests, far from the root cause. Note that an error raised
+  during restoration supersedes any in-flight exception from the
+  wrapped call, which remains visible as the chained ``__context__``.
 
 * The ``enabled`` argument of ``patch_function_wrapper()`` is now keyword
   only. Passing it positionally still works for now, but raises a

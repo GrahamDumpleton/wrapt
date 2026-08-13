@@ -1,3 +1,4 @@
+import functools
 import types
 import unittest
 
@@ -249,3 +250,99 @@ class TestTransientFunctionWrapper(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTransientFunctionWrapperInterference(unittest.TestCase):
+
+    # Restoration on exit is deliberately loud about interference from
+    # code called within the scope of the patch, since leaked patch
+    # state in a test harness surfaces as hard to diagnose failures in
+    # later tests.
+
+    def _make_module(self):
+        module = types.ModuleType("transient_interference_target")
+        module.function = lambda: "original"
+        return module
+
+    def test_removed_during_call_raises(self):
+        module = self._make_module()
+
+        @wrapt.transient_function_wrapper(module, "function")
+        def patch(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @patch
+        def run():
+            module.function = lambda: "replaced"
+
+        with self.assertRaises(wrapt.WrapperNotFoundError):
+            run()
+
+    def test_removed_during_call_with_exception_in_flight(self):
+        # The restoration error supersedes an in-flight exception from
+        # the wrapped call, which remains visible as the chained
+        # __context__.
+
+        module = self._make_module()
+
+        @wrapt.transient_function_wrapper(module, "function")
+        def patch(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @patch
+        def run():
+            module.function = lambda: "replaced"
+            raise ZeroDivisionError("failure from the call itself")
+
+        with self.assertRaises(wrapt.WrapperNotFoundError) as cm:
+            run()
+
+        self.assertIsInstance(cm.exception.__context__, ZeroDivisionError)
+
+    def test_wrapt_wrapper_left_on_top_spliced(self):
+        # A wrapt wrapper applied over the temporary wrapper and left in
+        # place is tolerated: the temporary wrapper is spliced out from
+        # beneath it, with the other wrapper left wrapping the original.
+
+        module = self._make_module()
+        original = module.function
+
+        handles = []
+
+        def their_wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @wrapt.transient_function_wrapper(module, "function")
+        def patch(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @patch
+        def run():
+            handles.append(
+                wrapt.wrap_function_wrapper(module, "function", their_wrapper)
+            )
+
+        run()
+
+        self.assertIs(module.function, handles[0])
+        self.assertIs(module.function.__wrapped__, original)
+
+    def test_non_wrapt_wrapper_left_on_top_raises(self):
+        module = self._make_module()
+
+        @wrapt.transient_function_wrapper(module, "function")
+        def patch(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @patch
+        def run():
+            inner = module.function
+
+            @functools.wraps(inner)
+            def closure():
+                return inner()
+
+            module.function = closure
+
+        with self.assertRaises(wrapt.WrapperNotOutermostError):
+            run()

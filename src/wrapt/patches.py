@@ -181,14 +181,42 @@ def wrap_object(target, name, factory, args=(), kwargs=None):
     should accept the original object and may accept additional positional and
     keyword arguments which will be set by unpacking input arguments using
     `*args` and `**kwargs` calling conventions. The factory function should
-    return a new object that will replace the original object.
+    return a new object that will replace the original object, and should
+    ordinarily be a `BaseObjectProxy` subclass or return an instance of
+    one, so that the replacement can carry the installation details which
+    `unwrap_object()` later relies upon to restore things faithfully.
     """
 
     if kwargs is None:
         kwargs = {}
 
     parent, attribute, original = resolve_path(target, name)
+
+    # Record whether applying the patch creates the attribute slot on the
+    # parent, or overwrites one which already existed. When the value was
+    # being served from somewhere else, such as a base class via the MRO,
+    # the class of an instance, or a dynamic __getattr__, the patch
+    # creates a shadowing slot, and faithful removal is deleting that
+    # slot again rather than assigning the original into it. This fact
+    # only exists at installation time, so it is stashed on the wrapper
+    # itself, in the local state of the proxy where lookups cannot be
+    # confused with anything of the wrapped object's, for
+    # unwrap_object() to consult. A factory result which is not a wrapt
+    # proxy cannot carry it and unwrap_object() falls back to what can
+    # be determined at removal time.
+
+    try:
+        created = attribute not in vars(parent)
+    except TypeError:
+        created = False
+
     wrapper = factory(original, *args, **kwargs)
+
+    try:
+        wrapper.__self_setattr__("__wrapt_wrap_object_created_slot__", created)
+    except AttributeError:
+        pass
+
     apply_patch(parent, attribute, wrapper)
 
     return wrapper
@@ -447,6 +475,18 @@ def transient_function_wrapper(target, name):
     through that object and not the class where the attribute is defined. In
     that case the temporary attribute which shadowed the inherited definition
     is removed again when the call exits, restoring the original lookup.
+
+    The temporary wrapper is removed using `unwrap_object()`, so if code
+    called within the scope of the patch wrapped over the top of the
+    temporary wrapper with a wrapt wrapper and left it there, the temporary
+    wrapper is spliced out beneath it, with the other wrapper left in
+    place. If something removed or replaced the temporary wrapper during
+    the call, `WrapperNotFoundError` is raised, and if what was applied on
+    top of it is not a wrapt wrapper and so cannot be spliced past,
+    `WrapperNotOutermostError` is raised. Both are loud deliberately, as
+    they indicate the surrounding code, typically a test harness, is not
+    managing its own patches properly, and the leaked patch state would
+    otherwise surface as hard to diagnose failures later.
     """
 
     def _decorator(wrapper):
@@ -460,34 +500,26 @@ def transient_function_wrapper(target, name):
                 target_wrapper = wrapper.__get__(instance, type(instance))
 
             def _execute(wrapped, instance, args, kwargs):
-                parent, attribute, original = resolve_path(target, name)
-                replacement = FunctionWrapper(original, target_wrapper)
+                # The wrap and unwrap functions handle all the details:
+                # wrap_object() records whether applying the patch created
+                # a shadowing attribute slot, and unwrap_object() consults
+                # that record to restore or remove the attribute
+                # faithfully, splices the temporary wrapper out from
+                # beneath any wrapt wrapper left applied on top of it, and
+                # raises if the temporary wrapper was removed, replaced,
+                # or pinned beneath a non wrapt wrapper. An exception
+                # raised on exit supersedes any in-flight exception from
+                # the wrapped call, which remains visible as the chained
+                # __context__.
 
-                # The attribute may not be defined directly on the parent,
-                # instead being found on a base class of the parent via the
-                # MRO, or via some dynamic lookup mechanism. In those cases
-                # applying the patch creates a new attribute on the parent
-                # which shadows where the original was found. Restoration
-                # must then remove that shadowing attribute again rather
-                # than set the original on the parent, else a permanent
-                # copy of the original is left behind on the parent.
+                replacement = wrap_object(
+                    target, name, FunctionWrapper, (target_wrapper,)
+                )
 
-                try:
-                    direct = attribute in vars(parent)
-                except TypeError:
-                    direct = True
-
-                setattr(parent, attribute, replacement)
                 try:
                     return wrapped(*args, **kwargs)
                 finally:
-                    if direct:
-                        setattr(parent, attribute, original)
-                    else:
-                        try:
-                            delattr(parent, attribute)
-                        except AttributeError:
-                            pass
+                    unwrap_object(target, name, replacement)
 
             return FunctionWrapper(target_wrapped, _execute)
 
@@ -728,6 +760,37 @@ def unwrap_object(target, name, handle, *, missing_ok=False):
         delattr(owner, attribute)
         return found
 
+    # When wrap_object() installed the wrapper, it recorded on the
+    # wrapper itself whether applying the patch created the attribute
+    # slot. That fact is authoritative: since the wrapper is still
+    # installed and outermost here, the slot cannot have been touched
+    # since it was recorded. It must be read from the proxy's own local
+    # state only, since ordinary attribute access would delegate a
+    # missing entry to the wrapped object and could answer with an
+    # inner wrapper's record instead.
+
+    try:
+        created = found.__self_dict__.get("__wrapt_wrap_object_created_slot__")
+    except AttributeError:
+        created = None
+
+    if created is not None:
+        if created:
+            # Installing the wrapper created a shadowing slot, so
+            # removing the attribute reinstates the original lookup,
+            # be that through the MRO, the class of an instance, or a
+            # dynamic __getattr__, rather than leaving a permanent
+            # copy of the original behind.
+            delattr(owner, attribute)
+        else:
+            apply_patch(owner, attribute, restored)
+        return found
+
+    # The wrapper does not carry the installation record, so fall back
+    # to what can be determined at removal time: if removing the
+    # attribute from a class would re-expose the identical restored
+    # object through the MRO, the wrap must have created a shadow.
+
     if inspect.isclass(owner):
         inherited = next(
             (
@@ -738,10 +801,6 @@ def unwrap_object(target, name, handle, *, missing_ok=False):
             None,
         )
         if inherited is restored:
-            # Installing the wrapper created a shadow of an inherited
-            # definition, so restoring by assignment would leave a
-            # permanent copy behind; removing the attribute reinstates
-            # the original lookup instead.
             delattr(owner, attribute)
             return found
 
