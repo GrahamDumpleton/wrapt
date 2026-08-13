@@ -356,7 +356,7 @@ if sys.version_info >= (3, 10):
         | _InstanceMethodWrapperFunction[_P, _R]
     )
 
-    class _FunctionWrapperBase(ObjectProxy[_WrappedFunction[_P, _R]]):
+    class _FunctionWrapperBase(BaseObjectProxy[_WrappedFunction[_P, _R]]):
         _self_instance: Any
         _self_wrapper: _WrapperFunction[_P, _R]
         _self_enabled: bool | _Boolean | Callable[[], bool] | None
@@ -617,13 +617,14 @@ if sys.version_info >= (3, 10):
     # wrap_object()
 
     _WrapperFactory = Callable[
-        [Callable[..., Any], tuple[Any, ...], dict[str, Any]], type[ObjectProxy[Any]]
+        [Callable[..., Any], tuple[Any, ...], dict[str, Any]],
+        BaseObjectProxy[Any],
     ]
 
     def wrap_object(
         target: ModuleType | type[Any] | Any | str,
         name: str,
-        factory: _WrapperFactory | type[ObjectProxy[Any]],
+        factory: _WrapperFactory | type[BaseObjectProxy[Any]],
         args: tuple[Any, ...] = (),
         kwargs: dict[str, Any] | None = None,
     ) -> Any: ...
@@ -650,7 +651,7 @@ if sys.version_info >= (3, 10):
     def wrap_object_attribute(
         module: ModuleType | type[Any] | Any | str,
         name: str,
-        factory: _WrapperFactory | type[ObjectProxy[Any]],
+        factory: _WrapperFactory | type[BaseObjectProxy[Any]],
         args: tuple[Any, ...] = (),
         kwargs: dict[str, Any] | None = None,
     ) -> AttributeWrapper: ...

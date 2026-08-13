@@ -226,6 +226,20 @@ Version 2.4.0
 
 **Bugs Fixed**
 
+* Corrected several type hints in the stubs which referenced
+  ``ObjectProxy`` where ``BaseObjectProxy`` is the accurate type. The
+  ``factory`` argument of ``wrap_object()`` and
+  ``wrap_object_attribute()`` now accepts any ``BaseObjectProxy``
+  subclass rather than only ``ObjectProxy`` subclasses, and a factory
+  supplied as a plain callable is now declared as returning a proxy
+  instance rather than a proxy class, so the common pattern of passing
+  a lambda which constructs a custom proxy type checks correctly. The
+  function wrapper classes are also now declared as deriving from
+  ``BaseObjectProxy``, matching the runtime, where previously the
+  stubs implied ``FunctionWrapper`` and ``BoundFunctionWrapper`` were
+  iterable through the ``ObjectProxy`` compatibility class's
+  ``__iter__``.
+
 * When ``transient_function_wrapper`` targeted an attribute which was not
   defined directly on the object the target path resolved to, such as a
   method reached through class inheritance, or an attribute reached
