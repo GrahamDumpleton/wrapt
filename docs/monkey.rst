@@ -376,6 +376,44 @@ generator patches only the moment the generator is created, not the
 body of the ``with`` block, since calling a generator function does
 not run any of its code.
 
+To apply several patches for the same block, list the context managers
+in one ``with`` statement. On Python 3.10 or later the list can be
+parenthesized to spread it over multiple lines; on older versions use
+a single line or nested ``with`` statements, as the parenthesized form
+there parses as a tuple, which is not a context manager.
+
+::
+
+    with (
+        wrapt.scoped_function_wrapper("logging", "Logger.info", capture_info),
+        wrapt.scoped_function_wrapper("logging", "Logger.warning", capture_info),
+    ):
+        ...
+
+The patches are applied left to right and removed in reverse order,
+with the same guarantees as nested ``with`` statements: if a later
+patch fails to apply, the earlier ones are removed before the exception
+propagates, and a failure removing one patch does not stop the others
+being removed. When the set of patches is only known at runtime, or
+members are conditional, a list cannot be given to the ``with``
+statement directly; use ``contextlib.ExitStack`` to enter each context
+manager as it is created, which preserves the same guarantees.
+
+::
+
+    import contextlib
+
+    targets = [
+        ("logging", "Logger.info"),
+        ("logging", "Logger.warning"),
+    ]
+
+    with contextlib.ExitStack() as stack:
+        for target, name in targets:
+            stack.enter_context(
+                wrapt.scoped_function_wrapper(target, name, capture_info))
+        ...
+
 For both forms, removal on exit is deliberately loud about
 interference. If code called within the scope of the patch removed or
 replaced the temporary wrapper, ``WrapperNotFoundError`` is raised, and
