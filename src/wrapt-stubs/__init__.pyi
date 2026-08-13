@@ -1,6 +1,7 @@
 import sys
 
 if sys.version_info >= (3, 10):
+    from contextlib import AbstractContextManager
     from inspect import FullArgSpec, Signature
     from types import GenericAlias, ModuleType, TracebackType
     from typing import (
@@ -63,6 +64,7 @@ if sys.version_info >= (3, 10):
         "patch_function_wrapper",
         "resolve_owner",
         "resolve_path",
+        "scoped_function_wrapper",
         "transient_function_wrapper",
         "unwrap_object",
         "unwrapped",
@@ -570,6 +572,14 @@ if sys.version_info >= (3, 10):
     def transient_function_wrapper(
         target: ModuleType | type[Any] | Any | str, name: str
     ) -> _TransientDecorator: ...
+
+    # scoped_function_wrapper()
+
+    def scoped_function_wrapper(
+        target: ModuleType | type[Any] | Any | str,
+        name: str,
+        wrapper: _WrapperFunction[_P, _R],
+    ) -> AbstractContextManager[None]: ...
 
     # Exceptions.
 

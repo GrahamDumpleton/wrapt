@@ -89,6 +89,24 @@ Version 2.4.0
   wrapper recoverable after the module is imported using
   ``find_wrapper()`` with a predicate.
 
+* New ``scoped_function_wrapper()`` function, the block scoped
+  counterpart of the ``transient_function_wrapper()`` decorator. It
+  takes the same arguments as ``wrap_function_wrapper()`` and returns a
+  single use context manager which applies the patch when a ``with``
+  statement is entered and removes it using ``unwrap_object()`` when
+  the block exits, so a temporary patch can be scoped to a block of
+  code rather than to a decorated function call. The context manager
+  yields nothing. Removal on exit behaves the same as for
+  ``transient_function_wrapper()`` when something interfered with the
+  patch during the block: a wrapt wrapper applied on top of the
+  temporary wrapper and left there is tolerated, with the temporary
+  wrapper spliced out beneath it, while the temporary wrapper having
+  been removed or replaced raises ``WrapperNotFoundError``, and a non
+  wrapt wrapper left applied on top raises
+  ``WrapperNotOutermostError``. The deferred form of the target with a
+  trailing ``?`` is not supported, since the patch must be applied at
+  the point the ``with`` statement is entered.
+
 * New ``resolve_owner()`` function, a sibling of ``resolve_path()``
   resolving the same dotted attribute path in the same way and returning
   a tuple of the same shape, with one difference: the first element is

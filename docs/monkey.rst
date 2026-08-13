@@ -351,15 +351,41 @@ to replacing ``unittest.mock.patch`` in cases where you want the richer wrapt
 wrapper signature and the correct handling of bound methods. A fuller
 testing example that builds on this pattern is covered in :doc:`examples`.
 
-Removal on exit is deliberately loud about interference. If code called
-within the scope of the patch removed or replaced the temporary wrapper,
-``WrapperNotFoundError`` is raised, and if it wrapped over the top with
-something other than a wrapt wrapper and left it there,
-``WrapperNotOutermostError`` is raised; a wrapt wrapper left applied on
-top is tolerated, with the temporary wrapper spliced out beneath it.
-Both errors indicate the surrounding code is not managing its own
-patches properly, and are raised so the problem surfaces at the test
-responsible rather than as unexplained failures in later tests.
+When the temporary patch should span a block of code rather than a
+function call, ``wrapt.scoped_function_wrapper()`` is the context
+manager form. It takes the same arguments as ``wrap_function_wrapper``
+and installs the wrapper when the ``with`` statement is entered,
+removing it when the block exits.
+
+::
+
+    calls = []
+
+    def capture_info(wrapped, instance, args, kwargs):
+        calls.append((args, kwargs))
+        return wrapped(*args, **kwargs)
+
+    with wrapt.scoped_function_wrapper("logging", "Logger.info", capture_info):
+        logging.getLogger().info("hello")
+
+The context manager is single use, so call ``scoped_function_wrapper``
+again for each ``with`` statement. Note that a decorated context
+manager factory cannot be substituted for either form: applying
+``transient_function_wrapper`` around a ``contextlib.contextmanager``
+generator patches only the moment the generator is created, not the
+body of the ``with`` block, since calling a generator function does
+not run any of its code.
+
+For both forms, removal on exit is deliberately loud about
+interference. If code called within the scope of the patch removed or
+replaced the temporary wrapper, ``WrapperNotFoundError`` is raised, and
+if it wrapped over the top with something other than a wrapt wrapper
+and left it there, ``WrapperNotOutermostError`` is raised; a wrapt
+wrapper left applied on top is tolerated, with the temporary wrapper
+spliced out beneath it. Both errors indicate the surrounding code is
+not managing its own patches properly, and are raised so the problem
+surfaces at the test responsible rather than as unexplained failures in
+later tests.
 
 Inspecting and Removing Patches
 -------------------------------

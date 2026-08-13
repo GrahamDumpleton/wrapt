@@ -1,5 +1,6 @@
 """Utilities for monkey patching and wrapping object attributes."""
 
+import contextlib
 import inspect
 import sys
 import warnings
@@ -526,6 +527,42 @@ def transient_function_wrapper(target, name):
         return FunctionWrapper(wrapper, _wrapper)
 
     return _decorator
+
+
+@contextlib.contextmanager
+def scoped_function_wrapper(target, name, wrapper):
+    """Returns a context manager which patches a target function with a
+    wrapper function for the duration of a with statement, the block scoped
+    counterpart of the `transient_function_wrapper()` decorator. The
+    arguments take the same form as for `wrap_function_wrapper()`: the
+    `target` can be a module, class, or instance of a class, or the name of
+    a module as a string, the `name` is a string representing the dotted
+    path to the attribute, and the `wrapper` function should accept the
+    `wrapped`, `instance`, `args`, and `kwargs` arguments. The deferred
+    form of the `target` with a trailing ``?`` is not supported, since the
+    patch must be applied at the point the with statement is entered. The
+    context manager yields nothing, is single use, and removes the wrapper
+    using `unwrap_object()` when the block exits, with the same behaviour
+    as `transient_function_wrapper()` when something interfered with the
+    patch during the block: a wrapt wrapper applied on top of the temporary
+    wrapper and left there is tolerated, with the temporary wrapper spliced
+    out beneath it, while the temporary wrapper having been removed or
+    replaced raises `WrapperNotFoundError`, and a non wrapt wrapper left
+    applied on top raises `WrapperNotOutermostError`.
+    """
+
+    if isinstance(target, str) and target.endswith("?"):
+        raise ValueError(
+            "deferred wrapping using a target with a trailing '?' cannot "
+            "be used with scoped_function_wrapper()"
+        )
+
+    handle = wrap_function_wrapper(target, name, wrapper)
+
+    try:
+        yield
+    finally:
+        unwrap_object(target, name, handle)
 
 
 # Functions for introspecting chains of wrappers, linked by each wrapper

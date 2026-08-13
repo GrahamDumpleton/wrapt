@@ -211,6 +211,13 @@ Monkey Patching
     the duration of a single call to the decorated function. Useful
     for scoped test fixtures and similar narrow patches.
 
+``wrapt.scoped_function_wrapper``
+    Block scoped counterpart of ``transient_function_wrapper``. Takes
+    the same arguments as ``wrap_function_wrapper`` and returns a
+    single use context manager which installs the wrapper when the
+    ``with`` statement is entered and removes it, using
+    ``unwrap_object``, when the block exits.
+
 ``wrapt.unwrap_object``
     Removes a wrapper installed by ``wrap_object``,
     ``wrap_function_wrapper`` or ``wrap_object_attribute``, identified
