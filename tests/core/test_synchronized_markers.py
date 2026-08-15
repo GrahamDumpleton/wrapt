@@ -1,12 +1,31 @@
 import asyncio
+import functools
+import gc
 import inspect
 import unittest
+import warnings
 
 import wrapt
 
 
 def _run(coro):
     return asyncio.run(coro)
+
+
+def _coroutine_returning(fn):
+    # The documented use case for mark_as_async: a third party decorator
+    # whose wrapper is a plain def, so introspection reports sync, but
+    # whose calls actually return a coroutine.
+
+    async def run(*args, **kwargs):
+        await asyncio.sleep(0)
+        return fn(*args, **kwargs)
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        return run(*args, **kwargs)
+
+    return wrapper
 
 
 class TestMarkAsSync(unittest.TestCase):
@@ -102,6 +121,110 @@ class TestMarkAsAsync(unittest.TestCase):
         self.assertTrue(inspect.iscoroutinefunction(f))
 
 
+class TestMarkAsSyncCallBehavior(unittest.TestCase):
+    """Markers only change what introspection reports. Calling the
+    marked callable must return exactly what the inner callable
+    returned."""
+
+    def test_plain_def_returns_value(self):
+        @wrapt.mark_as_sync
+        def f(a, b):
+            return a + b
+
+        self.assertEqual(f(1, 2), 3)
+
+    def test_async_def_returns_coroutine_single_await(self):
+        @wrapt.mark_as_sync
+        async def f(x):
+            return x + 1
+
+        result = f(1)
+        self.assertTrue(inspect.iscoroutine(result))
+        self.assertEqual(_run(result), 2)
+
+    def test_generator_returns_generator(self):
+        @wrapt.mark_as_sync
+        def gen():
+            yield 1
+            yield 2
+
+        self.assertEqual(list(gen()), [1, 2])
+
+    def test_method_call_returns_value(self):
+        class C:
+            @wrapt.mark_as_sync
+            def m(self, x):
+                return x * 2
+
+        self.assertEqual(C().m(3), 6)
+
+
+class TestMarkAsAsyncCallBehavior(unittest.TestCase):
+    """Markers only change what introspection reports. Calling the
+    marked callable must return exactly what the inner callable
+    returned; in particular the documented use case, a plain def
+    wrapper returning a coroutine, must keep its single-await
+    contract."""
+
+    def test_coroutine_returning_def_single_await(self):
+        @wrapt.mark_as_async
+        @_coroutine_returning
+        def work(amount):
+            return {"id": f"ch_{amount}"}
+
+        self.assertEqual(_run(work(5)), {"id": "ch_5"})
+
+    def test_coroutine_returning_def_no_leaked_coroutine(self):
+        @wrapt.mark_as_async
+        @_coroutine_returning
+        def work(amount):
+            return {"id": f"ch_{amount}"}
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            result = _run(work(5))
+            gc.collect()
+
+        self.assertEqual(result, {"id": "ch_5"})
+
+    def test_async_def_single_await(self):
+        @wrapt.mark_as_async
+        async def f(x):
+            return x + 1
+
+        result = f(1)
+        self.assertTrue(inspect.iscoroutine(result))
+        self.assertEqual(_run(result), 2)
+
+    def test_plain_def_returns_value(self):
+        # A harmless mislabel: introspection reports a coroutine
+        # function, but the call still passes the value through
+        # unchanged rather than manufacturing an awaitable.
+
+        @wrapt.mark_as_async
+        def f(x):
+            return x * 2
+
+        self.assertEqual(f(3), 6)
+
+    def test_generator_returns_generator(self):
+        @wrapt.mark_as_async
+        def gen():
+            yield 1
+            yield 2
+
+        self.assertEqual(list(gen()), [1, 2])
+
+    def test_method_call_single_await(self):
+        class C:
+            @wrapt.mark_as_async
+            @_coroutine_returning
+            def m(self, x):
+                return x * 2
+
+        self.assertEqual(_run(C().m(3)), 6)
+
+
 class TestAsyncToSync(unittest.TestCase):
 
     def test_runs_async_synchronously(self):
@@ -192,6 +315,20 @@ class TestSynchronizedWithMarkers(unittest.TestCase):
 
         # Effectively async: synchronized picks async wrapper.
         self.assertTrue(inspect.iscoroutinefunction(inner))
+
+    def test_synchronized_over_mark_as_async_single_await(self):
+        # The documented flagship stack: synchronized selects its async
+        # path because of the marker, awaits the marked callable once,
+        # and must hand back the final value, not the inner coroutine.
+
+        @wrapt.synchronized
+        @wrapt.mark_as_async
+        @_coroutine_returning
+        def work(amount):
+            return {"id": f"ch_{amount}"}
+
+        self.assertTrue(inspect.iscoroutinefunction(work))
+        self.assertEqual(_run(work(5)), {"id": "ch_5"})
 
     def test_unmarked_async_def_still_auto_detects(self):
         @wrapt.synchronized

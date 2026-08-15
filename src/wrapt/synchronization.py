@@ -209,10 +209,10 @@ def mark_as_async(wrapped=None, /, *, generator=None):
     async path does not use either).
     """
 
-    async def _wrapper(wrapped, instance, args, kwargs):
-        return wrapped(*args, **kwargs)
-
     def _decorator(wrapped):
+        def _wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
         return _AsyncFunctionWrapper(wrapped, _wrapper, generator=generator)
 
     if wrapped is None:

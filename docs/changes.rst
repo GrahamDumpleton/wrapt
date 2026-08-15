@@ -367,6 +367,27 @@ Version 2.4.0
   <https://github.com/GrahamDumpleton/wrapt/issues/347>`_ for
   prompting this work.
 
+* Calling a callable marked with ``mark_as_async()`` did not pass the
+  call through unchanged as documented. The marker internally used an
+  ``async def`` wrapper, so calling the marked callable returned a
+  coroutine for that wrapper layer which, when awaited, called the
+  inner callable and returned its result without awaiting it. In the
+  marker's documented use case, where a plain ``def`` wrapper returns
+  a coroutine, a single await of the marked callable therefore
+  produced the still pending inner coroutine rather than the final
+  value, and a caller performing only one await leaked the inner
+  coroutine, producing a "coroutine was never awaited" warning at
+  garbage collection. Stacking ``synchronized`` over ``mark_as_async``
+  was affected in the same way, since the synchronized wrapper awaits
+  the marked callable once. Marking a callable which returned a plain
+  value changed behaviour too, with the call returning a coroutine
+  instead of the value. The marker now uses the same pass-through
+  wrapper as ``mark_as_sync()``, so calling the marked callable
+  returns exactly what the inner callable returned and only the
+  calling convention reported by introspection differs, which is the
+  documented contract for the markers. The problem had existed since
+  the markers were introduced in version 2.2.0.
+
 Version 2.3.0
 -------------
 
