@@ -164,6 +164,27 @@ Version 2.4.0
 
 **Features Changed**
 
+* The ``async_to_sync()`` and ``sync_to_async()`` adapters now validate
+  their input at decoration time, following the precedent of the
+  equivalent asgiref utilities. Both raise ``TypeError`` when applied to
+  a generator function of either convention, cases which previously
+  were accepted silently but could never work: ``asyncio.run()`` cannot
+  run an async generator, and dispatching creation of a sync generator
+  to an executor executes no body code while iteration would still
+  block the event loop. ``sync_to_async()`` also raises ``TypeError``
+  when applied to a callable reporting as a coroutine function, and
+  ``async_to_sync()`` issues a ``UserWarning`` when applied to a
+  callable not reporting as one, a warning rather than an error because
+  convention detection has false negatives such as a plain function
+  wrapper whose calls return a coroutine. In each case a callable whose
+  reported convention is wrong can have ``mark_as_sync()`` or
+  ``mark_as_async()`` applied to it first to declare the effective
+  convention, which the error and warning messages point to. The
+  adapters also now always report the plain convention they present, a
+  synchronous function or a coroutine function, where previously a
+  generator function input caused the reported convention to claim a
+  generator variant the adapted callable did not actually provide.
+
 * The ``AttributeWrapper`` descriptor installed by
   ``wrap_object_attribute()`` has been redesigned as an object proxy
   layer deriving from ``BaseObjectProxy``, and is now part of the public

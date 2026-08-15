@@ -28,6 +28,19 @@ def _coroutine_returning(fn):
     return wrapper
 
 
+def _run_to_completion(fn):
+    # A third party decorator whose wrapper collapses an async def into
+    # a synchronous call, but whose functools.wraps() metadata leads the
+    # __wrapped__ chain walk to the inner async def, so introspection
+    # claims async while behaviour is sync.
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(fn(*args, **kwargs))
+
+    return wrapper
+
+
 class TestMarkAsSync(unittest.TestCase):
 
     def test_async_def_reports_not_coroutine(self):
@@ -285,6 +298,131 @@ class TestSyncToAsync(unittest.TestCase):
 
         self.assertTrue(inspect.iscoroutinefunction(add))
         self.assertEqual(_run(add(1, 2)), 3)
+
+
+class TestAsyncToSyncValidation(unittest.TestCase):
+    """async_to_sync rejects generator functions outright and warns on
+    callables not reporting as coroutine functions, since detection has
+    false negatives which the markers can correct."""
+
+    def test_rejects_async_generator_function(self):
+        async def agen():
+            yield 1
+
+        with self.assertRaises(TypeError):
+            wrapt.async_to_sync(agen)
+
+    def test_rejects_sync_generator_function(self):
+        def gen():
+            yield 1
+
+        with self.assertRaises(TypeError):
+            wrapt.async_to_sync(gen)
+
+    def test_async_def_no_warning(self):
+        async def f(x):
+            return x + 1
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            wrapped = wrapt.async_to_sync(f)
+
+        self.assertEqual(wrapped(1), 2)
+
+    def test_plain_def_warns_but_works_if_coroutine_returning(self):
+        @_coroutine_returning
+        def work(amount):
+            return {"id": f"ch_{amount}"}
+
+        with self.assertWarns(UserWarning):
+            wrapped = wrapt.async_to_sync(work)
+
+        # The false negative case the warning exists for: behaviour is
+        # asynchronous even though reporting says otherwise, so the
+        # adapter still functions.
+        self.assertEqual(wrapped(5), {"id": "ch_5"})
+
+    def test_mark_as_async_fixup_suppresses_warning(self):
+        @wrapt.mark_as_async
+        @_coroutine_returning
+        def work(amount):
+            return {"id": f"ch_{amount}"}
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            wrapped = wrapt.async_to_sync(work)
+
+        self.assertEqual(wrapped(5), {"id": "ch_5"})
+
+
+class TestSyncToAsyncValidation(unittest.TestCase):
+    """sync_to_async rejects coroutine functions and generator
+    functions of either convention, with mark_as_sync available to
+    correct a callable misreported as asynchronous."""
+
+    def test_rejects_coroutine_function(self):
+        async def f():
+            return 1
+
+        with self.assertRaises(TypeError):
+            wrapt.sync_to_async(f)
+
+    def test_rejects_async_generator_function(self):
+        async def agen():
+            yield 1
+
+        with self.assertRaises(TypeError):
+            wrapt.sync_to_async(agen)
+
+    def test_rejects_sync_generator_function(self):
+        def gen():
+            yield 1
+
+        with self.assertRaises(TypeError):
+            wrapt.sync_to_async(gen)
+
+    def test_plain_def_accepted(self):
+        def f(x):
+            return x * 2
+
+        wrapped = wrapt.sync_to_async(f)
+        self.assertEqual(_run(wrapped(3)), 6)
+
+    def test_mark_as_sync_fixup_accepted(self):
+        # Misreported as async by the __wrapped__ chain, but sync in
+        # behaviour; mark_as_sync corrects the reporting so the adapter
+        # accepts it and the executor dispatch works.
+
+        @wrapt.mark_as_sync
+        @_run_to_completion
+        async def work(amount):
+            return {"id": f"ch_{amount}"}
+
+        wrapped = wrapt.sync_to_async(work)
+        self.assertEqual(_run(wrapped(5)), {"id": "ch_5"})
+
+
+class TestAdapterConventionReporting(unittest.TestCase):
+    """The adapters always report the plain convention they present,
+    never generator variants."""
+
+    def test_async_to_sync_reports_plain_sync(self):
+        async def f():
+            return 1
+
+        wrapped = wrapt.async_to_sync(f)
+        self.assertFalse(inspect.iscoroutinefunction(wrapped))
+        self.assertFalse(inspect.isgeneratorfunction(wrapped))
+        self.assertFalse(inspect.isasyncgenfunction(wrapped))
+
+    def test_sync_to_async_reports_plain_coroutine(self):
+        def f():
+            return 1
+
+        wrapped = wrapt.sync_to_async(f)
+        self.assertTrue(inspect.iscoroutinefunction(wrapped))
+        self.assertFalse(inspect.isgeneratorfunction(wrapped))
+        self.assertFalse(inspect.isasyncgenfunction(wrapped))
 
 
 class TestSynchronizedWithMarkers(unittest.TestCase):
