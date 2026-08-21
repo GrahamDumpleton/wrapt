@@ -33,8 +33,12 @@ def _create_import_hook_from_string(name):
     def import_hook(module):
         module_name, function = name.split(":")
         attrs = function.split(".")
-        __import__(module_name)
-        callback = sys.modules[module_name]
+
+        # Use importlib.import_module() rather than __import__() as the
+        # latter fails for a module registered in sys.modules whose parent
+        # package is not importable. See resolve_path() in patches.py.
+
+        callback = importlib.import_module(module_name)
         for attr in attrs:
             callback = getattr(callback, attr)
         return callback(module)

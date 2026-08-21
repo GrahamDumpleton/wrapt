@@ -1,6 +1,7 @@
 import unittest
 import sys
 import threading
+import types
 
 import wrapt
 from wrapt.importer import _post_import_hooks
@@ -176,6 +177,41 @@ class TestPostImportHooks(unittest.TestCase):
 
         self.assertIsInstance(this.__loader__, SourceFileLoader)
         self.assertIsInstance(this.__spec__.loader, SourceFileLoader)
+
+
+class TestPostImportHooksStringForm(unittest.TestCase):
+
+    # A hook registered in the 'module:function' string form defers the
+    # import of the callback module until the watched module is imported.
+    # The callback module may itself be a module registered directly in
+    # sys.modules under a dotted name whose parent package does not exist
+    # on the import path.
+
+    def setUp(self):
+        super(TestPostImportHooksStringForm, self).setUp()
+
+        sys.modules.pop("this", None)
+        _post_import_hooks.pop("this", None)
+
+        self.invoked = []
+
+        callbacks = types.ModuleType("wraptsynthetic.callbacks")
+        callbacks.setup = lambda module: self.invoked.append(module.__name__)
+        sys.modules["wraptsynthetic.callbacks"] = callbacks
+
+    def tearDown(self):
+        sys.modules.pop("wraptsynthetic.callbacks", None)
+
+    def test_string_hook_callback_in_synthetic_module(self):
+        wrapt.register_post_import_hook(
+            "wraptsynthetic.callbacks:setup", "this"
+        )
+
+        self.assertEqual(self.invoked, [])
+
+        import this
+
+        self.assertEqual(self.invoked, ["this"])
 
 
 if __name__ == "__main__":

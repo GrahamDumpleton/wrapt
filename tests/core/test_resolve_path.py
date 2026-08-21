@@ -1,3 +1,5 @@
+import sys
+import types
 import unittest
 
 import wrapt
@@ -351,3 +353,28 @@ class TestResolveOwner(unittest.TestCase):
         self.assertIs(owner, Base)
         self.assertEqual(attribute, "method")
         self.assertIs(original, vars(Base)["method"])
+
+
+class TestResolvePathSyntheticModule(unittest.TestCase):
+
+    # A module registered directly in sys.modules under a dotted name is
+    # importable by that name even when its parent package does not exist
+    # on the import path, and resolve_path() must accept the same target
+    # strings that importlib.import_module() resolves.
+
+    def setUp(self):
+        self.module = types.ModuleType("wraptsynthetic.config")
+        self.module.TIMEOUT = 30
+        sys.modules["wraptsynthetic.config"] = self.module
+
+    def tearDown(self):
+        sys.modules.pop("wraptsynthetic.config", None)
+
+    def test_synthetic_module_with_missing_parent(self):
+        parent, attribute, original = resolve_path(
+            "wraptsynthetic.config", "TIMEOUT"
+        )
+
+        self.assertIs(parent, self.module)
+        self.assertEqual(attribute, "TIMEOUT")
+        self.assertEqual(original, 30)

@@ -1,6 +1,7 @@
 """Utilities for monkey patching and wrapping object attributes."""
 
 import contextlib
+import importlib
 import inspect
 import sys
 import warnings
@@ -62,14 +63,19 @@ def resolve_path(target, name):
     """
 
     if isinstance(target, str):
+        # Use importlib.import_module() rather than __import__() as the
+        # latter, even though it imports a dotted module name successfully
+        # from the sys.modules cache, computes its return value by importing
+        # the top level package, which fails for a module registered in
+        # sys.modules whose parent package is not importable.
+
         try:
-            __import__(target)
+            target = importlib.import_module(target)
         except ModuleNotFoundError as exc:
             raise TargetModuleNotFoundError(
                 f"unable to import module {target!r} while resolving "
                 f"the target for {name!r}"
             ) from exc
-        target = sys.modules[target]
 
     parent = target
 

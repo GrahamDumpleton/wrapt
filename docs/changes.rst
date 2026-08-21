@@ -409,6 +409,33 @@ Version 2.4.0
   documented contract for the markers. The problem had existed since
   the markers were introduced in version 2.2.0.
 
+* Supplying a string as the target to ``resolve_path()``, or to any of
+  the patching functions built on it such as ``wrap_object()``, failed
+  with ``TargetModuleNotFoundError`` for a dotted module name which was
+  present in ``sys.modules`` but whose parent package was not
+  importable. Such modules arise when a synthetic module created with
+  ``types.ModuleType`` is registered directly in ``sys.modules`` under a
+  dotted name, as is done by test scaffolding, plugin systems and
+  embedding hosts, and they import successfully with
+  ``importlib.import_module()``. The target module was imported using
+  ``__import__()``, and although the import of the requested module
+  itself succeeds through the module cache, ``__import__()`` computes
+  its return value by separately importing the top level package, which
+  fails when the parent package does not exist. Since ``resolve_path()``
+  performed its own ``sys.modules`` lookup and never used that return
+  value, the failure arose entirely from a value which was thrown away.
+  The target module is now imported using ``importlib.import_module()``,
+  so any target string resolvable by that function is accepted, and a
+  genuinely missing module still raises ``TargetModuleNotFoundError``
+  with the originating ``ModuleNotFoundError`` preserved as
+  ``__cause__``. The same pattern existed in the deferred import
+  performed for a hook registered with ``register_post_import_hook()``
+  using the ``'module:function'`` string form, where a hook function
+  living in such a synthetic module would fail in the same way at the
+  point the watched module was imported, and it has been corrected in
+  the same way. The problem was reported in `issue #349
+  <https://github.com/GrahamDumpleton/wrapt/issues/349>`_.
+
 Version 2.3.0
 -------------
 
