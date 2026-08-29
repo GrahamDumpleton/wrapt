@@ -61,9 +61,10 @@ mostlyclean: clear-cache
 clean: mostlyclean
     rm -rf build dist src/wrapt.egg-info
 
-# Run tests with tox
+# Run tests with tox. Runs tox via uvx so it does not need to be installed
+# in PATH, with tox-uv so tox can use uv-managed Python interpreters.
 test-tox:
-    tox --skip-missing-interpreters
+    uvx --with tox-uv tox --skip-missing-interpreters
 
 # Run tests with uv (modern alternative).
 # The per-version recipes auto-select an mypy that is compatible with
