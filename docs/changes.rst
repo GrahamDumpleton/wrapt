@@ -1,6 +1,441 @@
 Release Notes
 =============
 
+Version 2.4.0
+-------------
+
+**New Features**
+
+* Binary wheels for Python 3.15, including the free threaded variant, are
+  now built and published to PyPi. This was enabled by updating the
+  version of ``cibuildwheel`` used by the release workflow. The newer
+  ``cibuildwheel`` builds free threaded variants of CPython by default,
+  so they no longer need to be explicitly enabled and the free threaded
+  wheels for Python 3.13 and 3.14 continue to be provided as before. The
+  Python 3.15 trove classifier has also been added to the package
+  metadata.
+
+* New ``wrapper_chain()`` and ``unwrapped()`` functions for introspecting
+  chains of wrappers. ``wrapper_chain()`` returns an iterator yielding the
+  supplied object, then each successive object found by following the
+  ``__wrapped__`` attribute, outermost wrapper first, with the final item
+  being the innermost object of the chain. It relies only on the
+  ``__wrapped__`` convention, so it sees through wrapt proxies and
+  wrappers, functions decorated using ``functools.wraps()``, and anything
+  else honouring the protocol. ``unwrapped()`` returns the innermost
+  object directly, providing the ergonomic way of recovering the original
+  object from a proxy without writing the loop. Traversal ends cleanly at
+  an object with no ``__wrapped__`` attribute or upon a cycle, and is
+  bounded by a ``limit`` keyword argument defaulting to 64 levels as a
+  backstop against pathological cases such as a ``__wrapped__`` property
+  which manufactures a fresh object on every read. Reaching the limit
+  with a further chain link still pending raises the new
+  ``WrapperChainTooDeepError`` exception rather than silently truncating,
+  since a truncated scan would be indistinguishable from a complete one.
+  The exception inherits from ``RuntimeError``, following the precedent
+  of ``RecursionError`` for exhaustion of a depth limit, and is exported
+  from the top-level ``wrapt`` package along with both functions. Note
+  that traversing a chain containing a lazy object proxy will cause it to
+  materialize, and that an exception raised by a broken proxy or a lazy
+  object factory propagates to the caller rather than being treated as
+  the end of the chain.
+
+* New ``unwrap_object()`` function for removing a wrapper installed by
+  ``wrap_object()``, ``wrap_function_wrapper()`` or
+  ``wrap_object_attribute()``, completing the monkey patching lifecycle:
+  the wrap functions return the installed wrapper as a handle, the new
+  detection functions answer whether it is still in place, and
+  ``unwrap_object()`` removes it. The wrapper to remove is identified by
+  its handle, matched by object identity, and the removed wrapper is
+  returned. When the wrapper is outermost, the attribute is restored to
+  the object it wrapped, at the location where the attribute is actually
+  defined per ``resolve_owner()``, so removal through a subclass
+  restores the defining base class rather than leaving a shadowing copy;
+  if restoring would merely shadow the identical inherited object, or
+  the wrapper was installed where no prior definition existed, the
+  attribute is deleted instead so no residue is left behind. To make
+  such decisions exact, ``wrap_object()`` records on the wrapper it
+  installs, in the local state of the proxy under the reserved
+  ``__wrapt_wrap_object_created_slot__`` key, whether applying the
+  patch created the attribute slot or overwrote one which already
+  existed, and ``unwrap_object()`` treats that record as authoritative.
+  Removal of a wrapper installed through an instance for an attribute
+  defined on its class, or over a value served by a dynamic
+  ``__getattr__``, therefore also deletes the shadowing slot rather
+  than leaving a copy of the original behind, cases which cannot be
+  determined from the state at removal time alone. A check against the
+  MRO remains as the fallback for wrappers which do not carry the
+  record, such as those installed manually with ``apply_patch()``. For
+  this to work the factory given to ``wrap_object()`` should be a
+  ``BaseObjectProxy`` subclass or return an instance of one, which was
+  always the convention and is what the type hints require. When the
+  wrapper is buried beneath other wrapt wrappers, it is spliced out of
+  the chain in place without touching the attribute or disturbing the
+  wrappers above it. When what sits directly above it is not a wrapt
+  wrapper, such as a plain ``functools.wraps()`` closure whose
+  ``__wrapped__`` is only metadata, the new ``WrapperNotOutermostError``
+  exception is raised naming what is above, since splicing there would
+  silently not take effect. When the wrapper is not found at all,
+  because the attribute was never wrapped, the wrapper was already
+  removed, or a third party replaced the attribute wholesale, the new
+  ``WrapperNotFoundError`` exception is raised by default; passing
+  ``missing_ok=True`` returns ``None`` instead, the mode for shutdown
+  paths which must tolerate third party interference. Both new
+  exceptions inherit from ``ValueError`` and are exported from the
+  top-level ``wrapt`` package. Note that ``missing_ok`` does not
+  suppress ``WrapperChainTooDeepError``, since an indeterminate scan is
+  not the same thing as the wrapper being gone, and that a wrap deferred
+  with the ``?`` target syntax returns no handle, with the installed
+  wrapper recoverable after the module is imported using
+  ``find_wrapper()`` with a predicate.
+
+* New ``scoped_function_wrapper()`` function, the block scoped
+  counterpart of the ``transient_function_wrapper()`` decorator. It
+  takes the same arguments as ``wrap_function_wrapper()`` and returns a
+  single use context manager which applies the patch when a ``with``
+  statement is entered and removes it using ``unwrap_object()`` when
+  the block exits, so a temporary patch can be scoped to a block of
+  code rather than to a decorated function call. The context manager
+  yields nothing. Removal on exit behaves the same as for
+  ``transient_function_wrapper()`` when something interfered with the
+  patch during the block: a wrapt wrapper applied on top of the
+  temporary wrapper and left there is tolerated, with the temporary
+  wrapper spliced out beneath it, while the temporary wrapper having
+  been removed or replaced raises ``WrapperNotFoundError``, and a non
+  wrapt wrapper left applied on top raises
+  ``WrapperNotOutermostError``. The deferred form of the target with a
+  trailing ``?`` is not supported, since the patch must be applied at
+  the point the ``with`` statement is entered.
+
+* New ``resolve_owner()`` function, a sibling of ``resolve_path()``
+  resolving the same dotted attribute path in the same way and returning
+  a tuple of the same shape, with one difference: the first element is
+  the object whose ``__dict__`` actually defines the attribute, rather
+  than the object the path resolved to. The two answer different
+  questions. ``resolve_path()`` answers where to write so that lookups
+  through the named object are affected, which is the correct location
+  for installing a wrapper, where shadowing an inherited definition from
+  a named subclass is legitimate. ``resolve_owner()`` answers where the
+  attribute physically lives, which is the correct location for removing
+  a wrapper, since restoring an original anywhere other than the
+  defining location would leave a shadowing copy behind. For example,
+  with a method defined on a base class and resolved via a subclass,
+  ``resolve_path()`` returns the subclass as the parent while
+  ``resolve_owner()`` returns the base class as the owner, both with the
+  identical attribute value. For an instance target the owner is the
+  instance itself if the attribute is in its instance dictionary,
+  otherwise the defining class in the MRO of its type. An attribute
+  served dynamically, such as by a module level or metaclass
+  ``__getattr__``, exists in no ``__dict__``, and ``resolve_owner()``
+  raises ``PathResolutionError`` for it rather than guess, where
+  ``resolve_path()`` returns the value happily.
+
+* New ``find_wrapper()`` and ``is_wrapped_by()`` functions for detecting
+  whether a specific wrapper is installed on an attribute.
+  ``find_wrapper()`` scans the chain of wrappers followed from the
+  supplied object for a wrapper and returns it, or ``None`` when not
+  present, with ``is_wrapped_by()`` as the boolean convenience form. The
+  wrapper to look for is identified by its handle, being the wrapper
+  object which the wrap functions return when it is installed, and is
+  matched by object identity only, never equality, which proxies
+  delegate to the wrapped object. Alternatively a ``predicate`` function
+  may be supplied, in which case the first chain entry for which it
+  returns true is returned, and is itself usable as a handle
+  thereafter. At least one of the two must be supplied, and
+  ``TypeError`` is raised otherwise, since testing for the mere
+  presence of any wrapper is fragile: were the target library to adopt
+  wrapt for its own purposes, such a test would wrongly conclude a
+  wrapper of yours was installed. Both functions share the full
+  contract of ``wrapper_chain()``, including raising
+  ``WrapperChainTooDeepError`` when the scan is indeterminate rather
+  than reporting a false negative. Note that when checking a wrapped
+  method of a class, the object scanned should be obtained using
+  ``resolve_path()`` rather than ``getattr()``, since accessing the
+  method on the class triggers descriptor binding and yields a fresh
+  bound wrapper in which the installed handle is not found.
+
+* A ``wrapt.MISSING`` sentinel has been added to the public API. It marks
+  the absence of a value, or of a prior attribute definition, in places
+  where ``None`` is itself meaningful. It is a singleton which survives
+  pickling and copying with its identity preserved, so it can always be
+  tested for using ``is wrapt.MISSING``. Note that the sentinel is only
+  meaningful where wrapt itself checks for it; using it as an ordinary
+  value elsewhere confers no special behaviour.
+
+**Features Changed**
+
+* The ``async_to_sync()`` and ``sync_to_async()`` adapters now validate
+  their input at decoration time, following the precedent of the
+  equivalent asgiref utilities. Both raise ``TypeError`` when applied to
+  a generator function of either convention, cases which previously
+  were accepted silently but could never work: ``asyncio.run()`` cannot
+  run an async generator, and dispatching creation of a sync generator
+  to an executor executes no body code while iteration would still
+  block the event loop. ``sync_to_async()`` also raises ``TypeError``
+  when applied to a callable reporting as a coroutine function, and
+  ``async_to_sync()`` issues a ``UserWarning`` when applied to a
+  callable not reporting as one, a warning rather than an error because
+  convention detection has false negatives such as a plain function
+  wrapper whose calls return a coroutine. In each case a callable whose
+  reported convention is wrong can have ``mark_as_sync()`` or
+  ``mark_as_async()`` applied to it first to declare the effective
+  convention, which the error and warning messages point to. The
+  adapters also now always report the plain convention they present, a
+  synchronous function or a coroutine function, where previously a
+  generator function input caused the reported convention to claim a
+  generator variant the adapted callable did not actually provide.
+
+* The ``AttributeWrapper`` descriptor installed by
+  ``wrap_object_attribute()`` has been redesigned as an object proxy
+  layer deriving from ``BaseObjectProxy``, and is now part of the public
+  API, exported from the top-level ``wrapt`` package and declared in the
+  type stubs, with ``wrap_object_attribute()`` returning it. The wrapped
+  object held by the proxy is whatever previously occupied the class
+  attribute, be that another ``AttributeWrapper``, some other descriptor
+  such as a ``property``, a plain class default, or the new
+  ``wrapt.MISSING`` sentinel when nothing was defined. This changes
+  behaviour in several ways, all previously broken or lossy:
+
+  - Applying ``wrap_object_attribute()`` twice to the same attribute now
+    composes the two interceptions, with the second factory wrapping the
+    result of the first, where previously the second application
+    silently replaced the first. Code which relied on reapplication to
+    refresh an interception must now remove the old one first.
+
+  - A prior descriptor keeps executing its own logic beneath the
+    interception. Reads follow the standard attribute lookup precedence,
+    with a data descriptor prior taking precedence over the instance
+    dictionary and a non-data descriptor prior yielding to it. Writes
+    and deletes likewise delegate to a prior descriptor's ``__set__``
+    and ``__delete__``, so its validation and storage are honoured. One
+    consequence is that the documented limitation that
+    ``wrap_object_attribute()`` cannot be used on an attribute defined
+    by a ``property`` is lifted; the getter, setter and deleter all work
+    through the interception.
+
+  - Class-level access to the intercepted attribute now returns the
+    descriptor itself, which being a transparent proxy exposes the prior
+    definition for introspection, where previously it failed with an
+    exception. Code which type-checks or reads attributes of a replaced
+    custom descriptor cannot tell the interceptor is there.
+
+  - When no instance value exists, reads now fall back to the prior
+    class default, and raise ``AttributeError`` only when no prior
+    definition of any sort existed, where previously ``KeyError``
+    escaped from the instance dictionary lookup. Deletes likewise now
+    raise the same ``AttributeError`` that deleting the attribute
+    would raise had the wrapper not been applied, instead of
+    ``KeyError``.
+
+  - The attributes of ``AttributeWrapper`` holding its own state are
+    renamed with the ``_self_`` prefix used by object proxies:
+    ``_self_attribute``, ``_self_factory``, ``_self_args`` and
+    ``_self_kwargs`` in place of ``attribute``, ``factory``, ``args``
+    and ``kwargs``. The constructor also now takes the prior definition
+    as its first argument, ahead of the existing arguments. Code which
+    introspected the old attribute names or constructed
+    ``AttributeWrapper`` directly needs updating.
+
+* The ``transient_function_wrapper()`` decorator is now implemented on
+  top of ``wrap_object()`` and ``unwrap_object()``, and restoration of
+  the patched attribute when the call exits is no longer a blind
+  overwrite of whatever the attribute holds at that point. If code
+  called within the scope of the patch wrapped over the top of the
+  temporary wrapper with a wrapt wrapper and left it there, the
+  temporary wrapper is now spliced out from beneath it, with the other
+  wrapper left in place, where previously it would have been silently
+  destroyed by the restore. If something removed or replaced the
+  temporary wrapper during the call, ``WrapperNotFoundError`` is now
+  raised, and if what was applied on top of the temporary wrapper is
+  not a wrapt wrapper and so cannot be spliced past,
+  ``WrapperNotOutermostError`` is raised, where previously both cases
+  were silently clobbered by the restore. The errors are deliberate:
+  both situations indicate the surrounding code, typically a test
+  harness, is not managing its own patches properly, and the leaked
+  patch state would otherwise surface as hard to diagnose failures in
+  later tests, far from the root cause. Note that an error raised
+  during restoration supersedes any in-flight exception from the
+  wrapped call, which remains visible as the chained ``__context__``.
+
+* The ``enabled`` argument of ``patch_function_wrapper()`` is now keyword
+  only. Passing it positionally still works for now, but raises a
+  ``DeprecationWarning`` and will become an error in a future version of
+  wrapt. The type stubs already declare the argument as keyword only, so
+  type checkers will flag the deprecated calling convention. The default
+  value of the argument is now the new ``wrapt.MISSING`` sentinel in
+  place of ``None``, so that an explicitly supplied value is
+  distinguishable from the argument not being supplied. Passing
+  ``enabled=None`` explicitly still behaves the same as not supplying
+  the argument. One consequence is that passing ``enabled`` both
+  positionally and by keyword now always raises ``TypeError``, where
+  previously an explicit keyword value of ``None`` alongside a
+  positional value went undetected and the positional value was used.
+
+* The ``resolve_path()`` function now reports failures using two new
+  exception types. When the dotted attribute path cannot be resolved on
+  the patch target, it raises ``PathResolutionError``, a subclass of
+  ``AttributeError``, with a message naming the failing attribute, the
+  full dotted path, and the target, rather than letting the low-level
+  ``AttributeError`` escape with none of that context. When the target
+  is supplied as a string naming a module which cannot be imported, it
+  raises ``TargetModuleNotFoundError``, a subclass of
+  ``ModuleNotFoundError``, naming the module and the attribute path
+  being resolved. In both cases the original exception is preserved as
+  the ``__cause__`` attribute using exception chaining, so the
+  low-level diagnosis still appears in the traceback. Because the new
+  exceptions derive from the exceptions previously raised, existing
+  code catching ``AttributeError``, ``ModuleNotFoundError`` or
+  ``ImportError`` continues to work unchanged. The same errors surface
+  from the functions built on ``resolve_path()``, such as
+  ``wrap_object()`` and ``wrap_function_wrapper()``. Both exception
+  types are exported from the top-level ``wrapt`` package.
+
+* The ``WrapperNotInitializedError`` exception is now part of the public
+  API, exported from the top-level ``wrapt`` package and included in
+  ``__all__`` and the type stubs. The exception classes now live in a
+  new ``wrapt.exceptions`` module, with ``wrapt`` itself being the
+  supported location to import them from. Previously
+  ``WrapperNotInitializedError`` was only reachable via the internal
+  ``wrapt.wrappers`` module; any code importing it from there needs to
+  switch to ``wrapt.WrapperNotInitializedError``.
+
+**Bugs Fixed**
+
+* Corrected several type hints in the stubs which referenced
+  ``ObjectProxy`` where ``BaseObjectProxy`` is the accurate type. The
+  ``factory`` argument of ``wrap_object()`` and
+  ``wrap_object_attribute()`` now accepts any ``BaseObjectProxy``
+  subclass rather than only ``ObjectProxy`` subclasses, and a factory
+  supplied as a plain callable is now declared as returning a proxy
+  instance rather than a proxy class, so the common pattern of passing
+  a lambda which constructs a custom proxy type checks correctly. The
+  function wrapper classes are also now declared as deriving from
+  ``BaseObjectProxy``, matching the runtime, where previously the
+  stubs implied ``FunctionWrapper`` and ``BoundFunctionWrapper`` were
+  iterable through the ``ObjectProxy`` compatibility class's
+  ``__iter__``.
+
+* When ``transient_function_wrapper`` targeted an attribute which was not
+  defined directly on the object the target path resolved to, such as a
+  method reached through class inheritance, or an attribute reached
+  through an instance, applying the temporary patch created a shadowing
+  attribute on that object, and restoration on exit then assigned the
+  original value into the shadowing location instead of removing it. The
+  shadowing attribute persisted after the transient scope exited, so
+  although behaviour appeared restored, the object was left with its own
+  permanent copy of the inherited value, and later monkey patching of the
+  class which actually defined the attribute would silently not be seen
+  through the object which had been transiently patched. Restoration now
+  removes the shadowing attribute when the attribute was not originally
+  defined directly on the resolved object, so the original lookup path is
+  reinstated. The same applies to attributes satisfied by dynamic lookup
+  mechanisms such as a module level ``__getattr__``.
+
+* The lack of safety when a proxy or wrapper instance shared between
+  threads was mutated while concurrently being used from other threads
+  was a known limitation of the free threading support, documented in
+  the known issues section of the documentation along with guidance to
+  serialise such mutation externally. That documented position still
+  left the C extension able to crash the interpreter where the pure
+  Python implementation would merely misbehave, and prompted by the
+  report in issue #347, which demonstrated that two threads
+  concurrently assigning to ``__wrapped__`` on the same object proxy
+  could crash within seconds on a free-threaded build, this class of
+  limitation has now been addressed at the memory safety level. The C
+  extension updated its reference to the wrapped object using an
+  unprotected pointer swap, so both threads could read the same old
+  value and both release it, freeing the previous wrapped object twice. The
+  same unprotected swap pattern existed in the in-place operators such as
+  ``+=``, in re-invocation of ``__init__`` on an already published object
+  proxy, partial callable object proxy or function wrapper, and in the
+  lazy recreation of the proxy instance dictionary by the
+  ``__self_dict__`` getter. All of these internal field updates are now
+  serialised using per-object critical sections, which are no-ops on
+  builds with the GIL. The outcome of such a race is now that one of the
+  competing updates is lost, matching the behaviour of the pure Python
+  implementation, rather than memory corruption. In addition, the
+  attribute getters which expose internal fields, namely ``__wrapped__``
+  on the object proxies and the ``_self_instance``, ``_self_wrapper``,
+  ``_self_enabled``, ``_self_binding``, ``_self_parent`` and
+  ``_self_owner`` accessors on function wrappers, now read the field and
+  acquire the reference they return inside the same critical sections,
+  so reading one of these attributes can no longer increment the
+  reference count of a value which a concurrent mutation of the same
+  instance has already released. The ``__getattr__`` fallback which
+  delegates attribute lookup to the wrapped object likewise now holds a
+  strong reference to the wrapped object across the lookup. That path
+  is reached from the ``__wrapped__`` setter itself when it checks for
+  setattr fixups, so without this a workload consisting purely of
+  writers could still crash. The binary and in-place operator paths
+  likewise now unwrap their operands to strong references which are
+  held for the duration of the operation, where previously a concurrent
+  swap of the wrapped object could release an operand another thread
+  was part way through using. The same conversion has been applied to
+  all of the delegation methods on the object proxies, covering
+  operations such as ``str()``, ``hash()``, comparison, item access,
+  attribute forwarding and the context manager protocol, and to the
+  wrapped object and captured arguments used when calling a partial
+  callable object proxy. The function wrapper call and descriptor
+  binding paths likewise acquire the fields they use as strong
+  references, completing the conversion: no internal use of a proxy or
+  wrapper field now retains a raw field pointer across an operation.
+  Fields are acquired individually rather than as a group, so as
+  described in the known issues documentation, a reader racing a
+  mutation can still observe a torn view of multiple fields updated
+  together and competing updates can be lost, matching pure Python
+  semantics, with external locking still required where cross field
+  consistency matters. With thanks to the reporter of `issue #347
+  <https://github.com/GrahamDumpleton/wrapt/issues/347>`_ for
+  prompting this work.
+
+* Calling a callable marked with ``mark_as_async()`` did not pass the
+  call through unchanged as documented. The marker internally used an
+  ``async def`` wrapper, so calling the marked callable returned a
+  coroutine for that wrapper layer which, when awaited, called the
+  inner callable and returned its result without awaiting it. In the
+  marker's documented use case, where a plain ``def`` wrapper returns
+  a coroutine, a single await of the marked callable therefore
+  produced the still pending inner coroutine rather than the final
+  value, and a caller performing only one await leaked the inner
+  coroutine, producing a "coroutine was never awaited" warning at
+  garbage collection. Stacking ``synchronized`` over ``mark_as_async``
+  was affected in the same way, since the synchronized wrapper awaits
+  the marked callable once. Marking a callable which returned a plain
+  value changed behaviour too, with the call returning a coroutine
+  instead of the value. The marker now uses the same pass-through
+  wrapper as ``mark_as_sync()``, so calling the marked callable
+  returns exactly what the inner callable returned and only the
+  calling convention reported by introspection differs, which is the
+  documented contract for the markers. The problem had existed since
+  the markers were introduced in version 2.2.0.
+
+* Supplying a string as the target to ``resolve_path()``, or to any of
+  the patching functions built on it such as ``wrap_object()``, failed
+  with ``TargetModuleNotFoundError`` for a dotted module name which was
+  present in ``sys.modules`` but whose parent package was not
+  importable. Such modules arise when a synthetic module created with
+  ``types.ModuleType`` is registered directly in ``sys.modules`` under a
+  dotted name, as is done by test scaffolding, plugin systems and
+  embedding hosts, and they import successfully with
+  ``importlib.import_module()``. The target module was imported using
+  ``__import__()``, and although the import of the requested module
+  itself succeeds through the module cache, ``__import__()`` computes
+  its return value by separately importing the top level package, which
+  fails when the parent package does not exist. Since ``resolve_path()``
+  performed its own ``sys.modules`` lookup and never used that return
+  value, the failure arose entirely from a value which was thrown away.
+  The target module is now imported using ``importlib.import_module()``,
+  so any target string resolvable by that function is accepted, and a
+  genuinely missing module still raises ``TargetModuleNotFoundError``
+  with the originating ``ModuleNotFoundError`` preserved as
+  ``__cause__``. The same pattern existed in the deferred import
+  performed for a hook registered with ``register_post_import_hook()``
+  using the ``'module:function'`` string form, where a hook function
+  living in such a synthetic module would fail in the same way at the
+  point the watched module was imported, and it has been corrected in
+  the same way. The problem was reported in `issue #349
+  <https://github.com/GrahamDumpleton/wrapt/issues/349>`_.
+
 Version 2.3.0
 -------------
 

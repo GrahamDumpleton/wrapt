@@ -6,15 +6,7 @@ import operator
 import sys
 import types
 
-
-class WrapperNotInitializedError(ValueError):
-    """
-    Exception raised when a wrapper is in an inconsistent state: __init__ was
-    called but __wrapped__ is not set. Inherits from ValueError only, so it is
-    not silently swallowed by hasattr/getattr/except AttributeError patterns.
-    """
-
-    pass
+from .exceptions import WrapperNotInitializedError
 
 
 class _ObjectProxyMethods:

@@ -155,6 +155,17 @@ Monkey Patching
     returns a ``(parent, attribute, original)`` tuple suitable for
     subsequent patching. See :doc:`monkey`.
 
+``wrapt.resolve_owner``
+    Sibling of ``resolve_path`` returning a tuple of the same shape,
+    but with the first element being the object whose ``__dict__``
+    actually defines the attribute rather than the object the path
+    resolved to. Where ``resolve_path`` answers where to write so that
+    lookups through the named object are affected (the correct
+    location for installing a wrapper), ``resolve_owner`` answers
+    where the attribute physically lives (the correct location for
+    removing one). Raises ``wrapt.PathResolutionError`` for an
+    attribute served dynamically, which exists in no ``__dict__``.
+
 ``wrapt.apply_patch``
     Thin convenience over ``setattr`` for setting a replacement
     attribute on a parent object as the final step of a patch. Pairs
@@ -167,8 +178,19 @@ Monkey Patching
 
 ``wrapt.wrap_object_attribute``
     Variant of ``wrap_object`` that wraps an instance attribute by
-    installing a descriptor on the owning class. Useful when the
-    attribute is not defined at the class level itself.
+    installing an ``AttributeWrapper`` descriptor on the owning class.
+    Useful when the attribute is not defined at the class level itself.
+
+``wrapt.AttributeWrapper``
+    The descriptor class installed by ``wrapt.wrap_object_attribute``.
+    An object proxy layer wrapping whatever previously occupied the
+    class attribute, or ``wrapt.MISSING`` when nothing did, so stacked
+    applications compose and a prior descriptor such as a ``property``
+    keeps working beneath the interception. Subclassable for custom
+    interception layers, in which case installation is manual:
+    capture the prior definition with
+    ``vars(cls).get(attribute, wrapt.MISSING)`` and apply the patch
+    with ``wrapt.apply_patch``.
 
 ``wrapt.wrap_function_wrapper``
     Convenience wrapper that combines ``resolve_path`` and
@@ -188,6 +210,71 @@ Monkey Patching
     Decorator that installs a wrapper on a target attribute only for
     the duration of a single call to the decorated function. Useful
     for scoped test fixtures and similar narrow patches.
+
+``wrapt.scoped_function_wrapper``
+    Block scoped counterpart of ``transient_function_wrapper``. Takes
+    the same arguments as ``wrap_function_wrapper`` and returns a
+    single use context manager which installs the wrapper when the
+    ``with`` statement is entered and removes it, using
+    ``unwrap_object``, when the block exits.
+
+``wrapt.unwrap_object``
+    Removes a wrapper installed by ``wrap_object``,
+    ``wrap_function_wrapper`` or ``wrap_object_attribute``, identified
+    by its handle, the wrapper object those functions returned.
+    Restores the attribute at the location where it is actually
+    defined when the wrapper is outermost, splices the wrapper out of
+    the chain in place when it is buried beneath other wrapt wrappers,
+    and raises ``wrapt.WrapperNotFoundError`` when it is not present,
+    or returns ``None`` instead with ``missing_ok=True``. See
+    :doc:`monkey`.
+
+``wrapt.MISSING``
+    Sentinel singleton marking the absence of a value, or of a prior
+    attribute definition, in places where ``None`` is itself
+    meaningful. Always test for it by identity using
+    ``is wrapt.MISSING``; it survives pickling and copying with its
+    identity preserved. The sentinel is only meaningful where wrapt
+    itself checks for it, such as the default for the ``enabled``
+    argument of ``wrapt.patch_function_wrapper``; using it as an
+    ordinary value elsewhere confers no special behaviour.
+
+Wrapper Chains
+~~~~~~~~~~~~~~
+
+``wrapt.wrapper_chain``
+    Returns an iterator yielding the supplied object, then each
+    successive object found by following the ``__wrapped__``
+    attribute, outermost wrapper first, ending with the innermost
+    object. Sees through wrapt proxies and wrappers, functions
+    decorated using ``functools.wraps``, and anything else honouring
+    the ``__wrapped__`` convention. Raises
+    ``wrapt.WrapperChainTooDeepError`` if the traversal limit is
+    reached with a further link still pending. Note that traversing a
+    chain containing a lazy object proxy causes it to materialize.
+
+``wrapt.unwrapped``
+    Returns the innermost object of the chain of wrappers followed
+    from the supplied object, or the object itself when it is not
+    wrapped. The ergonomic way of recovering the original object from
+    a proxy without writing the traversal loop. Shares the full
+    contract of ``wrapt.wrapper_chain``, including the traversal
+    limit and lazy proxy materialization.
+
+``wrapt.find_wrapper``
+    Scans the chain of wrappers followed from the supplied object for
+    a specific wrapper and returns it, or ``None`` when not present.
+    The wrapper is identified by its handle, the object returned by
+    the wrap functions when it was installed, matched by identity
+    only, or by a ``predicate`` function. When checking a wrapped
+    method of a class, obtain the object to scan with
+    ``wrapt.resolve_path``, not ``getattr``, since descriptor binding
+    yields a fresh bound wrapper in which the handle is not found.
+
+``wrapt.is_wrapped_by``
+    Boolean convenience form of ``wrapt.find_wrapper``, answering
+    whether the wrapper a handle was returned for when installed is
+    still in place.
 
 Post Import Hooks
 ~~~~~~~~~~~~~~~~~
@@ -291,6 +378,48 @@ Weak References
     instance and unbound function separately and rebinding on call.
     Accepts an optional callback invoked when the underlying object is
     garbage collected.
+
+Exceptions
+~~~~~~~~~~
+
+``wrapt.WrapperNotInitializedError``
+    Raised when a wrapper is in an inconsistent state where
+    ``__init__`` was called but ``__wrapped__`` was never set.
+    Inherits from ``ValueError`` only, so it is not silently swallowed
+    by ``hasattr``/``getattr``/``except AttributeError`` patterns.
+
+``wrapt.PathResolutionError``
+    Raised by ``wrapt.resolve_path`` when the dotted attribute path
+    cannot be resolved on the patch target. Inherits from
+    ``AttributeError``, with the message naming the failing attribute,
+    the full dotted path, and the target, and the low-level error
+    preserved as ``__cause__``.
+
+``wrapt.TargetModuleNotFoundError``
+    Raised by ``wrapt.resolve_path`` when a patch target supplied as a
+    string names a module that cannot be imported. Inherits from
+    ``ModuleNotFoundError``, with the low-level error preserved as
+    ``__cause__``.
+
+``wrapt.WrapperChainTooDeepError``
+    Raised when a scan of a chain of wrappers reaches the traversal
+    limit with a further link still pending, meaning the result of the
+    scan would be indeterminate. Inherits from ``RuntimeError``,
+    following the precedent of ``RecursionError`` for exhaustion of a
+    depth limit.
+
+``wrapt.WrapperNotFoundError``
+    Raised by ``wrapt.unwrap_object`` when the wrapper to be removed
+    is not found in the chain of wrappers of the attribute, meaning
+    nothing of the caller's is installed there. Suppressible per call
+    with ``missing_ok=True``. Inherits from ``ValueError``.
+
+``wrapt.WrapperNotOutermostError``
+    Raised by ``wrapt.unwrap_object`` when the wrapper was found but
+    cannot be removed, because what sits directly above it in the
+    chain is not a wrapt wrapper whose link can be updated in place,
+    or because the attribute is served dynamically and has no owning
+    location to restore. Inherits from ``ValueError``.
 
 Type Hints and the Public API
 -----------------------------

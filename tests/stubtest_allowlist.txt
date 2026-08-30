@@ -7,11 +7,11 @@
 # that are intentional under that contract.
 
 # --- Submodule-level: intentionally unstubbed (see wrapt-stubs/__init__.pyi).
-wrapt\.(__wrapt__|arguments|caching|decorators|importer|patches|proxies|signature|synchronization|weakrefs|wrappers)
+wrapt\.(__wrapt__|arguments|caching|decorators|exceptions|importer|patches|proxies|signature|synchronization|weakrefs|wrappers)
 
 # --- wrapt's proxy classes use a C-extension metaclass that the stubs
 # don't declare. Stubtest reports "metaclass differs"; benign for users.
-wrapt\.(BaseObjectProxy|ObjectProxy|AutoObjectProxy|CallableObjectProxy|PartialCallableObjectProxy|LazyObjectProxy|FunctionWrapper|BoundFunctionWrapper|WeakFunctionProxy|bind_state_to_wrapper)
+wrapt\.(BaseObjectProxy|ObjectProxy|AutoObjectProxy|CallableObjectProxy|PartialCallableObjectProxy|LazyObjectProxy|FunctionWrapper|BoundFunctionWrapper|WeakFunctionProxy|AttributeWrapper|bind_state_to_wrapper)
 
 # --- AutoObjectProxy attaches these dunders to a per-instance subclass
 # based on the wrapped object's interface (see proxies.AutoObjectProxy

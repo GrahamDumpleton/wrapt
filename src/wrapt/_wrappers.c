@@ -43,10 +43,8 @@ typedef struct
 static struct PyModuleDef moduledef;
 
 /* Per-interpreter module state. Holds the heap type objects so that methods
- * can reach them via PyType_GetModuleByDef without using static globals.
- *
- * Cached interned strings will be added here in a later stage of the
- * sub-interpreter / free-threading migration. */
+ * can reach them via PyType_GetModuleByDef without using static globals,
+ * along with the cached interned strings and exception type below. */
 
 typedef struct
 {
@@ -153,6 +151,15 @@ static PyObject *PyType_GetModuleByDef(PyTypeObject *type,
 }
 #endif
 
+/* Polyfill the critical section API for Python < 3.13. Free-threaded
+ * builds only exist on 3.13+, where the real macros are provided (and are
+ * no-ops on GIL builds), so expanding to plain blocks here is safe. */
+
+#if PY_VERSION_HEX < 0x030D0000
+#define Py_BEGIN_CRITICAL_SECTION(op) {
+#define Py_END_CRITICAL_SECTION() }
+#endif
+
 /* Polyfill PyObject_GetOptionalAttrString for Python < 3.13. Matches the
  * 3.13+ semantics: returns 1 if found, 0 if not found (AttributeError
  * only), -1 on other errors with exception set. */
@@ -172,6 +179,39 @@ PyObject_GetOptionalAttrString(PyObject *obj, const char *name, PyObject **resul
   return -1;
 }
 #endif
+
+/* Atomically read a PyObject field of an instance and return a new
+ * reference to it, or NULL if the field is NULL (no exception is set).
+ * The read and the incref are performed together inside the owning
+ * object's critical section so the incref cannot race a writer which
+ * has swapped in a new value and is releasing the old one. On builds
+ * with the GIL the critical section is a no-op and this reduces to a
+ * plain load and incref. This is deliberately used on all builds rather
+ * than only free-threaded ones, so that both build variants exercise
+ * the same reference lifetimes, and so that a field value can never be
+ * freed while still in use when code invoked while operating on the
+ * field mutates the instance. */
+
+static inline PyObject *wrapt_acquire_field(PyObject *owner, PyObject **field)
+{
+  PyObject *value = NULL;
+
+  Py_BEGIN_CRITICAL_SECTION(owner);
+  value = *field;
+  Py_XINCREF(value);
+  Py_END_CRITICAL_SECTION();
+
+  return value;
+}
+
+/* Convenience form for the common case of the wrapped object field. */
+
+static inline PyObject *wrapt_acquire_wrapped(WraptObjectProxyObject *self)
+{
+  return wrapt_acquire_field((PyObject *)self, &self->wrapped);
+}
+
+/* ------------------------------------------------------------------------- */
 
 /* Get module state for the wrapt module given any type whose MRO includes
  * one of our heap types. Returns NULL and sets an exception on miss. */
@@ -376,6 +416,48 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
 
 /* ------------------------------------------------------------------------- */
 
+/* Replace *op with a strong reference to the value to actually operate
+ * on: the wrapped object if *op is a wrapt proxy, else *op itself. On
+ * success the caller owns a reference to the replacement value and must
+ * release it after use. Returns -1 with an exception set, and *op
+ * unchanged, if *op is an uninitialized proxy which could not be
+ * lazily initialized. */
+
+static int wrapt_unwrap_operand(PyObject **op)
+{
+  WraptObjectProxyObject *proxy;
+  PyObject *wrapped;
+
+  if (!wrapt_is_proxy(*op))
+  {
+    Py_INCREF(*op);
+    return 0;
+  }
+
+  proxy = (WraptObjectProxyObject *)*op;
+
+  if (!proxy->wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(proxy) == -1)
+      return -1;
+  }
+
+  wrapped = wrapt_acquire_wrapped(proxy);
+
+  if (!wrapped)
+  {
+    PyErr_Format(PyExc_AttributeError,
+                 "'%.100s' object has no attribute '__wrapped__'",
+                 Py_TYPE(proxy)->tp_name);
+    return -1;
+  }
+
+  *op = wrapped;
+  return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *WraptObjectProxy_new(PyTypeObject *type, PyObject *args,
                                       PyObject *kwds)
 {
@@ -446,8 +528,16 @@ static int WraptObjectProxy_raw_init(WraptObjectProxyObject *self,
     }
   }
 
+  /* Serialise the swap for the same reason as in the __wrapped__ setter.
+   * Normally __init__ runs before the proxy is shared, but it can be
+   * re-invoked on an already published proxy, in which case concurrent
+   * callers on a free-threaded build could otherwise decref the same old
+   * wrapped object twice. */
+
   Py_INCREF(wrapped);
+  Py_BEGIN_CRITICAL_SECTION(self);
   Py_XSETREF(self->wrapped, wrapped);
+  Py_END_CRITICAL_SECTION();
 
   self->init_called = 1;
 
@@ -567,13 +657,20 @@ static PyObject *WraptObjectProxy_repr(WraptObjectProxyObject *self)
       return NULL;
   }
 
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
   char self_addr[24], wrapped_addr[24];
   snprintf(self_addr, sizeof(self_addr), "0x%zx", (Py_uintptr_t)self);
   snprintf(wrapped_addr, sizeof(wrapped_addr), "0x%zx",
-           (Py_uintptr_t)self->wrapped);
-  return PyUnicode_FromFormat("<%s at %s for %s at %s>",
-                              Py_TYPE(self)->tp_name, self_addr,
-                              Py_TYPE(self->wrapped)->tp_name, wrapped_addr);
+           (Py_uintptr_t)wrapped);
+  PyObject *result = PyUnicode_FromFormat("<%s at %s for %s at %s>",
+                                          Py_TYPE(self)->tp_name, self_addr,
+                                          Py_TYPE(wrapped)->tp_name,
+                                          wrapped_addr);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -586,7 +683,13 @@ static Py_hash_t WraptObjectProxy_hash(WraptObjectProxyObject *self)
       return -1;
   }
 
-  return PyObject_Hash(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  Py_hash_t result = PyObject_Hash(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -599,152 +702,118 @@ static PyObject *WraptObjectProxy_str(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyObject_Str(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_Str(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_add(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Add(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Add(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_subtract(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Subtract(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Subtract(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_multiply(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Multiply(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Multiply(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_remainder(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Remainder(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Remainder(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_divmod(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Divmod(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Divmod(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -764,29 +833,21 @@ static PyObject *WraptObjectProxy_power(PyObject *o1, PyObject *o2,
     Py_RETURN_NOTIMPLEMENTED;
   }
 
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Power(o1, o2, modulo);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Power(o1, o2, modulo);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -799,7 +860,13 @@ static PyObject *WraptObjectProxy_negative(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyNumber_Negative(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyNumber_Negative(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -812,7 +879,13 @@ static PyObject *WraptObjectProxy_positive(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyNumber_Positive(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyNumber_Positive(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -825,7 +898,13 @@ static PyObject *WraptObjectProxy_absolute(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyNumber_Absolute(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyNumber_Absolute(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -838,7 +917,13 @@ static int WraptObjectProxy_bool(WraptObjectProxyObject *self)
       return -1;
   }
 
-  return PyObject_IsTrue(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  int result = PyObject_IsTrue(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -851,152 +936,118 @@ static PyObject *WraptObjectProxy_invert(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyNumber_Invert(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyNumber_Invert(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_lshift(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Lshift(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Lshift(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_rshift(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Rshift(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Rshift(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_and(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_And(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_And(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_xor(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Xor(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Xor(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_or(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_Or(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_Or(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1009,7 +1060,13 @@ static PyObject *WraptObjectProxy_long(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyNumber_Long(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyNumber_Long(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1022,7 +1079,13 @@ static PyObject *WraptObjectProxy_float(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyNumber_Float(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyNumber_Float(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1038,37 +1101,50 @@ static PyObject *WraptObjectProxy_inplace_add(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__iadd__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__iadd__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceAdd(self->wrapped, other);
+    object = PyNumber_InPlaceAdd(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    /* As in the __wrapped__ setter, serialise the swap so that concurrent
+     * in-place operations on the same proxy cannot decref the same old
+     * wrapped object twice on a free-threaded build. The wrapped object
+     * was read before the operation ran, so a concurrent mutation can
+     * still be lost, matching pure Python semantics. The same applies to
+     * all of the in-place operators which follow. */
+
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Add(self->wrapped, other);
+    PyObject *result = PyNumber_Add(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1120,37 +1196,43 @@ static PyObject *WraptObjectProxy_inplace_subtract(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__isub__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__isub__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceSubtract(self->wrapped, other);
+    object = PyNumber_InPlaceSubtract(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Subtract(self->wrapped, other);
+    PyObject *result = PyNumber_Subtract(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1202,37 +1284,43 @@ static PyObject *WraptObjectProxy_inplace_multiply(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__imul__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__imul__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceMultiply(self->wrapped, other);
+    object = PyNumber_InPlaceMultiply(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Multiply(self->wrapped, other);
+    PyObject *result = PyNumber_Multiply(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1285,37 +1373,43 @@ WraptObjectProxy_inplace_remainder(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__imod__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__imod__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceRemainder(self->wrapped, other);
+    object = PyNumber_InPlaceRemainder(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Remainder(self->wrapped, other);
+    PyObject *result = PyNumber_Remainder(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1368,37 +1462,43 @@ static PyObject *WraptObjectProxy_inplace_power(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ipow__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__ipow__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlacePower(self->wrapped, other, modulo);
+    object = PyNumber_InPlacePower(wrapped, other, modulo);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Power(self->wrapped, other, modulo);
+    PyObject *result = PyNumber_Power(wrapped, other, modulo);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1450,37 +1550,43 @@ static PyObject *WraptObjectProxy_inplace_lshift(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ilshift__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__ilshift__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceLshift(self->wrapped, other);
+    object = PyNumber_InPlaceLshift(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Lshift(self->wrapped, other);
+    PyObject *result = PyNumber_Lshift(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1532,37 +1638,43 @@ static PyObject *WraptObjectProxy_inplace_rshift(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__irshift__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__irshift__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceRshift(self->wrapped, other);
+    object = PyNumber_InPlaceRshift(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Rshift(self->wrapped, other);
+    PyObject *result = PyNumber_Rshift(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1614,37 +1726,43 @@ static PyObject *WraptObjectProxy_inplace_and(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__iand__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__iand__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceAnd(self->wrapped, other);
+    object = PyNumber_InPlaceAnd(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_And(self->wrapped, other);
+    PyObject *result = PyNumber_And(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1696,37 +1814,43 @@ static PyObject *WraptObjectProxy_inplace_xor(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ixor__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__ixor__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceXor(self->wrapped, other);
+    object = PyNumber_InPlaceXor(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Xor(self->wrapped, other);
+    PyObject *result = PyNumber_Xor(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1778,37 +1902,43 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ior__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__ior__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceOr(self->wrapped, other);
+    object = PyNumber_InPlaceOr(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_Or(self->wrapped, other);
+    PyObject *result = PyNumber_Or(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -1851,58 +1981,42 @@ static PyObject *WraptObjectProxy_inplace_or(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_floor_divide(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_FloorDivide(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_FloorDivide(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_true_divide(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_TrueDivide(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_TrueDivide(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1919,37 +2033,43 @@ WraptObjectProxy_inplace_floor_divide(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__ifloordiv__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__ifloordiv__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceFloorDivide(self->wrapped, other);
+    object = PyNumber_InPlaceFloorDivide(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_FloorDivide(self->wrapped, other);
+    PyObject *result = PyNumber_FloorDivide(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -2002,37 +2122,43 @@ WraptObjectProxy_inplace_true_divide(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__itruediv__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__itruediv__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceTrueDivide(self->wrapped, other);
+    object = PyNumber_InPlaceTrueDivide(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_TrueDivide(self->wrapped, other);
+    PyObject *result = PyNumber_TrueDivide(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -2081,36 +2207,34 @@ static PyObject *WraptObjectProxy_index(WraptObjectProxyObject *self)
       return NULL;
   }
 
-  return PyNumber_Index(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyNumber_Index(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_matrix_multiply(PyObject *o1, PyObject *o2)
 {
-  if (wrapt_is_proxy(o1))
-  {
-    if (!((WraptObjectProxyObject *)o1)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o1) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&o1) == -1)
+    return NULL;
 
-    o1 = ((WraptObjectProxyObject *)o1)->wrapped;
+  if (wrapt_unwrap_operand(&o2) == -1)
+  {
+    Py_DECREF(o1);
+    return NULL;
   }
 
-  if (wrapt_is_proxy(o2))
-  {
-    if (!((WraptObjectProxyObject *)o2)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)o2) == -1)
-        return NULL;
-    }
+  PyObject *result = PyNumber_MatrixMultiply(o1, o2);
 
-    o2 = ((WraptObjectProxyObject *)o2)->wrapped;
-  }
+  Py_DECREF(o1);
+  Py_DECREF(o2);
 
-  return PyNumber_MatrixMultiply(o1, o2);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2126,37 +2250,43 @@ static PyObject *WraptObjectProxy_inplace_matrix_multiply(
       return NULL;
   }
 
-  if (wrapt_is_proxy(other))
-  {
-    if (!((WraptObjectProxyObject *)other)->wrapped)
-    {
-      if (raise_uninitialized_wrapper_error((WraptObjectProxyObject *)other) == -1)
-        return NULL;
-    }
+  if (wrapt_unwrap_operand(&other) == -1)
+    return NULL;
 
-    other = ((WraptObjectProxyObject *)other)->wrapped;
-  }
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   PyObject *attr;
-  int rc = PyObject_GetOptionalAttrString(self->wrapped, "__imatmul__", &attr);
+  int rc = PyObject_GetOptionalAttrString(wrapped, "__imatmul__", &attr);
   Py_XDECREF(attr);
   if (rc < 0)
+  {
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
     return NULL;
+  }
   if (rc)
   {
-    object = PyNumber_InPlaceMatrixMultiply(self->wrapped, other);
+    object = PyNumber_InPlaceMatrixMultiply(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!object)
       return NULL;
 
+    Py_BEGIN_CRITICAL_SECTION(self);
     Py_SETREF(self->wrapped, object);
+    Py_END_CRITICAL_SECTION();
 
     Py_INCREF(self);
     return (PyObject *)self;
   }
   else
   {
-    PyObject *result = PyNumber_MatrixMultiply(self->wrapped, other);
+    PyObject *result = PyNumber_MatrixMultiply(wrapped, other);
+
+    Py_DECREF(wrapped);
+    Py_DECREF(other);
 
     if (!result)
       return NULL;
@@ -2205,7 +2335,13 @@ static Py_ssize_t WraptObjectProxy_length(WraptObjectProxyObject *self)
       return -1;
   }
 
-  return PyObject_Length(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  Py_ssize_t result = PyObject_Length(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2219,7 +2355,13 @@ static int WraptObjectProxy_contains(WraptObjectProxyObject *self,
       return -1;
   }
 
-  return PySequence_Contains(self->wrapped, value);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  int result = PySequence_Contains(wrapped, value);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2233,7 +2375,13 @@ static PyObject *WraptObjectProxy_getitem(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_GetItem(self->wrapped, key);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_GetItem(wrapped, key);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2247,10 +2395,18 @@ static int WraptObjectProxy_setitem(WraptObjectProxyObject *self, PyObject *key,
       return -1;
   }
 
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  int result;
+
   if (value == NULL)
-    return PyObject_DelItem(self->wrapped, key);
+    result = PyObject_DelItem(wrapped, key);
   else
-    return PyObject_SetItem(self->wrapped, key, value);
+    result = PyObject_SetItem(wrapped, key, value);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2283,7 +2439,13 @@ static PyObject *WraptObjectProxy_dir(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_Dir(self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_Dir(wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2304,7 +2466,11 @@ static PyObject *WraptObjectProxy_enter(WraptObjectProxyObject *self,
   if (!state)
     return NULL;
 
-  method = PyObject_GetAttr(self->wrapped, state->str_enter);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  method = PyObject_GetAttr(wrapped, state->str_enter);
+
+  Py_DECREF(wrapped);
 
   if (!method)
     return NULL;
@@ -2334,7 +2500,11 @@ static PyObject *WraptObjectProxy_exit(WraptObjectProxyObject *self,
   if (!state)
     return NULL;
 
-  method = PyObject_GetAttr(self->wrapped, state->str_exit);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  method = PyObject_GetAttr(wrapped, state->str_exit);
+
+  Py_DECREF(wrapped);
 
   if (!method)
     return NULL;
@@ -2364,7 +2534,11 @@ static PyObject *WraptObjectProxy_aenter(WraptObjectProxyObject *self,
   if (!state)
     return NULL;
 
-  method = PyObject_GetAttr(self->wrapped, state->str_aenter);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  method = PyObject_GetAttr(wrapped, state->str_aenter);
+
+  Py_DECREF(wrapped);
 
   if (!method)
     return NULL;
@@ -2394,7 +2568,11 @@ static PyObject *WraptObjectProxy_aexit(WraptObjectProxyObject *self,
   if (!state)
     return NULL;
 
-  method = PyObject_GetAttr(self->wrapped, state->str_aexit);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  method = PyObject_GetAttr(wrapped, state->str_aexit);
+
+  Py_DECREF(wrapped);
 
   if (!method)
     return NULL;
@@ -2450,8 +2628,14 @@ static PyObject *WraptObjectProxy_bytes(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_CallFunctionObjArgs((PyObject *)&PyBytes_Type,
-                                      self->wrapped, NULL);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_CallFunctionObjArgs((PyObject *)&PyBytes_Type,
+                                                  wrapped, NULL);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2470,7 +2654,13 @@ static PyObject *WraptObjectProxy_format(WraptObjectProxyObject *self,
   if (!PyArg_ParseTuple(args, "O:format", &format_spec))
     return NULL;
 
-  return PyObject_Format(self->wrapped, format_spec);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_Format(wrapped, format_spec);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2484,8 +2674,14 @@ static PyObject *WraptObjectProxy_reversed(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_CallFunctionObjArgs((PyObject *)&PyReversed_Type,
-                                      self->wrapped, NULL);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_CallFunctionObjArgs((PyObject *)&PyReversed_Type,
+                                                  wrapped, NULL);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2529,8 +2725,11 @@ static PyObject *WraptObjectProxy_round(WraptObjectProxyObject *self,
 
   Py_DECREF(module);
 
-  result = PyObject_CallFunctionObjArgs(round, self->wrapped, ndigits, NULL);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
+  result = PyObject_CallFunctionObjArgs(round, wrapped, ndigits, NULL);
+
+  Py_DECREF(wrapped);
   Py_DECREF(round);
 
   return result;
@@ -2566,8 +2765,11 @@ static PyObject *wrapt_call_math_unary(WraptObjectProxyObject *self,
 
   Py_DECREF(module);
 
-  result = PyObject_CallFunctionObjArgs(function, self->wrapped, NULL);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
+  result = PyObject_CallFunctionObjArgs(function, wrapped, NULL);
+
+  Py_DECREF(wrapped);
   Py_DECREF(function);
 
   return result;
@@ -2608,8 +2810,14 @@ static PyObject *WraptObjectProxy_complex(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_CallFunctionObjArgs((PyObject *)&PyComplex_Type,
-                                      self->wrapped, NULL);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_CallFunctionObjArgs((PyObject *)&PyComplex_Type,
+                                                  wrapped, NULL);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2628,7 +2836,7 @@ static PyObject *WraptObjectProxy_mro_entries(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  wrapped = self->wrapped;
+  wrapped = wrapt_acquire_wrapped(self);
 
   // Check if wrapped is a type (class).
 
@@ -2640,7 +2848,10 @@ static PyObject *WraptObjectProxy_mro_entries(WraptObjectProxyObject *self,
   {
     wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
     if (!state)
+    {
+      Py_DECREF(wrapped);
       return NULL;
+    }
 
     mro_entries_method = PyObject_GetAttr(wrapped, state->str_mro_entries);
 
@@ -2651,18 +2862,26 @@ static PyObject *WraptObjectProxy_mro_entries(WraptObjectProxyObject *self,
       result = PyObject_Call(mro_entries_method, args, kwds);
 
       Py_DECREF(mro_entries_method);
+      Py_DECREF(wrapped);
 
       return result;
     }
     else
     {
       if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+      {
+        Py_DECREF(wrapped);
         return NULL;
+      }
       PyErr_Clear();
     }
   }
 
-  return Py_BuildValue("(O)", wrapped);
+  result = Py_BuildValue("(O)", wrapped);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2679,7 +2898,13 @@ static PyObject *WraptObjectProxy_get_name(WraptObjectProxyObject *self)
   if (!state)
     return NULL;
 
-  return PyObject_GetAttr(self->wrapped, state->str_name);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_GetAttr(wrapped, state->str_name);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2697,7 +2922,13 @@ static int WraptObjectProxy_set_name(WraptObjectProxyObject *self,
   if (!state)
     return -1;
 
-  return PyObject_SetAttr(self->wrapped, state->str_name, value);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  int result = PyObject_SetAttr(wrapped, state->str_name, value);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2714,7 +2945,13 @@ static PyObject *WraptObjectProxy_get_qualname(WraptObjectProxyObject *self)
   if (!state)
     return NULL;
 
-  return PyObject_GetAttr(self->wrapped, state->str_qualname);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_GetAttr(wrapped, state->str_qualname);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2732,7 +2969,13 @@ static int WraptObjectProxy_set_qualname(WraptObjectProxyObject *self,
   if (!state)
     return -1;
 
-  return PyObject_SetAttr(self->wrapped, state->str_qualname, value);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  int result = PyObject_SetAttr(wrapped, state->str_qualname, value);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2749,7 +2992,13 @@ static PyObject *WraptObjectProxy_get_module(WraptObjectProxyObject *self)
   if (!state)
     return NULL;
 
-  return PyObject_GetAttr(self->wrapped, state->str_module);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_GetAttr(wrapped, state->str_module);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2767,8 +3016,15 @@ static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
   if (!state)
     return -1;
 
-  if (PyObject_SetAttr(self->wrapped, state->str_module, value) == -1)
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  if (PyObject_SetAttr(wrapped, state->str_module, value) == -1)
+  {
+    Py_DECREF(wrapped);
     return -1;
+  }
+
+  Py_DECREF(wrapped);
 
   return PyDict_SetItemString(self->dict, "__module__", value);
 }
@@ -2787,7 +3043,13 @@ static PyObject *WraptObjectProxy_get_doc(WraptObjectProxyObject *self)
   if (!state)
     return NULL;
 
-  return PyObject_GetAttr(self->wrapped, state->str_doc);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_GetAttr(wrapped, state->str_doc);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2805,8 +3067,15 @@ static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
   if (!state)
     return -1;
 
-  if (PyObject_SetAttr(self->wrapped, state->str_doc, value) == -1)
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  if (PyObject_SetAttr(wrapped, state->str_doc, value) == -1)
+  {
+    Py_DECREF(wrapped);
     return -1;
+  }
+
+  Py_DECREF(wrapped);
 
   return PyDict_SetItemString(self->dict, "__doc__", value);
 }
@@ -2825,7 +3094,13 @@ static PyObject *WraptObjectProxy_get_class(WraptObjectProxyObject *self)
   if (!state)
     return NULL;
 
-  return PyObject_GetAttr(self->wrapped, state->str_dunder_class);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_GetAttr(wrapped, state->str_dunder_class);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2843,7 +3118,13 @@ static int WraptObjectProxy_set_class(WraptObjectProxyObject *self,
   if (!state)
     return -1;
 
-  return PyObject_SetAttr(self->wrapped, state->str_dunder_class, value);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  int result = PyObject_SetAttr(wrapped, state->str_dunder_class, value);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2861,7 +3142,13 @@ WraptObjectProxy_get_annotations(WraptObjectProxyObject *self)
   if (!state)
     return NULL;
 
-  return PyObject_GetAttr(self->wrapped, state->str_annotations);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_GetAttr(wrapped, state->str_annotations);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2879,7 +3166,13 @@ static int WraptObjectProxy_set_annotations(WraptObjectProxyObject *self,
   if (!state)
     return -1;
 
-  return PyObject_SetAttr(self->wrapped, state->str_annotations, value);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  int result = PyObject_SetAttr(wrapped, state->str_annotations, value);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2896,7 +3189,13 @@ static PyObject *WraptObjectProxy_get_dict(WraptObjectProxyObject *self)
   if (!state)
     return NULL;
 
-  return PyObject_GetAttr(self->wrapped, state->str_dict);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_GetAttr(wrapped, state->str_dict);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2920,29 +3219,39 @@ static int WraptObjectProxy_set_dict(WraptObjectProxyObject *self,
 
 static PyObject *WraptObjectProxy_get_self_dict(WraptObjectProxyObject *self)
 {
-  if (!self->dict)
-  {
-    self->dict = PyDict_New();
-    if (!self->dict)
-      return NULL;
-  }
+  PyObject *result = NULL;
 
-  Py_INCREF(self->dict);
-  return self->dict;
+  /* self->dict is only NULL after tp_clear has run. Perform the lazy
+   * recreation and the reference acquisition inside a critical section
+   * so that two threads racing here on a free-threaded build cannot both
+   * create a dict, leaking one of them, or return a dict which the other
+   * thread has already replaced. */
+
+  Py_BEGIN_CRITICAL_SECTION(self);
+  if (!self->dict)
+    self->dict = PyDict_New();
+  result = self->dict;
+  Py_XINCREF(result);
+  Py_END_CRITICAL_SECTION();
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
 
 static PyObject *WraptObjectProxy_get_wrapped(WraptObjectProxyObject *self)
 {
+  PyObject *value = NULL;
+
   if (!self->wrapped)
   {
     if (raise_uninitialized_wrapper_error(self) == -1)
       return NULL;
   }
 
-  Py_INCREF(self->wrapped);
-  return self->wrapped;
+  value = wrapt_acquire_wrapped(self);
+
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2973,8 +3282,16 @@ static int WraptObjectProxy_set_wrapped(WraptObjectProxyObject *self,
     return -1;
   }
 
+  /* On free-threaded builds the swap must be serialised, otherwise two
+   * threads assigning __wrapped__ on the same proxy can both read the same
+   * old value and both decref it, releasing it twice. The critical section
+   * covers only the swap; __wrapped_setattr_fixups__ below runs arbitrary
+   * Python code and must stay outside it. */
+
   Py_INCREF(value);
+  Py_BEGIN_CRITICAL_SECTION(self);
   Py_XSETREF(self->wrapped, value);
+  Py_END_CRITICAL_SECTION();
 
   fixups = PyObject_GetAttr((PyObject *)self, state->str_setattr_fixups);
 
@@ -3051,6 +3368,8 @@ static PyObject *WraptObjectProxy_getattr(WraptObjectProxyObject *self,
                                           PyObject *args)
 {
   PyObject *name = NULL;
+  PyObject *wrapped = NULL;
+  PyObject *result = NULL;
 
   if (!PyArg_ParseTuple(args, "U:__getattr__", &name))
     return NULL;
@@ -3061,7 +3380,19 @@ static PyObject *WraptObjectProxy_getattr(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_GetAttr(self->wrapped, name);
+  /* Hold a strong reference across the attribute lookup so a concurrent
+   * swap of the wrapped object cannot release it mid lookup. Note this
+   * path is reached from the __wrapped__ setter itself via the lookup
+   * of __wrapped_setattr_fixups__, so even a workload consisting purely
+   * of writers performs this read. */
+
+  wrapped = wrapt_acquire_wrapped(self);
+
+  result = PyObject_GetAttr(wrapped, name);
+
+  Py_XDECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3100,7 +3431,13 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
       return -1;
   }
 
-  return PyObject_SetAttr(self->wrapped, name, value);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  int result = PyObject_SetAttr(wrapped, name, value);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3114,7 +3451,13 @@ static PyObject *WraptObjectProxy_richcompare(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_RichCompare(self->wrapped, other, opcode);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_RichCompare(wrapped, other, opcode);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3131,7 +3474,11 @@ WraptObjectProxy_instancecheck(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  check = PyObject_IsInstance(instance, self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  check = PyObject_IsInstance(instance, wrapped);
+
+  Py_DECREF(wrapped);
 
   if (check < 0)
   {
@@ -3175,9 +3522,11 @@ WraptObjectProxy_subclasscheck(WraptObjectProxyObject *self,
     PyErr_Clear();
   }
 
-  check = PyObject_IsSubclass(object ? object : subclass,
-                              self->wrapped);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
 
+  check = PyObject_IsSubclass(object ? object : subclass, wrapped);
+
+  Py_DECREF(wrapped);
   Py_XDECREF(object);
 
   if (check == -1)
@@ -3332,7 +3681,13 @@ static PyObject *WraptCallableObjectProxy_call(WraptObjectProxyObject *self,
       return NULL;
   }
 
-  return PyObject_Call(self->wrapped, args, kwds);
+  PyObject *wrapped = wrapt_acquire_wrapped(self);
+
+  PyObject *result = PyObject_Call(wrapped, args, kwds);
+
+  Py_DECREF(wrapped);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */;
@@ -3386,11 +3741,19 @@ static int WraptPartialCallableObjectProxy_raw_init(
 
   if (result == 0)
   {
-    Py_INCREF(args);
-    Py_XSETREF(self->args, args);
+    /* Serialise the swaps for the same reason as in the __wrapped__
+     * setter. Initialisation normally happens before the proxy is shared,
+     * but __init__ can be re-invoked on an already published proxy, in
+     * which case concurrent callers on a free-threaded build could
+     * otherwise decref the same old args or kwargs twice. */
 
+    Py_INCREF(args);
     Py_XINCREF(kwargs);
+
+    Py_BEGIN_CRITICAL_SECTION(self);
+    Py_XSETREF(self->args, args);
     Py_XSETREF(self->kwargs, kwargs);
+    Py_END_CRITICAL_SECTION();
   }
 
   return result;
@@ -3510,20 +3873,28 @@ static PyObject *WraptPartialCallableObjectProxy_call(
       return NULL;
   }
 
-  fnargs = PyTuple_New(PyTuple_GET_SIZE(self->args) + PyTuple_GET_SIZE(args));
+  /* Hold strong references to the wrapped object and the captured
+   * arguments across the call so a concurrent re-initialization of the
+   * partial cannot release them while they are in use. */
+
+  PyObject *wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+  PyObject *cargs = wrapt_acquire_field((PyObject *)self, &self->args);
+  PyObject *ckwargs = wrapt_acquire_field((PyObject *)self, &self->kwargs);
+
+  fnargs = PyTuple_New(PyTuple_GET_SIZE(cargs) + PyTuple_GET_SIZE(args));
 
   if (!fnargs)
-    return NULL;
+    goto finally;
 
-  for (i = 0; i < PyTuple_GET_SIZE(self->args); i++)
+  for (i = 0; i < PyTuple_GET_SIZE(cargs); i++)
   {
     PyObject *item;
-    item = PyTuple_GetItem(self->args, i);
+    item = PyTuple_GetItem(cargs, i);
     Py_INCREF(item);
     PyTuple_SetItem(fnargs, i, item);
   }
 
-  offset = PyTuple_GET_SIZE(self->args);
+  offset = PyTuple_GET_SIZE(cargs);
 
   for (i = 0; i < PyTuple_GET_SIZE(args); i++)
   {
@@ -3536,29 +3907,23 @@ static PyObject *WraptPartialCallableObjectProxy_call(
   fnkwargs = PyDict_New();
 
   if (!fnkwargs)
-  {
-    Py_DECREF(fnargs);
-    return NULL;
-  }
+    goto finally;
 
-  if (self->kwargs && PyDict_Update(fnkwargs, self->kwargs) == -1)
-  {
-    Py_DECREF(fnargs);
-    Py_DECREF(fnkwargs);
-    return NULL;
-  }
+  if (ckwargs && PyDict_Update(fnkwargs, ckwargs) == -1)
+    goto finally;
 
   if (kwds && PyDict_Update(fnkwargs, kwds) == -1)
-  {
-    Py_DECREF(fnargs);
-    Py_DECREF(fnkwargs);
-    return NULL;
-  }
+    goto finally;
 
-  result = PyObject_Call(self->object_proxy.wrapped, fnargs, fnkwargs);
+  result = PyObject_Call(wrapped, fnargs, fnkwargs);
 
-  Py_DECREF(fnargs);
-  Py_DECREF(fnkwargs);
+finally:
+  Py_XDECREF(fnargs);
+  Py_XDECREF(fnkwargs);
+
+  Py_DECREF(wrapped);
+  Py_DECREF(cargs);
+  Py_XDECREF(ckwargs);
 
   return result;
 }
@@ -3618,23 +3983,27 @@ static int WraptFunctionWrapperBase_raw_init(
 
   if (result == 0)
   {
+    /* Serialise the swaps for the same reason as in the __wrapped__
+     * setter. These fields have no setters, so re-invocation of __init__
+     * on an already published wrapper is the only path by which
+     * concurrent callers on a free-threaded build could otherwise decref
+     * the same old field values twice. */
+
     Py_INCREF(instance);
-    Py_XSETREF(self->instance, instance);
-
     Py_INCREF(wrapper);
-    Py_XSETREF(self->wrapper, wrapper);
-
     Py_INCREF(enabled);
-    Py_XSETREF(self->enabled, enabled);
-
     Py_INCREF(binding);
-    Py_XSETREF(self->binding, binding);
-
     Py_INCREF(parent);
-    Py_XSETREF(self->parent, parent);
-
     Py_INCREF(owner);
+
+    Py_BEGIN_CRITICAL_SECTION(self);
+    Py_XSETREF(self->instance, instance);
+    Py_XSETREF(self->wrapper, wrapper);
+    Py_XSETREF(self->enabled, enabled);
+    Py_XSETREF(self->binding, binding);
+    Py_XSETREF(self->parent, parent);
     Py_XSETREF(self->owner, owner);
+    Py_END_CRITICAL_SECTION();
   }
 
   return result;
@@ -3743,6 +4112,12 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
 {
   PyObject *param_kwds = NULL;
 
+  PyObject *wrapped = NULL;
+  PyObject *instance = NULL;
+  PyObject *wrapper = NULL;
+  PyObject *enabled = NULL;
+  PyObject *binding = NULL;
+
   PyObject *result = NULL;
 
   if (!self->object_proxy.wrapped)
@@ -3755,36 +4130,53 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   if (!state)
     return NULL;
 
-  if (self->enabled != Py_None)
+  /* Hold strong references to the fields used across the call so a
+   * concurrent re-initialization of the wrapper cannot release them
+   * while in use. Fields are acquired independently, so a consistent
+   * snapshot across all of them is not guaranteed, as documented. */
+
+  wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+  instance = wrapt_acquire_field((PyObject *)self, &self->instance);
+  wrapper = wrapt_acquire_field((PyObject *)self, &self->wrapper);
+  enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
+  binding = wrapt_acquire_field((PyObject *)self, &self->binding);
+
+  if (enabled != Py_None)
   {
-    if (PyCallable_Check(self->enabled))
+    if (PyCallable_Check(enabled))
     {
       PyObject *object = NULL;
       int is_false;
 
-      object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
+      object = PyObject_CallFunctionObjArgs(enabled, NULL);
 
       if (!object)
-        return NULL;
+        goto finally;
 
       is_false = PyObject_Not(object);
       Py_DECREF(object);
 
       if (is_false < 0)
-        return NULL;
+        goto finally;
 
       if (is_false)
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      {
+        result = PyObject_Call(wrapped, args, kwds);
+        goto finally;
+      }
     }
     else
     {
-      int is_false = PyObject_Not(self->enabled);
+      int is_false = PyObject_Not(enabled);
 
       if (is_false < 0)
-        return NULL;
+        goto finally;
 
       if (is_false)
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      {
+        result = PyObject_Call(wrapped, args, kwds);
+        goto finally;
+      }
     }
   }
 
@@ -3792,54 +4184,53 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   {
     param_kwds = PyDict_New();
     if (!param_kwds)
-      return NULL;
+      goto finally;
     kwds = param_kwds;
   }
 
-  if (self->instance == Py_None)
+  if (instance == Py_None)
   {
     int matched =
-        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "instancemethod") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "classmethod") == 0;
+        PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "instancemethod") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "callable") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "classmethod") == 0;
 
     if (matched)
     {
-      PyObject *instance = NULL;
+      PyObject *bound_instance = NULL;
 
-      instance =
-          PyObject_GetAttr(self->object_proxy.wrapped, state->str_self);
+      bound_instance = PyObject_GetAttr(wrapped, state->str_self);
 
-      if (instance)
+      if (bound_instance)
       {
-        result = PyObject_CallFunctionObjArgs(self->wrapper,
-                                              self->object_proxy.wrapped,
-                                              instance, args, kwds, NULL);
+        result = PyObject_CallFunctionObjArgs(wrapper, wrapped, bound_instance,
+                                              args, kwds, NULL);
 
-        Py_XDECREF(param_kwds);
+        Py_DECREF(bound_instance);
 
-        Py_DECREF(instance);
-
-        return result;
+        goto finally;
       }
       else
       {
         if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-        {
-          Py_XDECREF(param_kwds);
-          return NULL;
-        }
+          goto finally;
         PyErr_Clear();
       }
     }
   }
 
-  result =
-      PyObject_CallFunctionObjArgs(self->wrapper, self->object_proxy.wrapped,
-                                   self->instance, args, kwds, NULL);
+  result = PyObject_CallFunctionObjArgs(wrapper, wrapped, instance, args, kwds,
+                                        NULL);
 
+finally:
   Py_XDECREF(param_kwds);
+
+  Py_DECREF(wrapped);
+  Py_XDECREF(instance);
+  Py_XDECREF(wrapper);
+  Py_XDECREF(enabled);
+  Py_XDECREF(binding);
 
   return result;
 }
@@ -3852,6 +4243,14 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
 {
   PyObject *bound_type = NULL;
   PyObject *descriptor = NULL;
+
+  PyObject *wrapped = NULL;
+  PyObject *instance = NULL;
+  PyObject *wrapper = NULL;
+  PyObject *enabled = NULL;
+  PyObject *binding = NULL;
+  PyObject *parent = NULL;
+
   PyObject *result = NULL;
 
   wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
@@ -3866,31 +4265,45 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
       return NULL;
   }
 
-  if (self->parent == Py_None)
+  /* Hold strong references to the fields used across the binding so a
+   * concurrent re-initialization of the wrapper cannot release them
+   * while in use. Fields are acquired independently, so a consistent
+   * snapshot across all of them is not guaranteed, as documented. */
+
+  wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+  instance = wrapt_acquire_field((PyObject *)self, &self->instance);
+  wrapper = wrapt_acquire_field((PyObject *)self, &self->wrapper);
+  enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
+  binding = wrapt_acquire_field((PyObject *)self, &self->binding);
+  parent = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+  if (parent == Py_None)
   {
-    if (PyUnicode_CompareWithASCIIString(self->binding, "builtin") == 0)
+    if (PyUnicode_CompareWithASCIIString(binding, "builtin") == 0)
     {
       Py_INCREF(self);
-      return (PyObject *)self;
+      result = (PyObject *)self;
+      goto finally;
     }
 
-    if (PyUnicode_CompareWithASCIIString(self->binding, "class") == 0)
+    if (PyUnicode_CompareWithASCIIString(binding, "class") == 0)
     {
       Py_INCREF(self);
-      return (PyObject *)self;
+      result = (PyObject *)self;
+      goto finally;
     }
 
-    if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL)
+    if (Py_TYPE(wrapped)->tp_descr_get == NULL)
     {
       Py_INCREF(self);
-      return (PyObject *)self;
+      result = (PyObject *)self;
+      goto finally;
     }
 
-    descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
-        self->object_proxy.wrapped, obj, type);
+    descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
 
     if (!descriptor)
-      return NULL;
+      goto finally;
 
     if (Py_TYPE(self) != state->FunctionWrapper_Type)
     {
@@ -3899,10 +4312,7 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
       if (!bound_type)
       {
         if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-        {
-          Py_DECREF(descriptor);
-          return NULL;
-        }
+          goto finally;
         PyErr_Clear();
       }
     }
@@ -3912,77 +4322,68 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
 
     result = PyObject_CallFunctionObjArgs(
         bound_type ? bound_type : (PyObject *)state->BoundFunctionWrapper_Type,
-        descriptor, obj, self->wrapper, self->enabled, self->binding, self,
-        type, NULL);
+        descriptor, obj, wrapper, enabled, binding, self, type, NULL);
 
-    Py_XDECREF(bound_type);
-    Py_DECREF(descriptor);
-
-    return result;
+    goto finally;
   }
 
-  if (self->instance == Py_None)
+  if (instance == Py_None)
   {
     int matched =
-        PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "instancemethod") == 0 ||
-        PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0;
+        PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "instancemethod") == 0 ||
+        PyUnicode_CompareWithASCIIString(binding, "callable") == 0;
 
     if (matched)
     {
-      PyObject *wrapped = NULL;
+      PyObject *parent_wrapped = NULL;
 
-      if (PyObject_TypeCheck(self->parent, state->ObjectProxy_Type))
+      if (PyObject_TypeCheck(parent, state->ObjectProxy_Type))
       {
-        WraptObjectProxyObject *parent_proxy =
-            (WraptObjectProxyObject *)self->parent;
+        WraptObjectProxyObject *parent_proxy = (WraptObjectProxyObject *)parent;
 
         if (!parent_proxy->wrapped)
         {
           if (raise_uninitialized_wrapper_error(parent_proxy) == -1)
-            return NULL;
+            goto finally;
         }
 
-        wrapped = parent_proxy->wrapped;
-        Py_INCREF(wrapped);
+        parent_wrapped = wrapt_acquire_wrapped(parent_proxy);
       }
       else
       {
         /* Fallback for the unusual case where parent is not a wrapt proxy. */
-        wrapped = PyObject_GetAttr((PyObject *)self->parent, state->str_wrapped);
+        parent_wrapped = PyObject_GetAttr(parent, state->str_wrapped);
 
-        if (!wrapped)
-          return NULL;
+        if (!parent_wrapped)
+          goto finally;
       }
 
-      if (Py_TYPE(wrapped)->tp_descr_get == NULL)
+      if (Py_TYPE(parent_wrapped)->tp_descr_get == NULL)
       {
         PyErr_Format(PyExc_AttributeError,
                      "'%s' object has no attribute '__get__'",
-                     Py_TYPE(wrapped)->tp_name);
-        Py_DECREF(wrapped);
-        return NULL;
+                     Py_TYPE(parent_wrapped)->tp_name);
+        Py_DECREF(parent_wrapped);
+        goto finally;
       }
 
-      descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
+      descriptor =
+          (Py_TYPE(parent_wrapped)->tp_descr_get)(parent_wrapped, obj, type);
 
-      Py_DECREF(wrapped);
+      Py_DECREF(parent_wrapped);
 
       if (!descriptor)
-        return NULL;
+        goto finally;
 
-      if (Py_TYPE(self->parent) != state->FunctionWrapper_Type)
+      if (Py_TYPE(parent) != state->FunctionWrapper_Type)
       {
-        bound_type =
-            PyObject_GenericGetAttr((PyObject *)self->parent, bound_type_str);
+        bound_type = PyObject_GenericGetAttr(parent, bound_type_str);
 
         if (!bound_type)
         {
           if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-          {
-            Py_DECREF(descriptor);
-            return NULL;
-          }
+            goto finally;
           PyErr_Clear();
         }
       }
@@ -3992,18 +4393,27 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
 
       result = PyObject_CallFunctionObjArgs(
           bound_type ? bound_type : (PyObject *)state->BoundFunctionWrapper_Type,
-          descriptor, obj, self->wrapper, self->enabled, self->binding,
-          self->parent, type, NULL);
+          descriptor, obj, wrapper, enabled, binding, parent, type, NULL);
 
-      Py_XDECREF(bound_type);
-      Py_DECREF(descriptor);
-
-      return result;
+      goto finally;
     }
   }
 
   Py_INCREF(self);
-  return (PyObject *)self;
+  result = (PyObject *)self;
+
+finally:
+  Py_XDECREF(bound_type);
+  Py_XDECREF(descriptor);
+
+  Py_DECREF(wrapped);
+  Py_XDECREF(instance);
+  Py_XDECREF(wrapper);
+  Py_XDECREF(enabled);
+  Py_XDECREF(binding);
+  Py_XDECREF(parent);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4026,7 +4436,11 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
   if (!state)
     return NULL;
 
-  method = PyObject_GetAttr(self->object_proxy.wrapped, state->str_set_name);
+  PyObject *wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+
+  method = PyObject_GetAttr(wrapped, state->str_set_name);
+
+  Py_DECREF(wrapped);
 
   if (!method)
   {
@@ -4049,13 +4463,16 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
                                            void *closure)
 {
-  if (!self->instance)
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->instance);
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->instance);
-  return self->instance;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4064,13 +4481,16 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_wrapper(WraptFunctionWrapperObject *self,
                                           void *closure)
 {
-  if (!self->wrapper)
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->wrapper);
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->wrapper);
-  return self->wrapper;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4079,13 +4499,16 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_enabled(WraptFunctionWrapperObject *self,
                                           void *closure)
 {
-  if (!self->enabled)
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->enabled);
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->enabled);
-  return self->enabled;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4094,13 +4517,16 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_binding(WraptFunctionWrapperObject *self,
                                           void *closure)
 {
-  if (!self->binding)
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->binding);
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->binding);
-  return self->binding;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4109,13 +4535,16 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_parent(WraptFunctionWrapperObject *self,
                                          void *closure)
 {
-  if (!self->parent)
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->parent);
-  return self->parent;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4124,13 +4553,16 @@ static PyObject *
 WraptFunctionWrapperBase_get_self_owner(WraptFunctionWrapperObject *self,
                                         void *closure)
 {
-  if (!self->owner)
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->owner);
+
+  if (!value)
   {
     Py_RETURN_NONE;
   }
 
-  Py_INCREF(self->owner);
-  return self->owner;
+  return value;
 }
 
 /* ------------------------------------------------------------------------- */;
@@ -4189,6 +4621,12 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
 
   PyObject *wrapped = NULL;
   PyObject *instance = NULL;
+  PyObject *wrapper = NULL;
+  PyObject *enabled = NULL;
+  PyObject *binding = NULL;
+  PyObject *owner = NULL;
+
+  PyObject *call_instance = NULL;
 
   PyObject *result = NULL;
 
@@ -4204,36 +4642,57 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   if (!state)
     return NULL;
 
-  if (self->enabled != Py_None)
+  /* Hold strong references to the fields used across the call so a
+   * concurrent re-initialization of the wrapper cannot release them
+   * while in use. Fields are acquired independently, so a consistent
+   * snapshot across all of them is not guaranteed, as documented. The
+   * call_instance local always holds an owned reference to whichever
+   * instance value is passed through to the wrapper. */
+
+  instance = wrapt_acquire_field((PyObject *)self, &self->instance);
+  wrapper = wrapt_acquire_field((PyObject *)self, &self->wrapper);
+  enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
+  binding = wrapt_acquire_field((PyObject *)self, &self->binding);
+  owner = wrapt_acquire_field((PyObject *)self, &self->owner);
+
+  if (enabled != Py_None)
   {
-    if (PyCallable_Check(self->enabled))
+    if (PyCallable_Check(enabled))
     {
       PyObject *object = NULL;
       int is_false;
 
-      object = PyObject_CallFunctionObjArgs(self->enabled, NULL);
+      object = PyObject_CallFunctionObjArgs(enabled, NULL);
 
       if (!object)
-        return NULL;
+        goto finally;
 
       is_false = PyObject_Not(object);
       Py_DECREF(object);
 
       if (is_false < 0)
-        return NULL;
+        goto finally;
 
       if (is_false)
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      {
+        wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+        result = PyObject_Call(wrapped, args, kwds);
+        goto finally;
+      }
     }
     else
     {
-      int is_false = PyObject_Not(self->enabled);
+      int is_false = PyObject_Not(enabled);
 
       if (is_false < 0)
-        return NULL;
+        goto finally;
 
       if (is_false)
-        return PyObject_Call(self->object_proxy.wrapped, args, kwds);
+      {
+        wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+        result = PyObject_Call(wrapped, args, kwds);
+        goto finally;
+      }
     }
   }
 
@@ -4243,13 +4702,13 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
    */
 
   matched =
-      PyUnicode_CompareWithASCIIString(self->binding, "function") == 0 ||
-      PyUnicode_CompareWithASCIIString(self->binding, "callable") == 0;
+      PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
+      PyUnicode_CompareWithASCIIString(binding, "callable") == 0;
 
   if (matched)
   {
 
-    if (self->instance == Py_None && PyTuple_GET_SIZE(args) != 0)
+    if (instance == Py_None && PyTuple_GET_SIZE(args) != 0)
     {
       /*
        * This situation can occur where someone is calling the
@@ -4260,74 +4719,66 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
        * so the wrapper doesn't see anything as being different.
        */
 
-      instance = PyTuple_GetItem(args, 0);
+      call_instance = PyTuple_GetItem(args, 0);
 
-      if (!instance)
-        return NULL;
+      if (!call_instance)
+        goto finally;
 
-      int check = PyObject_IsInstance(instance, self->owner);
+      Py_INCREF(call_instance);
+
+      int check = PyObject_IsInstance(call_instance, owner);
 
       if (check < 0)
-        return NULL;
+        goto finally;
 
       if (check)
       {
-        wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
-        if (!state)
-          return NULL;
+        PyObject *inner_wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+
         wrapped = PyObject_CallFunctionObjArgs(
             (PyObject *)state->PartialCallableObjectProxy_Type,
-            self->object_proxy.wrapped, instance, NULL);
+            inner_wrapped, call_instance, NULL);
+
+        Py_DECREF(inner_wrapped);
 
         if (!wrapped)
-          return NULL;
+          goto finally;
 
         param_args = PyTuple_GetSlice(args, 1, PyTuple_GET_SIZE(args));
 
         if (!param_args)
-        {
-          Py_DECREF(wrapped);
-          return NULL;
-        }
+          goto finally;
 
         args = param_args;
       }
       else
       {
-        instance = self->instance;
+        Py_DECREF(call_instance);
+        call_instance = instance;
+        Py_XINCREF(call_instance);
       }
     }
     else
     {
-      instance = self->instance;
+      call_instance = instance;
+      Py_XINCREF(call_instance);
     }
 
     if (!wrapped)
     {
-      Py_INCREF(self->object_proxy.wrapped);
-      wrapped = self->object_proxy.wrapped;
+      wrapped = wrapt_acquire_wrapped(&self->object_proxy);
     }
 
     if (!kwds)
     {
       param_kwds = PyDict_New();
       if (!param_kwds)
-      {
-        Py_XDECREF(param_args);
-        Py_DECREF(wrapped);
-        return NULL;
-      }
+        goto finally;
       kwds = param_kwds;
     }
 
-    result = PyObject_CallFunctionObjArgs(self->wrapper, wrapped, instance,
+    result = PyObject_CallFunctionObjArgs(wrapper, wrapped, call_instance,
                                           args, kwds, NULL);
-
-    Py_XDECREF(param_args);
-    Py_XDECREF(param_kwds);
-    Py_DECREF(wrapped);
-
-    return result;
   }
   else
   {
@@ -4346,37 +4797,45 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
      * available in the decoratored function.
      */
 
-    instance = PyObject_GetAttr(self->object_proxy.wrapped, state->str_self);
+    wrapped = wrapt_acquire_wrapped(&self->object_proxy);
 
-    if (!instance)
+    call_instance = PyObject_GetAttr(wrapped, state->str_self);
+
+    if (!call_instance)
     {
       if (!PyErr_ExceptionMatches(PyExc_AttributeError))
-        return NULL;
+        goto finally;
       PyErr_Clear();
       Py_INCREF(Py_None);
-      instance = Py_None;
+      call_instance = Py_None;
     }
 
     if (!kwds)
     {
       param_kwds = PyDict_New();
       if (!param_kwds)
-      {
-        Py_DECREF(instance);
-        return NULL;
-      }
+        goto finally;
       kwds = param_kwds;
     }
 
-    result = PyObject_CallFunctionObjArgs(
-        self->wrapper, self->object_proxy.wrapped, instance, args, kwds, NULL);
-
-    Py_XDECREF(param_kwds);
-
-    Py_DECREF(instance);
-
-    return result;
+    result = PyObject_CallFunctionObjArgs(wrapper, wrapped, call_instance,
+                                          args, kwds, NULL);
   }
+
+finally:
+  Py_XDECREF(param_args);
+  Py_XDECREF(param_kwds);
+
+  Py_XDECREF(call_instance);
+
+  Py_XDECREF(wrapped);
+  Py_XDECREF(instance);
+  Py_XDECREF(wrapper);
+  Py_XDECREF(enabled);
+  Py_XDECREF(binding);
+  Py_XDECREF(owner);
+
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -4389,18 +4848,28 @@ static PyObject *WraptBoundFunctionWrapper_getattr(
   if (!PyArg_ParseTuple(args, "U:__getattr__", &name))
     return NULL;
 
-  if (self->parent && self->parent != Py_None)
+  PyObject *parent = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+  if (parent && parent != Py_None)
   {
-    PyObject *result = PyObject_GetAttr(self->parent, name);
+    PyObject *result = PyObject_GetAttr(parent, name);
 
     if (result)
+    {
+      Py_DECREF(parent);
       return result;
+    }
 
     if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+    {
+      Py_DECREF(parent);
       return NULL;
+    }
 
     PyErr_Clear();
   }
+
+  Py_XDECREF(parent);
 
   return WraptObjectProxy_getattr((WraptObjectProxyObject *)self, args);
 }
@@ -4426,8 +4895,18 @@ static int WraptBoundFunctionWrapper_setattro(
       return PyObject_GenericSetAttr((PyObject *)self, name, value);
 
     /* User-defined _self_ attribute — delegate to parent */
-    if (self->parent && self->parent != Py_None)
-      return PyObject_GenericSetAttr(self->parent, name, value);
+    PyObject *parent = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+    if (parent && parent != Py_None)
+    {
+      int result = PyObject_GenericSetAttr(parent, name, value);
+
+      Py_DECREF(parent);
+
+      return result;
+    }
+
+    Py_XDECREF(parent);
   }
 
   /* Fall through to base ObjectProxy setattro for everything else */
@@ -4836,18 +5315,20 @@ static int wrapt_exec(PyObject *module)
   }
   Py_DECREF(bases);
 
-  /* Cache WrapperNotInitializedError from wrapt.wrappers. The module is
-   * already in sys.modules because __wrapt__.py imports it before us. */
+  /* Cache WrapperNotInitializedError from wrapt.exceptions. The module is
+   * already in sys.modules because wrapt.wrappers imports it before
+   * __wrapt__.py imports us. */
 
   {
-    PyObject *wrapt_wrappers_module = PyImport_ImportModule("wrapt.wrappers");
-    if (!wrapt_wrappers_module)
+    PyObject *wrapt_exceptions_module =
+        PyImport_ImportModule("wrapt.exceptions");
+    if (!wrapt_exceptions_module)
       return -1;
 
     state->WrapperNotInitializedError = PyObject_GetAttrString(
-        wrapt_wrappers_module, "WrapperNotInitializedError");
+        wrapt_exceptions_module, "WrapperNotInitializedError");
 
-    Py_DECREF(wrapt_wrappers_module);
+    Py_DECREF(wrapt_exceptions_module);
 
     if (!state->WrapperNotInitializedError)
       return -1;

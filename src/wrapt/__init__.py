@@ -13,7 +13,7 @@ def _format_version(parts):
     )
 
 
-__version_info__ = ("2", "3", "0")
+__version_info__ = ("2", "4", "0")
 __version__ = _format_version(__version_info__)
 
 from .__wrapt__ import (
@@ -31,6 +31,14 @@ from .decorators import (
     bind_state_to_wrapper,
     decorator,
 )
+from .exceptions import (
+    PathResolutionError,
+    TargetModuleNotFoundError,
+    WrapperChainTooDeepError,
+    WrapperNotFoundError,
+    WrapperNotInitializedError,
+    WrapperNotOutermostError,
+)
 from .importer import (
     discover_post_import_hooks,
     notify_module_loaded,
@@ -38,14 +46,23 @@ from .importer import (
     when_imported,
 )
 from .patches import (
+    MISSING,
+    AttributeWrapper,
     apply_patch,
+    find_wrapper,
     function_wrapper,
+    is_wrapped_by,
     patch_function_wrapper,
+    resolve_owner,
     resolve_path,
+    scoped_function_wrapper,
     transient_function_wrapper,
+    unwrap_object,
+    unwrapped,
     wrap_function_wrapper,
     wrap_object,
     wrap_object_attribute,
+    wrapper_chain,
 )
 from .proxies import AutoObjectProxy, LazyObjectProxy, ObjectProxy, lazy_import
 from .signature import with_signature
@@ -67,6 +84,12 @@ __all__ = (
     "LazyObjectProxy",
     "ObjectProxy",
     "PartialCallableObjectProxy",
+    "PathResolutionError",
+    "TargetModuleNotFoundError",
+    "WrapperChainTooDeepError",
+    "WrapperNotFoundError",
+    "WrapperNotInitializedError",
+    "WrapperNotOutermostError",
     "partial",
     "AdapterFactory",
     "adapter_factory",
@@ -83,14 +106,23 @@ __all__ = (
     "notify_module_loaded",
     "register_post_import_hook",
     "when_imported",
+    "MISSING",
+    "AttributeWrapper",
     "apply_patch",
+    "find_wrapper",
     "function_wrapper",
+    "is_wrapped_by",
     "lazy_import",
     "patch_function_wrapper",
+    "resolve_owner",
     "resolve_path",
+    "scoped_function_wrapper",
     "transient_function_wrapper",
+    "unwrap_object",
+    "unwrapped",
     "wrap_function_wrapper",
     "wrap_object",
     "wrap_object_attribute",
+    "wrapper_chain",
     "WeakFunctionProxy",
 )

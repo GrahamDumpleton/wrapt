@@ -1,6 +1,7 @@
 import sys
 
 if sys.version_info >= (3, 10):
+    from contextlib import AbstractContextManager
     from inspect import FullArgSpec, Signature
     from types import GenericAlias, ModuleType, TracebackType
     from typing import (
@@ -8,12 +9,14 @@ if sys.version_info >= (3, 10):
         AsyncIterator,
         Callable,
         Concatenate,
+        Final,
         Generator,
         Generic,
         Iterator,
         ParamSpec,
         Protocol,
         TypeVar,
+        final,
         overload,
     )
 
@@ -29,6 +32,12 @@ if sys.version_info >= (3, 10):
         "LazyObjectProxy",
         "ObjectProxy",
         "PartialCallableObjectProxy",
+        "PathResolutionError",
+        "TargetModuleNotFoundError",
+        "WrapperChainTooDeepError",
+        "WrapperNotFoundError",
+        "WrapperNotInitializedError",
+        "WrapperNotOutermostError",
         "partial",
         "AdapterFactory",
         "adapter_factory",
@@ -45,15 +54,24 @@ if sys.version_info >= (3, 10):
         "notify_module_loaded",
         "register_post_import_hook",
         "when_imported",
+        "MISSING",
+        "AttributeWrapper",
         "apply_patch",
+        "find_wrapper",
         "function_wrapper",
+        "is_wrapped_by",
         "lazy_import",
         "patch_function_wrapper",
+        "resolve_owner",
         "resolve_path",
+        "scoped_function_wrapper",
         "transient_function_wrapper",
+        "unwrap_object",
+        "unwrapped",
         "wrap_function_wrapper",
         "wrap_object",
         "wrap_object_attribute",
+        "wrapper_chain",
         "WeakFunctionProxy",
     )
 
@@ -340,7 +358,7 @@ if sys.version_info >= (3, 10):
         | _InstanceMethodWrapperFunction[_P, _R]
     )
 
-    class _FunctionWrapperBase(ObjectProxy[_WrappedFunction[_P, _R]]):
+    class _FunctionWrapperBase(BaseObjectProxy[_WrappedFunction[_P, _R]]):
         _self_instance: Any
         _self_wrapper: _WrapperFunction[_P, _R]
         _self_enabled: bool | _Boolean | Callable[[], bool] | None
@@ -542,7 +560,8 @@ if sys.version_info >= (3, 10):
     def patch_function_wrapper(
         target: ModuleType | type[Any] | Any | str,
         name: str,
-        enabled: bool | _Boolean | Callable[[], bool] | None = None,
+        *,
+        enabled: bool | _Boolean | Callable[[], bool] | None | _MissingType = ...,
     ) -> _WrapperDecorator: ...
 
     # transient_function_wrapper()
@@ -554,9 +573,46 @@ if sys.version_info >= (3, 10):
         target: ModuleType | type[Any] | Any | str, name: str
     ) -> _TransientDecorator: ...
 
+    # scoped_function_wrapper()
+
+    def scoped_function_wrapper(
+        target: ModuleType | type[Any] | Any | str,
+        name: str,
+        wrapper: _WrapperFunction[_P, _R],
+    ) -> AbstractContextManager[None]: ...
+
+    # Exceptions.
+
+    class WrapperNotInitializedError(ValueError): ...
+
+    class PathResolutionError(AttributeError): ...
+
+    class TargetModuleNotFoundError(ModuleNotFoundError): ...
+
+    class WrapperChainTooDeepError(RuntimeError): ...
+
+    class WrapperNotFoundError(ValueError): ...
+
+    class WrapperNotOutermostError(ValueError): ...
+
+    # MISSING sentinel. The class stays private, matching the runtime
+    # (the dataclasses.MISSING/_MISSING_TYPE arrangement): signatures
+    # reference _MissingType while callers only ever write wrapt.MISSING.
+
+    @final
+    class _MissingType: ...
+
+    MISSING: Final[_MissingType]
+
     # resolve_path()
 
     def resolve_path(
+        target: ModuleType | type[Any] | Any | str, name: str
+    ) -> tuple[ModuleType | type[Any] | Any, str, Callable[..., Any]]: ...
+
+    # resolve_owner()
+
+    def resolve_owner(
         target: ModuleType | type[Any] | Any | str, name: str
     ) -> tuple[ModuleType | type[Any] | Any, str, Callable[..., Any]]: ...
 
@@ -571,26 +627,82 @@ if sys.version_info >= (3, 10):
     # wrap_object()
 
     _WrapperFactory = Callable[
-        [Callable[..., Any], tuple[Any, ...], dict[str, Any]], type[ObjectProxy[Any]]
+        [Callable[..., Any], tuple[Any, ...], dict[str, Any]],
+        BaseObjectProxy[Any],
     ]
 
     def wrap_object(
         target: ModuleType | type[Any] | Any | str,
         name: str,
-        factory: _WrapperFactory | type[ObjectProxy[Any]],
+        factory: _WrapperFactory | type[BaseObjectProxy[Any]],
         args: tuple[Any, ...] = (),
         kwargs: dict[str, Any] | None = None,
     ) -> Any: ...
 
     # wrap_object_attribute()
 
+    class AttributeWrapper(BaseObjectProxy[Any]):
+        _self_attribute: str
+        _self_factory: Callable[..., Any]
+        _self_args: tuple[Any, ...]
+        _self_kwargs: dict[str, Any]
+        def __init__(
+            self,
+            wrapped: Any,
+            attribute: str,
+            factory: Callable[..., Any],
+            args: tuple[Any, ...] = (),
+            kwargs: dict[str, Any] | None = None,
+        ) -> None: ...
+        def __get__(self, instance: Any, owner: type[Any] | None = None) -> Any: ...
+        def __set__(self, instance: Any, value: Any) -> None: ...
+        def __delete__(self, instance: Any) -> None: ...
+
     def wrap_object_attribute(
         module: ModuleType | type[Any] | Any | str,
         name: str,
-        factory: _WrapperFactory | type[ObjectProxy[Any]],
+        factory: _WrapperFactory | type[BaseObjectProxy[Any]],
         args: tuple[Any, ...] = (),
         kwargs: dict[str, Any] | None = None,
-    ) -> Any: ...
+    ) -> AttributeWrapper: ...
+
+    # wrapper_chain()
+
+    def wrapper_chain(obj: Any, *, limit: int = 64) -> Iterator[Any]: ...
+
+    # unwrapped()
+
+    def unwrapped(obj: Any, *, limit: int = 64) -> Any: ...
+
+    # find_wrapper()
+
+    def find_wrapper(
+        obj: Any,
+        handle: Any | None = None,
+        *,
+        predicate: Callable[[Any], bool] | None = None,
+        limit: int = 64,
+    ) -> Any | None: ...
+
+    # is_wrapped_by()
+
+    def is_wrapped_by(
+        obj: Any,
+        handle: Any | None = None,
+        *,
+        predicate: Callable[[Any], bool] | None = None,
+        limit: int = 64,
+    ) -> bool: ...
+
+    # unwrap_object()
+
+    def unwrap_object(
+        target: ModuleType | type[Any] | Any | str,
+        name: str,
+        handle: Any,
+        *,
+        missing_ok: bool = False,
+    ) -> Any | None: ...
 
     # register_post_import_hook()
 
