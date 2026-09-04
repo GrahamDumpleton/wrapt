@@ -205,6 +205,22 @@ class TestPartialCallableObjectProxySignature(unittest.TestCase):
 
         self.assertFalse(hasattr(func0, "__signature__"))
 
+    def test_attribute_via_non_interned_name(self):
+        # The C extension intercepts __signature__ by name in the attribute
+        # get slot. A name constructed at runtime is not interned and must
+        # still be matched, rather than being forwarded to the wrapped
+        # callable which has no such attribute.
+
+        def func0(a, b, c=1):
+            pass
+
+        name = "".join(list("__signature__"))
+
+        self.assertEqual(
+            getattr(wrapt.partial(func0, 1), name),
+            inspect.signature(functools.partial(func0, 1)),
+        )
+
     def test_bound_method_limitation(self):
         # When the wrapped callable is an already bound method, inspect
         # decides based on the class of the object, which the proxy reports

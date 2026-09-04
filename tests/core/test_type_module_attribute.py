@@ -325,5 +325,46 @@ class TestWrappedReplacement(unittest.TestCase):
         self.assertEqual(wrapper.__module__, "module2")
 
 
+class TestNonInternedAttributeNames(unittest.TestCase):
+    """The C extension intercepts __module__ and __doc__ by name in the
+    attribute get and set slots. Names arriving from Python code are
+    interned, but names constructed at runtime are not, and the interception
+    must work for those too rather than falling through to a stale copy.
+    """
+
+    @staticmethod
+    def dynamic(name):
+        # Build an equal but distinct, non interned string object.
+        result = "".join(list(name))
+        assert result == name and result is not name
+        return result
+
+    def test_get_module_and_doc_via_non_interned_name(self):
+        def function():
+            """original doc"""
+
+        proxy = BaseObjectProxy(function)
+
+        function.__module__ = "changed.module"
+        function.__doc__ = "changed doc"
+
+        self.assertEqual(getattr(proxy, self.dynamic("__module__")), "changed.module")
+        self.assertEqual(getattr(proxy, self.dynamic("__doc__")), "changed doc")
+
+    def test_set_module_and_doc_via_non_interned_name(self):
+        def function():
+            """original doc"""
+
+        proxy = BaseObjectProxy(function)
+
+        setattr(proxy, self.dynamic("__module__"), "set.module")
+        setattr(proxy, self.dynamic("__doc__"), "set doc")
+
+        self.assertEqual(function.__module__, "set.module")
+        self.assertEqual(function.__doc__, "set doc")
+        self.assertEqual(proxy.__module__, "set.module")
+        self.assertEqual(proxy.__doc__, "set doc")
+
+
 if __name__ == "__main__":
     unittest.main()

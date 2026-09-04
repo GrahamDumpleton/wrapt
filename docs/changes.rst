@@ -38,6 +38,19 @@ Version 2.4.1
   bound method is still reported incorrectly, for reasons outside of the
   control of ``wrapt``. See the "Known Issues" documentation for details.
 
+* The C extension intercepts the ``__module__`` and ``__doc__`` attributes
+  by name in its attribute get and set slots so that they are forwarded to
+  the wrapped object. The name was compared by identity against an interned
+  string, which relied on the attribute name having been interned. Names
+  originating from Python source code always are, but a name constructed at
+  runtime, for example by string concatenation or by decoding, is not, and
+  for such a name the interception was skipped. Getting the attribute then
+  returned the value captured when the proxy was created rather than the
+  current value on the wrapped object, and setting it stored the value on
+  the proxy rather than the wrapped object. The comparison now falls back to
+  comparing by value when the identity check fails, guarded by a length
+  check so that the cost for non matching names is unchanged.
+
 Version 2.4.0
 -------------
 

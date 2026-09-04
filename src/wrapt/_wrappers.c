@@ -205,6 +205,35 @@ static inline PyObject *wrapt_acquire_field(PyObject *owner, PyObject **field)
   return value;
 }
 
+/* Test whether an attribute name matches one of the interned strings held
+ * in module state. Attribute names arriving from Python code are interned
+ * by the compiler, so a pointer comparison against the interned string is
+ * nearly always sufficient and is the fast path. A name constructed at
+ * runtime, for example by string concatenation or decoding, is not
+ * interned and would never match by pointer, so fall back to a value
+ * comparison. That comparison is guarded by a length check so that the
+ * cost for the overwhelming majority of non matching names is a single
+ * integer comparison. This mirrors the pattern used by CPython itself in
+ * super_getattro() for __class__.
+ *
+ * The name must be a str. This holds for the attribute get and set slots
+ * where this is used, since PyObject_GetAttr() and PyObject_SetAttr()
+ * reject any other type before the slot is reached. */
+
+static inline int wrapt_name_equals(PyObject *name, PyObject *interned)
+{
+  if (name == interned)
+    return 1;
+
+  if (!PyUnicode_Check(name))
+    return 0;
+
+  if (PyUnicode_GET_LENGTH(name) != PyUnicode_GET_LENGTH(interned))
+    return 0;
+
+  return PyUnicode_Compare(name, interned) == 0;
+}
+
 /* Convenience form for the common case of the wrapped object field. */
 
 static inline PyObject *wrapt_acquire_wrapped(WraptObjectProxyObject *self)
@@ -3336,9 +3365,9 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
    * __module__/__doc__ strings that type.__module__ reads via raw dict
    * lookup. */
 
-  if (name == state->str_module)
+  if (wrapt_name_equals(name, state->str_module))
     return WraptObjectProxy_get_module(self);
-  if (name == state->str_doc)
+  if (wrapt_name_equals(name, state->str_doc))
     return WraptObjectProxy_get_doc(self);
 
   object = PyObject_GenericGetAttr((PyObject *)self, name);
@@ -3418,9 +3447,9 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
    * values in the type dict (from PyType_FromModuleAndSpec) would cause
    * wrapt_type_has_attr to match and GenericSetAttr to store locally. */
 
-  if (name == state->str_module)
+  if (wrapt_name_equals(name, state->str_module))
     return WraptObjectProxy_set_module(self, value);
-  if (name == state->str_doc)
+  if (wrapt_name_equals(name, state->str_doc))
     return WraptObjectProxy_set_doc(self, value);
 
   if (wrapt_type_has_attr(Py_TYPE(self), name))
@@ -4071,7 +4100,7 @@ static PyObject *WraptPartialCallableObjectProxy_getattro(
   if (!state)
     return NULL;
 
-  if (name == state->str_signature)
+  if (wrapt_name_equals(name, state->str_signature))
     return WraptPartialCallableObjectProxy_get_signature(self);
 
   return WraptObjectProxy_getattro((WraptObjectProxyObject *)self, name);
