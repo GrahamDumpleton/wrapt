@@ -339,7 +339,10 @@ Object Proxies
 ``wrapt.PartialCallableObjectProxy``
     A proxy that combines a callable with a set of pre-bound positional
     and keyword arguments, analogous to ``functools.partial`` but
-    implemented as an object proxy.
+    implemented as an object proxy. The bound arguments are available as
+    the ``_self_args`` and ``_self_kwargs`` attributes, and
+    ``inspect.signature()`` reports the signature of the callable with
+    the bound parameters removed, as it does for ``functools.partial``.
 
 ``wrapt.partial``
     Factory function that returns a ``PartialCallableObjectProxy``,

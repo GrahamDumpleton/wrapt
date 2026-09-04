@@ -36,6 +36,15 @@ wrapt\.LazyObjectProxy\.__wrapped_factory__
 wrapt\.LazyObjectProxy\.__wrapped_get__
 wrapt\.LazyObjectProxy\.__wrapped_get_called__
 
+# --- PartialCallableObjectProxy provides __signature__ on instances only.
+# It is deliberately not visible on the class, since inspect.signature()
+# applied to the class itself would otherwise fail on finding a descriptor
+# object rather than a Signature. In the pure Python implementation it is
+# a descriptor raising AttributeError on class access, and in the C
+# extension it is handled in tp_getattro. Stubtest inspects the class and
+# so reports it as missing at runtime under both implementations.
+wrapt\.PartialCallableObjectProxy\.__signature__
+
 # --- Overload-vs-default-None stubtest limitations. These decorators
 # all expose two overloads (bare @x and @x(...)); stubtest picks the
 # wrong overload when checking the default-None shape.

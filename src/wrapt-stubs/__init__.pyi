@@ -319,6 +319,8 @@ if sys.version_info >= (3, 10):
     class PartialCallableObjectProxy(BaseObjectProxy[Callable[..., Any]]):
         _self_args: tuple[Any, ...]
         _self_kwargs: dict[str, Any]
+        @property
+        def __signature__(self) -> Signature: ...
         def __init__(
             self, func: Callable[..., Any], *args: Any, **kwargs: Any
         ) -> None: ...
