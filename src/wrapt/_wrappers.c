@@ -3930,11 +3930,50 @@ finally:
 
 /* ------------------------------------------------------------------------- */;
 
+static PyObject *WraptPartialCallableObjectProxy_get_self_args(
+    WraptPartialCallableObjectProxyObject *self, void *closure)
+{
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->args);
+
+  if (!value)
+    return PyTuple_New(0);
+
+  return value;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptPartialCallableObjectProxy_get_self_kwargs(
+    WraptPartialCallableObjectProxyObject *self, void *closure)
+{
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->kwargs);
+
+  if (!value)
+    return PyDict_New();
+
+  return value;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyGetSetDef WraptPartialCallableObjectProxy_getset[] = {
+    {"_self_args", (getter)WraptPartialCallableObjectProxy_get_self_args, NULL,
+     0},
+    {"_self_kwargs", (getter)WraptPartialCallableObjectProxy_get_self_kwargs,
+     NULL, 0},
+    {NULL},
+};
+
 static PyType_Slot WraptPartialCallableObjectProxy_slots[] = {
     {Py_tp_dealloc, WraptPartialCallableObjectProxy_dealloc},
     {Py_tp_call, WraptPartialCallableObjectProxy_call},
     {Py_tp_traverse, WraptPartialCallableObjectProxy_traverse},
     {Py_tp_clear, WraptPartialCallableObjectProxy_clear},
+    {Py_tp_getset, WraptPartialCallableObjectProxy_getset},
     {Py_tp_init, WraptPartialCallableObjectProxy_init},
     {Py_tp_new, WraptPartialCallableObjectProxy_new},
     {0, NULL},

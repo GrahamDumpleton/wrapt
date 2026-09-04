@@ -6,6 +6,13 @@ Version 2.4.1
 
 **Bugs Fixed**
 
+* The C extension implementation of ``PartialCallableObjectProxy`` did not
+  expose the bound positional and keyword arguments supplied when the proxy
+  was created, whereas the pure Python implementation makes them available
+  as the ``_self_args`` and ``_self_kwargs`` attributes. The C extension
+  implementation now provides read only ``_self_args`` and ``_self_kwargs``
+  attributes so that both implementations behave the same.
+
 Version 2.4.0
 -------------
 
