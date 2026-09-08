@@ -255,6 +255,24 @@ class TestSetModuleAndDoc(unittest.TestCase):
         wrapper.__doc__ = "override doc"
         self.assertEqual(target.__doc__, "override doc")
 
+    def test_delete_module_on_object_proxy(self):
+        target = objects.target
+        wrapper = wrapt.ObjectProxy(target)
+        wrapper.__module__ = "override_module"
+
+        del wrapper.__module__
+
+        self.assertFalse(hasattr(target, "__module__"))
+
+    def test_delete_doc_on_object_proxy(self):
+        target = objects.target
+        wrapper = wrapt.ObjectProxy(target)
+        wrapper.__doc__ = "override doc"
+
+        del wrapper.__doc__
+
+        self.assertIsNone(target.__doc__)
+
     def test_set_module_on_function_wrapper(self):
         def my_wrapper(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
