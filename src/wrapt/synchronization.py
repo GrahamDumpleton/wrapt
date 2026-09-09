@@ -8,13 +8,16 @@ wrapped callable (without converting it), and ``async_to_sync`` /
 
 import asyncio
 import sys
+import warnings
 from functools import partial
 from inspect import (
     CO_ASYNC_GENERATOR,
     CO_COROUTINE,
     CO_GENERATOR,
     CO_ITERABLE_COROUTINE,
+    isasyncgenfunction,
     iscoroutinefunction,
+    isgeneratorfunction,
 )
 from threading import Lock, RLock
 
@@ -209,10 +212,10 @@ def mark_as_async(wrapped=None, /, *, generator=None):
     async path does not use either).
     """
 
-    async def _wrapper(wrapped, instance, args, kwargs):
-        return wrapped(*args, **kwargs)
-
     def _decorator(wrapped):
+        def _wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
         return _AsyncFunctionWrapper(wrapped, _wrapper, generator=generator)
 
     if wrapped is None:
@@ -225,12 +228,48 @@ def async_to_sync(wrapped):
     call runs the coroutine to completion via `asyncio.run()`. The
     returned wrapper reports as synchronous under
     `inspect.iscoroutinefunction()`. Naming follows the asgiref
-    convention."""
+    convention.
+
+    Generator functions of either convention are rejected with a
+    `TypeError`: `asyncio.run()` cannot run an async generator, and a
+    sync generator has nothing to run to completion. A callable not
+    reporting as a coroutine function produces a `UserWarning` rather
+    than an error, since convention detection has false negatives such
+    as a plain function wrapper which returns a coroutine; if the
+    callable really is asynchronous in behaviour, apply
+    `mark_as_async` to it first so it reports as such."""
+
+    if isasyncgenfunction(wrapped):
+        raise TypeError(
+            "async_to_sync cannot be applied to an async generator "
+            "function; asyncio.run() cannot run an async generator."
+        )
+
+    if isgeneratorfunction(wrapped):
+        raise TypeError(
+            "async_to_sync cannot be applied to a generator function; "
+            "there is no coroutine to run to completion. If the callable "
+            "is misreported and actually asynchronous in behaviour, apply "
+            "mark_as_async to it first."
+        )
+
+    if not iscoroutinefunction(wrapped):
+        # Detection has false negatives, such as a plain def wrapper
+        # which returns a coroutine, so this cannot be an error. Such a
+        # callable works here regardless, but marking it first also
+        # corrects what introspection reports elsewhere.
+        warnings.warn(
+            "async_to_sync was applied to a callable not reporting as a "
+            "coroutine function. If it is asynchronous in behaviour, "
+            "apply mark_as_async to it first so it reports as such.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     def wrapper(wrapped, instance, args, kwargs):
         return asyncio.run(wrapped(*args, **kwargs))
 
-    return _SyncFunctionWrapper(wrapped, wrapper)
+    return _SyncFunctionWrapper(wrapped, wrapper, generator=False)
 
 
 def sync_to_async(wrapped):
@@ -238,13 +277,39 @@ def sync_to_async(wrapped):
     the synchronous work to the default executor via
     `loop.run_in_executor()`. The returned wrapper reports as
     asynchronous under `inspect.iscoroutinefunction()`. Naming follows
-    the asgiref convention."""
+    the asgiref convention.
+
+    Callables reporting as coroutine functions or generator functions
+    of either convention are rejected with a `TypeError`. For a
+    generator function the adaptation would be an illusion: only
+    creation of the generator would be dispatched to the executor,
+    which executes no body code, while each iteration would still block
+    the event loop. A callable misreported as asynchronous but
+    synchronous in behaviour can have `mark_as_sync` applied to it
+    first so it reports as such."""
+
+    if iscoroutinefunction(wrapped) or isasyncgenfunction(wrapped):
+        # Mirrors the equivalent check in asgiref. A callable which is
+        # misreported, such as a wrapper which runs an inner async def
+        # to completion, can be corrected with mark_as_sync first.
+        raise TypeError(
+            "sync_to_async can only be applied to a synchronous "
+            "callable. If the callable is misreported and actually "
+            "synchronous in behaviour, apply mark_as_sync to it first."
+        )
+
+    if isgeneratorfunction(wrapped):
+        raise TypeError(
+            "sync_to_async cannot be applied to a generator function; "
+            "creating the generator executes no code, and iterating it "
+            "would still block the event loop."
+        )
 
     async def wrapper(wrapped, instance, args, kwargs):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, partial(wrapped, *args, **kwargs))
 
-    return _AsyncFunctionWrapper(wrapped, wrapper)
+    return _AsyncFunctionWrapper(wrapped, wrapper, generator=False)
 
 
 def _synchronized_is_async_lock(obj):

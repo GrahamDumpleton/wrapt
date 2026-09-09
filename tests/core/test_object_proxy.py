@@ -66,7 +66,7 @@ class TestAttributeAccess(unittest.TestCase):
                 break
 
         try:
-            with self.assertRaises(wrapt.wrappers.WrapperNotInitializedError):
+            with self.assertRaises(wrapt.WrapperNotInitializedError):
                 a.__wrapped__
 
             with self.assertRaises(ValueError):

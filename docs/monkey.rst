@@ -81,8 +81,8 @@ The patch is applied as a side effect of evaluating the decorator, so simply
 importing the module that contains the decorated wrapper is enough to install
 the patch.
 
-The decorator accepts an optional ``enabled`` argument which controls whether
-the wrapper actually runs. This follows the same rules as the ``enabled``
+The decorator accepts an optional keyword only ``enabled`` argument which
+controls whether the wrapper actually runs. This follows the same rules as the ``enabled``
 argument of ``@wrapt.decorator``. A boolean value is read once: if ``False``,
 the wrapper is bypassed and the original function is called directly. A
 callable is invoked on every call and its result decides each time whether
@@ -207,14 +207,20 @@ value each time.
     LoggedValue('spinner')
 
 The attribute name must be a dotted path that identifies the owning class and
-the attribute on it. The factory receives the current value stored in the
-instance dictionary and must return a replacement.
+the attribute on it. The factory receives the current value and must return
+a replacement.
 
-Because the hook is a descriptor installed on the class, it cannot be
-applied to an attribute that is already implemented by a ``property`` or
-other data descriptor on the same class: the original descriptor would take
-precedence and the value would never be read from the instance dictionary.
-Apply ``wrap_object_attribute`` only to plain instance attributes.
+The descriptor installed on the class is an ``AttributeWrapper``, which
+``wrap_object_attribute`` returns. It is an object proxy wrapping whatever
+previously occupied the class attribute, or the ``wrapt.MISSING`` sentinel
+when nothing did, so the prior definition keeps working beneath the
+interception. If the attribute was already implemented by a ``property`` or
+other descriptor, reads, writes and deletes delegate to it, with the factory
+wrapping the values it serves. If the class defined a plain default, it is
+used as the fallback when no instance value exists. Applying
+``wrap_object_attribute`` twice to the same attribute stacks the two
+interceptions, with the outer factory wrapping the result of the inner one,
+rather than the second application replacing the first.
 
 Deferring Patches Until Import
 ------------------------------
@@ -345,6 +351,167 @@ to replacing ``unittest.mock.patch`` in cases where you want the richer wrapt
 wrapper signature and the correct handling of bound methods. A fuller
 testing example that builds on this pattern is covered in :doc:`examples`.
 
+When the temporary patch should span a block of code rather than a
+function call, ``wrapt.scoped_function_wrapper()`` is the context
+manager form. It takes the same arguments as ``wrap_function_wrapper``
+and installs the wrapper when the ``with`` statement is entered,
+removing it when the block exits.
+
+::
+
+    calls = []
+
+    def capture_info(wrapped, instance, args, kwargs):
+        calls.append((args, kwargs))
+        return wrapped(*args, **kwargs)
+
+    with wrapt.scoped_function_wrapper("logging", "Logger.info", capture_info):
+        logging.getLogger().info("hello")
+
+The context manager is single use, so call ``scoped_function_wrapper``
+again for each ``with`` statement. Note that a decorated context
+manager factory cannot be substituted for either form: applying
+``transient_function_wrapper`` around a ``contextlib.contextmanager``
+generator patches only the moment the generator is created, not the
+body of the ``with`` block, since calling a generator function does
+not run any of its code.
+
+To apply several patches for the same block, list the context managers
+in one ``with`` statement. On Python 3.10 or later the list can be
+parenthesized to spread it over multiple lines; on older versions use
+a single line or nested ``with`` statements, as the parenthesized form
+there parses as a tuple, which is not a context manager.
+
+::
+
+    with (
+        wrapt.scoped_function_wrapper("logging", "Logger.info", capture_info),
+        wrapt.scoped_function_wrapper("logging", "Logger.warning", capture_info),
+    ):
+        ...
+
+The patches are applied left to right and removed in reverse order,
+with the same guarantees as nested ``with`` statements: if a later
+patch fails to apply, the earlier ones are removed before the exception
+propagates, and a failure removing one patch does not stop the others
+being removed. When the set of patches is only known at runtime, or
+members are conditional, a list cannot be given to the ``with``
+statement directly; use ``contextlib.ExitStack`` to enter each context
+manager as it is created, which preserves the same guarantees.
+
+::
+
+    import contextlib
+
+    targets = [
+        ("logging", "Logger.info"),
+        ("logging", "Logger.warning"),
+    ]
+
+    with contextlib.ExitStack() as stack:
+        for target, name in targets:
+            stack.enter_context(
+                wrapt.scoped_function_wrapper(target, name, capture_info))
+        ...
+
+For both forms, removal on exit is deliberately loud about
+interference. If code called within the scope of the patch removed or
+replaced the temporary wrapper, ``WrapperNotFoundError`` is raised, and
+if it wrapped over the top with something other than a wrapt wrapper
+and left it there, ``WrapperNotOutermostError`` is raised; a wrapt
+wrapper left applied on top is tolerated, with the temporary wrapper
+spliced out beneath it. Both errors indicate the surrounding code is
+not managing its own patches properly, and are raised so the problem
+surfaces at the test responsible rather than as unexplained failures in
+later tests.
+
+Inspecting and Removing Patches
+-------------------------------
+
+Every wrap function returns the wrapper object it installed:
+``wrap_function_wrapper`` and ``wrap_object`` return the wrapper placed
+on the attribute, and ``wrap_object_attribute`` returns the descriptor
+installed on the class. That returned object is the *handle* for the
+patch, and it is the identity used for detecting and removing wrappers.
+Code which may later need to check on or remove its patches should keep
+the handles it receives, typically in a registry keyed by target and
+attribute name.
+
+::
+
+    import wrapt
+
+    registry = {}
+
+    def instrument(module, name, wrapper):
+        if (module, name) not in registry:
+            registry[(module, name)] = wrapt.wrap_function_wrapper(
+                module, name, wrapper)
+
+    def uninstrument():
+        while registry:
+            (module, name), handle = registry.popitem()
+            wrapt.unwrap_object(module, name, handle, missing_ok=True)
+
+``wrapt.is_wrapped_by()`` answers whether the wrapper a handle was
+returned for is still installed, and ``wrapt.find_wrapper()`` returns
+the matching chain entry itself. Both match by object identity only,
+never equality, which proxies delegate to the wrapped object, and both
+accept a ``predicate`` function as an alternative to a handle. The
+underlying traversal is exposed as ``wrapt.wrapper_chain()``, which
+yields the wrapper stack outermost first ending with the original
+object, and ``wrapt.unwrapped()``, which returns the original object
+directly.
+
+``wrapt.unwrap_object()`` removes the wrapper identified by a handle
+and returns it. Several patches may have been applied over one another,
+and removal handles each arrangement:
+
+* When the wrapper is outermost, the attribute is restored to the
+  object the wrapper wrapped, at the location where the attribute is
+  actually defined per ``resolve_owner()``. Removal through a subclass
+  therefore restores the defining base class, and if the wrap had
+  created a shadowing slot, such as on a subclass, on an instance, or
+  over a dynamically served value, the attribute is deleted instead,
+  leaving no residue. The wrap functions record whether they created
+  the slot on the wrapper itself at installation time, so this
+  decision is exact for wrappers they installed.
+
+* When the wrapper is buried beneath other wrapt wrappers, it is
+  spliced out of the chain in place. The attribute itself is untouched
+  and the wrappers above keep working, so independent parties can
+  remove their patches in any order.
+
+* When what sits directly above the wrapper is not a wrapt wrapper,
+  for example a plain closure created with ``functools.wraps()``, its
+  ``__wrapped__`` attribute is only metadata and updating it would not
+  change behaviour, so ``WrapperNotOutermostError`` is raised naming
+  what is above.
+
+When the wrapper is not found at all, because the attribute was never
+wrapped, the wrapper was already removed, or a third party replaced the
+attribute wholesale, ``WrapperNotFoundError`` is raised by default so
+that mistakes surface immediately. Cleanup code which must tolerate
+such interference passes ``missing_ok=True`` to get ``None`` back
+instead.
+
+Note that a wrap deferred with the ``?`` target syntax returns ``None``
+rather than a handle, since the wrapper does not exist until the module
+is imported. If such a patch may need removing, either use a post
+import hook so your own callback receives the handle, or recover the
+installed wrapper after the import using ``find_wrapper()`` with a
+predicate::
+
+    handle = wrapt.find_wrapper(
+        wrapt.resolve_path(module, "function")[2],
+        predicate=lambda entry: getattr(
+            entry, "_self_wrapper", None) is my_wrapper)
+
+When checking a wrapped method of a class, obtain the object to scan
+using ``wrapt.resolve_path()``, not ``getattr()``: accessing the method
+on the class triggers descriptor binding and returns a fresh bound
+wrapper in which the installed handle will not be found.
+
 Pitfalls and Guidelines
 -----------------------
 
@@ -384,11 +551,14 @@ been bound, so always call it as ``wrapped(*args, **kwargs)``, without
 inserting ``instance`` yourself. These rules match the decorator wrapper
 rules described in :doc:`decorators`.
 
-Do not use ``wrap_object_attribute`` over a ``property``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``wrap_object_attribute`` composes with prior definitions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``wrap_object_attribute`` installs a descriptor that reads from
-``instance.__dict__``. If the class already defines a data descriptor such as
-a ``property`` for the same attribute, the existing descriptor will take
-precedence and the wrap will have no effect. Apply it only to plain instance
-attributes.
+The descriptor installed by ``wrap_object_attribute`` wraps whatever
+previously occupied the class attribute. A prior ``property`` or other
+descriptor keeps executing its own logic beneath the interception, a prior
+plain class default serves as the fallback when no instance value exists,
+and a second application stacks over the first rather than replacing it.
+Earlier versions of wrapt replaced the class attribute outright, could not
+be used over a ``property``, and broke class-level access to the attribute;
+none of those limitations apply any longer.

@@ -578,6 +578,27 @@ executor using ``loop.run_in_executor()``.
 
     await mul(4, 5)  # returns 20
 
+Both adapters validate their input at decoration time. ``async_to_sync``
+raises ``TypeError`` if applied to a generator function of either
+convention: ``asyncio.run()`` cannot run an async generator, and a sync
+generator provides no coroutine to run to completion. If applied to a
+callable which does not report as a coroutine function it issues a
+``UserWarning`` rather than an error, because convention detection has
+false negatives, such as a plain ``def`` wrapper whose calls return a
+coroutine. Such a callable works with ``async_to_sync`` regardless;
+applying ``mark_as_async`` to it first declares the effective convention,
+silences the warning, and corrects what introspection reports elsewhere.
+
+``sync_to_async`` raises ``TypeError`` if applied to a callable reporting
+as a coroutine function, or to a generator function of either convention.
+For a generator function the adaptation would be an illusion: dispatching
+the call to the executor only creates the generator, which executes no
+body code, while each subsequent iteration would still block the event
+loop. A callable which reports as asynchronous but whose effective
+behaviour is synchronous, such as a wrapper which runs an inner
+``async def`` to completion, can have ``mark_as_sync`` applied to it
+first so the adapter accepts it.
+
 Both adapters also take care of marking the result with the appropriate
 ``iscoroutinefunction()`` reporting, so they can be stacked directly under
 ``@wrapt.synchronized`` with no additional marker required:

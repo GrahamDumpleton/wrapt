@@ -1,20 +1,13 @@
 """Core object proxy and function wrapper implementations."""
 
+import functools
 import inspect
 import math
 import operator
 import sys
 import types
 
-
-class WrapperNotInitializedError(ValueError):
-    """
-    Exception raised when a wrapper is in an inconsistent state: __init__ was
-    called but __wrapped__ is not set. Inherits from ValueError only, so it is
-    not silently swallowed by hasattr/getattr/except AttributeError patterns.
-    """
-
-    pass
+from .exceptions import WrapperNotInitializedError
 
 
 class _ObjectProxyMethods:
@@ -692,10 +685,42 @@ class CallableObjectProxy(ObjectProxy):
         return self.__wrapped__(*args, **kwargs)
 
 
+class _PartialSignatureDescriptor:
+    """Descriptor providing the ``__signature__`` attribute of instances of
+    ``PartialCallableObjectProxy``.
+
+    The signature reported is that of the wrapped callable with the bound
+    positional and keyword arguments removed, matching what ``inspect``
+    reports for ``functools.partial``. It must be defined on the proxy type
+    itself, since attribute lookup on the proxy would otherwise be forwarded
+    to the wrapped callable, and ``inspect.signature()`` stops following
+    ``__wrapped__`` at the first object which has a ``__signature__``
+    attribute.
+
+    A plain property cannot be used because it would also be visible when
+    accessed on the class, and ``inspect.signature()`` applied to the class
+    itself would then fail on finding a property object rather than a
+    ``Signature``. Raising ``AttributeError`` on class access leaves the
+    signature of the class unchanged.
+    """
+
+    def __get__(self, instance, owner=None):
+        if instance is None:
+            raise AttributeError("__signature__")
+
+        partial = functools.partial(
+            instance.__wrapped__, *instance._self_args, **instance._self_kwargs
+        )
+
+        return inspect.signature(partial)
+
+
 class PartialCallableObjectProxy(ObjectProxy):
     """A callable object proxy that supports partial application of arguments
     and keywords.
     """
+
+    __signature__ = _PartialSignatureDescriptor()
 
     def __init__(*args, **kwargs):
         """Create a callable object proxy with partial application of the given

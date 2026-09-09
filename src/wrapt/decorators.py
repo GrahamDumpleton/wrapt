@@ -439,7 +439,7 @@ class _StateBindingWrapper(BaseObjectProxy):
 
         super().__init__(None)
 
-        self._self_name = name
+        self._self_attr_name = name
 
     def __call__(self, wrapper_factory):
         # Called when used as a decorator, receiving the wrapper factory
@@ -462,7 +462,7 @@ class _StateBindingWrapper(BaseObjectProxy):
 
         wrapper_factory = self.__wrapped__.__get__(instance, owner)
 
-        name = self._self_name
+        name = self._self_attr_name
 
         def _bind(func):
             wrapper = wrapper_factory(func)

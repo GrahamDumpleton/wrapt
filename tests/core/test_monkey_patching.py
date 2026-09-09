@@ -1,5 +1,6 @@
 import unittest
 import sys
+import warnings
 
 import wrapt
 
@@ -25,6 +26,14 @@ def global_function_3_enabled_literal_true(*args, **kwargs):
 
 
 def global_function_3_enabled_callable(*args, **kwargs):
+    return args, kwargs
+
+
+def global_function_3_enabled_positional(*args, **kwargs):
+    return args, kwargs
+
+
+def global_function_3_enabled_none(*args, **kwargs):
     return args, kwargs
 
 
@@ -375,6 +384,71 @@ class TestMonkeyPatching(unittest.TestCase):
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
 
+    def test_patch_function_module_name_enabled_positional(self):
+
+        _args = (1, 2)
+        _kwargs = {"one": 1, "two": 2}
+
+        called = []
+
+        with warnings.catch_warnings(record=True) as warned:
+            warnings.simplefilter("always")
+
+            @wrapt.patch_function_wrapper(
+                __name__, "global_function_3_enabled_positional", False
+            )
+            def wrapper(wrapped, instance, args, kwargs):
+                called.append((args, kwargs))
+                return wrapped(*args, **kwargs)
+
+        self.assertEqual(len(warned), 1)
+        self.assertTrue(issubclass(warned[0].category, DeprecationWarning))
+
+        result = global_function_3_enabled_positional(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called, [])
+
+    def test_patch_function_enabled_positional_and_keyword(self):
+
+        with self.assertRaises(TypeError):
+            wrapt.patch_function_wrapper(
+                __name__, "global_function_3_enabled_positional", False, enabled=True
+            )
+
+    def test_patch_function_enabled_positional_and_keyword_none(self):
+
+        # Passing enabled both positionally and by keyword is an error
+        # even when the keyword value is None, since an explicit None is
+        # distinguishable from the argument not being supplied.
+
+        with self.assertRaises(TypeError):
+            wrapt.patch_function_wrapper(
+                __name__, "global_function_3_enabled_positional", False, enabled=None
+            )
+
+    def test_patch_function_module_name_enabled_none(self):
+
+        # An explicit enabled=None behaves the same as not supplying the
+        # argument, with the wrapper enabled.
+
+        _args = (1, 2)
+        _kwargs = {"one": 1, "two": 2}
+
+        called = []
+
+        @wrapt.patch_function_wrapper(
+            __name__, "global_function_3_enabled_none", enabled=None
+        )
+        def wrapper(wrapped, instance, args, kwargs):
+            called.append((args, kwargs))
+            return wrapped(*args, **kwargs)
+
+        result = global_function_3_enabled_none(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+        self.assertEqual(called[0], (_args, _kwargs))
+
     def test_patch_function_module(self):
 
         _args = (1, 2)
@@ -396,67 +470,6 @@ class TestMonkeyPatching(unittest.TestCase):
 
         self.assertEqual(result, (_args, _kwargs))
         self.assertEqual(called[0], (_args, _kwargs))
-
-    def _test_transient_function_wrapper(self, *args, **kwargs):
-        return args, kwargs
-
-    def test_transient_function_wrapper(self):
-
-        _args = (1, 2)
-        _kwargs = {"one": 1, "two": 2}
-
-        called = []
-
-        @wrapt.transient_function_wrapper(
-            __name__, "TestMonkeyPatching._test_transient_function_wrapper"
-        )
-        def wrapper(wrapped, instance, args, kwargs):
-            called.append((args, kwargs))
-            self.assertEqual(wrapped, self._test_transient_function_wrapper)
-            self.assertEqual(instance, self)
-            self.assertEqual(args, _args)
-            self.assertEqual(kwargs, _kwargs)
-            return wrapped(*args, **kwargs)
-
-        @wrapper
-        def function(*args, **kwargs):
-            return self._test_transient_function_wrapper(*args, **kwargs)
-
-        result = function(*_args, **_kwargs)
-
-        self.assertEqual(result, (_args, _kwargs))
-        self.assertEqual(called[0], (_args, _kwargs))
-
-    def test_transient_function_wrapper_instance_method(self):
-
-        _args = (1, 2)
-        _kwargs = {"one": 1, "two": 2}
-
-        called = []
-
-        _self = self
-
-        class wrapper:
-            @wrapt.transient_function_wrapper(
-                __name__, "TestMonkeyPatching._test_transient_function_wrapper"
-            )
-            def __call__(self, wrapped, instance, args, kwargs):
-                called.append((args, kwargs))
-                _self.assertEqual(wrapped, _self._test_transient_function_wrapper)
-                _self.assertEqual(instance, _self)
-                _self.assertEqual(args, _args)
-                _self.assertEqual(kwargs, _kwargs)
-                return wrapped(*args, **kwargs)
-
-        @wrapper()
-        def function(*args, **kwargs):
-            return self._test_transient_function_wrapper(*args, **kwargs)
-
-        result = function(*_args, **_kwargs)
-
-        self.assertEqual(result, (_args, _kwargs))
-        self.assertEqual(called[0], (_args, _kwargs))
-
 
 class TestExplicitMonkeyPatching(unittest.TestCase):
 
