@@ -3775,7 +3775,7 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   if (!state)
     return NULL;
 
-  if (self->enabled != Py_None)
+  if (self->enabled && self->enabled != Py_None)
   {
     if (PyCallable_Check(self->enabled))
     {
@@ -4224,7 +4224,7 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   if (!state)
     return NULL;
 
-  if (self->enabled != Py_None)
+  if (self->enabled && self->enabled != Py_None)
   {
     if (PyCallable_Check(self->enabled))
     {
