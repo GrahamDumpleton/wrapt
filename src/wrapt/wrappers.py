@@ -426,6 +426,9 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
                 pass
             delattr(self.__wrapped__, name)
 
+        elif name in ("__module__", "__doc__"):
+            delattr(self.__wrapped__, name)
+
         elif hasattr(type(self), name):
             object.__delattr__(self, name)
 

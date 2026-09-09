@@ -262,7 +262,7 @@ class TestSetModuleAndDoc(unittest.TestCase):
 
         del wrapper.__module__
 
-        self.assertFalse(hasattr(target, "__module__"))
+        self.assertIsNone(target.__module__)
 
     def test_delete_doc_on_object_proxy(self):
         target = objects.target
