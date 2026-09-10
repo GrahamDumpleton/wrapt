@@ -1124,3 +1124,63 @@ into an ordinary helper method that the hook calls, or into a
 through normal attribute access and therefore honour decorators applied
 via ``@wrapt.decorator``.
 
+
+
+Signature of PartialCallableObjectProxy over a bound method
+-----------------------------------------------------------
+
+``inspect.signature()`` applied to a ``PartialCallableObjectProxy``, or to
+the result of ``wrapt.partial()``, reports the signature of the wrapped
+callable with the bound positional and keyword arguments removed, in the
+same way as it does for ``functools.partial``. There is one case where
+this does not hold, which is when the callable being wrapped is itself an
+already bound method.
+
+::
+
+    import inspect
+    import functools
+    import wrapt
+
+    class Database:
+        def query(self, sql, *args, timeout=None):
+            pass
+
+    db = Database()
+
+    inspect.signature(functools.partial(db.query, "SELECT 1"))
+    # <Signature (*args, timeout=None)>
+
+    inspect.signature(wrapt.partial(db.query, "SELECT 1"))
+    # <Signature (sql, *args, timeout=None)>
+
+For the ``wrapt`` proxy the parameter filled by the bound argument is
+still present. This happens because ``inspect.signature()`` first checks
+whether the object it was given is an instance of ``types.MethodType``,
+before it looks for a ``__signature__`` attribute. An object proxy
+reports the class of the object it wraps, so for a proxy around a bound
+method that check succeeds. ``inspect`` then reads the ``__func__``
+attribute, which the proxy also forwards to the bound method, takes the
+signature of the underlying function, and removes only its first
+parameter. The ``__signature__`` attribute of the proxy, which would
+give the correct result, is never consulted.
+
+This cannot be corrected within ``wrapt``. Not reporting the class of the
+wrapped object would break the fundamental contract of an object proxy,
+and returning a different object from ``__func__`` would mislead the
+many other consumers of that attribute in order to satisfy one. The
+appropriate fix is for ``inspect`` to consult ``__signature__`` before
+relying on the class of the object.
+
+Partials over a plain function are unaffected, including the partial
+created by ``FunctionWrapper`` when a wrapped method is called via the
+class with the instance passed explicitly, since in that case the
+wrapped callable is the plain function and the instance is one of the
+bound arguments. Where the signature of a partial over a bound method is
+needed, pass the underlying function and the instance instead of the
+bound method.
+
+::
+
+    inspect.signature(wrapt.partial(Database.query, db, "SELECT 1"))
+    # <Signature (*args, timeout=None)>

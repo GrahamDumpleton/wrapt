@@ -91,6 +91,7 @@ typedef struct
   PyObject *str_set_name;               /* "__set_name__" */
   PyObject *str_self_binding;           /* "_self_binding" */
   PyObject *str_dict;                   /* "__dict__" */
+  PyObject *str_signature;              /* "__signature__" */
 
   /* Cached exception type from wrapt.wrappers. Initialized eagerly in
    * wrapt_exec after type creation. The wrapt.wrappers module is guaranteed
@@ -202,6 +203,35 @@ static inline PyObject *wrapt_acquire_field(PyObject *owner, PyObject **field)
   Py_END_CRITICAL_SECTION();
 
   return value;
+}
+
+/* Test whether an attribute name matches one of the interned strings held
+ * in module state. Attribute names arriving from Python code are interned
+ * by the compiler, so a pointer comparison against the interned string is
+ * nearly always sufficient and is the fast path. A name constructed at
+ * runtime, for example by string concatenation or decoding, is not
+ * interned and would never match by pointer, so fall back to a value
+ * comparison. That comparison is guarded by a length check so that the
+ * cost for the overwhelming majority of non matching names is a single
+ * integer comparison. This mirrors the pattern used by CPython itself in
+ * super_getattro() for __class__.
+ *
+ * The name must be a str. This holds for the attribute get and set slots
+ * where this is used, since PyObject_GetAttr() and PyObject_SetAttr()
+ * reject any other type before the slot is reached. */
+
+static inline int wrapt_name_equals(PyObject *name, PyObject *interned)
+{
+  if (name == interned)
+    return 1;
+
+  if (!PyUnicode_Check(name))
+    return 0;
+
+  if (PyUnicode_GET_LENGTH(name) != PyUnicode_GET_LENGTH(interned))
+    return 0;
+
+  return PyUnicode_Compare(name, interned) == 0;
 }
 
 /* Convenience form for the common case of the wrapped object field. */
@@ -3335,9 +3365,9 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
    * __module__/__doc__ strings that type.__module__ reads via raw dict
    * lookup. */
 
-  if (name == state->str_module)
+  if (wrapt_name_equals(name, state->str_module))
     return WraptObjectProxy_get_module(self);
-  if (name == state->str_doc)
+  if (wrapt_name_equals(name, state->str_doc))
     return WraptObjectProxy_get_doc(self);
 
   object = PyObject_GenericGetAttr((PyObject *)self, name);
@@ -3417,9 +3447,9 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
    * values in the type dict (from PyType_FromModuleAndSpec) would cause
    * wrapt_type_has_attr to match and GenericSetAttr to store locally. */
 
-  if (name == state->str_module)
+  if (wrapt_name_equals(name, state->str_module))
     return WraptObjectProxy_set_module(self, value);
-  if (name == state->str_doc)
+  if (wrapt_name_equals(name, state->str_doc))
     return WraptObjectProxy_set_doc(self, value);
 
   if (wrapt_type_has_attr(Py_TYPE(self), name))
@@ -3930,11 +3960,169 @@ finally:
 
 /* ------------------------------------------------------------------------- */;
 
+static PyObject *WraptPartialCallableObjectProxy_get_self_args(
+    WraptPartialCallableObjectProxyObject *self, void *closure)
+{
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->args);
+
+  if (!value)
+    return PyTuple_New(0);
+
+  return value;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *WraptPartialCallableObjectProxy_get_self_kwargs(
+    WraptPartialCallableObjectProxyObject *self, void *closure)
+{
+  PyObject *value = NULL;
+
+  value = wrapt_acquire_field((PyObject *)self, &self->kwargs);
+
+  if (!value)
+    return PyDict_New();
+
+  return value;
+}
+
+/* ------------------------------------------------------------------------- */
+
+/* Report the signature of the wrapped callable with the bound positional
+ * and keyword arguments removed, matching what inspect.signature() reports
+ * for functools.partial. This is done by constructing an equivalent
+ * functools.partial and asking inspect for its signature, so that the
+ * result, including any ValueError for excess bound arguments, is exactly
+ * what functools.partial would give. */
+
+static PyObject *WraptPartialCallableObjectProxy_get_signature(
+    WraptPartialCallableObjectProxyObject *self)
+{
+  PyObject *module = NULL;
+  PyObject *function = NULL;
+  PyObject *fnargs = NULL;
+  PyObject *partial = NULL;
+  PyObject *result = NULL;
+
+  Py_ssize_t nargs = 0;
+  Py_ssize_t i;
+
+  if (!self->object_proxy.wrapped)
+  {
+    if (raise_uninitialized_wrapper_error(&self->object_proxy) == -1)
+      return NULL;
+  }
+
+  PyObject *wrapped = wrapt_acquire_wrapped(&self->object_proxy);
+  PyObject *cargs = wrapt_acquire_field((PyObject *)self, &self->args);
+  PyObject *ckwargs = wrapt_acquire_field((PyObject *)self, &self->kwargs);
+
+  if (cargs)
+    nargs = PyTuple_GET_SIZE(cargs);
+
+  /* Build the tuple (wrapped, *args) to pass to functools.partial(). */
+
+  fnargs = PyTuple_New(nargs + 1);
+
+  if (!fnargs)
+    goto finally;
+
+  Py_INCREF(wrapped);
+  PyTuple_SET_ITEM(fnargs, 0, wrapped);
+
+  for (i = 0; i < nargs; i++)
+  {
+    PyObject *item = PyTuple_GET_ITEM(cargs, i);
+    Py_INCREF(item);
+    PyTuple_SET_ITEM(fnargs, i + 1, item);
+  }
+
+  module = PyImport_ImportModule("functools");
+
+  if (!module)
+    goto finally;
+
+  function = PyObject_GetAttrString(module, "partial");
+
+  Py_CLEAR(module);
+
+  if (!function)
+    goto finally;
+
+  partial = PyObject_Call(function, fnargs, ckwargs);
+
+  Py_CLEAR(function);
+
+  if (!partial)
+    goto finally;
+
+  module = PyImport_ImportModule("inspect");
+
+  if (!module)
+    goto finally;
+
+  function = PyObject_GetAttrString(module, "signature");
+
+  Py_CLEAR(module);
+
+  if (!function)
+    goto finally;
+
+  result = PyObject_CallFunctionObjArgs(function, partial, NULL);
+
+finally:
+  Py_XDECREF(function);
+  Py_XDECREF(partial);
+  Py_XDECREF(fnargs);
+
+  Py_XDECREF(ckwargs);
+  Py_XDECREF(cargs);
+  Py_DECREF(wrapped);
+
+  return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+/* The __signature__ attribute is intercepted here rather than being a
+ * getset descriptor for the same reason as __module__ and __doc__ on the
+ * base object proxy. A descriptor would be visible on the type itself and
+ * inspect.signature() applied to the type would then fail on finding a
+ * descriptor object where it expects a Signature. Handling it in getattro
+ * makes it visible on instances only, which is all that inspect needs. */
+
+static PyObject *WraptPartialCallableObjectProxy_getattro(
+    WraptPartialCallableObjectProxyObject *self, PyObject *name)
+{
+  wrapt_module_state *state = wrapt_state_from_type(Py_TYPE(self));
+  if (!state)
+    return NULL;
+
+  if (wrapt_name_equals(name, state->str_signature))
+    return WraptPartialCallableObjectProxy_get_signature(self);
+
+  return WraptObjectProxy_getattro((WraptObjectProxyObject *)self, name);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyGetSetDef WraptPartialCallableObjectProxy_getset[] = {
+    {"_self_args", (getter)WraptPartialCallableObjectProxy_get_self_args, NULL,
+     0},
+    {"_self_kwargs", (getter)WraptPartialCallableObjectProxy_get_self_kwargs,
+     NULL, 0},
+    {NULL},
+};
+
 static PyType_Slot WraptPartialCallableObjectProxy_slots[] = {
     {Py_tp_dealloc, WraptPartialCallableObjectProxy_dealloc},
     {Py_tp_call, WraptPartialCallableObjectProxy_call},
     {Py_tp_traverse, WraptPartialCallableObjectProxy_traverse},
     {Py_tp_clear, WraptPartialCallableObjectProxy_clear},
+    {Py_tp_getset, WraptPartialCallableObjectProxy_getset},
+    {Py_tp_getattro, WraptPartialCallableObjectProxy_getattro},
     {Py_tp_init, WraptPartialCallableObjectProxy_init},
     {Py_tp_new, WraptPartialCallableObjectProxy_new},
     {0, NULL},
@@ -5228,6 +5416,8 @@ static int wrapt_init_strings(wrapt_module_state *state)
     return -1;
   if (wrapt_intern_string(&state->str_set_name, "__set_name__") < 0)
     return -1;
+  if (wrapt_intern_string(&state->str_signature, "__signature__") < 0)
+    return -1;
   if (wrapt_intern_string(&state->str_self_binding, "_self_binding") < 0)
     return -1;
   if (wrapt_intern_string(&state->str_dict, "__dict__") < 0)
@@ -5377,6 +5567,7 @@ static int wrapt_traverse(PyObject *module, visitproc visit, void *arg)
   Py_VISIT(state->str_self);
   Py_VISIT(state->str_set_name);
   Py_VISIT(state->str_self_binding);
+  Py_VISIT(state->str_signature);
   Py_VISIT(state->str_dict);
   Py_VISIT(state->WrapperNotInitializedError);
   return 0;
@@ -5422,6 +5613,7 @@ static int wrapt_clear(PyObject *module)
   Py_CLEAR(state->str_self);
   Py_CLEAR(state->str_set_name);
   Py_CLEAR(state->str_self_binding);
+  Py_CLEAR(state->str_signature);
   Py_CLEAR(state->str_dict);
   Py_CLEAR(state->WrapperNotInitializedError);
   return 0;

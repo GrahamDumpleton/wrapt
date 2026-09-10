@@ -1,6 +1,56 @@
 Release Notes
 =============
 
+Version 2.4.1
+-------------
+
+**Bugs Fixed**
+
+* The C extension implementation of ``PartialCallableObjectProxy`` did not
+  expose the bound positional and keyword arguments supplied when the proxy
+  was created, whereas the pure Python implementation makes them available
+  as the ``_self_args`` and ``_self_kwargs`` attributes. The C extension
+  implementation now provides read only ``_self_args`` and ``_self_kwargs``
+  attributes so that both implementations behave the same.
+
+* ``inspect.signature()`` applied to a ``PartialCallableObjectProxy`` reported
+  the full signature of the wrapped callable, including the parameters that
+  the bound positional and keyword arguments already supply, whereas for
+  ``functools.partial`` those parameters are removed. The proxy did not
+  define ``__signature__``, so ``inspect`` followed ``__wrapped__`` back to
+  the callable and reported its signature unchanged. The proxy now provides
+  ``__signature__`` on instances, in both the pure Python and C extension
+  implementations, giving the same result as for an equivalent
+  ``functools.partial``, including a ``ValueError`` when more positional
+  arguments are bound than the callable accepts.
+
+  This also affected wrapper functions used with ``FunctionWrapper`` and
+  ``@wrapt.decorator``. When a wrapped method is called via its class with
+  the instance passed explicitly, the wrapper function receives a
+  ``PartialCallableObjectProxy`` with the instance bound, and ``args``
+  without the instance. A wrapper which bound ``args`` and ``kwargs``
+  against ``inspect.signature(wrapped)`` would fail for such calls with a
+  ``TypeError`` about a missing argument, while working for calls made via
+  the instance. The reported signature now omits the bound instance so
+  the binding succeeds.
+
+  The signature of a partial whose wrapped callable is itself an already
+  bound method is still reported incorrectly, for reasons outside of the
+  control of ``wrapt``. See the "Known Issues" documentation for details.
+
+* The C extension intercepts the ``__module__`` and ``__doc__`` attributes
+  by name in its attribute get and set slots so that they are forwarded to
+  the wrapped object. The name was compared by identity against an interned
+  string, which relied on the attribute name having been interned. Names
+  originating from Python source code always are, but a name constructed at
+  runtime, for example by string concatenation or by decoding, is not, and
+  for such a name the interception was skipped. Getting the attribute then
+  returned the value captured when the proxy was created rather than the
+  current value on the wrapped object, and setting it stored the value on
+  the proxy rather than the wrapped object. The comparison now falls back to
+  comparing by value when the identity check fails, guarded by a length
+  check so that the cost for non matching names is unchanged.
+
 Version 2.4.0
 -------------
 
