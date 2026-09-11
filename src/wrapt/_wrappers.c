@@ -3056,6 +3056,16 @@ static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
 
   Py_DECREF(wrapped);
 
+  if (!value)
+  {
+    if (PyDict_DelItemString(self->dict, "__module__") == -1 &&
+        !PyErr_ExceptionMatches(PyExc_KeyError))
+      return -1;
+
+    PyErr_Clear();
+    return 0;
+  }
+
   return PyDict_SetItemString(self->dict, "__module__", value);
 }
 
@@ -3106,6 +3116,16 @@ static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
   }
 
   Py_DECREF(wrapped);
+
+  if (!value)
+  {
+    if (PyDict_DelItemString(self->dict, "__doc__") == -1 &&
+        !PyErr_ExceptionMatches(PyExc_KeyError))
+      return -1;
+
+    PyErr_Clear();
+    return 0;
+  }
 
   return PyDict_SetItemString(self->dict, "__doc__", value);
 }
@@ -4329,7 +4349,7 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
   binding = wrapt_acquire_field((PyObject *)self, &self->binding);
 
-  if (enabled != Py_None)
+  if (enabled && enabled != Py_None)
   {
     if (PyCallable_Check(enabled))
     {
@@ -4843,7 +4863,7 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   binding = wrapt_acquire_field((PyObject *)self, &self->binding);
   owner = wrapt_acquire_field((PyObject *)self, &self->owner);
 
-  if (enabled != Py_None)
+  if (enabled && enabled != Py_None)
   {
     if (PyCallable_Check(enabled))
     {
