@@ -22,6 +22,26 @@ class TestLazyObjectProxy(unittest.TestCase):
         self.assertEqual(int(proxy), 42)
         self.assertEqual(status["created"], 1)
 
+    def test_descriptor_optional_owner(self):
+        def method(instance):
+            return instance
+
+        instance = object()
+
+        for descriptor in (method, property(method)):
+            with self.subTest(descriptor=descriptor):
+                proxy = wrapt.LazyObjectProxy(
+                    lambda: descriptor, interface=type(descriptor)
+                )
+
+                self.assertEqual(proxy.__get__(instance), descriptor.__get__(instance))
+                self.assertEqual(
+                    proxy.__get__(instance, None), descriptor.__get__(instance, None)
+                )
+                self.assertEqual(
+                    proxy.__get__(None, object), descriptor.__get__(None, object)
+                )
+
     def test_lazy_import(self):
         if "sched" in sys.modules:
             del sys.modules["sched"]

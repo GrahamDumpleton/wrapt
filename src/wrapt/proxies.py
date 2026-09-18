@@ -70,7 +70,7 @@ def __wrapper_await__(self):
     return (yield from self.__wrapped__.__await__())
 
 
-def __wrapper_get__(self, instance, owner):
+def __wrapper_get__(self, instance, owner=None):
     return self.__wrapped__.__get__(instance, owner)
 
 
