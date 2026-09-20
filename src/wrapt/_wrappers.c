@@ -446,6 +446,32 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
 
 /* ------------------------------------------------------------------------- */
 
+/* Check that a wrapper specific field, as acquired by the caller, is not
+ * NULL, raising an error if it is. The additional fields of a partial or
+ * function wrapper are only ever set by __init__(), and together, so one
+ * being NULL means __init__() was never called, or did not complete. That
+ * is possible where a derived class overrides __init__() without calling
+ * that of the base class, or where an instance is created using __new__()
+ * alone, and __wrapped__ is then assigned directly such that the check for
+ * an uninitialized wrapper passes. An AttributeError naming the attribute
+ * by which the field is exposed is raised, that being what the pure Python
+ * implementation yields, since it holds the same state as instance
+ * attributes, which in this situation do not exist. */
+
+static inline int wrapt_require_field(PyObject *object, PyObject *value,
+                                      const char *name)
+{
+  if (value)
+    return 0;
+
+  PyErr_Format(PyExc_AttributeError, "'%.100s' object has no attribute '%s'",
+               Py_TYPE(object)->tp_name, name);
+
+  return -1;
+}
+
+/* ------------------------------------------------------------------------- */
+
 /* Replace *op with a strong reference to the value to actually operate
  * on: the wrapped object if *op is a wrapt proxy, else *op itself. On
  * success the caller owns a reference to the replacement value and must
@@ -3962,6 +3988,12 @@ static PyObject *WraptPartialCallableObjectProxy_call(
   PyObject *cargs = wrapt_acquire_field((PyObject *)self, &self->args);
   PyObject *ckwargs = wrapt_acquire_field((PyObject *)self, &self->kwargs);
 
+  /* The captured keyword arguments are legitimately NULL when none were
+   * supplied, so only the captured positional arguments are required. */
+
+  if (wrapt_require_field((PyObject *)self, cargs, "_self_args") == -1)
+    goto finally;
+
   fnargs = PyTuple_New(PyTuple_GET_SIZE(cargs) + PyTuple_GET_SIZE(args));
 
   if (!fnargs)
@@ -4003,7 +4035,7 @@ finally:
   Py_XDECREF(fnkwargs);
 
   Py_DECREF(wrapped);
-  Py_DECREF(cargs);
+  Py_XDECREF(cargs);
   Py_XDECREF(ckwargs);
 
   return result;
@@ -4018,8 +4050,11 @@ static PyObject *WraptPartialCallableObjectProxy_get_self_args(
 
   value = wrapt_acquire_field((PyObject *)self, &self->args);
 
-  if (!value)
-    return PyTuple_New(0);
+  /* See the comment for the equivalent getters of the function wrapper
+   * as to why this fails rather than substituting an empty tuple. */
+
+  if (wrapt_require_field((PyObject *)self, value, "_self_args") == -1)
+    return NULL;
 
   return value;
 }
@@ -4034,7 +4069,22 @@ static PyObject *WraptPartialCallableObjectProxy_get_self_kwargs(
   value = wrapt_acquire_field((PyObject *)self, &self->kwargs);
 
   if (!value)
+  {
+    /* The captured keyword arguments are legitimately NULL when none were
+     * supplied, in which case an empty dictionary stands in for them. That
+     * must be distinguished from __init__() never having been called, for
+     * which the captured positional arguments, which are always set by
+     * __init__(), will be NULL as well. */
+
+    PyObject *args = wrapt_acquire_field((PyObject *)self, &self->args);
+
+    if (wrapt_require_field((PyObject *)self, args, "_self_kwargs") == -1)
+      return NULL;
+
+    Py_DECREF(args);
+
     return PyDict_New();
+  }
 
   return value;
 }
@@ -4380,6 +4430,12 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
   binding = wrapt_acquire_field((PyObject *)self, &self->binding);
 
+  if (wrapt_require_field((PyObject *)self, instance, "_self_instance") == -1 ||
+      wrapt_require_field((PyObject *)self, wrapper, "_self_wrapper") == -1 ||
+      wrapt_require_field((PyObject *)self, enabled, "_self_enabled") == -1 ||
+      wrapt_require_field((PyObject *)self, binding, "_self_binding") == -1)
+    goto finally;
+
   if (enabled != Py_None)
   {
     if (PyCallable_Check(enabled))
@@ -4515,6 +4571,13 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
   enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
   binding = wrapt_acquire_field((PyObject *)self, &self->binding);
   parent = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+  if (wrapt_require_field((PyObject *)self, instance, "_self_instance") == -1 ||
+      wrapt_require_field((PyObject *)self, wrapper, "_self_wrapper") == -1 ||
+      wrapt_require_field((PyObject *)self, enabled, "_self_enabled") == -1 ||
+      wrapt_require_field((PyObject *)self, binding, "_self_binding") == -1 ||
+      wrapt_require_field((PyObject *)self, parent, "_self_parent") == -1)
+    goto finally;
 
   if (parent == Py_None)
   {
@@ -4698,6 +4761,15 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+/* The getters for the wrapper specific fields fail with AttributeError if
+ * the field was never set, which means __init__() was not called. The
+ * attribute lookup then falls through to __getattr__() and so on to the
+ * wrapped object, which is the same outcome as for the pure Python
+ * implementation, where these are instance attributes which in that case
+ * do not exist. A value of None is not substituted, as that is a valid
+ * value for most of these fields and so would be indistinguishable from
+ * the state of a wrapper which had been initialized. */
+
 static PyObject *
 WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
                                            void *closure)
@@ -4706,10 +4778,8 @@ WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->instance);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_instance") == -1)
+    return NULL;
 
   return value;
 }
@@ -4724,10 +4794,8 @@ WraptFunctionWrapperBase_get_self_wrapper(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->wrapper);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_wrapper") == -1)
+    return NULL;
 
   return value;
 }
@@ -4742,10 +4810,8 @@ WraptFunctionWrapperBase_get_self_enabled(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->enabled);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_enabled") == -1)
+    return NULL;
 
   return value;
 }
@@ -4760,10 +4826,8 @@ WraptFunctionWrapperBase_get_self_binding(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->binding);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_binding") == -1)
+    return NULL;
 
   return value;
 }
@@ -4778,10 +4842,8 @@ WraptFunctionWrapperBase_get_self_parent(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->parent);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_parent") == -1)
+    return NULL;
 
   return value;
 }
@@ -4796,10 +4858,8 @@ WraptFunctionWrapperBase_get_self_owner(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->owner);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_owner") == -1)
+    return NULL;
 
   return value;
 }
@@ -4893,6 +4953,13 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
   binding = wrapt_acquire_field((PyObject *)self, &self->binding);
   owner = wrapt_acquire_field((PyObject *)self, &self->owner);
+
+  if (wrapt_require_field((PyObject *)self, instance, "_self_instance") == -1 ||
+      wrapt_require_field((PyObject *)self, wrapper, "_self_wrapper") == -1 ||
+      wrapt_require_field((PyObject *)self, enabled, "_self_enabled") == -1 ||
+      wrapt_require_field((PyObject *)self, binding, "_self_binding") == -1 ||
+      wrapt_require_field((PyObject *)self, owner, "_self_owner") == -1)
+    goto finally;
 
   if (enabled != Py_None)
   {

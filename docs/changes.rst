@@ -25,6 +25,44 @@ Version 2.4.2
   the deletion is the same as for a proxy newly created over the wrapped
   object.
 
+* Calling a ``FunctionWrapper``, ``BoundFunctionWrapper`` or
+  ``PartialCallableObjectProxy`` for which ``__init__()`` had never been
+  called, but which had ``__wrapped__`` assigned to it directly, crashed
+  the Python interpreter when the C extension was in use. Accessing such a
+  ``FunctionWrapper`` as a descriptor did not itself crash, but could yield
+  a bound wrapper which then crashed when called. This state can be reached
+  where a derived class overrides ``__init__()`` and sets ``__wrapped__``
+  itself rather than calling ``__init__()`` of the base class, or where an
+  instance is created using ``__new__()`` alone. The existing check for an
+  uninitialized wrapper only considers whether ``__wrapped__`` is set, so it
+  passed, and the additional fields of the wrapper were then used even
+  though they had never been set.
+
+  The C extension now checks those fields before use and raises an
+  ``AttributeError`` naming the missing ``_self_`` attribute, which is the
+  type of exception the pure Python implementation already raised in this
+  situation. The pure Python ``BoundFunctionWrapper`` was the exception to
+  that, as it instead failed with a ``RecursionError``, including when
+  merely assigning ``__wrapped__``, because its ``__getattr__()`` method
+  looked up ``_self_parent`` on itself and so recursed when that attribute
+  did not exist. It now raises ``AttributeError`` as well.
+
+  The same fields are exposed as the ``_self_instance``, ``_self_wrapper``,
+  ``_self_enabled``, ``_self_binding``, ``_self_parent`` and ``_self_owner``
+  attributes of a function wrapper, and the ``_self_args`` and
+  ``_self_kwargs`` attributes of a ``PartialCallableObjectProxy``. When
+  ``__init__()`` had never been called, the C extension returned ``None``
+  for these, or an empty tuple or dictionary for those of the partial,
+  whereas the pure Python implementation raised ``AttributeError``. As
+  ``None`` is a valid value for most of these attributes, the result was
+  indistinguishable from that for a wrapper which had been initialized. The
+  C extension now raises ``AttributeError`` as well. Since the lookup of a
+  missing attribute on a proxy falls through to the wrapped object, where
+  the wrapped object is itself a wrapper it is the attribute of that
+  wrapper which is returned, in both implementations. The ``_self_kwargs``
+  attribute of a ``PartialCallableObjectProxy`` which was initialized, but
+  with no keyword arguments, continues to be an empty dictionary.
+
 Version 2.4.1
 -------------
 

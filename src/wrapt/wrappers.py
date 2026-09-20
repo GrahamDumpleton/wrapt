@@ -945,6 +945,16 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
         super().__setattr__(name, value)
 
     def __getattr__(self, name):
+        # This is only reached for _self_parent when that attribute was
+        # never set, which means __init__() was not called. It has to fail
+        # here, as the lookup of it below would otherwise come straight
+        # back in and recurse without end.
+
+        if name == "_self_parent":
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
+
         if self._self_parent is not None:
             try:
                 return getattr(self._self_parent, name)
