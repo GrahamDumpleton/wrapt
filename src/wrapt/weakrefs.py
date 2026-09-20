@@ -62,9 +62,16 @@ class WeakFunctionProxy(BaseObjectProxy):
         )
 
         self._self_expired = False
+        self._self_owner = None
 
         if isinstance(wrapped, _FunctionWrapperBase):
-            self._self_instance = weakref.ref(wrapped._self_instance, _callback)
+            instance = wrapped._self_instance
+            self._self_instance = (
+                weakref.ref(instance, _callback) if instance is not None else None
+            )
+            owner = wrapped._self_owner
+            if owner is not None:
+                self._self_owner = weakref.ref(owner, _callback)
 
             if wrapped._self_parent is not None:
                 # Explicit class in super() is used because the proxy
@@ -118,6 +125,12 @@ class WeakFunctionProxy(BaseObjectProxy):
         # which we retained a reference to the instance and the unbound
         # function we need to rebind the function and then call it. If
         # not just called the wrapped function.
+
+        if self._self_owner is not None:
+            owner = self._self_owner()
+            if owner is None:
+                raise ReferenceError("weakly-referenced object no longer exists")
+            return function.__get__(instance, owner)(*args, **kwargs)
 
         if instance is None:
             return self.__wrapped__(*args, **kwargs)
