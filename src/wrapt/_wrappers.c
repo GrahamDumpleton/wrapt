@@ -3059,9 +3059,54 @@ static PyObject *WraptObjectProxy_get_module(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+/* Refresh the copy of __module__ or __doc__ held in the proxy's own dict
+ * after the attribute has been deleted from the wrapped object. Deleting
+ * __doc__ from a function, for example, leaves the attribute present with
+ * a value of None, whereas on other objects it may be gone entirely. Record
+ * what __init__ would have for a fresh proxy over the wrapped object in its
+ * current state: the value if the attribute still exists, otherwise no
+ * entry at all. */
+
+static int WraptObjectProxy_refresh_cached_attr(WraptObjectProxyObject *self,
+                                                PyObject *wrapped,
+                                                PyObject *name)
+{
+  PyObject *object = PyObject_GetAttr(wrapped, name);
+
+  if (object)
+  {
+    int result = PyDict_SetItem(self->dict, name, object);
+    Py_DECREF(object);
+    return result;
+  }
+
+  if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+    return -1;
+
+  PyErr_Clear();
+
+  if (PyDict_DelItem(self->dict, name) == -1)
+  {
+    if (!PyErr_ExceptionMatches(PyExc_KeyError))
+      return -1;
+    PyErr_Clear();
+  }
+
+  return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+/* The setters for __module__ and __doc__ are called with a NULL value when
+ * the attribute is being deleted. PyObject_SetAttr() forwards a deletion to
+ * the wrapped object, but the copy held in the proxy's own dict must then be
+ * refreshed rather than stored, as the dict API rejects a NULL value. */
+
 static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
                                        PyObject *value)
 {
+  int result;
+
   if (!self->wrapped)
   {
     if (raise_uninitialized_wrapper_error(self) == -1)
@@ -3075,14 +3120,16 @@ static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
   PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   if (PyObject_SetAttr(wrapped, state->str_module, value) == -1)
-  {
-    Py_DECREF(wrapped);
-    return -1;
-  }
+    result = -1;
+  else if (value)
+    result = PyDict_SetItem(self->dict, state->str_module, value);
+  else
+    result = WraptObjectProxy_refresh_cached_attr(self, wrapped,
+                                                  state->str_module);
 
   Py_DECREF(wrapped);
 
-  return PyDict_SetItemString(self->dict, "__module__", value);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3113,6 +3160,8 @@ static PyObject *WraptObjectProxy_get_doc(WraptObjectProxyObject *self)
 static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
                                     PyObject *value)
 {
+  int result;
+
   if (!self->wrapped)
   {
     if (raise_uninitialized_wrapper_error(self) == -1)
@@ -3126,14 +3175,16 @@ static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
   PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   if (PyObject_SetAttr(wrapped, state->str_doc, value) == -1)
-  {
-    Py_DECREF(wrapped);
-    return -1;
-  }
+    result = -1;
+  else if (value)
+    result = PyDict_SetItem(self->dict, state->str_doc, value);
+  else
+    result = WraptObjectProxy_refresh_cached_attr(self, wrapped,
+                                                  state->str_doc);
 
   Py_DECREF(wrapped);
 
-  return PyDict_SetItemString(self->dict, "__doc__", value);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */

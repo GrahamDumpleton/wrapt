@@ -36,6 +36,10 @@ class _ObjectProxyMethods:
     def __module__(self, value):
         self.__wrapped__.__module__ = value
 
+    @__module__.deleter
+    def __module__(self):
+        del self.__wrapped__.__module__
+
     @property
     def __doc__(self):
         return self.__wrapped__.__doc__
@@ -43,6 +47,10 @@ class _ObjectProxyMethods:
     @__doc__.setter
     def __doc__(self, value):
         self.__wrapped__.__doc__ = value
+
+    @__doc__.deleter
+    def __doc__(self):
+        del self.__wrapped__.__doc__
 
     # We similar use a property for __dict__. We need __dict__ to be
     # explicit to ensure that vars() works as expected.
