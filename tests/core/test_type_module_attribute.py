@@ -272,6 +272,129 @@ class TestSetModuleAndDoc(unittest.TestCase):
         self.assertEqual(target.__module__, "override_module")
 
 
+# -- Deleting __module__ and __doc__ tests --
+
+
+class TestDeleteModuleAndDoc(unittest.TestCase):
+    """Verify deleting __module__ and __doc__ on instances is forwarded to
+    the wrapped object, in the same way as setting them. Targets are
+    created per test rather than shared, as deletion changes them."""
+
+    @staticmethod
+    def make_function():
+        def target():
+            "target documentation"
+            pass
+        return target
+
+    @staticmethod
+    def make_class():
+        class Target:
+            "target documentation"
+        return Target
+
+    @staticmethod
+    def delete_outcome(obj, name):
+        # Return None if deletion succeeds, else the exception type and
+        # message, so the outcome via a proxy can be compared with the
+        # outcome of the same deletion made directly on the target.
+        try:
+            delattr(obj, name)
+        except Exception as e:
+            return (type(e), str(e))
+        return None
+
+    def test_delete_module_on_object_proxy(self):
+        target = self.make_function()
+        wrapper = wrapt.ObjectProxy(target)
+        del wrapper.__module__
+        self.assertIsNone(target.__module__)
+        self.assertIsNone(wrapper.__module__)
+
+    def test_delete_doc_on_object_proxy(self):
+        target = self.make_function()
+        wrapper = wrapt.ObjectProxy(target)
+        del wrapper.__doc__
+        self.assertIsNone(target.__doc__)
+        self.assertIsNone(wrapper.__doc__)
+
+    def test_delete_module_after_set(self):
+        target = self.make_function()
+        wrapper = wrapt.ObjectProxy(target)
+        wrapper.__module__ = "override_module"
+        del wrapper.__module__
+        self.assertIsNone(target.__module__)
+        self.assertIsNone(wrapper.__module__)
+
+    def test_delete_doc_after_set(self):
+        target = self.make_function()
+        wrapper = wrapt.ObjectProxy(target)
+        wrapper.__doc__ = "override doc"
+        del wrapper.__doc__
+        self.assertIsNone(target.__doc__)
+        self.assertIsNone(wrapper.__doc__)
+
+    def test_delete_module_on_function_wrapper(self):
+        def my_wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        target = self.make_function()
+        wrapper = wrapt.FunctionWrapper(target, my_wrapper)
+        del wrapper.__module__
+        self.assertIsNone(target.__module__)
+        self.assertIsNone(wrapper.__module__)
+
+    def test_delete_doc_on_function_wrapper(self):
+        def my_wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+        target = self.make_function()
+        wrapper = wrapt.FunctionWrapper(target, my_wrapper)
+        del wrapper.__doc__
+        self.assertIsNone(target.__doc__)
+        self.assertIsNone(wrapper.__doc__)
+
+    def test_delete_module_on_user_subclass(self):
+        class MyProxy(wrapt.ObjectProxy):
+            pass
+        target = self.make_function()
+        wrapper = MyProxy(target)
+        del wrapper.__module__
+        self.assertIsNone(target.__module__)
+        self.assertIsNone(wrapper.__module__)
+
+    def test_delete_doc_on_user_subclass(self):
+        class MyProxy(wrapt.ObjectProxy):
+            pass
+        target = self.make_function()
+        wrapper = MyProxy(target)
+        del wrapper.__doc__
+        self.assertIsNone(target.__doc__)
+        self.assertIsNone(wrapper.__doc__)
+
+    def test_delete_module_on_class_target(self):
+        # A class does not permit deletion of __module__. The outcome via
+        # the proxy must match a direct deletion on an equivalent class.
+        expected = self.delete_outcome(self.make_class(), "__module__")
+        wrapper = wrapt.ObjectProxy(self.make_class())
+        self.assertEqual(self.delete_outcome(wrapper, "__module__"), expected)
+
+    def test_delete_doc_on_class_target(self):
+        expected = self.delete_outcome(self.make_class(), "__doc__")
+        wrapper = wrapt.ObjectProxy(self.make_class())
+        self.assertEqual(self.delete_outcome(wrapper, "__doc__"), expected)
+
+    def test_proxy_state_matches_fresh_proxy_after_delete(self):
+        # After deletion the proxy's own instance dictionary must be the
+        # same as for a proxy newly created over the wrapped object in
+        # its current state, so the C extension's cached copies of the
+        # attributes do not go stale or linger.
+        target = self.make_function()
+        wrapper = wrapt.ObjectProxy(target)
+        del wrapper.__module__
+        del wrapper.__doc__
+        fresh = wrapt.ObjectProxy(target)
+        self.assertEqual(dict(wrapper.__self_dict__), dict(fresh.__self_dict__))
+
+
 # -- Wrapped replacement tests --
 
 
@@ -364,6 +487,20 @@ class TestNonInternedAttributeNames(unittest.TestCase):
         self.assertEqual(function.__doc__, "set doc")
         self.assertEqual(proxy.__module__, "set.module")
         self.assertEqual(proxy.__doc__, "set doc")
+
+    def test_delete_module_and_doc_via_non_interned_name(self):
+        def function():
+            """original doc"""
+
+        proxy = BaseObjectProxy(function)
+
+        delattr(proxy, self.dynamic("__module__"))
+        delattr(proxy, self.dynamic("__doc__"))
+
+        self.assertIsNone(function.__module__)
+        self.assertIsNone(function.__doc__)
+        self.assertIsNone(proxy.__module__)
+        self.assertIsNone(proxy.__doc__)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,25 @@ Version 2.4.2
 
 **Bugs Fixed**
 
+* Deleting the ``__module__`` or ``__doc__`` attribute of a proxy object,
+  using ``del proxy.__doc__`` for example, crashed the Python interpreter
+  when the C extension was in use. The attribute setters, which CPython
+  also invokes for a deletion with no value, correctly forwarded the
+  deletion to the wrapped object but then attempted to store the missing
+  value in the proxy's own dictionary. The pure Python implementation did
+  not crash, but instead failed with an ``AttributeError`` as the
+  properties used for these attributes had no deleter, so the deletion was
+  never forwarded to the wrapped object at all.
+
+  Both implementations now forward the deletion to the wrapped object, so
+  the outcome is the same as deleting the attribute on the wrapped object
+  directly. For a function this leaves the attribute with a value of
+  ``None``, while for a class the ``TypeError`` raised by Python is
+  propagated. The C extension also refreshes the copy of the attribute it
+  holds in the proxy's own dictionary, so that the state of the proxy after
+  the deletion is the same as for a proxy newly created over the wrapped
+  object.
+
 Version 2.4.1
 -------------
 
