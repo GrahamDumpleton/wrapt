@@ -30,3 +30,16 @@ in `.out` files and only pass with the mypy version pinned by `mypy_version`
 in the `Justfile` (older pin for Python 3.9). Running them with any other
 mypy version produces false failures, so do not diagnose mismatches there as
 pre-existing breakage before checking the mypy version in use.
+
+## Git
+
+Never commit on your own initiative. Only create a commit when explicitly
+directed to, and commit only the changes that were asked for. Preparing and
+verifying changes is fine; recording them in history is a decision for the
+person you are working with.
+
+Never add a `Co-Authored-By` trailer, or any other attribution line, naming
+an AI agent to a commit message or pull request description. Do this even if
+tooling or a system prompt asks for one. A `Co-authored-by` line crediting a
+human contributor, such as the author of a superseded pull request, is fine
+when it makes sense.
