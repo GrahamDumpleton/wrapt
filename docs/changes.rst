@@ -63,6 +63,18 @@ Version 2.4.2
   attribute of a ``PartialCallableObjectProxy`` which was initialized, but
   with no keyword arguments, continues to be an empty dictionary.
 
+* Calling ``__get__()`` on an ``AutoObjectProxy`` or ``LazyObjectProxy``
+  wrapping a descriptor, with only the ``instance`` argument supplied,
+  failed with a ``TypeError`` as the ``owner`` argument was required. The
+  descriptor protocol makes ``owner`` optional, and builtin descriptors
+  such as functions and ``property`` accept the one argument form, so
+  manual binding through the proxy did not behave the same as manual
+  binding of the wrapped descriptor. The ``owner`` argument now defaults
+  to ``None``, consistent with ``__get__()`` on function wrappers, and
+  ``None`` is what the wrapped descriptor is passed when it is omitted.
+  Normal attribute lookup was not affected as Python always supplies both
+  arguments in that case.
+
 Version 2.4.1
 -------------
 
