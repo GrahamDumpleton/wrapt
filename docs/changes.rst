@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 2.4.2
+-------------
+
+**Bugs Fixed**
+
 Version 2.4.1
 -------------
 
