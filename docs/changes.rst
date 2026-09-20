@@ -28,6 +28,22 @@ Version 2.4.2
   looked up ``_self_parent`` on itself and so recursed when that attribute
   did not exist. It now raises ``AttributeError`` as well.
 
+  The same fields are exposed as the ``_self_instance``, ``_self_wrapper``,
+  ``_self_enabled``, ``_self_binding``, ``_self_parent`` and ``_self_owner``
+  attributes of a function wrapper, and the ``_self_args`` and
+  ``_self_kwargs`` attributes of a ``PartialCallableObjectProxy``. When
+  ``__init__()`` had never been called, the C extension returned ``None``
+  for these, or an empty tuple or dictionary for those of the partial,
+  whereas the pure Python implementation raised ``AttributeError``. As
+  ``None`` is a valid value for most of these attributes, the result was
+  indistinguishable from that for a wrapper which had been initialized. The
+  C extension now raises ``AttributeError`` as well. Since the lookup of a
+  missing attribute on a proxy falls through to the wrapped object, where
+  the wrapped object is itself a wrapper it is the attribute of that
+  wrapper which is returned, in both implementations. The ``_self_kwargs``
+  attribute of a ``PartialCallableObjectProxy`` which was initialized, but
+  with no keyword arguments, continues to be an empty dictionary.
+
 Version 2.4.1
 -------------
 

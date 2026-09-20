@@ -3999,8 +3999,11 @@ static PyObject *WraptPartialCallableObjectProxy_get_self_args(
 
   value = wrapt_acquire_field((PyObject *)self, &self->args);
 
-  if (!value)
-    return PyTuple_New(0);
+  /* See the comment for the equivalent getters of the function wrapper
+   * as to why this fails rather than substituting an empty tuple. */
+
+  if (wrapt_require_field((PyObject *)self, value, "_self_args") == -1)
+    return NULL;
 
   return value;
 }
@@ -4015,7 +4018,22 @@ static PyObject *WraptPartialCallableObjectProxy_get_self_kwargs(
   value = wrapt_acquire_field((PyObject *)self, &self->kwargs);
 
   if (!value)
+  {
+    /* The captured keyword arguments are legitimately NULL when none were
+     * supplied, in which case an empty dictionary stands in for them. That
+     * must be distinguished from __init__() never having been called, for
+     * which the captured positional arguments, which are always set by
+     * __init__(), will be NULL as well. */
+
+    PyObject *args = wrapt_acquire_field((PyObject *)self, &self->args);
+
+    if (wrapt_require_field((PyObject *)self, args, "_self_kwargs") == -1)
+      return NULL;
+
+    Py_DECREF(args);
+
     return PyDict_New();
+  }
 
   return value;
 }
@@ -4692,6 +4710,15 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+/* The getters for the wrapper specific fields fail with AttributeError if
+ * the field was never set, which means __init__() was not called. The
+ * attribute lookup then falls through to __getattr__() and so on to the
+ * wrapped object, which is the same outcome as for the pure Python
+ * implementation, where these are instance attributes which in that case
+ * do not exist. A value of None is not substituted, as that is a valid
+ * value for most of these fields and so would be indistinguishable from
+ * the state of a wrapper which had been initialized. */
+
 static PyObject *
 WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
                                            void *closure)
@@ -4700,10 +4727,8 @@ WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->instance);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_instance") == -1)
+    return NULL;
 
   return value;
 }
@@ -4718,10 +4743,8 @@ WraptFunctionWrapperBase_get_self_wrapper(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->wrapper);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_wrapper") == -1)
+    return NULL;
 
   return value;
 }
@@ -4736,10 +4759,8 @@ WraptFunctionWrapperBase_get_self_enabled(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->enabled);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_enabled") == -1)
+    return NULL;
 
   return value;
 }
@@ -4754,10 +4775,8 @@ WraptFunctionWrapperBase_get_self_binding(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->binding);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_binding") == -1)
+    return NULL;
 
   return value;
 }
@@ -4772,10 +4791,8 @@ WraptFunctionWrapperBase_get_self_parent(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->parent);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_parent") == -1)
+    return NULL;
 
   return value;
 }
@@ -4790,10 +4807,8 @@ WraptFunctionWrapperBase_get_self_owner(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->owner);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_owner") == -1)
+    return NULL;
 
   return value;
 }
