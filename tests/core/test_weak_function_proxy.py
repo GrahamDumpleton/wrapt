@@ -1,4 +1,6 @@
 import gc
+import sys
+import sysconfig
 import unittest
 import weakref
 
@@ -61,6 +63,11 @@ class TestWeakFunctionProxy(unittest.TestCase):
         proxy = wrapt.WeakFunctionProxy(Class.method)
         self.assertEqual(proxy(obj, 42), (obj, 42))
 
+    @unittest.skipIf(
+        sys.version_info[:2] == (3, 13)
+        and sysconfig.get_config_var("Py_GIL_DISABLED"),
+        "Free-threaded CPython 3.13 immortalizes classes after a thread starts",
+    )
     def test_decorated_classmethod_does_not_retain_owner(self):
         @wrapt.decorator
         def decorator(wrapped, instance, args, kwargs):
