@@ -107,6 +107,23 @@ Version 2.4.2
   implementation. The modulo argument of the three argument form of
   ``pow()`` is still not unwrapped, as described in the known issues.
 
+* Creating a ``WeakFunctionProxy`` around a decorated function, or a
+  decorated method, classmethod or staticmethod accessed via the class
+  rather than an instance, failed with ``TypeError``. In these cases the
+  function wrapper produced by the decorator has no bound instance, and the
+  proxy attempted to take a weak reference to ``None``. Only a decorated
+  method accessed via an instance worked.
+
+  The proxy now takes a weak reference to the instance only where there is
+  one, and also retains a weak reference to the class the wrapper was
+  accessed through. When called, the function is rebound against both, so
+  a decorated classmethod receives the class it was accessed through,
+  including a subclass, and a decorated instance method accessed via the
+  class recognises an instance passed as the first argument. The class is
+  not kept alive by the proxy, and if it is garbage collected a call raises
+  ``ReferenceError``, and the expiry callback runs, in the same way as when
+  the instance a method was bound to is garbage collected.
+
 Version 2.4.1
 -------------
 
