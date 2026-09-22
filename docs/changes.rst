@@ -75,6 +75,38 @@ Version 2.4.2
   Normal attribute lookup was not affected as Python always supplies both
   arguments in that case.
 
+* Applying a binary operator such as ``+`` where both operands were an
+  ``ObjectProxy`` could give a different result with the pure Python
+  implementation than with the C extension. The C extension unwrapped both
+  operands before applying the operator to the wrapped objects, whereas the
+  pure Python implementation unwrapped only the left hand operand and
+  passed the right hand proxy through to the operator method of the
+  wrapped object. This usually went unnoticed, as the wrapped object's
+  operator method would return ``NotImplemented`` when given a proxy, and
+  Python would then try the reflected method of the right hand proxy,
+  which unwrapped the other side.
+
+  The difference was visible where the wrapped type raised ``TypeError``
+  for an operand it did not recognise instead of returning
+  ``NotImplemented``, since Python never tries the reflected method after
+  an exception, so the operation failed with the pure Python
+  implementation but succeeded with the C extension. It was also visible
+  where the right hand operand's type was a subclass of the left hand
+  operand's type and overrode the reflected method. Python gives that
+  reflected method priority, but only when it sees the real types, so
+  with the pure Python implementation the forward method of the left hand
+  wrapped object was called instead.
+
+  The pure Python implementation now also unwraps a right hand operand
+  which is a proxy, for the binary, reflected and in-place operators, so
+  the result is the same as applying the operator to the two wrapped
+  objects in both implementations. Where a proxy is on the right hand side
+  but the left hand operand is not a proxy, Python still selects the
+  method to call from the types it can see, so the reflected method of a
+  proxied subclass on the right hand side is not given priority in either
+  implementation. The modulo argument of the three argument form of
+  ``pow()`` is still not unwrapped, as described in the known issues.
+
 * Creating a ``WeakFunctionProxy`` around a decorated function, or a
   decorated method, classmethod or staticmethod accessed via the class
   rather than an instance, failed with ``TypeError``. In these cases the

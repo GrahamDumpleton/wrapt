@@ -977,33 +977,30 @@ Ternary ``pow()`` with ObjectProxy
 ----------------------------------
 
 The three-argument form of the builtin ``pow()`` function does not accept
-an ``ObjectProxy`` in every argument position, and the set of positions
-that is accepted depends on whether the C extension is in use.
+an ``ObjectProxy`` in every argument position.
 
-With the pure Python implementation, only the first argument (the base)
-may be an ``ObjectProxy``. This is because the ``__pow__`` method on
-``ObjectProxy`` unwraps ``self`` before delegating to ``pow()``, but it
-does not unwrap the second argument or the modulo argument. When
-``pow()`` is called with a proxy in either of those positions, the
-underlying numeric type has no way to coerce the proxy and a
+The base may be an ``ObjectProxy``, and when it is, the exponent may be
+one as well. The ``__pow__`` method on ``ObjectProxy`` unwraps ``self``
+and, if it is also a proxy, the exponent, before delegating to
+``pow()``. If the base is not a proxy but the exponent is, Python calls
+the ``__pow__`` method of the base's type first, and unlike the two
+argument form, the three argument form has no reflected ``__rpow__``
+fallback, so the proxy never gets a chance to unwrap itself and a
 ``TypeError`` is raised.
 
-With the C extension, the first and second arguments may both be an
-``ObjectProxy`` because the ``nb_power`` slot explicitly unwraps them
-before dispatching to ``PyNumber_Power``. The modulo argument is still
-not unwrapped, for two reasons. Firstly, unwrapping modulo would make
-the C extension behaviour diverge further from the pure Python and PyPy
-implementations, which cannot be made to support a proxy in that slot.
-Secondly, if ``PyNumber_Power`` were invoked with a proxy modulo, the
+The modulo argument is never unwrapped. If the C extension's
+``nb_power`` slot invoked ``PyNumber_Power`` with a proxy modulo, the
 CPython ternary operator fallback would end up calling back into the
-proxy's ``nb_power`` slot indefinitely, overflowing the C stack. A
-proxy passed as the modulo argument therefore always results in a
-``TypeError`` regardless of implementation.
+proxy's ``nb_power`` slot indefinitely, overflowing the C stack, so the
+slot returns ``NotImplemented`` for a proxy modulo instead. The pure
+Python implementation does not unwrap modulo either, so that behaviour
+is the same across the pure Python implementation, the C extension and
+PyPy. A proxy passed as the modulo argument therefore always results in
+a ``TypeError``.
 
-The practical consequence is that for portability across the pure
-Python implementation, the C extension and PyPy, callers should pass
-only the base as an ``ObjectProxy`` and should unwrap the exponent and
-modulo arguments themselves where necessary.
+The practical consequence is that callers should ensure the base is an
+``ObjectProxy`` whenever the exponent is, and should unwrap the modulo
+argument themselves where necessary.
 
 ::
 
@@ -1013,13 +1010,14 @@ modulo arguments themselves where necessary.
     exponent = wrapt.ObjectProxy(3)
     modulo = wrapt.ObjectProxy(5)
 
-    # Portable: only the base is a proxy.
+    # Supported: base only, or base and exponent, as proxies.
     pow(base, 3, 5)
-
-    # C extension only: exponent may also be a proxy.
     pow(base, exponent, 5)
 
-    # Not supported anywhere: unwrap the modulo yourself.
+    # Not supported: exponent is a proxy but base is not.
+    pow(2, exponent.__wrapped__, 5)
+
+    # Not supported: unwrap the modulo yourself.
     pow(base, exponent, modulo.__wrapped__)
 
 pytest setup_class/teardown_class hooks
