@@ -5,7 +5,7 @@ import pickle
 import wrapt
 
 
-class UnwrappingProxy(wrapt.ObjectProxy):
+class UnwrappingProxy(wrapt.BaseObjectProxy):
     # `__reduce__` that returns a reconstructor other than the proxy
     # class itself. On unpickling the proxy is dropped and only the
     # wrapped value is restored.
@@ -14,7 +14,7 @@ class UnwrappingProxy(wrapt.ObjectProxy):
         return (list, (self.__wrapped__,))
 
 
-class RestoringProxy(wrapt.ObjectProxy):
+class RestoringProxy(wrapt.BaseObjectProxy):
     # `__reduce__` that returns the proxy class itself as the
     # reconstructor. On unpickling an instance of the same proxy class
     # is restored around the wrapped value.
@@ -22,11 +22,17 @@ class RestoringProxy(wrapt.ObjectProxy):
     def __reduce__(self):
         return (type(self), (self.__wrapped__,))
 
+    # The tests wrap lists and iterate the restored proxy, so forward
+    # `__iter__` here as any custom proxy needing iteration has to.
+
+    def __iter__(self):
+        return iter(self.__wrapped__)
+
 
 class TestObjectPickle(unittest.TestCase):
 
     def test_pickle(self):
-        proxy = wrapt.ObjectProxy([1])
+        proxy = wrapt.BaseObjectProxy([1])
 
         with self.assertRaises(NotImplementedError) as context:
             data = pickle.dumps(proxy)
@@ -53,7 +59,7 @@ class TestObjectPickle(unittest.TestCase):
         self.assertEqual(restored.__wrapped__, [1])
 
 
-class LabelledProxy(wrapt.ObjectProxy):
+class LabelledProxy(wrapt.BaseObjectProxy):
 
     def __init__(self, wrapped, label):
         super().__init__(wrapped)
@@ -61,6 +67,9 @@ class LabelledProxy(wrapt.ObjectProxy):
 
     def __reduce__(self):
         return (type(self), (self.__wrapped__, self._self_label))
+
+    def __iter__(self):
+        return iter(self.__wrapped__)
 
 
 class TestProxyRoundTrip(unittest.TestCase):

@@ -1,4 +1,4 @@
-"""Tests for binary operators where both operands are an ObjectProxy.
+"""Tests for binary operators where both operands are a BaseObjectProxy.
 
 The pure Python implementation of the binary operator dunder methods only
 unwraps ``self`` before delegating to the operator on the wrapped object,
@@ -184,14 +184,14 @@ class TestStrictOperandBinary(unittest.TestCase):
 
         # A proxy on the left only has always worked.
 
-        self.assertEqual(op(wrapt.ObjectProxy(Strict(1)), Strict(2)), expected)
+        self.assertEqual(op(wrapt.BaseObjectProxy(Strict(1)), Strict(2)), expected)
 
         # A proxy on both sides requires the left hand proxy to unwrap
         # the right hand one, since Strict never returns NotImplemented
         # and so the right hand proxy's reflected method never runs.
 
         self.assertEqual(
-            op(wrapt.ObjectProxy(Strict(1)), wrapt.ObjectProxy(Strict(2))),
+            op(wrapt.BaseObjectProxy(Strict(1)), wrapt.BaseObjectProxy(Strict(2))),
             expected,
         )
 
@@ -255,9 +255,9 @@ class TestStrictOperandInplace(unittest.TestCase):
         self.assertEqual(expected, StrictInplace((name, 1, 2)))
 
         value = StrictInplace(1)
-        proxy = wrapt.ObjectProxy(value)
+        proxy = wrapt.BaseObjectProxy(value)
 
-        result = iop(proxy, wrapt.ObjectProxy(StrictInplace(2)))
+        result = iop(proxy, wrapt.BaseObjectProxy(StrictInplace(2)))
 
         self.assertIs(result, proxy)
         self.assertIs(result.__wrapped__, value)
@@ -272,12 +272,12 @@ class TestStrictOperandInplace(unittest.TestCase):
         self.assertEqual(expected, Strict((name, 1, 2)))
 
         value = Strict(1)
-        proxy = wrapt.ObjectProxy(value)
+        proxy = wrapt.BaseObjectProxy(value)
 
-        result = iop(proxy, wrapt.ObjectProxy(Strict(2)))
+        result = iop(proxy, wrapt.BaseObjectProxy(Strict(2)))
 
         self.assertIsNot(result, proxy)
-        self.assertIsInstance(result, wrapt.ObjectProxy)
+        self.assertIsInstance(result, wrapt.BaseObjectProxy)
         self.assertEqual(result.__wrapped__, expected)
         self.assertEqual(value, Strict(1))
 
@@ -336,7 +336,7 @@ class TestSubclassReflectedPriority(unittest.TestCase):
         # A proxy on the left only has always worked, as Python sees
         # Sub on the right and gives its reflected method priority.
 
-        self.assertEqual(op(wrapt.ObjectProxy(Base()), Sub()), expected)
+        self.assertEqual(op(wrapt.BaseObjectProxy(Base()), Sub()), expected)
 
         # A proxy on both sides. Python sees two proxies and calls the
         # left hand proxy's forward method. That must then apply the
@@ -346,7 +346,7 @@ class TestSubclassReflectedPriority(unittest.TestCase):
         # isinstance() and handles it itself.
 
         self.assertEqual(
-            op(wrapt.ObjectProxy(Base()), wrapt.ObjectProxy(Sub())),
+            op(wrapt.BaseObjectProxy(Base()), wrapt.BaseObjectProxy(Sub())),
             expected,
         )
 

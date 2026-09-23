@@ -158,23 +158,23 @@ class TestAnnotationPreservationDecorator(unittest.TestCase):
 
 
 class TestAnnotationPreservationObjectProxy(unittest.TestCase):
-    """Test that annotations are preserved when wrapping with ObjectProxy."""
+    """Test that annotations are preserved when wrapping with BaseObjectProxy."""
 
     def test_param_annotations(self):
-        proxy = wrapt.ObjectProxy(function_param_annotations)
+        proxy = wrapt.BaseObjectProxy(function_param_annotations)
         self.assertEqual(proxy.__annotations__, function_param_annotations.__annotations__)
         self.assertEqual(proxy.__annotations__, {"a": int, "b": str})
 
     def test_return_annotation(self):
-        proxy = wrapt.ObjectProxy(function_return_annotation)
+        proxy = wrapt.BaseObjectProxy(function_return_annotation)
         self.assertEqual(proxy.__annotations__, function_return_annotation.__annotations__)
 
     def test_no_annotations(self):
-        proxy = wrapt.ObjectProxy(function_no_annotations)
+        proxy = wrapt.BaseObjectProxy(function_no_annotations)
         self.assertEqual(proxy.__annotations__, {})
 
     def test_complex_annotations(self):
-        proxy = wrapt.ObjectProxy(function_complex_annotations)
+        proxy = wrapt.BaseObjectProxy(function_complex_annotations)
         self.assertEqual(proxy.__annotations__, function_complex_annotations.__annotations__)
 
 
@@ -227,7 +227,7 @@ class TestAnnotationMutation(unittest.TestCase):
         self.assertEqual(function.__annotations__, {})
 
     def test_set_annotations_on_object_proxy(self):
-        proxy = wrapt.ObjectProxy(function_param_annotations)
+        proxy = wrapt.BaseObjectProxy(function_param_annotations)
 
         new_annotations = {"x": float}
         proxy.__annotations__ = new_annotations
@@ -360,7 +360,7 @@ class TestDeferredAnnotationEvaluation(unittest.TestCase):
         "Deferred annotation evaluation requires Python 3.14+",
     )
     def test_shadowed_builtin_object_proxy(self):
-        """ObjectProxy should also not trigger eager annotation evaluation."""
+        """BaseObjectProxy should also not trigger eager annotation evaluation."""
 
         def f(*, a: list[int]) -> list[int]:
             return a
@@ -369,7 +369,7 @@ class TestDeferredAnnotationEvaluation(unittest.TestCase):
             return
 
         # This should not raise TypeError during construction.
-        proxy = wrapt.ObjectProxy(f)
+        proxy = wrapt.BaseObjectProxy(f)
 
         self.assertEqual(proxy.__name__, "f")
 
@@ -394,14 +394,14 @@ class TestDeferredAnnotationEvaluation(unittest.TestCase):
         "Deferred annotation evaluation requires Python 3.14+",
     )
     def test_annotate_preserved_on_object_proxy(self):
-        """ObjectProxy should preserve __annotate__ from the wrapped object."""
+        """BaseObjectProxy should preserve __annotate__ from the wrapped object."""
 
         def f(a: int) -> str:
             return ""
 
         self.assertTrue(hasattr(f, "__annotate__"))
 
-        proxy = wrapt.ObjectProxy(f)
+        proxy = wrapt.BaseObjectProxy(f)
 
         self.assertTrue(hasattr(proxy, "__annotate__"))
 

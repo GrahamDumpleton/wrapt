@@ -76,7 +76,7 @@ class TestRawInitAttributeLookups(unittest.TestCase):
 
         cls = _make_raising_attr_class("__module__")
         with self.assertRaises(_Canary):
-            wrapt.ObjectProxy(cls())
+            wrapt.BaseObjectProxy(cls())
 
     @c_extension_only
     def test_raw_init_doc_propagates(self):
@@ -85,13 +85,13 @@ class TestRawInitAttributeLookups(unittest.TestCase):
 
         cls = _make_raising_attr_class("__doc__")
         with self.assertRaises(_Canary):
-            wrapt.ObjectProxy(cls())
+            wrapt.BaseObjectProxy(cls())
 
     def test_raw_init_wrapped_factory_propagates(self):
         """C: ``WraptObjectProxy_raw_init`` looking up ``__wrapped_factory__``
         on the proxy when the wrapped argument is ``None``."""
 
-        class Proxy(wrapt.ObjectProxy):
+        class Proxy(wrapt.BaseObjectProxy):
             @property
             def __wrapped_factory__(self):
                 _raise_canary()
@@ -112,7 +112,7 @@ class TestSetWrappedFixups(unittest.TestCase):
         ``__wrapped_setattr_fixups__`` on the proxy after assigning to
         ``__wrapped__``."""
 
-        class Proxy(wrapt.ObjectProxy):
+        class Proxy(wrapt.BaseObjectProxy):
             @property
             def __wrapped_setattr_fixups__(self):
                 _raise_canary()
@@ -139,7 +139,7 @@ class TestMroEntries(unittest.TestCase):
                     _raise_canary()
                 return object.__getattribute__(self, name)
 
-        proxy = wrapt.ObjectProxy(Wrapped())
+        proxy = wrapt.BaseObjectProxy(Wrapped())
 
         def _build():
             class _C(proxy):  # type: ignore[misc]
@@ -355,7 +355,7 @@ class TestSubclassCheckWrappedLookup(unittest.TestCase):
 #
 # The following tests pin the behaviour of the two attribute-lookup paths
 # that intentionally swallow ``AttributeError`` in order to fall through to
-# a secondary lookup (``__getattr__`` delegation on ``ObjectProxy``, parent
+# a secondary lookup (``__getattr__`` delegation on ``BaseObjectProxy``, parent
 # delegation on ``BoundFunctionWrapper``). For each path there are two
 # tests:
 #
@@ -377,7 +377,7 @@ class TestAttributeLookupFallback(unittest.TestCase):
         wrapped = Wrapped()
         wrapped.foo = "wrapped_foo"
 
-        proxy = wrapt.ObjectProxy(wrapped)
+        proxy = wrapt.BaseObjectProxy(wrapped)
 
         # ``foo`` is not on the proxy type or instance dict, so the generic
         # lookup raises ``AttributeError``; the guarded clear allows
@@ -392,7 +392,7 @@ class TestAttributeLookupFallback(unittest.TestCase):
             def __get__(self, obj, objtype=None):  # noqa: ARG002
                 _raise_canary()
 
-        class Proxy(wrapt.ObjectProxy):
+        class Proxy(wrapt.BaseObjectProxy):
             boom = RaisingDescriptor()
 
         proxy = Proxy(object())

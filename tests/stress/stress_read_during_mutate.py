@@ -1,7 +1,7 @@
 """Stress reading __wrapped__ while another thread reassigns it.
 
 One writer thread continually assigns fresh, uniquely held objects to
-``__wrapped__`` on a shared C ``ObjectProxy`` while the remaining
+``__wrapped__`` on a shared C ``BaseObjectProxy`` while the remaining
 threads continually read ``__wrapped__`` back. Before wrapt 2.4.0 the
 getter read the raw field pointer and incremented its reference count in
 two separate steps, so on a free-threaded build the incref could race
@@ -31,7 +31,7 @@ SECONDS = float(os.environ.get("WRAPT_STRESS_SECONDS", "5"))
 
 def main():
     try:
-        from wrapt._wrappers import ObjectProxy
+        from wrapt._wrappers import BaseObjectProxy
     except ImportError:
         print("skipped: C extension not available", flush=True)
         return 77
@@ -44,7 +44,7 @@ def main():
         flush=True,
     )
 
-    shared = ObjectProxy(object())
+    shared = BaseObjectProxy(object())
 
     stop = threading.Event()
     barrier = threading.Barrier(THREADS + 1)

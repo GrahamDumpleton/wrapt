@@ -15,7 +15,7 @@ class TestSelfDict(unittest.TestCase):
         # wrapped object's __dict__.
 
         target = Target("test")
-        proxy = wrapt.ObjectProxy(target)
+        proxy = wrapt.BaseObjectProxy(target)
 
         self.assertIsInstance(proxy.__self_dict__, dict)
         self.assertIsNot(proxy.__self_dict__, target.__dict__)
@@ -24,7 +24,7 @@ class TestSelfDict(unittest.TestCase):
         # Attributes set with the _self_ prefix on a subclass should
         # appear in __self_dict__.
 
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             def __init__(self, wrapped):
                 super().__init__(wrapped)
                 self._self_tag = "example"
@@ -40,7 +40,7 @@ class TestSelfDict(unittest.TestCase):
         # __self_dict__.
 
         target = Target("test")
-        proxy = wrapt.ObjectProxy(target)
+        proxy = wrapt.BaseObjectProxy(target)
 
         self.assertNotIn("name", proxy.__self_dict__)
 
@@ -49,7 +49,7 @@ class TestSelfDict(unittest.TestCase):
         # vars() — it should still return the wrapped object's dict.
 
         target = Target("test")
-        proxy = wrapt.ObjectProxy(target)
+        proxy = wrapt.BaseObjectProxy(target)
 
         self.assertEqual(vars(proxy), vars(target))
 
@@ -57,7 +57,7 @@ class TestSelfDict(unittest.TestCase):
         # __self_dict__ should be the live instance dictionary — setting
         # a key in it should be observable as an attribute on the proxy.
 
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
 
         proxy = MyProxy(Target("test"))
@@ -69,7 +69,7 @@ class TestSelfDict(unittest.TestCase):
         # Conversely, setting a _self_ attribute on the proxy should be
         # visible through __self_dict__.
 
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
 
         proxy = MyProxy(Target("test"))
@@ -81,7 +81,7 @@ class TestSelfDict(unittest.TestCase):
         # Wrapping an object that has no __dict__ (e.g. an int) should
         # still allow __self_dict__ to work.
 
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             def __init__(self, wrapped):
                 super().__init__(wrapped)
                 self._self_tag = "example"
@@ -92,19 +92,19 @@ class TestSelfDict(unittest.TestCase):
         self.assertEqual(proxy.__self_dict__["_self_tag"], "example")
 
     def test_works_on_plain_object_proxy(self):
-        # __self_dict__ should be accessible on a plain ObjectProxy
+        # __self_dict__ should be accessible on a plain BaseObjectProxy
         # (not a subclass) with no _self_ attributes.
 
         target = Target("test")
-        proxy = wrapt.ObjectProxy(target)
+        proxy = wrapt.BaseObjectProxy(target)
 
         self.assertIsInstance(proxy.__self_dict__, dict)
 
     def test_works_on_deep_subclass(self):
-        # A subclass of a subclass of ObjectProxy should also expose
+        # A subclass of a subclass of BaseObjectProxy should also expose
         # __self_dict__.
 
-        class LevelOne(wrapt.ObjectProxy):
+        class LevelOne(wrapt.BaseObjectProxy):
             def __init__(self, wrapped):
                 super().__init__(wrapped)
                 self._self_one = 1
@@ -123,7 +123,7 @@ class TestSelfDict(unittest.TestCase):
         # If a subclass defines its own __dict__ property, the metaclass
         # must not overwrite it with the default delegating property.
 
-        class IntrospectableProxy(wrapt.ObjectProxy):
+        class IntrospectableProxy(wrapt.BaseObjectProxy):
             def __init__(self, wrapped):
                 super().__init__(wrapped)
                 self._self_tag = "example"
@@ -145,7 +145,7 @@ class TestSelfDict(unittest.TestCase):
         # __self_dict__ should not be settable as an attribute on the
         # proxy — it is exposed as a read-only descriptor.
 
-        proxy = wrapt.ObjectProxy(Target("test"))
+        proxy = wrapt.BaseObjectProxy(Target("test"))
 
         with self.assertRaises(AttributeError):
             proxy.__self_dict__ = {}

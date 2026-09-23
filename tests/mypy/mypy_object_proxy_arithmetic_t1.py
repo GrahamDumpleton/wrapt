@@ -1,11 +1,11 @@
 """
 Type-check coverage for arithmetic and numeric-conversion usage of
-ObjectProxy.
+BaseObjectProxy.
 """
 
 import wrapt
 
-n_proxy: wrapt.ObjectProxy[int] = wrapt.ObjectProxy(42)
+n_proxy: wrapt.BaseObjectProxy[int] = wrapt.BaseObjectProxy(42)
 
 # Binary arithmetic.
 _ = n_proxy + 1
@@ -44,8 +44,8 @@ _ = bool(n_proxy)
 _ = round(n_proxy)
 
 # Bytes / index.
-b_proxy: wrapt.ObjectProxy[bytes] = wrapt.ObjectProxy(b"x")
+b_proxy: wrapt.BaseObjectProxy[bytes] = wrapt.BaseObjectProxy(b"x")
 _ = bytes(b_proxy)
 
-idx_proxy: wrapt.ObjectProxy[int] = wrapt.ObjectProxy(3)
+idx_proxy: wrapt.BaseObjectProxy[int] = wrapt.BaseObjectProxy(3)
 _ = [1, 2, 3][idx_proxy]

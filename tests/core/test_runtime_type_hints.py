@@ -1,7 +1,7 @@
 """Runtime behaviour of the generic type hints declared in the wrapt
 stubs (src/wrapt-stubs/__init__.pyi).
 
-The stubs declare ``BaseObjectProxy``, ``ObjectProxy``, ``AutoObjectProxy``,
+The stubs declare ``BaseObjectProxy``, ``BaseObjectProxy``, ``AutoObjectProxy``,
 ``LazyObjectProxy``, ``CallableObjectProxy``, ``FunctionWrapper`` and
 ``BoundFunctionWrapper`` as generic, so users can write annotations like
 ``proxy: BaseObjectProxy[int] = BaseObjectProxy(5)``. The mypy tests under
@@ -23,7 +23,7 @@ from wrapt import (
     CallableObjectProxy,
     FunctionWrapper,
     LazyObjectProxy,
-    ObjectProxy,
+    BaseObjectProxy,
 )
 
 
@@ -45,7 +45,7 @@ class TestDirectSubscripting(unittest.TestCase):
         _ = BaseObjectProxy[int]
 
     def test_object_proxy(self):
-        _ = ObjectProxy[int]
+        _ = BaseObjectProxy[int]
 
     def test_auto_object_proxy(self):
         _ = AutoObjectProxy[int]
@@ -66,7 +66,7 @@ class TestDirectSubscripting(unittest.TestCase):
 class TestAnnotatedAssignment(unittest.TestCase):
     """Variable annotations that reference a subscripted proxy class must
     round-trip through ``typing.get_type_hints`` without raising. This
-    covers the user-visible pattern ``proxy: ObjectProxy[int] = ...``,
+    covers the user-visible pattern ``proxy: BaseObjectProxy[int] = ...``,
     which on Python < 3.14 evaluates the annotation eagerly and on
     Python >= 3.14 evaluates it lazily (e.g. via ``get_type_hints``).
     """
@@ -78,7 +78,7 @@ class TestAnnotatedAssignment(unittest.TestCase):
         get_type_hints(f)
 
     def test_object_proxy(self):
-        def f(p: ObjectProxy[int]) -> ObjectProxy[int]:
+        def f(p: BaseObjectProxy[int]) -> BaseObjectProxy[int]:
             return p
 
         get_type_hints(f)
@@ -118,7 +118,7 @@ class TestAnnotatedAssignment(unittest.TestCase):
 
 class TestSubclassWithSubscriptedBase(unittest.TestCase):
     """Subclassing with a subscripted generic base (e.g.
-    ``class MyProxy(ObjectProxy[int]): ...``) must not raise. This is the
+    ``class MyProxy(BaseObjectProxy[int]): ...``) must not raise. This is the
     pattern used by libraries such as smart_open to specialise a proxy
     for a concrete wrapped type.
     """
@@ -130,7 +130,7 @@ class TestSubclassWithSubscriptedBase(unittest.TestCase):
         self.assertEqual(Sub(5), 5)
 
     def test_object_proxy(self):
-        class Sub(ObjectProxy[int]):
+        class Sub(BaseObjectProxy[int]):
             pass
 
         self.assertEqual(Sub(5), 5)
@@ -173,9 +173,9 @@ class TestConstructionAfterSubscripting(unittest.TestCase):
         self.assertIsInstance(proxy, BaseObjectProxy)
 
     def test_object_proxy_instance(self):
-        proxy = ObjectProxy[int](5)
+        proxy = BaseObjectProxy[int](5)
         self.assertEqual(proxy, 5)
-        self.assertIsInstance(proxy, ObjectProxy)
+        self.assertIsInstance(proxy, BaseObjectProxy)
 
     def test_function_wrapper_instance(self):
         fw = FunctionWrapper[Any, int](_target, _passthrough)

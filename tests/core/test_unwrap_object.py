@@ -154,9 +154,9 @@ class TestUnwrapObject(unittest.TestCase):
         # An object which merely compares equal to a chain entry is not
         # matched; the scan is identity only.
 
-        handle = wrapt.wrap_object(self.module, "function", wrapt.ObjectProxy)
+        handle = wrapt.wrap_object(self.module, "function", wrapt.BaseObjectProxy)
 
-        imposter = wrapt.ObjectProxy(
+        imposter = wrapt.BaseObjectProxy(
             object.__getattribute__(handle, "__wrapped__")
         )
 
@@ -360,7 +360,7 @@ class TestUnwrapObject(unittest.TestCase):
         # A non-callable attribute wrapped with an object proxy is
         # removed by its handle with the identical original restored.
 
-        class TrackingProxy(wrapt.ObjectProxy):
+        class TrackingProxy(wrapt.BaseObjectProxy):
             pass
 
         self.module.client = object()

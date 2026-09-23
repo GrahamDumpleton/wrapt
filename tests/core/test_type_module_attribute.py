@@ -1,7 +1,7 @@
 """Test that __module__ and __doc__ on proxy types are strings, not descriptors.
 
 Regression test for an issue where accessing __module__ on the proxy type
-itself (e.g. ObjectProxy.__module__) returns a getset_descriptor or property
+itself (e.g. BaseObjectProxy.__module__) returns a getset_descriptor or property
 object instead of a string. This breaks tools like pylint/astroid that expect
 type.__module__ to be a string they can call .split() on.
 
@@ -99,7 +99,7 @@ class TestPythonSubclassTypeModuleAttribute(unittest.TestCase):
         self.assertEqual(module, "wrapt.proxies")
 
     def test_user_subclass_type_module_is_string(self):
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
         module = MyProxy.__module__
         self.assertIsInstance(module, str)
@@ -117,14 +117,14 @@ class TestPythonSubclassTypeModuleAttribute(unittest.TestCase):
         self.assertIsInstance(module, str)
 
     def test_user_subclass_type_doc_is_string_or_none(self):
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             """My custom proxy."""
             pass
         doc = MyProxy.__doc__
         self.assertEqual(doc, "My custom proxy.")
 
     def test_user_subclass_no_doc_is_none(self):
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
         doc = MyProxy.__doc__
         self.assertTrue(doc is None or isinstance(doc, str))
@@ -138,17 +138,17 @@ class TestInstanceModuleProxying(unittest.TestCase):
 
     def test_object_proxy_class_target(self):
         target = objects.Target
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         self.assertEqual(wrapper.__module__, target.__module__)
 
     def test_object_proxy_instance_target(self):
         target = objects.Target()
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         self.assertEqual(wrapper.__module__, target.__module__)
 
     def test_object_proxy_function_target(self):
         target = objects.target
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         self.assertEqual(wrapper.__module__, target.__module__)
 
     def test_callable_object_proxy(self):
@@ -164,7 +164,7 @@ class TestInstanceModuleProxying(unittest.TestCase):
         self.assertEqual(wrapper.__module__, target.__module__)
 
     def test_user_subclass_of_object_proxy(self):
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
         target = objects.target
         wrapper = MyProxy(target)
@@ -195,17 +195,17 @@ class TestInstanceDocProxying(unittest.TestCase):
 
     def test_object_proxy_class_target(self):
         target = objects.Target
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
     def test_object_proxy_instance_target(self):
         target = objects.Target()
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
     def test_object_proxy_function_target(self):
         target = objects.target
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
     def test_callable_object_proxy(self):
@@ -221,7 +221,7 @@ class TestInstanceDocProxying(unittest.TestCase):
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
     def test_user_subclass_of_object_proxy(self):
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
         target = objects.target
         wrapper = MyProxy(target)
@@ -245,13 +245,13 @@ class TestSetModuleAndDoc(unittest.TestCase):
 
     def test_set_module_on_object_proxy(self):
         target = objects.target
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         wrapper.__module__ = "override_module"
         self.assertEqual(target.__module__, "override_module")
 
     def test_set_doc_on_object_proxy(self):
         target = objects.target
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         wrapper.__doc__ = "override doc"
         self.assertEqual(target.__doc__, "override doc")
 
@@ -264,7 +264,7 @@ class TestSetModuleAndDoc(unittest.TestCase):
         self.assertEqual(target.__module__, "override_module")
 
     def test_set_module_on_user_subclass(self):
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
         target = objects.target
         wrapper = MyProxy(target)
@@ -306,21 +306,21 @@ class TestDeleteModuleAndDoc(unittest.TestCase):
 
     def test_delete_module_on_object_proxy(self):
         target = self.make_function()
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         del wrapper.__module__
         self.assertIsNone(target.__module__)
         self.assertIsNone(wrapper.__module__)
 
     def test_delete_doc_on_object_proxy(self):
         target = self.make_function()
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         del wrapper.__doc__
         self.assertIsNone(target.__doc__)
         self.assertIsNone(wrapper.__doc__)
 
     def test_delete_module_after_set(self):
         target = self.make_function()
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         wrapper.__module__ = "override_module"
         del wrapper.__module__
         self.assertIsNone(target.__module__)
@@ -328,7 +328,7 @@ class TestDeleteModuleAndDoc(unittest.TestCase):
 
     def test_delete_doc_after_set(self):
         target = self.make_function()
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         wrapper.__doc__ = "override doc"
         del wrapper.__doc__
         self.assertIsNone(target.__doc__)
@@ -353,7 +353,7 @@ class TestDeleteModuleAndDoc(unittest.TestCase):
         self.assertIsNone(wrapper.__doc__)
 
     def test_delete_module_on_user_subclass(self):
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
         target = self.make_function()
         wrapper = MyProxy(target)
@@ -362,7 +362,7 @@ class TestDeleteModuleAndDoc(unittest.TestCase):
         self.assertIsNone(wrapper.__module__)
 
     def test_delete_doc_on_user_subclass(self):
-        class MyProxy(wrapt.ObjectProxy):
+        class MyProxy(wrapt.BaseObjectProxy):
             pass
         target = self.make_function()
         wrapper = MyProxy(target)
@@ -374,12 +374,12 @@ class TestDeleteModuleAndDoc(unittest.TestCase):
         # A class does not permit deletion of __module__. The outcome via
         # the proxy must match a direct deletion on an equivalent class.
         expected = self.delete_outcome(self.make_class(), "__module__")
-        wrapper = wrapt.ObjectProxy(self.make_class())
+        wrapper = wrapt.BaseObjectProxy(self.make_class())
         self.assertEqual(self.delete_outcome(wrapper, "__module__"), expected)
 
     def test_delete_doc_on_class_target(self):
         expected = self.delete_outcome(self.make_class(), "__doc__")
-        wrapper = wrapt.ObjectProxy(self.make_class())
+        wrapper = wrapt.BaseObjectProxy(self.make_class())
         self.assertEqual(self.delete_outcome(wrapper, "__doc__"), expected)
 
     def test_proxy_state_matches_fresh_proxy_after_delete(self):
@@ -388,10 +388,10 @@ class TestDeleteModuleAndDoc(unittest.TestCase):
         # its current state, so the C extension's cached copies of the
         # attributes do not go stale or linger.
         target = self.make_function()
-        wrapper = wrapt.ObjectProxy(target)
+        wrapper = wrapt.BaseObjectProxy(target)
         del wrapper.__module__
         del wrapper.__doc__
-        fresh = wrapt.ObjectProxy(target)
+        fresh = wrapt.BaseObjectProxy(target)
         self.assertEqual(dict(wrapper.__self_dict__), dict(fresh.__self_dict__))
 
 
@@ -411,7 +411,7 @@ class TestWrappedReplacement(unittest.TestCase):
             pass
         func2.__module__ = "module2"
 
-        wrapper = wrapt.ObjectProxy(func1)
+        wrapper = wrapt.BaseObjectProxy(func1)
         self.assertEqual(wrapper.__module__, "module1")
         wrapper.__wrapped__ = func2
         self.assertEqual(wrapper.__module__, "module2")
@@ -425,7 +425,7 @@ class TestWrappedReplacement(unittest.TestCase):
             "doc2"
             pass
 
-        wrapper = wrapt.ObjectProxy(func1)
+        wrapper = wrapt.BaseObjectProxy(func1)
         self.assertEqual(wrapper.__doc__, "doc1")
         wrapper.__wrapped__ = func2
         self.assertEqual(wrapper.__doc__, "doc2")

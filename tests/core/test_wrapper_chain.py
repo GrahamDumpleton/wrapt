@@ -20,7 +20,7 @@ class ClassWithAttribute:
 def build_chain(depth):
     result = function
     for _ in range(depth):
-        result = wrapt.ObjectProxy(result)
+        result = wrapt.BaseObjectProxy(result)
     return result
 
 
@@ -68,7 +68,7 @@ class TestWrapperChain(unittest.TestCase):
         # existed yields the MISSING sentinel as the chain terminal.
 
         handle = wrapt.wrap_object_attribute(
-            __name__, "ClassWithAttribute.value", wrapt.ObjectProxy
+            __name__, "ClassWithAttribute.value", wrapt.BaseObjectProxy
         )
 
         chain = list(wrapt.wrapper_chain(handle))

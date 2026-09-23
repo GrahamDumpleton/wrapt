@@ -1,7 +1,7 @@
 """Stress concurrent assignment to __wrapped__ on a shared proxy.
 
 Multiple threads concurrently assign fresh, uniquely held objects to
-``__wrapped__`` on a single shared C ``ObjectProxy``. Before wrapt 2.4.0
+``__wrapped__`` on a single shared C ``BaseObjectProxy``. Before wrapt 2.4.0
 the C extension updated the wrapped object using an unprotected pointer
 swap, so on a free-threaded build two threads could read the same old
 value and both release it, freeing it twice and crashing the interpreter
@@ -24,7 +24,7 @@ SECONDS = float(os.environ.get("WRAPT_STRESS_SECONDS", "5"))
 
 def main():
     try:
-        from wrapt._wrappers import ObjectProxy
+        from wrapt._wrappers import BaseObjectProxy
     except ImportError:
         print("skipped: C extension not available", flush=True)
         return 77
@@ -37,7 +37,7 @@ def main():
         flush=True,
     )
 
-    shared = ObjectProxy(object())
+    shared = BaseObjectProxy(object())
 
     stop = threading.Event()
     barrier = threading.Barrier(THREADS + 1)
