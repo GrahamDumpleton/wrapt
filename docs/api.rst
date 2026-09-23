@@ -310,6 +310,29 @@ Object Proxies
     for custom proxy subclasses. See :doc:`wrappers` and the "Object
     Proxies" section of :doc:`typing`.
 
+``wrapt.BaseObjectProxy.__self_setattr__(name, value)``
+    Stores an attribute on the proxy instance itself rather than
+    forwarding the assignment to the wrapped object. Equivalent to
+    ``object.__setattr__(proxy, name, value)``. Needed when the
+    attribute must live on the proxy under a name that does not carry
+    the ``_self_`` prefix, for example a method name which other code
+    will look up on the proxy. The proxy's own instance dictionary,
+    including anything stored this way, can be read back through the
+    ``__self_dict__`` attribute (see the "Introspecting the ObjectProxy
+    instance __dict__" section of :doc:`issues`).
+
+    This method exists for historical reasons. On Python 3.12 and
+    earlier, calling ``object.__setattr__()`` on an instance of the C
+    extension implementation of a proxy fails with ``TypeError: can't
+    apply this __setattr__ to ObjectProxy object``, because CPython
+    rejected it for any instance whose type overrides the C level
+    ``tp_setattro`` slot. Python 3.13 restricted that check to type
+    objects, so ``object.__setattr__()`` now works on a proxy there, as
+    it always has with the pure Python implementation. Code which only
+    needs to support Python 3.13 or later can use either form.
+    ``__self_setattr__()`` remains the portable spelling for as long
+    as older Python versions are supported.
+
 ``wrapt.ObjectProxy``
     A thin subclass of ``BaseObjectProxy`` retained for backward
     compatibility. The only behavioural difference from
