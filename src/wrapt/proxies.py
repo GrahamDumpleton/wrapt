@@ -22,9 +22,6 @@ class ObjectProxy(BaseObjectProxy):
     def __object_proxy__(self):
         return ObjectProxy
 
-    def __new__(cls, *args, **kwargs):
-        return super().__new__(cls)
-
     def __iter__(self):
         return iter(self.__wrapped__)
 
@@ -96,9 +93,10 @@ class AutoObjectProxy(BaseObjectProxy):
     compatibility then use `ObjectProxy` instead.
     """
 
-    def __new__(cls, wrapped):
+    def __new__(cls, wrapped, *args, **kwargs):
         """Injects special dunder methods into a dynamically created subclass
-        as needed based on the wrapped object.
+        as needed based on the wrapped object. Any further arguments are
+        those a derived class has added to `__init__()` and are ignored.
         """
 
         namespace = {}
@@ -242,9 +240,11 @@ class LazyObjectProxy(AutoObjectProxy):
     when it is first needed.
     """
 
-    def __new__(cls, callback=None, *, interface=...):
+    def __new__(cls, callback=None, *args, interface=..., **kwargs):
         """Injects special dunder methods into a dynamically created subclass
-        as needed based on the wrapped object.
+        as needed based on the declared interface of the wrapped object. Any
+        further arguments are those a derived class has added to `__init__()`
+        and are ignored.
         """
 
         if interface is ...:

@@ -188,6 +188,19 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     def __class_getitem__(cls, item, /):
         return types.GenericAlias(cls, item)
 
+    def __new__(cls, *args, **kwargs):
+        # Accept and ignore any arguments. A derived class which adds
+        # arguments to __init__() has the same arguments passed to
+        # __new__(), and a derived class which overrides __new__() may
+        # pass through whatever it was given, as it must when deriving
+        # from AutoObjectProxy which needs the wrapped object in __new__().
+        # Without this, once __new__() is overridden anywhere in the class
+        # hierarchy, the call falls through to object.__new__() which
+        # rejects extra arguments. The C extension already ignores the
+        # arguments in its tp_new slot, so this keeps the two consistent.
+
+        return super().__new__(cls)
+
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""
 

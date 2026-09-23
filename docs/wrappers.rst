@@ -185,6 +185,17 @@ then properties can be used.
 If it is necessary to access the original wrapped object from within an
 overridden method or property, then ``self.__wrapped__`` is used.
 
+If a custom proxy needs to override ``__new__()``, pass through to the base
+class whatever arguments were received, as in
+``super().__new__(cls, wrapped)``, rather than calling it with the class
+alone. The proxy base classes accept and ignore any arguments to
+``__new__()``, except for ``AutoObjectProxy`` and ``LazyObjectProxy`` which
+need the wrapped object, or the declared interface, to build the class for
+the instance. Passing everything through means the same custom proxy works
+whichever base class it derives from. A custom proxy which only adds
+arguments to ``__init__()`` needs no special handling, as the same arguments
+are passed to ``__new__()`` and ignored.
+
 Proxy Object Attributes
 -----------------------
 

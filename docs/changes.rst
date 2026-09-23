@@ -38,6 +38,27 @@ Version 2.5.0
   you are not dependent on the name which appears in the ``repr()`` output
   for the type, or on what ``__name__`` on the type returns.
 
+* A derived class of ``wrapt.BaseObjectProxy`` which overrides ``__new__()``
+  and passes the arguments it was given through to the base class, as in
+  ``super().__new__(cls, wrapped)``, now works with the pure Python
+  implementation as it already did with the C extension. Previously the
+  call fell through to ``object.__new__()``, which rejects extra arguments
+  once ``__new__()`` is overridden, and raised ``TypeError``. The pure
+  Python ``BaseObjectProxy`` now defines ``__new__()`` to accept and ignore
+  any arguments, matching the ``tp_new`` slot of the C extension. Such a
+  ``__new__()`` was previously defined only on the ``ObjectProxy``
+  compatibility class, which hid the problem from anyone still using it.
+
+  Similarly, a derived class of ``wrapt.AutoObjectProxy`` or
+  ``wrapt.LazyObjectProxy`` which adds arguments to ``__init__()``, such as
+  ``def __init__(self, wrapped, label)``, failed with ``TypeError`` in both
+  implementations, because the ``__new__()`` methods of those classes, which
+  do need the wrapped object or the declared interface to build the class
+  for the instance, accepted only their own arguments. They now accept and
+  ignore any further arguments. The type stubs are updated to match, with
+  ``__new__()`` on all three classes declared as returning ``Self`` so that
+  an override which passes its arguments through type checks.
+
 **Bugs Fixed**
 
 * Deleting the ``__module__`` or ``__doc__`` attribute of a proxy object,

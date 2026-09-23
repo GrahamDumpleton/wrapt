@@ -1,7 +1,7 @@
 """
 Type-check coverage for BaseObjectProxy as a context manager.
 
-Mirrors the pattern from issue #314 (smart_open wraps a file object in an
+Mirrors the pattern from issue #314 (smart_open wraps a file object in a
 BaseObjectProxy subclass and the consumer uses `with open(...) as f:`). Prior
 to adding context-manager dunders to the stub, pylance/mypy/pyright all
 rejected the `with` statement with `"ObjectProxy" has no attribute

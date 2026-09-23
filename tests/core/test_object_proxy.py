@@ -1702,7 +1702,7 @@ class TestDerivedClassCreation(unittest.TestCase):
 
     def test_derived_new(self):
 
-        class DerivedObjectProxy(wrapt.ObjectProxy):
+        class DerivedObjectProxy(wrapt.BaseObjectProxy):
 
             def __new__(cls, wrapped):
                 instance = super(DerivedObjectProxy, cls).__new__(cls, wrapped)
