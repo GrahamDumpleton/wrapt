@@ -919,8 +919,8 @@ a consistent view across a mutation should still serialise access
 externally (for example, with a ``threading.Lock`` held across both
 the write and any concurrent read).
 
-Introspecting the ObjectProxy instance \_\_dict\_\_
-----------------------------------------------------
+Introspecting the BaseObjectProxy instance \_\_dict\_\_
+-------------------------------------------------------
 
 ``ObjectProxy`` replaces ``__dict__`` with a property that delegates to
 the wrapped object. This means that ``vars(proxy)`` returns the wrapped
@@ -981,8 +981,8 @@ Note that because the result is a copy, modifying the dictionary returned
 by ``vars()`` in this case will not affect either the proxy or the
 wrapped object.
 
-Ternary ``pow()`` with ObjectProxy
-----------------------------------
+Ternary ``pow()`` with BaseObjectProxy
+--------------------------------------
 
 The three-argument form of the builtin ``pow()`` function does not accept
 an ``ObjectProxy`` in every argument position.

@@ -318,8 +318,8 @@ Object Proxies
     the ``_self_`` prefix, for example a method name which other code
     will look up on the proxy. The proxy's own instance dictionary,
     including anything stored this way, can be read back through the
-    ``__self_dict__`` attribute (see the "Introspecting the ObjectProxy
-    instance __dict__" section of :doc:`issues`).
+    ``__self_dict__`` attribute (see the "Introspecting the
+    BaseObjectProxy instance __dict__" section of :doc:`issues`).
 
     This method exists for historical reasons. On Python 3.12 and
     earlier, calling ``object.__setattr__()`` on an instance of the C

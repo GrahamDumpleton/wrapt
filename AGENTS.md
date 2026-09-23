@@ -31,6 +31,31 @@ in the `Justfile` (older pin for Python 3.9). Running them with any other
 mypy version produces false failures, so do not diagnose mismatches there as
 pre-existing breakage before checking the mypy version in use.
 
+## Naming of proxy classes in docs and change notes
+
+Since wrapt 2.0.0 the base object proxy class is exported as
+`wrapt.BaseObjectProxy`. The older `wrapt.ObjectProxy` name is retained only
+for backward compatibility. It is a thin pure Python subclass, defined in
+`src/wrapt/proxies.py`, which adds `__iter__()` on top of `BaseObjectProxy`.
+That `__iter__()` forwarding was an original design mistake which cannot be
+removed without breaking existing code, so new code should derive from
+`BaseObjectProxy` instead.
+
+Internally the class is still called `ObjectProxy` in both
+`src/wrapt/wrappers.py` and `src/wrapt/_wrappers.c`, and is renamed to
+`BaseObjectProxy` on export. Do not rename the internal class. This means
+runtime output such as `<class 'ObjectProxy'>` and CPython error messages
+still say `ObjectProxy` even for a `BaseObjectProxy` instance, and quoting
+that output verbatim in docs is correct.
+
+When writing documentation, change notes in `docs/changes.rst`, docstrings or
+comments, always describe behaviour in terms of the public name under the
+`wrapt` module that a user would write in their own code. For the base proxy
+that is `wrapt.BaseObjectProxy`. Only mention `wrapt.ObjectProxy` when the
+subject is specifically the backward compatibility class or its `__iter__()`
+forwarding. Historical change notes for releases before 2.0.0 are left as
+written.
+
 ## Git
 
 Never commit on your own initiative. Only create a commit when explicitly
