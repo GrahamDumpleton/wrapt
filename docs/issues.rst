@@ -104,7 +104,7 @@ library and has been reported (https://bugs.python.org/issue44847).
 Using issubclass() and isinstance() with proxied types
 -------------------------------------------------------
 
-When wrapping a class (type) object with ``ObjectProxy``, the
+When wrapping a class (type) object with ``BaseObjectProxy``, the
 ``issubclass()`` and ``isinstance()`` checks work correctly when the
 proxy appears on the **right** side of the check:
 
@@ -118,13 +118,13 @@ proxy appears on the **right** side of the check:
     class Child(Base):
         pass
 
-    proxy = wrapt.ObjectProxy(Base)
+    proxy = wrapt.BaseObjectProxy(Base)
 
     issubclass(Child, proxy)       # True
     isinstance(Child(), proxy)     # True
 
 This works because Python calls ``__subclasscheck__`` or
-``__instancecheck__`` on the proxy, and ``ObjectProxy`` delegates these
+``__instancecheck__`` on the proxy, and ``BaseObjectProxy`` delegates these
 to the wrapped type.
 
 There are several cases that **cannot** be fixed when the proxy appears
@@ -141,7 +141,7 @@ on the **left** side of the check:
 
    ::
 
-       proxy = wrapt.ObjectProxy(Child)
+       proxy = wrapt.BaseObjectProxy(Child)
 
        issubclass(proxy, Base)    # True — Base is in Child.__bases__
        issubclass(proxy, Child)   # False — identity check fails
@@ -157,7 +157,7 @@ on the **left** side of the check:
    happens because ``typing._BaseGenericAlias.__instancecheck__`` is
    implemented using ``type(obj)`` rather than ``obj.__class__``.
    Because ``type()`` returns the concrete C-level type, it sees
-   ``ObjectProxy`` instead of the wrapped object's class, and the check
+   ``BaseObjectProxy`` instead of the wrapped object's class, and the check
    fails. This is a known CPython issue
    (https://github.com/python/cpython/issues/89949).
 
@@ -166,7 +166,7 @@ on the **left** side of the check:
        from typing import Dict
        import wrapt
 
-       proxy = wrapt.ObjectProxy({1: 2})
+       proxy = wrapt.BaseObjectProxy({1: 2})
 
        isinstance(proxy, dict)    # True — default __instancecheck__ uses __class__
        isinstance(proxy, Dict)    # False — typing uses type(obj)
@@ -183,7 +183,7 @@ on the **left** side of the check:
 
 More generally, any ``__instancecheck__`` or ``__subclasscheck__``
 implementation that calls ``type(obj)`` instead of inspecting
-``obj.__class__`` will see ``ObjectProxy`` rather than the wrapped
+``obj.__class__`` will see ``BaseObjectProxy`` rather than the wrapped
 type. The same applies to C-level type-check macros such as
 ``PyTuple_Check`` or ``PyDict_Check``, which inspect the internal
 ``ob_type`` field directly. Code paths that rely on these C-level
@@ -193,7 +193,7 @@ library — will not recognise a proxied object as the type it wraps::
     import json
     import wrapt
 
-    proxy = wrapt.ObjectProxy((1, 2, 3))
+    proxy = wrapt.BaseObjectProxy((1, 2, 3))
 
     json.dumps(proxy)    # TypeError — C encoder does not see a tuple
 
@@ -201,27 +201,27 @@ This is an inherent limitation of the transparent proxy pattern: the
 proxy can override ``__class__`` at the Python level, but it cannot
 change the object's C-level type.
 
-Deriving from ObjectProxy alongside an ABCMeta-based class
-----------------------------------------------------------
+Deriving from BaseObjectProxy alongside an ABCMeta-based class
+--------------------------------------------------------------
 
-A custom proxy that derives from both ``ObjectProxy`` and a second base
+A custom proxy that derives from both ``BaseObjectProxy`` and a second base
 class whose metaclass is ``abc.ABCMeta`` will fail when used with
 ``isinstance()`` or ``issubclass()``::
 
     from abc import ABC
-    from wrapt import ObjectProxy
+    from wrapt import BaseObjectProxy
 
     class Base(ABC):
         pass
 
-    class Proxy(ObjectProxy, Base):
+    class Proxy(BaseObjectProxy, Base):
         pass
 
     isinstance(1, Proxy)
     # TypeError: descriptor '__subclasscheck__' for '_wrappers.ObjectProxy'
     # objects doesn't apply to a 'type' object
 
-Under the pure Python implementation of ``ObjectProxy`` (used when the
+Under the pure Python implementation of ``BaseObjectProxy`` (used when the
 C extension is not available, including on PyPy or when
 ``WRAPT_DISABLE_EXTENSIONS`` is set in the environment), the failure
 surfaces earlier, at the ``class Proxy(...)`` statement itself, with a
@@ -230,9 +230,9 @@ different message::
     TypeError: metaclass conflict: the metaclass of a derived class
     must be a (non-strict) subclass of the metaclasses of all its bases
 
-The pure Python ``ObjectProxy`` carries a custom metaclass, used to
+The pure Python ``BaseObjectProxy`` carries a custom metaclass, used to
 make type-level access to ``__module__`` and ``__doc__`` return strings
-rather than property objects, whereas the C extension's ``ObjectProxy``
+rather than property objects, whereas the C extension's ``BaseObjectProxy``
 has plain ``type`` as its metaclass. When a second base class with
 ``ABCMeta`` as its metaclass is mixed in, the pure Python build cannot
 find a common metaclass and aborts class creation. The C build
@@ -245,32 +245,32 @@ abstract base classes exported from ``collections.abc`` (for example
 ``Hashable``, ``Iterable``, ``Container``), since they too use
 ``ABCMeta`` as their metaclass.
 
-The cause is the way ``ObjectProxy`` implements ``__instancecheck__``
+The cause is the way ``BaseObjectProxy`` implements ``__instancecheck__``
 and ``__subclasscheck__``. These are defined as instance methods on the
-proxy class so that an ``ObjectProxy`` instance can appear on the right
+proxy class so that a ``BaseObjectProxy`` instance can appear on the right
 hand side of an ``isinstance()`` or ``issubclass()`` check and have the
 check delegate to the wrapped type. They rely on ``self`` being a real
 proxy instance, and the C extension enforces this at the descriptor
 level.
 
-When ``ObjectProxy`` is mixed in as a base class alongside an
+When ``BaseObjectProxy`` is mixed in as a base class alongside an
 ``ABCMeta``-based class, those methods are inherited as ordinary
 instance methods on the resulting class. Unlike the default
 ``type.__instancecheck__``, ``ABCMeta.__instancecheck__`` performs its
 work by calling ``cls.__subclasscheck__(...)`` via normal attribute
 access on the class. That attribute access finds the inherited
-``__subclasscheck__`` from ``ObjectProxy`` and invokes it with a class
+``__subclasscheck__`` from ``BaseObjectProxy`` and invokes it with a class
 as the first argument. The C descriptor sees that the first argument is
-not an ``ObjectProxy`` instance and raises the ``TypeError`` shown
+not a ``BaseObjectProxy`` instance and raises the ``TypeError`` shown
 above.
 
-Mixing ``ObjectProxy`` with one of these abstract base classes at
+Mixing ``BaseObjectProxy`` with one of these abstract base classes at
 runtime is almost always the wrong approach to begin with.
-``ObjectProxy`` is designed to be used as a single base class, with
+``BaseObjectProxy`` is designed to be used as a single base class, with
 derived classes overriding only the specific methods that need to
 change. Adding a second, unrelated base class brings in extra
 protocol-level behaviour which interacts poorly with what
-``ObjectProxy`` already does internally.
+``BaseObjectProxy`` already does internally.
 
 The usual motivation for adding an abstract base class such as
 ``Hashable`` to the base list is to satisfy a static type checker which
@@ -279,19 +279,19 @@ abstract base class. At runtime the inheritance is typically redundant.
 The abstract base classes in ``collections.abc`` use a structural
 ``__subclasshook__`` (``Hashable`` is satisfied by anything that
 defines ``__hash__``, ``Iterable`` by anything that defines
-``__iter__``, and so on), and ``ObjectProxy`` already defines those
+``__iter__``, and so on), and ``BaseObjectProxy`` already defines those
 methods where appropriate, forwarding to the wrapped object. So
 ``isinstance(proxy, Hashable)`` is already ``True`` for an
-``ObjectProxy`` instance without any explicit inheritance::
+``BaseObjectProxy`` instance without any explicit inheritance::
 
     from collections.abc import Hashable
     import wrapt
 
-    isinstance(wrapt.ObjectProxy("s"), Hashable)    # True
+    isinstance(wrapt.BaseObjectProxy("s"), Hashable)    # True
 
 The runtime inheritance from the abstract base class adds nothing
 useful in this case, and brings in the ``ABCMeta`` metaclass which then
-collides with ``ObjectProxy`` as described above.
+collides with ``BaseObjectProxy`` as described above.
 
 The recommended approach is to keep the runtime class hierarchy clean
 and present the type-checker-required relationship using typing
@@ -299,7 +299,7 @@ constructs rather than runtime inheritance. When the annotation site is
 under your own control, the cleanest option is to define a
 ``typing.Protocol`` that captures the required structural shape and use
 that as the annotation, instead of inheriting from an abstract base
-class. ``ObjectProxy`` will structurally satisfy such a ``Protocol``
+class. ``BaseObjectProxy`` will structurally satisfy such a ``Protocol``
 through the dunder methods it already forwards, with no inheritance and
 no runtime change at all.
 
@@ -309,15 +309,15 @@ declared twice in the same file, guarded by ``typing.TYPE_CHECKING``::
 
     from typing import TYPE_CHECKING
 
-    from wrapt import ObjectProxy
+    from wrapt import BaseObjectProxy
 
     if TYPE_CHECKING:
         from collections.abc import Hashable
 
-        class Proxy(ObjectProxy, Hashable):
+        class Proxy(BaseObjectProxy, Hashable):
             ...
     else:
-        class Proxy(ObjectProxy):
+        class Proxy(BaseObjectProxy):
             pass
 
 ``TYPE_CHECKING`` is ``False`` at runtime and ``True`` during static
@@ -325,7 +325,7 @@ analysis, and both mypy and pyright honour this. The type checker sees
 the multi-base version, which satisfies whatever annotation required
 ``Hashable`` to appear in the inheritance chain. The Python interpreter
 only ever executes the ``else`` branch, so at runtime ``Proxy`` is a
-plain ``ObjectProxy`` subclass with no ``ABCMeta`` in the picture and
+plain ``BaseObjectProxy`` subclass with no ``ABCMeta`` in the picture and
 the original ``TypeError`` does not occur.
 
 The same trick generalises to any case where the view of a class
@@ -336,10 +336,10 @@ file, which the type checker will honour in preference to the ``.py``
 source. For a single case the inline ``TYPE_CHECKING`` form is usually
 enough.
 
-Using the json module with ObjectProxy
---------------------------------------
+Using the json module with BaseObjectProxy
+------------------------------------------
 
-Serialising an ``ObjectProxy`` with the standard library ``json`` module
+Serialising a ``BaseObjectProxy`` with the standard library ``json`` module
 does not work reliably, even when the wrapped object is a type that
 ``json`` natively supports. The reason is the same C-level type check
 issue described in the preceding section: the C-accelerated encoder
@@ -354,13 +354,13 @@ even though the proxy wraps a plain ``dict``::
     import json
     import wrapt
 
-    proxy = wrapt.ObjectProxy({"b": "123"})
+    proxy = wrapt.BaseObjectProxy({"b": "123"})
 
     json.dumps({"a": proxy})    # TypeError: ... is not JSON serializable
 
 The ``json`` module falls back to its pure Python encoder in a handful
 of cases, most notably when ``indent`` is supplied. The pure Python
-encoder uses ``isinstance()`` checks, which ``ObjectProxy`` satisfies
+encoder uses ``isinstance()`` checks, which ``BaseObjectProxy`` satisfies
 for the wrapped type, so the same call succeeds if ``indent`` is
 passed::
 
@@ -371,7 +371,7 @@ Relying on ``indent`` as a way to force a working encoder is fragile
 output formatting), so it should not be treated as a real fix.
 
 The supported approach is to supply a ``default`` fallback to
-``json.dumps()`` that unwraps any ``ObjectProxy`` instance. The
+``json.dumps()`` that unwraps any ``BaseObjectProxy`` instance. The
 ``default`` callable is invoked by the encoder for any value it does
 not otherwise know how to serialise, and its return value is then
 encoded in place of the original::
@@ -380,7 +380,7 @@ encoded in place of the original::
     import wrapt
 
     def unwrap_proxy(obj):
-        if isinstance(obj, wrapt.ObjectProxy):
+        if isinstance(obj, wrapt.BaseObjectProxy):
             to_json = getattr(obj, "__to_json__", None)
             if to_json is not None:
                 return to_json()
@@ -398,7 +398,7 @@ attributes to appear alongside the wrapped value can define a
 recognised by the ``json`` module) that returns the representation to
 encode::
 
-    class Tagged(wrapt.ObjectProxy):
+    class Tagged(wrapt.BaseObjectProxy):
         def __init__(self, wrapped, metadata):
             super().__init__(wrapped)
             self._self_metadata = metadata
@@ -410,7 +410,7 @@ encode::
 
 The ``default`` callback is only consulted for values the encoder
 cannot otherwise handle. When ``indent`` is supplied and the pure
-Python encoder is in use, an ``ObjectProxy`` around a ``dict`` or
+Python encoder is in use, a ``BaseObjectProxy`` around a ``dict`` or
 ``list`` is recognised directly via ``isinstance()`` and walked
 structurally, so ``__to_json__()`` will not be called in that case.
 Code that needs the ``__to_json__()`` hook to run consistently should
@@ -425,17 +425,17 @@ present itself as a different C-level type. Any code path that
 similarly bypasses ``isinstance()`` in favour of C-level type-check
 macros will exhibit the same behaviour.
 
-Serialising an ObjectProxy
---------------------------
+Serialising a BaseObjectProxy
+-----------------------------
 
-Attempting to pickle an instance of ``ObjectProxy`` (or any subclass of
+Attempting to pickle an instance of ``BaseObjectProxy`` (or any subclass of
 ``BaseObjectProxy``) that does not override ``__reduce__`` will fail
 with ``NotImplementedError``::
 
     import pickle
     import wrapt
 
-    proxy = wrapt.ObjectProxy({"a": 1})
+    proxy = wrapt.BaseObjectProxy({"a": 1})
 
     pickle.dumps(proxy)
     # NotImplementedError: object proxy must define __reduce__()
@@ -513,10 +513,10 @@ needed at all. In most applications decorated functions are rebuilt
 from source at import time and only plain values travel through the
 serialisation boundary, so the issue does not arise.
 
-hasattr() on ObjectProxy and pre-defined dunder methods
--------------------------------------------------------
+hasattr() on BaseObjectProxy and pre-defined dunder methods
+-----------------------------------------------------------
 
-Although ``ObjectProxy`` is described as a transparent object proxy, in
+Although ``BaseObjectProxy`` is described as a transparent object proxy, in
 practice it always defines a large number of Python "dunder" (double
 underscore) methods on the proxy class itself, regardless of whether the
 wrapped object defines the equivalent method. As a result, ``hasattr()``
@@ -526,7 +526,7 @@ return ``False``::
 
     import wrapt
 
-    hasattr(wrapt.ObjectProxy(1), "__contains__")    # True
+    hasattr(wrapt.BaseObjectProxy(1), "__contains__")    # True
     hasattr(1, "__contains__")                       # False
 
 This is a deliberate design trade-off rather than a bug.
@@ -545,17 +545,17 @@ object whose dunder methods exactly mirror those of the wrapped type,
 is not free. Constructing a fresh class for every proxy instance adds
 meaningful memory and construction-time overhead, which is a problem
 when proxies are used pervasively (for example, when decorating every
-function and method in a large codebase). ``ObjectProxy`` is intended
+function and method in a large codebase). ``BaseObjectProxy`` is intended
 to be cheap enough to use in that setting, so it instead defines a
 fixed set of dunder methods on a single shared class.
 
-For the dunder methods that ``ObjectProxy`` pre-defines, this is
+For the dunder methods that ``BaseObjectProxy`` pre-defines, this is
 usually harmless in practice. Code that wants to use one of these
 features, such as arithmetic, containment, length, comparison, hashing,
 attribute access, subscripting or the context-manager protocol, almost
 always just *uses* the feature directly. If the wrapped object does
 not implement the corresponding dunder method, the shim on
-``ObjectProxy`` will delegate through to ``self.__wrapped__`` and an
+``BaseObjectProxy`` will delegate through to ``self.__wrapped__`` and an
 ``AttributeError`` will be raised from there, which is the same
 exception Python would raise for an object that didn't define the
 method in the first place. Code that simply does ``len(obj)``,
@@ -613,7 +613,7 @@ There are two ways to opt in:
    the cheapest in terms of runtime cost. For example, to wrap a
    callable so that ``callable(proxy)`` returns ``True``::
 
-       class CallableProxy(wrapt.ObjectProxy):
+       class CallableProxy(wrapt.BaseObjectProxy):
            def __call__(self, *args, **kwargs):
                return self.__wrapped__(*args, **kwargs)
 
@@ -645,9 +645,9 @@ There are two ways to opt in:
    therefore intended for situations where the flexibility is genuinely
    needed, typically a small number of long-lived proxies over objects
    of varying types, rather than as a drop-in replacement for
-   ``ObjectProxy``.
+   ``BaseObjectProxy``.
 
-The short version is that ``ObjectProxy`` chooses a fixed set of
+The short version is that ``BaseObjectProxy`` chooses a fixed set of
 pre-defined dunder methods as a compromise between transparency and
 efficiency. The dunder methods whose presence is benign in practice
 are defined unconditionally; the dunder methods whose presence would
@@ -666,7 +666,7 @@ The ``__fspath__()`` special method defined by the ``os.PathLike``
 protocol is one of the dunder methods whose *existence* is meaningful,
 as described in the preceding section, and so is not defined by the
 base object proxy. Wrapping a path-like object such as a
-``pathlib.Path`` with ``ObjectProxy`` therefore produces a proxy which
+``pathlib.Path`` with ``BaseObjectProxy`` therefore produces a proxy which
 cannot be used where a path is expected, and it fails in a way which
 can be confusing::
 
@@ -674,12 +674,12 @@ can be confusing::
     import pathlib
     import wrapt
 
-    proxy = wrapt.ObjectProxy(pathlib.Path("/path/to/file"))
+    proxy = wrapt.BaseObjectProxy(pathlib.Path("/path/to/file"))
 
     isinstance(proxy, os.PathLike)    # True
     os.fspath(proxy)                  # TypeError
 
-    open(wrapt.ObjectProxy("/path/to/file"))    # TypeError
+    open(wrapt.BaseObjectProxy("/path/to/file"))    # TypeError
 
 The inconsistency between the two results has a specific cause. The
 ``isinstance()`` check is dispatched through
@@ -766,7 +766,7 @@ fails::
     import collections.abc
     import wrapt
 
-    proxy = wrapt.ObjectProxy(bytearray(b"data"))
+    proxy = wrapt.BaseObjectProxy(bytearray(b"data"))
 
     isinstance(proxy, collections.abc.Buffer)    # True (Python 3.12+)
     memoryview(proxy)                            # TypeError
@@ -812,11 +812,11 @@ passing ``proxy.__wrapped__`` to the consumer.
 \_\_qualname\_\_ snapshot vs live-read divergence
 --------------------------------------------------
 
-The Python and C implementations of ``ObjectProxy`` handle the
+The Python and C implementations of ``BaseObjectProxy`` handle the
 ``__qualname__`` attribute differently. CPython does not allow
 ``__qualname__`` to be overridden via a Python property — it must be an
 actual string object stored on the instance. To work around this, the
-pure-Python ``ObjectProxy.__init__`` copies the wrapped object's
+pure-Python ``BaseObjectProxy.__init__`` copies the wrapped object's
 ``__qualname__`` into the proxy's instance dictionary at construction
 time using ``object.__setattr__()``. This creates a *snapshot* of the
 value.
@@ -835,7 +835,7 @@ implementations diverge::
 
     def foo(): pass
 
-    proxy = wrapt.ObjectProxy(foo)
+    proxy = wrapt.BaseObjectProxy(foo)
     foo.__qualname__ = "Changed"
 
     # Pure-Python: proxy.__qualname__ returns the original value (snapshot)
@@ -867,7 +867,7 @@ the interpreter on free-threaded builds when the same instance was
 shared across threads:
 
 * Assigning to ``__wrapped__`` (or any other proxy attribute) on an
-  ``ObjectProxy`` while another thread is calling, iterating, or
+  ``BaseObjectProxy`` while another thread is calling, iterating, or
   performing attribute access on the same proxy.
 
 * Reassigning fields on a ``FunctionWrapper`` (such as the ``enabled``
@@ -922,7 +922,7 @@ the write and any concurrent read).
 Introspecting the BaseObjectProxy instance \_\_dict\_\_
 -------------------------------------------------------
 
-``ObjectProxy`` replaces ``__dict__`` with a property that delegates to
+``BaseObjectProxy`` replaces ``__dict__`` with a property that delegates to
 the wrapped object. This means that ``vars(proxy)`` returns the wrapped
 object's ``__dict__`` rather than the proxy's own instance dictionary::
 
@@ -932,7 +932,7 @@ object's ``__dict__`` rather than the proxy's own instance dictionary::
         def __init__(self, name):
             self.name = name
 
-    class MyProxy(wrapt.ObjectProxy):
+    class MyProxy(wrapt.BaseObjectProxy):
         def __init__(self, wrapped):
             super().__init__(wrapped)
             self._self_tag = "example"
@@ -947,7 +947,7 @@ it difficult to introspect what attributes are stored on the proxy
 instance itself.
 
 To allow introspection of the proxy's own instance dictionary,
-``ObjectProxy`` exposes it as ``__self_dict__``::
+``BaseObjectProxy`` exposes it as ``__self_dict__``::
 
     proxy.__self_dict__    # {'_self_tag': 'example', ...}
 
@@ -957,10 +957,10 @@ the returned dictionary are reflected on the proxy.
 
 If the combined view of the wrapped object's ``__dict__`` together with
 the proxy's own ``_self_`` attributes is desired as the result of
-``vars()``, a derived ``ObjectProxy`` can override ``__dict__`` with its
+``vars()``, a derived ``BaseObjectProxy`` can override ``__dict__`` with its
 own property::
 
-    class IntrospectableProxy(wrapt.ObjectProxy):
+    class IntrospectableProxy(wrapt.BaseObjectProxy):
         def __init__(self, wrapped):
             super().__init__(wrapped)
             self._self_tag = "example"
@@ -985,10 +985,10 @@ Ternary ``pow()`` with BaseObjectProxy
 --------------------------------------
 
 The three-argument form of the builtin ``pow()`` function does not accept
-an ``ObjectProxy`` in every argument position.
+a ``BaseObjectProxy`` in every argument position.
 
-The base may be an ``ObjectProxy``, and when it is, the exponent may be
-one as well. The ``__pow__`` method on ``ObjectProxy`` unwraps ``self``
+The base may be a ``BaseObjectProxy``, and when it is, the exponent may be
+one as well. The ``__pow__`` method on ``BaseObjectProxy`` unwraps ``self``
 and, if it is also a proxy, the exponent, before delegating to
 ``pow()``. If the base is not a proxy but the exponent is, Python calls
 the ``__pow__`` method of the base's type first, and unlike the two
@@ -1007,16 +1007,16 @@ PyPy. A proxy passed as the modulo argument therefore always results in
 a ``TypeError``.
 
 The practical consequence is that callers should ensure the base is an
-``ObjectProxy`` whenever the exponent is, and should unwrap the modulo
+``BaseObjectProxy`` whenever the exponent is, and should unwrap the modulo
 argument themselves where necessary.
 
 ::
 
     import wrapt
 
-    base = wrapt.ObjectProxy(2)
-    exponent = wrapt.ObjectProxy(3)
-    modulo = wrapt.ObjectProxy(5)
+    base = wrapt.BaseObjectProxy(2)
+    exponent = wrapt.BaseObjectProxy(3)
+    modulo = wrapt.BaseObjectProxy(5)
 
     # Supported: base only, or base and exponent, as proxies.
     pow(base, 3, 5)

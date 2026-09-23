@@ -276,7 +276,7 @@ reason about ``proxy.__wrapped__``:
 
     import wrapt
 
-    proxy: wrapt.ObjectProxy[int] = wrapt.ObjectProxy(5)
+    proxy: wrapt.BaseObjectProxy[int] = wrapt.BaseObjectProxy(5)
 
     value: int = proxy.__wrapped__
 
@@ -288,7 +288,7 @@ the idiomatic way to define a proxy for a particular kind of object:
     from io import TextIOWrapper
     from typing import Any
 
-    class FileProxy(wrapt.ObjectProxy[TextIOWrapper[Any]]):
+    class FileProxy(wrapt.BaseObjectProxy[TextIOWrapper[Any]]):
         pass
 
     fp = FileProxy(open("/path/to/file"))
@@ -321,28 +321,28 @@ an explicit annotation:
 
 ::
 
-    proxy: wrapt.ObjectProxy[int] = wrapt.ObjectProxy(5)
+    proxy: wrapt.BaseObjectProxy[int] = wrapt.BaseObjectProxy(5)
 
     bits: int = proxy.__wrapped__.bit_length()  # Inferred as int.
 
 Using a proxy class without a type parameter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Writing ``wrapt.ObjectProxy`` on its own as a type annotation, without a
-``[T]`` parameter, is equivalent to ``wrapt.ObjectProxy[Any]`` from the type
-checker's perspective. It is valid code, but the wrapped object's type is
+Writing ``wrapt.BaseObjectProxy`` on its own as a type annotation, without
+a ``[T]`` parameter, is equivalent to ``wrapt.BaseObjectProxy[Any]`` from the
+type checker's perspective. It is valid code, but the wrapped object's type is
 unknown and ``proxy.__wrapped__`` is typed as ``Any`` rather than a specific
 type:
 
 ::
 
-    proxy: wrapt.ObjectProxy = wrapt.ObjectProxy(5)  # ObjectProxy[Any].
+    proxy: wrapt.BaseObjectProxy = wrapt.BaseObjectProxy(5)  # [Any] implied.
 
     value = proxy.__wrapped__  # Any.
 
 Strict type checker modes (for example ``mypy --strict``) flag the
 unparameterised form as missing type parameters, and require you to write
-``wrapt.ObjectProxy[Any]`` explicitly if that is what you intend. Under
+``wrapt.BaseObjectProxy[Any]`` explicitly if that is what you intend. Under
 default settings the two forms are interchangeable for type checking
 purposes, but subscripting with a concrete type is preferred whenever the
 wrapped type is known.

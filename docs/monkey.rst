@@ -5,7 +5,7 @@ Monkey patching is the technique of modifying a function, method or other
 attribute on a module or class after it has already been defined, typically to
 add behaviour around an existing implementation without changing the original
 source. The **wrapt** module provides a small set of helpers that build on
-the same ``FunctionWrapper`` and ``ObjectProxy`` machinery used by
+the same ``FunctionWrapper`` and ``BaseObjectProxy`` machinery used by
 ``@wrapt.decorator``, so monkey patches benefit from the same correct handling
 of instance methods, class methods, static methods and nested descriptors,
 and preserve introspection of the underlying target.
@@ -159,7 +159,7 @@ returns the replacement for convenience.
 
     import wrapt
 
-    class CountingProxy(wrapt.ObjectProxy):
+    class CountingProxy(wrapt.BaseObjectProxy):
         def __init__(self, wrapped):
             super().__init__(wrapped)
             self._self_count = 0
@@ -206,7 +206,7 @@ value each time.
 
     import wrapt
 
-    class LoggedValue(wrapt.ObjectProxy):
+    class LoggedValue(wrapt.BaseObjectProxy):
         def __repr__(self):
             return f"LoggedValue({self.__wrapped__!r})"
 

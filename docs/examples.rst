@@ -377,7 +377,7 @@ circuit the value checks and the intended error message is reported.
 Serialising an Object Proxy
 ---------------------------
 
-By default an instance of ``wrapt.ObjectProxy`` (or ``wrapt.BaseObjectProxy``)
+By default an instance of ``wrapt.BaseObjectProxy``
 cannot be pickled. The object proxy base classes define ``__reduce__`` such
 that it raises ``NotImplementedError``. This is because there is no generic
 way to pickle a proxy that would correctly capture both the wrapped object

@@ -4,6 +4,40 @@ Release Notes
 Version 2.4.2
 -------------
 
+**Features Changed**
+
+* The documentation now consistently describes the object proxy in terms of
+  ``wrapt.BaseObjectProxy`` rather than ``wrapt.ObjectProxy``. When
+  ``BaseObjectProxy`` was introduced in version 2.0.0, and ``ObjectProxy``
+  became a thin subclass of it retained only for backward compatibility, the
+  documentation, examples and release notes were not updated to match and
+  continued to present ``ObjectProxy`` as the class to use. That has now
+  been corrected, including in the release notes for versions from 2.0.0
+  onwards where they described behaviour of the base proxy class.
+
+  To reiterate, ``wrapt.ObjectProxy`` should not be used in new code. It is
+  retained purely so that existing code continues to work. The only
+  difference from ``BaseObjectProxy`` is that it forwards ``__iter__()`` to
+  the wrapped object unconditionally, which was a mistake in the original
+  design. It means every ``ObjectProxy`` instance appears to be iterable
+  even when the wrapped object is not, which breaks code that checks for
+  iterability. Removing it would break existing users, so the fix in 2.0.0
+  was to move everything else into ``BaseObjectProxy`` and leave
+  ``ObjectProxy`` as the compatibility layer. Custom proxies should derive
+  from ``wrapt.BaseObjectProxy`` and add ``__iter__()`` explicitly, or use
+  ``wrapt.AutoObjectProxy``, if iteration is required. See the "Special
+  Object Methods" section of :doc:`wrappers` for the full background, and
+  the "hasattr() on BaseObjectProxy and pre-defined dunder methods" section
+  of :doc:`issues` for why the presence of such methods matters.
+
+  Note that the class exported as ``BaseObjectProxy`` is still named
+  ``ObjectProxy`` internally, so ``type(proxy)`` and error messages continue
+  to display ``ObjectProxy`` for a ``BaseObjectProxy`` instance. This is
+  cosmetic and has not been changed, although the internal name may be
+  changed in some future major version. You should therefore ensure that
+  you are not dependent on the name which appears in the ``repr()`` output
+  for the type, or on what ``__name__`` on the type returns.
+
 **Bugs Fixed**
 
 * Deleting the ``__module__`` or ``__doc__`` attribute of a proxy object,
