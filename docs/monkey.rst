@@ -122,11 +122,24 @@ without the additional features of ``@wrapt.decorator`` such as the
 
     Service.ping = notify(Service.ping)
 
-The result of applying ``@wrapt.function_wrapper`` is itself a ``wrapt``
-wrapper, so it can be used either as an in place decorator as shown above,
-or passed directly as the ``wrapper`` argument to ``wrap_function_wrapper``
-and friends. For user facing decorators, prefer ``@wrapt.decorator``. For
-wrappers you intend to apply through the monkey patching helpers,
+The result of applying ``@wrapt.function_wrapper`` is a decorator, a
+callable of one argument which returns a ``FunctionWrapper`` around it, so
+it can be used either as an in place decorator as shown above, or passed as
+the ``factory`` argument to ``wrap_object()`` and friends, which call it once
+with the original and install what it returns.
+
+::
+
+    wrapt.wrap_object("logging", "Logger.info", notify)
+
+It cannot be passed as the ``wrapper`` argument to ``wrap_function_wrapper()``.
+That argument is called with the four wrapper arguments on every call of the
+patched function, and the decorator would treat the first of them as a
+function to wrap and return a new ``FunctionWrapper`` in place of the call's
+result. Pass the plain wrapper function there instead.
+
+For user facing decorators, prefer ``@wrapt.decorator``. For wrappers you
+intend to apply through the monkey patching helpers,
 ``@wrapt.function_wrapper`` is the lower overhead option.
 
 Wrapping Arbitrary Attributes
