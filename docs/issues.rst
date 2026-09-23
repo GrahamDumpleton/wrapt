@@ -587,15 +587,23 @@ invoking. The most common examples are:
   the `Wrapping bytes-like objects and the buffer protocol`_ section
   below.
 
-If ``ObjectProxy`` defined these unconditionally, ``callable(proxy)``
+If ``BaseObjectProxy`` defined these unconditionally, ``callable(proxy)``
 would always be ``True`` even when wrapping a non-callable, every
 proxy would appear to be iterable, and every proxy attribute on a
 class body would silently behave as a descriptor. To avoid those
 incorrect answers, these specific methods are **not** defined on
-``ObjectProxy`` by default. The trade-off is that if you want a proxy
-around a callable (or an iterable, or an awaitable, and so on) to
-itself be recognised as callable/iterable/awaitable, you have to opt
-in.
+``BaseObjectProxy`` by default. The trade-off is that if you want a
+proxy around a callable (or an iterable, or an awaitable, and so on)
+to itself be recognised as callable/iterable/awaitable, you have to
+opt in.
+
+The one exception is the legacy ``ObjectProxy`` class, which is
+retained for backward compatibility and does define ``__iter__``
+unconditionally. Every ``ObjectProxy`` instance therefore appears to
+be iterable even when the wrapped object is not, which is exactly the
+problem described above. This is why ``BaseObjectProxy`` should be used
+in preference to ``ObjectProxy``. See the "Special Object Methods"
+section of the "Proxies and Wrappers" document for the background.
 
 There are two ways to opt in:
 

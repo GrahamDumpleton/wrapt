@@ -322,15 +322,15 @@ of the custom proxy, lookup will then fallback to using the class attribute.
 Special Object Methods
 ----------------------
 
-The ``ObjectProxy`` class implements most of the special builtin methods of a
+The ``BaseObjectProxy`` class implements most of the special builtin methods of a
 Python object, such as ``__len__()``, ``__getitem__()``, ``__setitem__()``,
 ``__delitem__()`` etc. This allows the proxy to be used in place of the
 original object with operations on the proxy being passed through to the
 wrapped object as appropriate.
 
-Some special methods are not implemented by the ``ObjectProxy`` class by default
-because their presence could affect the original code which interacted with the
-wrapped object. Examples of methods which are excluded are ``__get__()``,
+Some special methods are not implemented by the ``BaseObjectProxy`` class by
+default because their presence could affect the original code which interacted
+with the wrapped object. Examples of methods which are excluded are ``__get__()``,
 ``__set__()`` and ``__delete__()``, as well as ``__call__()``, iterator methods
 and awaitable methods. If it is necessary for a custom proxy to implement
 one of these special methods, then it can be done by overriding the method in
