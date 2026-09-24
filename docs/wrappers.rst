@@ -196,6 +196,24 @@ whichever base class it derives from. A custom proxy which only adds
 arguments to ``__init__()`` needs no special handling, as the same arguments
 are passed to ``__new__()`` and ignored.
 
+The ``__doc__`` attribute of a proxy delegates to the wrapped object, so
+that ``help()`` on the proxy shows the documentation of the wrapped object.
+A custom proxy which needs to report something else can define ``__doc__``
+as a property in its class body, and that is then used for instances of the
+class instead. Assignment and deletion go to the property as well, so a
+property without a setter makes ``__doc__`` read only on the proxy. The
+property is inherited by further derived classes. This is the mechanism the
+``wrapt.with_doc`` decorator relies on. Note that ``__module__`` cannot be
+overridden in the same way and always delegates to the wrapped object.
+
+::
+
+    class DocumentedProxy(wrapt.BaseObjectProxy):
+
+        @property
+        def __doc__(self):
+            return "Documentation for the proxy."
+
 Proxy Object Attributes
 -----------------------
 

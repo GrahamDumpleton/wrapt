@@ -294,6 +294,77 @@ static int wrapt_type_has_attr(PyTypeObject *type, PyObject *name)
   return 0;
 }
 
+/* Look for a __doc__ descriptor defined by a derived class. Walks the MRO
+ * of the type checking each tp_dict directly for __doc__, skipping the
+ * plain docstring entries which every class carries, being a string or
+ * None for a class without a docstring. The proxy base types hold a plain
+ * string docstring, so any descriptor found must come from a derived
+ * class, which is taken to mean it wants to control what __doc__ reports
+ * for its instances in place of the default delegation to the wrapped
+ * object. Only __doc__ is treated this way, __module__ always delegates.
+ * The descriptor is invoked directly rather than falling back to the
+ * generic attribute lookup, since that would stop at the None or docstring
+ * entry of a derived class which inherits the descriptor from its base.
+ * Returns a new reference, or NULL without an exception set if there is
+ * no such descriptor. */
+
+static PyObject *wrapt_lookup_doc_descriptor(PyTypeObject *type,
+                                             PyObject *name)
+{
+  PyObject *mro = type->tp_mro;
+  Py_ssize_t i, n;
+
+  if (mro == NULL)
+    return NULL;
+
+  n = PyTuple_GET_SIZE(mro);
+
+  for (i = 0; i < n; i++)
+  {
+    PyTypeObject *t = (PyTypeObject *)PyTuple_GET_ITEM(mro, i);
+    PyObject *dict = t->tp_dict;
+    PyObject *entry = NULL;
+
+    if (dict == NULL)
+      continue;
+
+#if PY_VERSION_HEX >= 0x030D0000
+    if (PyDict_GetItemRef(dict, name, &entry) < 0)
+    {
+      PyErr_WriteUnraisable((PyObject *)t);
+      PyErr_Clear();
+      continue;
+    }
+#else
+    entry = PyDict_GetItemWithError(dict, name);
+    if (entry == NULL && PyErr_Occurred())
+    {
+      PyErr_WriteUnraisable((PyObject *)t);
+      PyErr_Clear();
+      continue;
+    }
+    Py_XINCREF(entry);
+#endif
+
+    if (entry == NULL)
+      continue;
+
+    if (entry == Py_None || PyUnicode_Check(entry))
+    {
+      Py_DECREF(entry);
+      continue;
+    }
+
+    if (Py_TYPE(entry)->tp_descr_get)
+      return entry;
+
+    Py_DECREF(entry);
+    return NULL;
+  }
+
+  return NULL;
+}
+
 /* Non-error-setting predicate: is this object an instance of any wrapt
  * proxy type? Walks the MRO directly. PyType_GetModule sets an exception
  * for heap types that lack a module association (e.g. pure-Python user
@@ -3445,7 +3516,22 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
   if (wrapt_name_equals(name, state->str_module))
     return WraptObjectProxy_get_module(self);
   if (wrapt_name_equals(name, state->str_doc))
+  {
+    /* A derived class may define its own __doc__ descriptor, in which
+     * case that is consulted in place of the wrapped object. */
+
+    PyObject *descriptor = wrapt_lookup_doc_descriptor(Py_TYPE(self), name);
+
+    if (descriptor)
+    {
+      result = (Py_TYPE(descriptor)->tp_descr_get)(
+          descriptor, (PyObject *)self, (PyObject *)Py_TYPE(self));
+      Py_DECREF(descriptor);
+      return result;
+    }
+
     return WraptObjectProxy_get_doc(self);
+  }
 
   object = PyObject_GenericGetAttr((PyObject *)self, name);
 
@@ -3527,7 +3613,30 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
   if (wrapt_name_equals(name, state->str_module))
     return WraptObjectProxy_set_module(self, value);
   if (wrapt_name_equals(name, state->str_doc))
+  {
+    /* A derived class may define its own __doc__ descriptor, in which
+     * case assignment and deletion go to it rather than being forwarded
+     * to the wrapped object. A descriptor without __set__ is stored
+     * against the instance as generic attribute assignment would. */
+
+    PyObject *descriptor = wrapt_lookup_doc_descriptor(Py_TYPE(self), name);
+
+    if (descriptor)
+    {
+      int result;
+
+      if (Py_TYPE(descriptor)->tp_descr_set)
+        result = (Py_TYPE(descriptor)->tp_descr_set)(descriptor,
+                                                     (PyObject *)self, value);
+      else
+        result = PyObject_GenericSetAttr((PyObject *)self, name, value);
+
+      Py_DECREF(descriptor);
+      return result;
+    }
+
     return WraptObjectProxy_set_doc(self, value);
+  }
 
   if (wrapt_type_has_attr(Py_TYPE(self), name))
     return PyObject_GenericSetAttr((PyObject *)self, name, value);

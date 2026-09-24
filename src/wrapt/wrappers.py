@@ -95,6 +95,40 @@ def _get_self_dict(self):
 
 _SELF_DICT_PROPERTY = property(_get_self_dict)
 
+# The default __doc__ property which delegates to the wrapped object. A
+# derived class may define its own __doc__ descriptor in its class body
+# to take control of what __doc__ reports for its instances, and that is
+# preserved by the metaclass in place of this default.
+
+_DEFAULT_DOC_PROPERTY = vars(_ObjectProxyMethods)["__doc__"]
+
+
+def _is_doc_descriptor(entry):
+    # Every class carries a __doc__ entry in its dict, being the docstring
+    # or None when there is none. Only a descriptor is taken to be a
+    # deliberate override of the instance level __doc__ property.
+
+    if entry is None or isinstance(entry, str):
+        return False
+    return hasattr(type(entry), "__get__")
+
+
+def _inherited_doc_descriptor(bases):
+    # Find a custom __doc__ descriptor inherited from a base class. The
+    # search stops at the first class which holds the default delegating
+    # property, since a derived class of that should delegate as well. The
+    # C extension performs the equivalent walk of the MRO at the time
+    # __doc__ is accessed.
+
+    for base in bases:
+        for klass in base.__mro__:
+            entry = vars(klass).get("__doc__")
+            if entry is _DEFAULT_DOC_PROPERTY:
+                return None
+            if _is_doc_descriptor(entry):
+                return entry
+    return None
+
 
 class _ObjectProxyMetaType(type):
     # Properties on the metaclass control type-level access to __module__
@@ -145,10 +179,28 @@ class _ObjectProxyMetaType(type):
 
         custom_dict = dictionary.get("__dict__")
 
+        # Similarly, if the subclass defines __doc__ as a descriptor rather
+        # than as a docstring, preserve it so the subclass controls what
+        # __doc__ reports for its instances. Such a descriptor is not the
+        # class docstring, so it is not recorded as one. A descriptor
+        # defined by a base class is inherited, as it would be for any
+        # class not using this metaclass, by copying it into the class
+        # dictionary where it takes precedence over the None or docstring
+        # entry the class body provides.
+
+        if _is_doc_descriptor(real_doc):
+            custom_doc = real_doc
+            real_doc = None
+        else:
+            custom_doc = _inherited_doc_descriptor(bases)
+
         dictionary.update(vars(_ObjectProxyMethods))
 
         if custom_dict is not None:
             dictionary["__dict__"] = custom_dict
+
+        if custom_doc is not None:
+            dictionary["__doc__"] = custom_doc
 
         dictionary.setdefault("__self_dict__", _SELF_DICT_PROPERTY)
 

@@ -4,6 +4,45 @@ Release Notes
 Version 2.5.0
 -------------
 
+**New Features**
+
+* Added ``with_doc``, a decorator for overriding the docstring that
+  ``help()``, ``pydoc`` and other introspection tools see for a wrapped
+  callable without mutating the wrapped function itself. It is the companion
+  of ``with_signature``. The docstring can be supplied directly, or as a
+  factory callable that derives it from the wrapped function at decoration
+  time. When stacked above ``with_signature`` the factory sees the
+  overridden signature and can embed it in the docstring. Assigning to
+  ``__doc__`` on the resulting wrapper replaces the override, and deleting
+  it restores delegation to the wrapped function. Previously the only option
+  was to assign to ``__doc__`` on a wrapper, which writes through to the
+  wrapped function since ``__doc__`` on every proxy delegates to the wrapped
+  object, and so changed what was reported for the wrapped function
+  everywhere. The override is handled for instance methods, class methods
+  and static methods, and propagates through outer wrapt decorators stacked
+  on top. See the "Docstring Override" section of :doc:`bundled` for
+  details.
+
+* ``with_signature`` now accepts a ``doc`` argument for overriding the
+  docstring at the same time as the signature, and the factory callable may
+  return a tuple of ``(signature_or_prototype, docstring)`` so that a single
+  factory can derive both from the wrapped function in one pass. When
+  ``doc`` is supplied, the docstring from the tuple is ignored. When neither
+  is given, ``__doc__`` continues to delegate to the wrapped function as
+  before, including for assignment and deletion.
+
+* A class derived from ``wrapt.BaseObjectProxy`` may now define ``__doc__``
+  as a property, or other descriptor, in its class body, and that is used
+  for instances of the class in place of the default delegation of
+  ``__doc__`` to the wrapped object. This works with both the pure Python
+  implementation and the C extension, and the descriptor is inherited by
+  further derived classes. Previously the pure Python metaclass overwrote
+  such a descriptor with the default delegating property, and the C
+  extension forwarded ``__doc__`` to the wrapped object before consulting
+  the type, so it was never used. Only ``__doc__`` is affected, with
+  ``__module__`` always delegating to the wrapped object. This is the
+  mechanism ``with_doc`` relies on.
+
 **Features Changed**
 
 * The documentation now consistently describes the object proxy in terms of

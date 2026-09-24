@@ -31,6 +31,7 @@ from .decorators import (
     bind_state_to_wrapper,
     decorator,
 )
+from .doc import with_doc
 from .exceptions import (
     PathResolutionError,
     TargetModuleNotFoundError,
@@ -101,6 +102,7 @@ __all__ = (
     "mark_as_sync",
     "sync_to_async",
     "synchronized",
+    "with_doc",
     "with_signature",
     "discover_post_import_hooks",
     "notify_module_loaded",

@@ -52,6 +52,7 @@ if sys.version_info >= (3, 10):
         "mark_as_sync",
         "sync_to_async",
         "synchronized",
+        "with_doc",
         "with_signature",
         "discover_post_import_hooks",
         "notify_module_loaded",
@@ -820,6 +821,21 @@ if sys.version_info >= (3, 10):
         prototype: Callable[..., Any] | None = None,
         signature: Signature | None = None,
         factory: (
-            Callable[[Callable[..., Any]], Signature | Callable[..., Any]] | None
+            Callable[
+                [Callable[..., Any]],
+                Signature
+                | Callable[..., Any]
+                | tuple[Signature | Callable[..., Any], str | None],
+            ]
+            | None
         ) = None,
+        doc: str | None = None,
+    ) -> Callable[[Callable[_P, _R]], FunctionWrapper[_P, _R]]: ...
+
+    # with_doc()
+
+    def with_doc(
+        *,
+        doc: str | None = None,
+        factory: Callable[[Callable[..., Any]], str | None] | None = None,
     ) -> Callable[[Callable[_P, _R]], FunctionWrapper[_P, _R]]: ...

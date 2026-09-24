@@ -852,6 +852,148 @@ Use ``with_signature`` alone when only the signature needs correcting;
 stack with a marker when the calling convention also needs to be
 asserted independently of the wrapped function's own declaration.
 
+Overriding the docstring as well
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the docstring of the wrapped function also needs replacing, so that
+``help()`` describes the presented signature rather than the real one,
+``with_signature`` accepts a ``doc=`` keyword argument alongside any of
+the three forms above.
+
+::
+
+    @wrapt.with_signature(
+        prototype=_prototype,
+        doc="Look up a user, returning whether they exist.",
+    )
+    def function(*args, **kwargs):
+        ...
+
+A factory may also return a two element tuple of the signature, or a
+prototype callable, and the docstring. This lets a single factory derive
+both from the wrapped function in one pass. When ``doc=`` is supplied as
+well, the docstring from the tuple is ignored.
+
+::
+
+    def describe(wrapped):
+        s = inspect.signature(wrapped)
+        return s, f"{wrapped.__name__}{s}\n\n{wrapped.__doc__}"
+
+    @wrapt.with_signature(factory=describe)
+    def function(a, b):
+        """Add two numbers."""
+        ...
+
+When neither is supplied, ``__doc__`` on the wrapper delegates to the
+wrapped function as it does for any other **wrapt** wrapper. For
+overriding just the docstring, see ``wrapt.with_doc`` in the "Docstring
+Override" section below, which also describes what assigning to
+``__doc__`` on a wrapper does.
+
+Docstring Override
+------------------
+
+``wrapt.with_doc`` overrides the docstring that ``help()``, ``pydoc`` and
+other introspection tools see for a wrapped callable, without mutating the
+wrapped function itself. It is the companion of ``wrapt.with_signature``,
+and is used in the same way.
+
+Assigning to ``__doc__`` on a wrapper created by any of the other **wrapt**
+decorators does not achieve this. The ``__doc__`` attribute of every
+**wrapt** proxy delegates to the wrapped object, so the assignment writes
+through to the wrapped function and changes what is reported for it
+everywhere, including when it is reached via ``__wrapped__``.
+``with_doc`` instead holds the docstring on the wrapper.
+
+Exactly one of the keyword arguments ``doc=`` or ``factory=`` must be
+supplied. Supplying none, or both, raises ``TypeError``.
+
+::
+
+    import wrapt
+
+    @wrapt.with_doc(doc="Look up a user, returning whether they exist.")
+    def function(*args, **kwargs):
+        """Implementation notes which should not appear in help()."""
+        ...
+
+``help(function)`` now shows the supplied docstring, while
+``function.__wrapped__.__doc__`` is still the original. The signature
+reported for the wrapper is unchanged, and calling behaviour is unchanged.
+
+Deriving the docstring from the wrapped function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A factory callable can be supplied via ``factory=``. It is called once, at
+decoration time, with the function being wrapped, and must return the
+docstring. As with ``with_signature``, the argument is whatever the
+decorator was applied to, which may itself be a wrapper when decorators are
+stacked. Placing ``@with_doc`` above ``@with_signature`` therefore lets the
+factory see the overridden signature and embed it in the docstring.
+
+::
+
+    import inspect
+
+    def describe(wrapped):
+        heading = f"{wrapped.__name__}{inspect.signature(wrapped)}"
+        return f"{heading}\n\n{wrapped.__doc__}"
+
+    @wrapt.with_doc(factory=describe)
+    @wrapt.with_signature(prototype=_prototype)
+    def function(*args, **kwargs):
+        """Look up a user."""
+        ...
+
+Placing ``@with_doc`` below ``@with_signature`` works as well, as the
+docstring propagates up through the outer wrapper, but the factory then
+sees only the wrapped function. When both the signature and the docstring
+are being overridden from a single factory, the tuple return described
+under "Overriding the docstring as well" above is more direct.
+
+Methods
+~~~~~~~
+
+``with_doc`` handles instance methods, class methods, and static methods,
+with the bound view of a method reporting the same docstring as the
+function on the class. For class methods and static methods it can be
+stacked either above or below ``@classmethod`` / ``@staticmethod``, the
+conventional ordering being to place ``@with_doc`` on top.
+
+::
+
+    class C:
+
+        @wrapt.with_doc(doc="Scale the value.")
+        def scale(self, *args, **kwargs):
+            ...
+
+        @wrapt.with_doc(doc="Build an instance.")
+        @classmethod
+        def build(cls, *args, **kwargs):
+            ...
+
+    # help(C), help(C.scale) and help(C().scale) all show the override.
+
+Assigning to ``__doc__``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+On a wrapper carrying a docstring override, assigning to ``__doc__``
+replaces the override, and deleting ``__doc__`` removes it so that the
+wrapper once again reports the docstring of the wrapped function. Neither
+touches the wrapped function.
+
+::
+
+    function.__doc__ = "A different description."  # replaces the override
+    del function.__doc__  # reports the wrapped function's docstring again
+
+A ``with_signature`` wrapper created without a docstring override behaves
+as any other **wrapt** wrapper, with assignment and deletion writing
+through to the wrapped function. The ``__doc__`` attribute of the bound
+view of a method is read only, as it is for any bound method.
+
 Binding State to a Wrapper
 --------------------------
 

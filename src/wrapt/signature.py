@@ -17,6 +17,7 @@ from .__wrapt__ import (
     CallableObjectProxy,
     FunctionWrapper,
 )
+from .doc import _BOUND_DOC_PROPERTY, _DOC_PROPERTY, _NO_DOC_OVERRIDE
 
 _MISSING = object()
 
@@ -178,6 +179,8 @@ class _SignatureFunctionSurrogate(_SignatureMixin, CallableObjectProxy):
 
 
 class _BoundSignatureFunctionWrapper(BoundFunctionWrapper):
+    __doc__ = _BOUND_DOC_PROPERTY
+
     @property
     def __func__(self):
         return _SignatureFunctionSurrogate(
@@ -190,18 +193,23 @@ class _BoundSignatureFunctionWrapper(BoundFunctionWrapper):
 
 
 class _SignatureFunctionWrapper(_SignatureMixin, FunctionWrapper):
+    __doc__ = _DOC_PROPERTY
+
     __bound_function_wrapper__ = _BoundSignatureFunctionWrapper
 
-    def __init__(self, wrapped, wrapper, signature):
+    def __init__(self, wrapped, wrapper, signature, doc=_NO_DOC_OVERRIDE):
         super().__init__(wrapped, wrapper)
         self._self_signature = signature
+        self._self_doc = doc
 
     @property
     def __func__(self):
         return _SignatureFunctionSurrogate(self.__wrapped__, self._self_signature)
 
 
-def with_signature(wrapped=None, /, *, prototype=None, signature=None, factory=None):
+def with_signature(
+    wrapped=None, /, *, prototype=None, signature=None, factory=None, doc=None
+):
     """Override the signature of a wrapped callable.
 
     Exactly one of `prototype`, `signature`, or `factory` must be supplied:
@@ -209,7 +217,13 @@ def with_signature(wrapped=None, /, *, prototype=None, signature=None, factory=N
     - `prototype`: a callable whose signature will be used.
     - `signature`: a prebuilt `inspect.Signature` object.
     - `factory`: a callable `factory(wrapped)` invoked at decoration time
-      that returns either a `Signature` or a prototype callable.
+      that returns either a `Signature` or a prototype callable, or a
+      tuple of `(signature_or_prototype, docstring)` to override the
+      docstring at the same time.
+
+    The docstring may also be overridden by supplying `doc`, in which case
+    a docstring from the factory is ignored. When neither is supplied the
+    wrapper reports the docstring of the wrapped function as normal.
 
     The resulting wrapper exposes the override via `__signature__`, and
     derives `__annotations__`, `__defaults__`, `__kwdefaults__`, and the
@@ -231,19 +245,25 @@ def with_signature(wrapped=None, /, *, prototype=None, signature=None, factory=N
         def _wrapper(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
+        resolved_doc = _NO_DOC_OVERRIDE if doc is None else doc
+
         if signature is not None:
             resolved = signature
         elif prototype is not None:
             resolved = _inspect_signature(prototype)
         else:
             produced = factory(wrapped)
+            if isinstance(produced, tuple):
+                produced, produced_doc = produced
+                if doc is None:
+                    resolved_doc = produced_doc
             resolved = (
                 produced
                 if isinstance(produced, Signature)
                 else _inspect_signature(produced)
             )
 
-        return _SignatureFunctionWrapper(wrapped, _wrapper, resolved)
+        return _SignatureFunctionWrapper(wrapped, _wrapper, resolved, resolved_doc)
 
     if wrapped is None:
         return _decorator

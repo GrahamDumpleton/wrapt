@@ -542,7 +542,8 @@ would be explained within the documentation for the wrapped function. As
 such, the documentation for the wrapped function is still what is used for
 the ``__doc__`` string and what would appear when using the Python help
 system. In the latter, the arguments required of the adapter would though
-instead appear.
+instead appear. If the documentation string also needs to be changed, see
+``wrapt.with_doc`` in the "Docstring Override" section of :doc:`bundled`.
 
 If you need to generate the argument specification based on the function
 being wrapped dynamically, you can instead pass a tuple of the form which

@@ -133,7 +133,16 @@ Bundled Decorators
     callable without mutating the wrapped function itself. Accepts a
     prototype function, an ``inspect.Signature`` object, or a factory
     callable. The modern replacement for the ``adapter`` argument of
-    ``wrapt.decorator``. See the "Signature Override" section of
+    ``wrapt.decorator``. Also accepts a ``doc`` argument for overriding
+    the docstring at the same time. See the "Signature Override" section
+    of :doc:`bundled`.
+
+``wrapt.with_doc``
+    Overrides the docstring reported by ``help()``, ``pydoc`` and other
+    introspection tools for a wrapped callable without mutating the
+    wrapped function itself. Accepts the docstring directly, or a factory
+    callable that derives it from the wrapped function. The companion of
+    ``wrapt.with_signature``. See the "Docstring Override" section of
     :doc:`bundled`.
 
 ``wrapt.lru_cache``
