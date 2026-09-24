@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/GrahamDumpleton/wrapt/develop/docs/_static/wrapt-logo.svg" alt="wrapt" width="182">
+
 # wrapt
 
 [![PyPI](https://img.shields.io/pypi/v/wrapt.svg?logo=python&cacheSeconds=3600)](https://pypi.python.org/pypi/wrapt)

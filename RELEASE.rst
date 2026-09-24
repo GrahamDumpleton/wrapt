@@ -1,3 +1,7 @@
+.. image:: https://raw.githubusercontent.com/GrahamDumpleton/wrapt/develop/docs/_static/wrapt-logo.svg
+   :alt: wrapt
+   :width: 182px
+
 wrapt
 =====
 

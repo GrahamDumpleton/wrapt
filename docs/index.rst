@@ -1,6 +1,10 @@
 wrapt
 =====
 
+.. image:: _static/wrapt-logo.svg
+   :alt: wrapt
+   :width: 364px
+
 A Python module for decorators, wrappers and monkey patching.
 
 Overview
