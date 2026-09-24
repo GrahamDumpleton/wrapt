@@ -80,6 +80,69 @@ Blog posts related to the **wrapt** module:
 
 * https://github.com/GrahamDumpleton/wrapt/tree/master/blog
 
+Workshops
+---------
+
+Guided, hands-on workshops which run in JupyterLab and check your work as
+you go, with nothing to install:
+
+* Python decorators, using only the standard library. The place to start if
+  decorators are new to you, covering the ground the wrapt workshops build
+  on.
+
+    https://github.com/GrahamDumpleton/decorator-workshops
+
+  Launch in your browser, with no account or server at all:
+
+    https://grahamdumpleton.github.io/decorator-workshops/lab/index.html
+
+  Launch on mybinder.org:
+
+    https://mybinder.org/v2/gh/GrahamDumpleton/decorator-workshops/main?urlpath=lab
+
+  Launch in GitHub Codespaces:
+
+    https://codespaces.new/GrahamDumpleton/decorator-workshops?quickstart=1
+
+* Three collections on wrapt itself: writing decorators with wrapt, monkey
+  patching with wrapt, and object proxies with wrapt, each shown beside the
+  standard library way of doing the same thing.
+
+    https://github.com/GrahamDumpleton/wrapt-workshops
+
+  Launch on mybinder.org:
+
+    https://mybinder.org/v2/gh/GrahamDumpleton/wrapt-workshops/main?urlpath=lab
+
+  Launch in GitHub Codespaces:
+
+    https://codespaces.new/GrahamDumpleton/wrapt-workshops?quickstart=1
+
+The README of each repository explains the launch options and how to run
+the workshops locally.
+
+Related Projects
+----------------
+
+If the monkey patching side of wrapt is what brought you here, also look at
+**wrapture**. It is a sibling project built on the monkey patching
+machinery of wrapt, and provides a higher level API on top of it. A clean
+lifecycle and behaviour vocabulary over ``wrap_object()`` lets you point at
+a method by name and stub it, fail it, transform its arguments or result,
+or wrap it with a decorator, then remove it again. On top of that sit unit
+testing, where the real code runs and how calls flowed through it is
+recorded and asserted on, and ad-hoc tracing, where a running application
+emits a structured call tree with no code changes, with export to
+OpenTelemetry.
+
+* https://github.com/GrahamDumpleton/wrapture
+
+* https://wrapture.readthedocs.io/
+
+Guided workshops for wrapture are available as well:
+
+* https://github.com/GrahamDumpleton/wrapture-workshops
+
 Installation
 ------------
 

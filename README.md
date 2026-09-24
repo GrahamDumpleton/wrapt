@@ -94,6 +94,29 @@ For comprehensive documentation, examples, and advanced usage patterns, visit:
 
 **[wrapt.readthedocs.io](https://wrapt.readthedocs.io/)**
 
+## Workshops
+
+Two sets of guided, hands-on workshops run in JupyterLab and check your work as you go. Neither needs anything installed.
+
+### Python decorators
+
+[![Launch in your browser](https://img.shields.io/badge/launch-jupyterlite-F37626?logo=jupyter&logoColor=white)](https://grahamdumpleton.github.io/decorator-workshops/lab/index.html)
+[![Launch on Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/GrahamDumpleton/decorator-workshops/main?urlpath=lab)
+[![Open in GitHub Codespaces](https://img.shields.io/badge/launch-codespaces-579ACA?logo=github&logoColor=white)](https://codespaces.new/GrahamDumpleton/decorator-workshops?quickstart=1)
+
+[decorator-workshops](https://github.com/GrahamDumpleton/decorator-workshops) teaches Python decorators using only the standard library, from what a decorator is through to writing your own for functions, methods, classes and coroutines. It is the place to start if decorators are new to you, and covers the ground the wrapt workshops build on. The badges above start the workshops in your browser with no account or server at all, on [mybinder.org](https://mybinder.org), or in [GitHub Codespaces](https://github.com/features/codespaces). The repository README explains each option and how to run the workshops locally.
+
+### wrapt
+
+[![Launch on Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/GrahamDumpleton/wrapt-workshops/main?urlpath=lab)
+[![Open in GitHub Codespaces](https://img.shields.io/badge/launch-codespaces-579ACA?logo=github&logoColor=white)](https://codespaces.new/GrahamDumpleton/wrapt-workshops?quickstart=1)
+
+[wrapt-workshops](https://github.com/GrahamDumpleton/wrapt-workshops) holds three collections of workshops on wrapt itself: writing decorators with wrapt, monkey patching with wrapt, and object proxies with wrapt, each shown beside the standard library way of doing the same thing. The badges above start them on [mybinder.org](https://mybinder.org) or in [GitHub Codespaces](https://github.com/features/codespaces). The repository README explains each option and how to run the workshops locally.
+
+## Related Projects
+
+If the monkey patching side of wrapt is what brought you here, also look at [wrapture](https://github.com/GrahamDumpleton/wrapture). It is a sibling project built on the monkey patching machinery of wrapt, and provides a higher level API on top of it. A clean lifecycle and behaviour vocabulary over `wrap_object()` lets you point at a method by name and stub it, fail it, transform its arguments or result, or wrap it with a decorator, then remove it again. On top of that sit unit testing, where the real code runs and how calls flowed through it is recorded and asserted on, and ad-hoc tracing, where a running application emits a structured call tree with no code changes, with export to OpenTelemetry. The [wrapture documentation](https://wrapture.readthedocs.io/) has the details, and [wrapture-workshops](https://github.com/GrahamDumpleton/wrapture-workshops) has guided workshops of its own.
+
 ## Supported Python Versions
 
 - Python 3.9+
@@ -104,7 +127,7 @@ For comprehensive documentation, examples, and advanced usage patterns, visit:
 
 We welcome contributions! This is a pretty casual process - if you're interested in suggesting changes, improvements, or have found a bug, please reach out via the [GitHub issue tracker](https://github.com/GrahamDumpleton/wrapt/issues/). Whether it's a small fix, new feature idea, or just a question about how something works, feel free to start a discussion.
 
-Please note that wrapt is now considered a mature project. We're not expecting any significant new developments or major feature additions. The primary focus is on ensuring that the package continues to work correctly with newer Python versions and maintaining compatibility as the Python ecosystem evolves.
+Please note that wrapt is now considered a mature project. We're not expecting any significant new developments or major feature additions. The primary focus is on ensuring that the package continues to work correctly with newer Python versions and maintaining compatibility as the Python ecosystem evolves. Higher level functionality is being developed in [wrapture](https://github.com/GrahamDumpleton/wrapture) rather than here.
 
 ### Testing
 

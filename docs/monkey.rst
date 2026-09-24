@@ -575,3 +575,27 @@ and a second application stacks over the first rather than replacing it.
 Earlier versions of wrapt replaced the class attribute outright, could not
 be used over a ``property``, and broke class-level access to the attribute;
 none of those limitations apply any longer.
+
+Going Further
+-------------
+
+The helpers described here are the building blocks. If what you need is a
+higher level API over them, look at **wrapture**, a sibling project built on
+the monkey patching machinery of wrapt. It provides a clean lifecycle and
+behaviour vocabulary over ``wrap_object()``, so a method can be pointed at
+by name and stubbed, failed, have its arguments or result transformed, or be
+wrapped with a decorator, then removed again, with honest reporting if
+something else displaced the patch in the meantime. On top of that it
+provides unit testing, where the real code runs and how calls flowed
+through it is recorded and asserted on, and ad-hoc tracing of a running
+application, with export to OpenTelemetry.
+
+* https://github.com/GrahamDumpleton/wrapture
+
+* https://wrapture.readthedocs.io/
+
+For hands-on practice with the helpers on this page, the monkey patching
+collection of the wrapt workshops patches a small package shipped with each
+workshop, open in an editor beside the notebook.
+
+* https://github.com/GrahamDumpleton/wrapt-workshops
