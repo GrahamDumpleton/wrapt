@@ -117,6 +117,8 @@ Two sets of guided, hands-on workshops run in JupyterLab and check your work as 
 
 If the monkey patching side of wrapt is what brought you here, also look at [wrapture](https://github.com/GrahamDumpleton/wrapture). It is a sibling project built on the monkey patching machinery of wrapt, and provides a higher level API on top of it. A clean lifecycle and behaviour vocabulary over `wrap_object()` lets you point at a method by name and stub it, fail it, transform its arguments or result, or wrap it with a decorator, then remove it again. On top of that sit unit testing, where the real code runs and how calls flowed through it is recorded and asserted on, and ad-hoc tracing, where a running application emits a structured call tree with no code changes, with export to OpenTelemetry. The [wrapture documentation](https://wrapture.readthedocs.io/) has the details, and [wrapture-workshops](https://github.com/GrahamDumpleton/wrapture-workshops) has guided workshops of its own.
 
+To apply post import hook patches to an application without changing it, [autowrapt](https://github.com/GrahamDumpleton/autowrapt) triggers `wrapt.discover_post_import_hooks()` at interpreter startup. Install it alongside the application and name the entry point group in the `AUTOWRAPT_BOOTSTRAP` environment variable. The mechanism is described under [applying patches at interpreter startup](https://wrapt.readthedocs.io/en/latest/monkey.html#applying-patches-at-interpreter-startup) in the documentation.
+
 ## Supported Python Versions
 
 - Python 3.9+

@@ -333,6 +333,41 @@ is free to call any of the monkey patching helpers on it. This approach keeps
 the decision of *which* patches to apply in the hands of the application,
 while the patches themselves live in separately installable packages.
 
+Applying patches at interpreter startup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Calling ``wrapt.discover_post_import_hooks()`` still needs a line of code in
+the application. To apply patches to a program which cannot be modified at
+all, the companion package **autowrapt** makes that call at interpreter
+startup instead. Install it into the same Python installation or virtual
+environment as the application, and name the entry point group in the
+``AUTOWRAPT_BOOTSTRAP`` environment variable when running the program::
+
+    $ pip install autowrapt
+    $ AUTOWRAPT_BOOTSTRAP=my_app.patches python app.py
+
+More than one group can be named, separated by commas. Every entry point in
+each group is registered as a post import hook, and each hook fires when, and
+only when, its module is first imported. When the variable is not set nothing
+happens, beyond the interpreter loading one small module at startup.
+
+autowrapt works by installing startup files at the top of site-packages,
+which the ``site`` module processes while the interpreter starts up. On
+Python 3.15 and later that is a ``.start`` file, the package startup
+configuration file introduced by PEP 829, and on earlier versions it is a
+``.pth`` file with an import line. Either way the hooks are registered as the
+last step of site initialisation, once the module search path is complete
+and before the application's own code runs.
+
+Two limitations follow from the mechanism. autowrapt has to be installed in
+the same environment as the application, and nothing happens when Python is
+run with the ``-S`` option, or in an embedded interpreter which does not run
+the ``site`` module.
+
+* https://github.com/GrahamDumpleton/autowrapt
+
+* https://pypi.org/project/autowrapt/
+
 Temporary Patches for Tests
 ---------------------------
 
