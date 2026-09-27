@@ -24,43 +24,43 @@ class TestIssubclassProxyOnRight(unittest.TestCase):
 
     When the proxy wraps a type and appears on the right side of issubclass(),
     Python calls type(proxy).__subclasscheck__(proxy, subclass). The
-    __subclasscheck__ on ObjectProxy delegates to the wrapped type.
+    __subclasscheck__ on BaseObjectProxy delegates to the wrapped type.
     """
 
     def test_same_class(self):
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
         self.assertTrue(issubclass(Child, proxy))
 
     def test_subclass(self):
-        proxy = wrapt.ObjectProxy(Base)
+        proxy = wrapt.BaseObjectProxy(Base)
         self.assertTrue(issubclass(Child, proxy))
 
     def test_grandchild(self):
-        proxy = wrapt.ObjectProxy(Base)
+        proxy = wrapt.BaseObjectProxy(Base)
         self.assertTrue(issubclass(GrandChild, proxy))
 
     def test_not_subclass(self):
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
         self.assertFalse(issubclass(Base, proxy))
 
     def test_unrelated_class(self):
         class Unrelated:
             pass
 
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
         self.assertFalse(issubclass(Unrelated, proxy))
 
     def test_subclass_is_also_proxy(self):
-        proxy_base = wrapt.ObjectProxy(Base)
-        proxy_child = wrapt.ObjectProxy(Child)
+        proxy_base = wrapt.BaseObjectProxy(Base)
+        proxy_child = wrapt.BaseObjectProxy(Child)
         self.assertTrue(issubclass(proxy_child, proxy_base))
 
     def test_proxy_in_tuple(self):
-        proxy = wrapt.ObjectProxy(Base)
+        proxy = wrapt.BaseObjectProxy(Base)
         self.assertTrue(issubclass(Child, (proxy,)))
 
     def test_proxy_in_tuple_mixed(self):
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
 
         class Unrelated:
             pass
@@ -79,15 +79,15 @@ class TestIssubclassProxyOnLeft(unittest.TestCase):
     """
 
     def test_ancestor(self):
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
         self.assertTrue(issubclass(proxy, Base))
 
     def test_object(self):
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
         self.assertTrue(issubclass(proxy, object))
 
     def test_same_class(self):
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
         # KNOWN LIMITATION: issubclass(X, X) normally returns True via an
         # identity check (X is X). But proxy is not Child, and Child is not
         # in its own __bases__, so the walk doesn't find it either. The
@@ -96,7 +96,7 @@ class TestIssubclassProxyOnLeft(unittest.TestCase):
         self.assertFalse(issubclass(proxy, Child))
 
     def test_not_subclass(self):
-        proxy = wrapt.ObjectProxy(Base)
+        proxy = wrapt.BaseObjectProxy(Base)
         self.assertFalse(issubclass(proxy, Child))
 
 
@@ -125,7 +125,7 @@ class TestIssubclassProxyOnLeftWithABC(unittest.TestCase):
             def method(self):
                 pass
 
-        proxy = wrapt.ObjectProxy(Concrete)
+        proxy = wrapt.BaseObjectProxy(Concrete)
         # KNOWN LIMITATION: ABCMeta's C-level __subclasscheck__ rejects
         # non-class arguments with TypeError. The proxy cannot influence
         # this.
@@ -138,28 +138,28 @@ class TestIsinstanceProxyOnRight(unittest.TestCase):
 
     When the proxy wraps a type and appears on the right side of isinstance(),
     Python calls type(proxy).__instancecheck__(proxy, instance). The
-    __instancecheck__ on ObjectProxy delegates to the wrapped type.
+    __instancecheck__ on BaseObjectProxy delegates to the wrapped type.
     """
 
     def test_direct_instance(self):
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
         self.assertTrue(isinstance(Child(), proxy))
 
     def test_subclass_instance(self):
-        proxy = wrapt.ObjectProxy(Base)
+        proxy = wrapt.BaseObjectProxy(Base)
         self.assertTrue(isinstance(Child(), proxy))
 
     def test_grandchild_instance(self):
-        proxy = wrapt.ObjectProxy(Base)
+        proxy = wrapt.BaseObjectProxy(Base)
         self.assertTrue(isinstance(GrandChild(), proxy))
 
     def test_not_instance(self):
-        proxy = wrapt.ObjectProxy(Child)
+        proxy = wrapt.BaseObjectProxy(Child)
         self.assertFalse(isinstance(Base(), proxy))
 
     def test_proxied_instance_against_proxy_type(self):
-        proxy_type = wrapt.ObjectProxy(Child)
-        proxy_instance = wrapt.ObjectProxy(Child())
+        proxy_type = wrapt.BaseObjectProxy(Child)
+        proxy_instance = wrapt.BaseObjectProxy(Child())
         self.assertTrue(isinstance(proxy_instance, proxy_type))
 
 
@@ -167,18 +167,18 @@ class TestIssubclassBothProxied(unittest.TestCase):
     """Tests where both arguments to issubclass() are proxied types."""
 
     def test_child_of_base(self):
-        proxy_child = wrapt.ObjectProxy(Child)
-        proxy_base = wrapt.ObjectProxy(Base)
+        proxy_child = wrapt.BaseObjectProxy(Child)
+        proxy_base = wrapt.BaseObjectProxy(Base)
         self.assertTrue(issubclass(proxy_child, proxy_base))
 
     def test_same_class(self):
-        proxy_a = wrapt.ObjectProxy(Child)
-        proxy_b = wrapt.ObjectProxy(Child)
+        proxy_a = wrapt.BaseObjectProxy(Child)
+        proxy_b = wrapt.BaseObjectProxy(Child)
         self.assertTrue(issubclass(proxy_a, proxy_b))
 
     def test_not_subclass(self):
-        proxy_child = wrapt.ObjectProxy(Child)
-        proxy_base = wrapt.ObjectProxy(Base)
+        proxy_child = wrapt.BaseObjectProxy(Child)
+        proxy_base = wrapt.BaseObjectProxy(Base)
         self.assertFalse(issubclass(proxy_base, proxy_child))
 
 
@@ -201,14 +201,14 @@ class TestPathLikeProtocol(unittest.TestCase):
         import os
         import pathlib
 
-        proxy = wrapt.ObjectProxy(pathlib.PurePath("/path/to/file"))
+        proxy = wrapt.BaseObjectProxy(pathlib.PurePath("/path/to/file"))
 
         self.assertTrue(isinstance(proxy, os.PathLike))
 
     def test_isinstance_pathlike_false_for_wrapped_non_path(self):
         import os
 
-        proxy = wrapt.ObjectProxy(42)
+        proxy = wrapt.BaseObjectProxy(42)
 
         self.assertFalse(isinstance(proxy, os.PathLike))
 
@@ -220,7 +220,7 @@ class TestPathLikeProtocol(unittest.TestCase):
         import os
         import pathlib
 
-        proxy = wrapt.ObjectProxy(pathlib.PurePath("/path/to/file"))
+        proxy = wrapt.BaseObjectProxy(pathlib.PurePath("/path/to/file"))
 
         self.assertRaises(TypeError, os.fspath, proxy)
 
@@ -231,7 +231,7 @@ class TestPathLikeProtocol(unittest.TestCase):
         import pathlib
 
         instance = pathlib.PurePath("/path/to/file")
-        proxy = wrapt.ObjectProxy(instance)
+        proxy = wrapt.BaseObjectProxy(instance)
 
         self.assertEqual(proxy.__fspath__(), os.fspath(instance))
 
@@ -252,7 +252,7 @@ class TestBufferProtocol(unittest.TestCase):
         # proxy at the C level, so a proxy around a bytes-like object
         # cannot be used as a buffer.
 
-        proxy = wrapt.ObjectProxy(bytearray(b"data"))
+        proxy = wrapt.BaseObjectProxy(bytearray(b"data"))
 
         self.assertRaises(TypeError, memoryview, proxy)
 
@@ -265,7 +265,7 @@ class TestBufferProtocol(unittest.TestCase):
 
         import collections.abc
 
-        proxy = wrapt.ObjectProxy(bytearray(b"data"))
+        proxy = wrapt.BaseObjectProxy(bytearray(b"data"))
 
         self.assertTrue(isinstance(proxy, collections.abc.Buffer))
 
@@ -273,7 +273,7 @@ class TestBufferProtocol(unittest.TestCase):
     def test_isinstance_buffer_false_for_wrapped_non_buffer(self):
         import collections.abc
 
-        proxy = wrapt.ObjectProxy(42)
+        proxy = wrapt.BaseObjectProxy(42)
 
         self.assertFalse(isinstance(proxy, collections.abc.Buffer))
 

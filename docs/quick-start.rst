@@ -1,6 +1,12 @@
 Getting Started
 ===============
 
+If you would rather learn by doing, the decorators collection of the wrapt
+workshops covers the material on this page as guided, hands-on workshops
+which run in JupyterLab with nothing to install.
+
+* https://github.com/GrahamDumpleton/wrapt-workshops
+
 To implement your decorator you need to first define a wrapper function.
 This will be called each time a decorated function is called. The wrapper
 function needs to take four positional arguments:

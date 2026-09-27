@@ -341,13 +341,13 @@ class ProxyWrapped:
         self.a = a
 
 
-class ProxyCached(wrapt.ObjectProxy):
+class ProxyCached(wrapt.BaseObjectProxy):
     @wrapt.lru_cache
     def compute(self, x):
         return self.a + x
 
 
-class ProxyCachedWithState(wrapt.ObjectProxy):
+class ProxyCachedWithState(wrapt.BaseObjectProxy):
     def __init__(self, wrapped, factor):
         super().__init__(wrapped)
         self._self_factor = factor

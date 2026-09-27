@@ -1,0 +1,4 @@
+tests/mypy/mypy_with_doc_t1.py:58: error: Argument "doc" to "with_doc" has incompatible type "int"; expected "str | None"  [arg-type]
+tests/mypy/mypy_with_doc_t1.py:67: error: Argument "factory" to "with_doc" has incompatible type "Callable[[Callable[..., object]], int]"; expected "Callable[[Callable[..., Any]], str | None] | None"  [arg-type]
+tests/mypy/mypy_with_doc_t1.py:76: error: Argument "factory" to "with_signature" has incompatible type "Callable[[Callable[..., object]], tuple[Signature, int]]"; expected "Callable[[Callable[..., Any]], Signature | Callable[..., Any] | tuple[Signature | Callable[..., Any], str | None]] | None"  [arg-type]
+Found 3 errors in 1 file (checked 1 source file)

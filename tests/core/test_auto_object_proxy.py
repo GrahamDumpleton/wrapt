@@ -169,6 +169,43 @@ class TestAutoObjectProxy(unittest.TestCase):
         self.assertRaises(TypeError, os.fspath, proxy)
         self.assertFalse(isinstance(proxy, os.PathLike))
 
+    def test_descriptor_optional_owner(self):
+        def method(instance):
+            return instance
+
+        instance = object()
+
+        for descriptor in (method, property(method)):
+            with self.subTest(descriptor=descriptor):
+                proxy = wrapt.AutoObjectProxy(descriptor)
+
+                self.assertEqual(proxy.__get__(instance), descriptor.__get__(instance))
+                self.assertEqual(
+                    proxy.__get__(instance, None), descriptor.__get__(instance, None)
+                )
+                self.assertEqual(
+                    proxy.__get__(None, object), descriptor.__get__(None, object)
+                )
+
+    def test_descriptor_optional_owner_required_by_wrapped(self):
+        # A descriptor implemented in Python can require the owner argument,
+        # as Python always supplies it on attribute lookup. When the owner
+        # is omitted in a manual call through the proxy, it is None which
+        # must be passed to the wrapped descriptor.
+
+        class Descriptor:
+            def __get__(self, instance, owner):
+                return (instance, owner)
+
+        instance = object()
+
+        proxy = wrapt.AutoObjectProxy(Descriptor())
+
+        self.assertEqual(proxy.__get__(instance), (instance, None))
+        self.assertEqual(proxy.__get__(instance, None), (instance, None))
+        self.assertEqual(proxy.__get__(instance, object), (instance, object))
+        self.assertEqual(proxy.__get__(None, object), (None, object))
+
     def test_descriptor(self):
         class Descriptor:
             def __init__(self, value):
@@ -391,6 +428,7 @@ class TestAutoObjectProxyReassignment(unittest.TestCase):
         self.assertFalse(hasattr(proxy, "__get__"))
         proxy.__wrapped__ = Descriptor()
         self.assertTrue(hasattr(proxy, "__get__"))
+        self.assertEqual(proxy.__get__(object()), 42)
 
     def test_get_removed_on_reassignment(self):
         class Descriptor:

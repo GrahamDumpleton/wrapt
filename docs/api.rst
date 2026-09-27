@@ -133,7 +133,16 @@ Bundled Decorators
     callable without mutating the wrapped function itself. Accepts a
     prototype function, an ``inspect.Signature`` object, or a factory
     callable. The modern replacement for the ``adapter`` argument of
-    ``wrapt.decorator``. See the "Signature Override" section of
+    ``wrapt.decorator``. Also accepts a ``doc`` argument for overriding
+    the docstring at the same time. See the "Signature Override" section
+    of :doc:`bundled`.
+
+``wrapt.with_doc``
+    Overrides the docstring reported by ``help()``, ``pydoc`` and other
+    introspection tools for a wrapped callable without mutating the
+    wrapped function itself. Accepts the docstring directly, or a factory
+    callable that derives it from the wrapped function. The companion of
+    ``wrapt.with_signature``. See the "Docstring Override" section of
     :doc:`bundled`.
 
 ``wrapt.lru_cache``
@@ -309,6 +318,29 @@ Object Proxies
     the wrapped object stored on ``__wrapped__``. The recommended base
     for custom proxy subclasses. See :doc:`wrappers` and the "Object
     Proxies" section of :doc:`typing`.
+
+``wrapt.BaseObjectProxy.__self_setattr__(name, value)``
+    Stores an attribute on the proxy instance itself rather than
+    forwarding the assignment to the wrapped object. Equivalent to
+    ``object.__setattr__(proxy, name, value)``. Needed when the
+    attribute must live on the proxy under a name that does not carry
+    the ``_self_`` prefix, for example a method name which other code
+    will look up on the proxy. The proxy's own instance dictionary,
+    including anything stored this way, can be read back through the
+    ``__self_dict__`` attribute (see the "Introspecting the
+    BaseObjectProxy instance __dict__" section of :doc:`issues`).
+
+    This method exists for historical reasons. On Python 3.12 and
+    earlier, calling ``object.__setattr__()`` on an instance of the C
+    extension implementation of a proxy fails with ``TypeError: can't
+    apply this __setattr__ to ObjectProxy object``, because CPython
+    rejected it for any instance whose type overrides the C level
+    ``tp_setattro`` slot. Python 3.13 restricted that check to type
+    objects, so ``object.__setattr__()`` now works on a proxy there, as
+    it always has with the pure Python implementation. Code which only
+    needs to support Python 3.13 or later can use either form.
+    ``__self_setattr__()`` remains the portable spelling for as long
+    as older Python versions are supported.
 
 ``wrapt.ObjectProxy``
     A thin subclass of ``BaseObjectProxy`` retained for backward

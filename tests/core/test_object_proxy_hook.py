@@ -7,7 +7,7 @@ class _Sentinel(Exception):
     pass
 
 
-class BrokenObjectProxy(wrapt.ObjectProxy):
+class BrokenObjectProxy(wrapt.BaseObjectProxy):
     @property
     def __object_proxy__(self):
         raise _Sentinel("intentional failure from __object_proxy__")

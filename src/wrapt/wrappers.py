@@ -36,6 +36,10 @@ class _ObjectProxyMethods:
     def __module__(self, value):
         self.__wrapped__.__module__ = value
 
+    @__module__.deleter
+    def __module__(self):
+        del self.__wrapped__.__module__
+
     @property
     def __doc__(self):
         return self.__wrapped__.__doc__
@@ -43,6 +47,10 @@ class _ObjectProxyMethods:
     @__doc__.setter
     def __doc__(self, value):
         self.__wrapped__.__doc__ = value
+
+    @__doc__.deleter
+    def __doc__(self):
+        del self.__wrapped__.__doc__
 
     # We similar use a property for __dict__. We need __dict__ to be
     # explicit to ensure that vars() works as expected.
@@ -86,6 +94,40 @@ def _get_self_dict(self):
 # replacing the real instance dictionary (which would break the proxy).
 
 _SELF_DICT_PROPERTY = property(_get_self_dict)
+
+# The default __doc__ property which delegates to the wrapped object. A
+# derived class may define its own __doc__ descriptor in its class body
+# to take control of what __doc__ reports for its instances, and that is
+# preserved by the metaclass in place of this default.
+
+_DEFAULT_DOC_PROPERTY = vars(_ObjectProxyMethods)["__doc__"]
+
+
+def _is_doc_descriptor(entry):
+    # Every class carries a __doc__ entry in its dict, being the docstring
+    # or None when there is none. Only a descriptor is taken to be a
+    # deliberate override of the instance level __doc__ property.
+
+    if entry is None or isinstance(entry, str):
+        return False
+    return hasattr(type(entry), "__get__")
+
+
+def _inherited_doc_descriptor(bases):
+    # Find a custom __doc__ descriptor inherited from a base class. The
+    # search stops at the first class which holds the default delegating
+    # property, since a derived class of that should delegate as well. The
+    # C extension performs the equivalent walk of the MRO at the time
+    # __doc__ is accessed.
+
+    for base in bases:
+        for klass in base.__mro__:
+            entry = vars(klass).get("__doc__")
+            if entry is _DEFAULT_DOC_PROPERTY:
+                return None
+            if _is_doc_descriptor(entry):
+                return entry
+    return None
 
 
 class _ObjectProxyMetaType(type):
@@ -137,10 +179,28 @@ class _ObjectProxyMetaType(type):
 
         custom_dict = dictionary.get("__dict__")
 
+        # Similarly, if the subclass defines __doc__ as a descriptor rather
+        # than as a docstring, preserve it so the subclass controls what
+        # __doc__ reports for its instances. Such a descriptor is not the
+        # class docstring, so it is not recorded as one. A descriptor
+        # defined by a base class is inherited, as it would be for any
+        # class not using this metaclass, by copying it into the class
+        # dictionary where it takes precedence over the None or docstring
+        # entry the class body provides.
+
+        if _is_doc_descriptor(real_doc):
+            custom_doc = real_doc
+            real_doc = None
+        else:
+            custom_doc = _inherited_doc_descriptor(bases)
+
         dictionary.update(vars(_ObjectProxyMethods))
 
         if custom_dict is not None:
             dictionary["__dict__"] = custom_dict
+
+        if custom_doc is not None:
+            dictionary["__doc__"] = custom_doc
 
         dictionary.setdefault("__self_dict__", _SELF_DICT_PROPERTY)
 
@@ -154,6 +214,24 @@ class _ObjectProxyMetaType(type):
         return klass
 
 
+def _unwrap_operand(other):
+    # When the other operand of a binary operator is itself a proxy, apply
+    # the operator to the two wrapped objects rather than passing the proxy
+    # through to the wrapped object's own operator method. This mirrors
+    # wrapt_unwrap_operand() in the C extension. Without it, a wrapped
+    # type which raises TypeError for an unrecognised operand, rather
+    # than returning NotImplemented, would never give the proxy on the
+    # right hand side the chance to unwrap itself via the reflected
+    # method, and Python would not see the real types of the operands
+    # when deciding whether the reflected method of a subclass on the
+    # right hand side takes priority. The real type is checked, and not
+    # __class__, which the proxy reports as that of the wrapped object.
+
+    if issubclass(type(other), ObjectProxy):
+        return other.__wrapped__
+    return other
+
+
 class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     """A transparent object proxy that delegates attribute access to a
     wrapped object."""
@@ -161,6 +239,19 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     @classmethod
     def __class_getitem__(cls, item, /):
         return types.GenericAlias(cls, item)
+
+    def __new__(cls, *args, **kwargs):
+        # Accept and ignore any arguments. A derived class which adds
+        # arguments to __init__() has the same arguments passed to
+        # __new__(), and a derived class which overrides __new__() may
+        # pass through whatever it was given, as it must when deriving
+        # from AutoObjectProxy which needs the wrapped object in __new__().
+        # Without this, once __new__() is overridden anywhere in the class
+        # hierarchy, the call falls through to object.__new__() which
+        # rejects extra arguments. The C extension already ignores the
+        # arguments in its tp_new slot, so this keeps the two consistent.
+
+        return super().__new__(cls)
 
     def __init__(self, wrapped):
         """Create an object proxy around the given object."""
@@ -426,84 +517,111 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             delattr(self.__wrapped__, name)
 
     def __add__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ + other
 
     def __sub__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ - other
 
     def __mul__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ * other
 
     def __truediv__(self, other):
+        other = _unwrap_operand(other)
         return operator.truediv(self.__wrapped__, other)
 
     def __floordiv__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ // other
 
     def __mod__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ % other
 
     def __divmod__(self, other):
+        other = _unwrap_operand(other)
         return divmod(self.__wrapped__, other)
 
     def __pow__(self, other, *args):
+        other = _unwrap_operand(other)
         return pow(self.__wrapped__, other, *args)
 
     def __lshift__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ << other
 
     def __rshift__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ >> other
 
     def __and__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ & other
 
     def __xor__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ ^ other
 
     def __or__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ | other
 
     def __radd__(self, other):
+        other = _unwrap_operand(other)
         return other + self.__wrapped__
 
     def __rsub__(self, other):
+        other = _unwrap_operand(other)
         return other - self.__wrapped__
 
     def __rmul__(self, other):
+        other = _unwrap_operand(other)
         return other * self.__wrapped__
 
     def __rtruediv__(self, other):
+        other = _unwrap_operand(other)
         return operator.truediv(other, self.__wrapped__)
 
     def __rfloordiv__(self, other):
+        other = _unwrap_operand(other)
         return other // self.__wrapped__
 
     def __rmod__(self, other):
+        other = _unwrap_operand(other)
         return other % self.__wrapped__
 
     def __rdivmod__(self, other):
+        other = _unwrap_operand(other)
         return divmod(other, self.__wrapped__)
 
     def __rpow__(self, other, *args):
+        other = _unwrap_operand(other)
         return pow(other, self.__wrapped__, *args)
 
     def __rlshift__(self, other):
+        other = _unwrap_operand(other)
         return other << self.__wrapped__
 
     def __rrshift__(self, other):
+        other = _unwrap_operand(other)
         return other >> self.__wrapped__
 
     def __rand__(self, other):
+        other = _unwrap_operand(other)
         return other & self.__wrapped__
 
     def __rxor__(self, other):
+        other = _unwrap_operand(other)
         return other ^ self.__wrapped__
 
     def __ror__(self, other):
+        other = _unwrap_operand(other)
         return other | self.__wrapped__
 
     def __iadd__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__iadd__"):
             self.__wrapped__ += other
             return self
@@ -511,6 +629,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ + other)
 
     def __isub__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__isub__"):
             self.__wrapped__ -= other
             return self
@@ -518,6 +637,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ - other)
 
     def __imul__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__imul__"):
             self.__wrapped__ *= other
             return self
@@ -525,6 +645,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ * other)
 
     def __itruediv__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__itruediv__"):
             self.__wrapped__ /= other
             return self
@@ -532,6 +653,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ / other)
 
     def __ifloordiv__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__ifloordiv__"):
             self.__wrapped__ //= other
             return self
@@ -539,6 +661,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ // other)
 
     def __imod__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__imod__"):
             self.__wrapped__ %= other
             return self
@@ -546,6 +669,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ % other)
 
     def __ipow__(self, other):  # type: ignore[misc]
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__ipow__"):
             self.__wrapped__ **= other
             return self
@@ -553,6 +677,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__**other)
 
     def __ilshift__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__ilshift__"):
             self.__wrapped__ <<= other
             return self
@@ -560,6 +685,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ << other)
 
     def __irshift__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__irshift__"):
             self.__wrapped__ >>= other
             return self
@@ -567,6 +693,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ >> other)
 
     def __iand__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__iand__"):
             self.__wrapped__ &= other
             return self
@@ -574,6 +701,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ & other)
 
     def __ixor__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__ixor__"):
             self.__wrapped__ ^= other
             return self
@@ -581,6 +709,7 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
             return self.__object_proxy__(self.__wrapped__ ^ other)
 
     def __ior__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__ior__"):
             self.__wrapped__ |= other
             return self
@@ -612,12 +741,15 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
         return operator.index(self.__wrapped__)
 
     def __matmul__(self, other):
+        other = _unwrap_operand(other)
         return self.__wrapped__ @ other
 
     def __rmatmul__(self, other):
+        other = _unwrap_operand(other)
         return other @ self.__wrapped__
 
     def __imatmul__(self, other):
+        other = _unwrap_operand(other)
         if hasattr(self.__wrapped__, "__imatmul__"):
             self.__wrapped__ @= other
             return self
@@ -937,6 +1069,16 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
         super().__setattr__(name, value)
 
     def __getattr__(self, name):
+        # This is only reached for _self_parent when that attribute was
+        # never set, which means __init__() was not called. It has to fail
+        # here, as the lookup of it below would otherwise come straight
+        # back in and recurse without end.
+
+        if name == "_self_parent":
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
+
         if self._self_parent is not None:
             try:
                 return getattr(self._self_parent, name)

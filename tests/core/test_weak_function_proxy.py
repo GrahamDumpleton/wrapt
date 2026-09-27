@@ -1,10 +1,94 @@
 import gc
+import sys
+import sysconfig
 import unittest
+import weakref
 
 import wrapt
 
 
 class TestWeakFunctionProxy(unittest.TestCase):
+
+    def test_decorated_function(self):
+        @wrapt.decorator
+        def decorator(wrapped, instance, args, kwargs):
+            return "decorated", wrapped(*args, **kwargs)
+
+        @decorator
+        def function(value):
+            return value
+
+        callbacks = []
+        proxy = wrapt.WeakFunctionProxy(function, lambda ref: callbacks.append(id(ref)))
+        self.assertEqual(proxy(42), ("decorated", 42))
+        del function
+        gc.collect()
+        self.assertEqual(callbacks, [id(proxy)])
+        with self.assertRaises(ReferenceError):
+            proxy(42)
+
+    def test_decorated_descriptors(self):
+        @wrapt.decorator
+        def decorator(wrapped, instance, args, kwargs):
+            return instance, wrapped(*args, **kwargs)
+
+        class Class:
+            @decorator
+            def method(self, value):
+                return value
+
+            @decorator
+            @classmethod
+            def class_method(cls, value):
+                return cls, value
+
+            @decorator
+            @staticmethod
+            def static_method(value):
+                return value
+
+        class Subclass(Class):
+            pass
+
+        obj = Class()
+        targets = ((Class, Class), (obj, Class), (Subclass, Subclass), (Subclass(), Subclass))
+        for target, owner in targets:
+            with self.subTest(target=target, kind="classmethod"):
+                proxy = wrapt.WeakFunctionProxy(target.class_method)
+                self.assertEqual(proxy(42), (owner, (owner, 42)))
+            with self.subTest(target=target, kind="staticmethod"):
+                proxy = wrapt.WeakFunctionProxy(target.static_method)
+                self.assertEqual(proxy(42), (None, 42))
+
+        proxy = wrapt.WeakFunctionProxy(Class.method)
+        self.assertEqual(proxy(obj, 42), (obj, 42))
+
+    @unittest.skipIf(
+        sys.version_info[:2] == (3, 13)
+        and sysconfig.get_config_var("Py_GIL_DISABLED"),
+        "Free-threaded CPython 3.13 immortalizes classes after a thread starts",
+    )
+    def test_decorated_classmethod_does_not_retain_owner(self):
+        @wrapt.decorator
+        def decorator(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        class Class:
+            @decorator
+            @classmethod
+            def method(cls):
+                return 42
+
+        callbacks = []
+        owner = weakref.ref(Class)
+        proxy = wrapt.WeakFunctionProxy(Class.method, lambda ref: callbacks.append(id(ref)))
+        self.assertEqual(proxy(), 42)
+        del Class
+        gc.collect()
+        self.assertIsNone(owner())
+        self.assertEqual(callbacks, [id(proxy)])
+        with self.assertRaises(ReferenceError):
+            proxy()
 
     def test_isinstance(self):
         def function(a, b):

@@ -13,6 +13,14 @@ from .__wrapt__ import BaseObjectProxy, _FunctionWrapperBase
 # reference is therefore applied to the instance the method is bound to
 # and the original function. The function is then rebound at the point
 # of a call via the weak function proxy.
+#
+# Where the function is a wrapt function wrapper, such as results from
+# applying a decorator, the same applies but there may be no instance,
+# either because the wrapper was never bound, as for a decorated free
+# function, or because the method was accessed via the class rather
+# than an instance. In that case a weak reference to the class the
+# wrapper was accessed through, the owner, is retained as well so that
+# the function can still be rebound correctly at the point of a call.
 
 
 def _weak_function_proxy_callback(ref, proxy, callback):
@@ -62,9 +70,27 @@ class WeakFunctionProxy(BaseObjectProxy):
         )
 
         self._self_expired = False
+        self._self_owner = None
 
         if isinstance(wrapped, _FunctionWrapperBase):
-            self._self_instance = weakref.ref(wrapped._self_instance, _callback)
+            # A function wrapper may have no instance, either because it
+            # was never bound, as for a decorated free function, or
+            # because the method was accessed via the class rather than
+            # an instance. Only take a weak reference to the instance
+            # where there is one. The owner is the class the wrapper was
+            # accessed through, and is retained so the function can be
+            # rebound with it when called. Without it a classmethod
+            # accessed via the class could not be rebound at all, and an
+            # instance method accessed via the class would not be able
+            # to identify an instance passed as the first argument.
+
+            instance = wrapped._self_instance
+            self._self_instance = (
+                weakref.ref(instance, _callback) if instance is not None else None
+            )
+            owner = wrapped._self_owner
+            if owner is not None:
+                self._self_owner = weakref.ref(owner, _callback)
 
             if wrapped._self_parent is not None:
                 # Explicit class in super() is used because the proxy
@@ -114,10 +140,24 @@ class WeakFunctionProxy(BaseObjectProxy):
         if self._self_instance is not None and instance is None:
             raise ReferenceError("weakly-referenced object no longer exists")
 
-        # If the wrapped function was originally a bound function, for
-        # which we retained a reference to the instance and the unbound
-        # function we need to rebind the function and then call it. If
-        # not just called the wrapped function.
+        # If the wrapped function was a function wrapper for which the
+        # owner was retained, rebind the function against the instance,
+        # which may be None, and that owner. This is what a classmethod
+        # accessed via the class needs to be rebound at all, and what an
+        # instance method accessed via the class needs to recognise an
+        # instance passed as the first argument. If the owner has been
+        # garbage collected, raise a ReferenceError as for the instance.
+
+        if self._self_owner is not None:
+            owner = self._self_owner()
+            if owner is None:
+                raise ReferenceError("weakly-referenced object no longer exists")
+            return function.__get__(instance, owner)(*args, **kwargs)
+
+        # Otherwise, if the wrapped function was originally a bound
+        # function, for which we retained a reference to the instance and
+        # the unbound function, we need to rebind the function and then
+        # call it. If not just call the wrapped function.
 
         if instance is None:
             return self.__wrapped__(*args, **kwargs)

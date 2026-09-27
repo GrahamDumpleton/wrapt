@@ -8,7 +8,7 @@ document describes the object proxy and the various custom wrappers provided.
 Object Proxy
 ------------
 
-The object proxy class is available as ``wrapt.ObjectProxy``. The class
+The object proxy class is available as ``wrapt.BaseObjectProxy``. The class
 would not normally be used directly, but as a base class to custom object
 proxies or wrappers which add behaviour which overrides that of the
 original object. When an object proxy is used, it will pass through any
@@ -17,27 +17,28 @@ actions performed on the proxy through to the wrapped object.
 ::
 
     >>> table = {}
-    >>> proxy = wrapt.ObjectProxy(table)
+    >>> proxy = wrapt.BaseObjectProxy(table)
     >>> proxy['key-1'] = 'value-1'
     >>> proxy['key-2'] = 'value-2'
 
     >>> proxy.keys()
-    ['key-2', 'key-1']
+    dict_keys(['key-1', 'key-2'])
     >>> table.keys()
-    ['key-2', 'key-1']
+    dict_keys(['key-1', 'key-2'])
 
     >>> isinstance(proxy, dict)
     True
 
     >>> dir(proxy)
-    ['__class__', '__cmp__', '__contains__', '__delattr__', '__delitem__',
-    '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__',
-    '__getitem__', '__gt__', '__hash__', '__init__', '__iter__', '__le__',
-    '__len__', '__lt__', '__ne__', '__new__', '__reduce__', '__reduce_ex__',
-    '__repr__', '__setattr__', '__setitem__', '__sizeof__', '__str__',
-    '__subclasshook__', 'clear', 'copy', 'fromkeys', 'get', 'has_key',
-    'items', 'iteritems', 'iterkeys', 'itervalues', 'keys', 'pop',
-    'popitem', 'setdefault', 'update', 'values']
+    ['__class__', '__class_getitem__', '__contains__', '__delattr__',
+    '__delitem__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__',
+    '__getattribute__', '__getitem__', '__getstate__', '__gt__',
+    '__hash__', '__init__', '__init_subclass__', '__ior__', '__iter__',
+    '__le__', '__len__', '__lt__', '__ne__', '__new__', '__or__',
+    '__reduce__', '__reduce_ex__', '__repr__', '__reversed__', '__ror__',
+    '__setattr__', '__setitem__', '__sizeof__', '__str__',
+    '__subclasshook__', 'clear', 'copy', 'fromkeys', 'get', 'items',
+    'keys', 'pop', 'popitem', 'setdefault', 'update', 'values']
 
 This ability for a proxy to stand in for the original goes as far as
 arithmetic operations, rich comparison and hashing.
@@ -45,7 +46,7 @@ arithmetic operations, rich comparison and hashing.
 ::
 
     >>> value = 1
-    >>> proxy = wrapt.ObjectProxy(value)
+    >>> proxy = wrapt.BaseObjectProxy(value)
 
     >>> proxy + 1
     2
@@ -70,7 +71,7 @@ proxy object.
 ::
 
     >>> value = 1
-    >>> proxy = wrapt.ObjectProxy(value)
+    >>> proxy = wrapt.BaseObjectProxy(value)
     >>> type(proxy)
     <class 'ObjectProxy'>
 
@@ -90,17 +91,19 @@ values.
 Type Comparison
 ---------------
 
-The type of an instance of the object proxy will be ``ObjectProxy``, or that
-of any derived class type if creating a custom object proxy.
+The type of an instance of the object proxy will be ``BaseObjectProxy``, or
+that of any derived class type if creating a custom object proxy. Note that
+the internal name of the ``BaseObjectProxy`` class is ``ObjectProxy``, so that
+is the name shown when the type is displayed.
 
 ::
 
     >>> value = 1
-    >>> proxy = wrapt.ObjectProxy(value)
+    >>> proxy = wrapt.BaseObjectProxy(value)
     >>> type(proxy)
     <class 'ObjectProxy'>
 
-    >>> class CustomProxy(wrapt.ObjectProxy):
+    >>> class CustomProxy(wrapt.BaseObjectProxy):
     ...     pass
 
     >>> proxy = CustomProxy(1)
@@ -128,20 +131,20 @@ type for the wrapped object.
     <class 'int'>
 
 Note that ``isinstance()`` will still also succeed if comparing to the
-``ObjectProxy`` type. It is therefore still possible to use ``isinstance()``
-to determine if an object is an object proxy.
+``BaseObjectProxy`` type. It is therefore still possible to use
+``isinstance()`` to determine if an object is an object proxy.
 
 ::
 
-    >>> isinstance(proxy, wrapt.ObjectProxy)
+    >>> isinstance(proxy, wrapt.BaseObjectProxy)
     True
 
-    >>> class CustomProxy(wrapt.ObjectProxy):
+    >>> class CustomProxy(wrapt.BaseObjectProxy):
     ...     pass
 
     >>> proxy = CustomProxy(1)
 
-    >>> isinstance(proxy, wrapt.ObjectProxy)
+    >>> isinstance(proxy, wrapt.BaseObjectProxy)
     True
     >>> isinstance(proxy, CustomProxy)
     True
@@ -158,7 +161,7 @@ some specific behaviour of the proxy.
     def function():
         print('executing', function.__name__)
 
-    class CallableWrapper(wrapt.ObjectProxy):
+    class CallableWrapper(wrapt.BaseObjectProxy):
 
         def __call__(self, *args, **kwargs):
             print('entering', self.__wrapped__.__name__)
@@ -181,6 +184,35 @@ then properties can be used.
 
 If it is necessary to access the original wrapped object from within an
 overridden method or property, then ``self.__wrapped__`` is used.
+
+If a custom proxy needs to override ``__new__()``, pass through to the base
+class whatever arguments were received, as in
+``super().__new__(cls, wrapped)``, rather than calling it with the class
+alone. The proxy base classes accept and ignore any arguments to
+``__new__()``, except for ``AutoObjectProxy`` and ``LazyObjectProxy`` which
+need the wrapped object, or the declared interface, to build the class for
+the instance. Passing everything through means the same custom proxy works
+whichever base class it derives from. A custom proxy which only adds
+arguments to ``__init__()`` needs no special handling, as the same arguments
+are passed to ``__new__()`` and ignored.
+
+The ``__doc__`` attribute of a proxy delegates to the wrapped object, so
+that ``help()`` on the proxy shows the documentation of the wrapped object.
+A custom proxy which needs to report something else can define ``__doc__``
+as a property in its class body, and that is then used for instances of the
+class instead. Assignment and deletion go to the property as well, so a
+property without a setter makes ``__doc__`` read only on the proxy. The
+property is inherited by further derived classes. This is the mechanism the
+``wrapt.with_doc`` decorator relies on. Note that ``__module__`` cannot be
+overridden in the same way and always delegates to the wrapped object.
+
+::
+
+    class DocumentedProxy(wrapt.BaseObjectProxy):
+
+        @property
+        def __doc__(self):
+            return "Documentation for the proxy."
 
 Proxy Object Attributes
 -----------------------
@@ -232,7 +264,7 @@ be prefixed with ``_self_``.
     def function():
         print('executing', function.__name__)
 
-    class CallableWrapper(wrapt.ObjectProxy):
+    class CallableWrapper(wrapt.BaseObjectProxy):
 
         def __init__(self, wrapped, wrapper):
             super(CallableWrapper, self).__init__(wrapped)
@@ -264,7 +296,7 @@ definition.
 
 ::
 
-    class CustomProxy(wrapt.ObjectProxy):
+    class CustomProxy(wrapt.BaseObjectProxy):
 
         def __init__(self, wrapped):
             super(CustomProxy, self).__init__(wrapped)
@@ -300,7 +332,7 @@ that then being overridden if necessary, with a specific value in the
 
 ::
 
-    class CustomProxy(wrapt.ObjectProxy):
+    class CustomProxy(wrapt.BaseObjectProxy):
         attribute = None
         def __init__(self, wrapped):
             super(CustomProxy, self).__init__(wrapped)
@@ -322,15 +354,15 @@ of the custom proxy, lookup will then fallback to using the class attribute.
 Special Object Methods
 ----------------------
 
-The ``ObjectProxy`` class implements most of the special builtin methods of a
+The ``BaseObjectProxy`` class implements most of the special builtin methods of a
 Python object, such as ``__len__()``, ``__getitem__()``, ``__setitem__()``,
 ``__delitem__()`` etc. This allows the proxy to be used in place of the
 original object with operations on the proxy being passed through to the
 wrapped object as appropriate.
 
-Some special methods are not implemented by the ``ObjectProxy`` class by default
-because their presence could affect the original code which interacted with the
-wrapped object. Examples of methods which are excluded are ``__get__()``,
+Some special methods are not implemented by the ``BaseObjectProxy`` class by
+default because their presence could affect the original code which interacted
+with the wrapped object. Examples of methods which are excluded are ``__get__()``,
 ``__set__()`` and ``__delete__()``, as well as ``__call__()``, iterator methods
 and awaitable methods. If it is necessary for a custom proxy to implement
 one of these special methods, then it can be done by overriding the method in
@@ -373,7 +405,7 @@ situations where a large number of proxy instances are being created.
 Function Wrappers
 -----------------
 
-Although an ``ObjectProxy`` can be used to wrap a function, it doesn't do
+Although a ``BaseObjectProxy`` can be used to wrap a function, it doesn't do
 anything special in respect of bound methods. If attempting to use a custom
 object proxy to wrap instance methods, class methods or static methods, it
 would be necessary to override the appropriate descriptor protocol methods
@@ -382,7 +414,7 @@ wrapped function.
 
 ::
 
-    class BoundCallableWrapper(wrapt.ObjectProxy):
+    class BoundCallableWrapper(wrapt.BaseObjectProxy):
 
         def __init__(self, wrapped, wrapper):
             super(BoundCallableWrapper, self).__init__(wrapped)
@@ -394,7 +426,7 @@ wrapped function.
         def __call__(self, *args, **kwargs):
             return self._self_wrapper(self.__wrapped__, args, kwargs)
 
-    class CallableWrapper(wrapt.ObjectProxy):
+    class CallableWrapper(wrapt.BaseObjectProxy):
 
         def __init__(self, wrapped, wrapper):
             super(CallableWrapper, self).__init__(wrapped)
@@ -735,6 +767,6 @@ start using it today.
 
 As ``LazyObjectProxy`` is derived from ``AutoObjectProxy``, as already mentioned
 the memory requirement for each instance of ``LazyObjectProxy`` will be higher
-than that of a normal ``ObjectProxy``. ``LazyObjectProxy`` should therefore only
-be used when absolutely necessary and never in situations where a large number
-of proxy instances are being created.
+than that of a normal ``BaseObjectProxy``. ``LazyObjectProxy`` should therefore
+only be used when absolutely necessary and never in situations where a large
+number of proxy instances are being created.

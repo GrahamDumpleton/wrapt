@@ -98,21 +98,21 @@ class ClassWithPropertyIntrospection:
 class TestAttributeProxy(unittest.TestCase):
 
     def test_wrap_attribute(self):
-        wrapt.wrap_object_attribute(__name__, "Class.value", wrapt.ObjectProxy)
+        wrapt.wrap_object_attribute(__name__, "Class.value", wrapt.BaseObjectProxy)
 
         instance = Class(1)
 
         self.assertEqual(instance.value, 1)
-        self.assertTrue(isinstance(instance.value, wrapt.ObjectProxy))
+        self.assertTrue(isinstance(instance.value, wrapt.BaseObjectProxy))
 
         instance.value = 2
 
         self.assertEqual(instance.value, 2)
-        self.assertTrue(isinstance(instance.value, wrapt.ObjectProxy))
+        self.assertTrue(isinstance(instance.value, wrapt.BaseObjectProxy))
 
     def test_returns_handle(self):
         handle = wrapt.wrap_object_attribute(
-            __name__, "ClassWithHandle.value", wrapt.ObjectProxy
+            __name__, "ClassWithHandle.value", wrapt.BaseObjectProxy
         )
 
         # The returned handle is the AttributeWrapper descriptor which
@@ -126,7 +126,7 @@ class TestAttributeProxy(unittest.TestCase):
         )
 
         self.assertEqual(handle._self_attribute, "value")
-        self.assertIs(handle._self_factory, wrapt.ObjectProxy)
+        self.assertIs(handle._self_factory, wrapt.BaseObjectProxy)
         self.assertEqual(handle._self_args, ())
         self.assertEqual(handle._self_kwargs, {})
 

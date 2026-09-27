@@ -1,7 +1,7 @@
 """Stress concurrent in-place operations on a shared proxy.
 
 Multiple threads concurrently apply ``+=`` to a single shared C
-``ObjectProxy`` wrapping an object whose ``__iadd__`` returns a new
+``BaseObjectProxy`` wrapping an object whose ``__iadd__`` returns a new
 object each time, so every operation swaps the identity of the wrapped
 object and releases the previous, uniquely held one.
 
@@ -37,7 +37,7 @@ class Value:
 
 def main():
     try:
-        from wrapt._wrappers import ObjectProxy
+        from wrapt._wrappers import BaseObjectProxy
     except ImportError:
         print("skipped: C extension not available", flush=True)
         return 77
@@ -50,7 +50,7 @@ def main():
         flush=True,
     )
 
-    shared = ObjectProxy(Value(0))
+    shared = BaseObjectProxy(Value(0))
 
     stop = threading.Event()
     barrier = threading.Barrier(THREADS + 1)

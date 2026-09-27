@@ -20,6 +20,9 @@ if sys.version_info >= (3, 10):
         overload,
     )
 
+    # Self is only in typing from Python 3.11 and the stubs support 3.10.
+    from typing_extensions import Self
+
     # Mirrors wrapt.__all__ at runtime (src/wrapt/__init__.py). Anything not
     # listed here is a private stub-internal helper (TypeVar, Protocol,
     # type alias) and is prefixed with a leading underscore.
@@ -49,6 +52,7 @@ if sys.version_info >= (3, 10):
         "mark_as_sync",
         "sync_to_async",
         "synchronized",
+        "with_doc",
         "with_signature",
         "discover_post_import_hooks",
         "notify_module_loaded",
@@ -125,6 +129,10 @@ if sys.version_info >= (3, 10):
         __name__: str
         __qualname__: str
 
+        # __new__ accepts and ignores any arguments, so a subclass may add
+        # arguments to __init__ or pass its own arguments through from an
+        # overridden __new__. Returns Self so such an override type checks.
+        def __new__(cls, *args: Any, **kwargs: Any) -> Self: ...
         def __init__(self, wrapped: _T) -> None: ...
         def __getattr__(self, name: str) -> Any: ...
         def __class_getitem__(cls, item: Any, /) -> GenericAlias: ...
@@ -253,7 +261,6 @@ if sys.version_info >= (3, 10):
         def __self_setattr__(self, name: str, value: Any) -> None: ...
 
     class ObjectProxy(BaseObjectProxy[_T]):
-        def __new__(cls, *args: Any, **kwargs: Any) -> ObjectProxy[_T]: ...
         def __init__(self, wrapped: _T) -> None: ...
         def __iter__(self) -> Iterator[Any]: ...
 
@@ -268,7 +275,7 @@ if sys.version_info >= (3, 10):
         # doesn't actually support a given dunder (a runtime
         # AttributeError, which mirrors the wrapt design).
 
-        def __new__(cls, wrapped: _T) -> AutoObjectProxy[_T]: ...
+        def __new__(cls, wrapped: _T, *args: Any, **kwargs: Any) -> Self: ...
         def __init__(self, wrapped: _T) -> None: ...
 
         # Hook called by BaseObjectProxy.__setattr__ whenever __wrapped__
@@ -292,9 +299,10 @@ if sys.version_info >= (3, 10):
         def __new__(
             cls,
             callback: Callable[[], _T] | None = None,
-            *,
+            *args: Any,
             interface: Any = ...,
-        ) -> LazyObjectProxy[_T]: ...
+            **kwargs: Any,
+        ) -> Self: ...
         def __init__(
             self,
             callback: Callable[[], _T] | None = None,
@@ -813,6 +821,21 @@ if sys.version_info >= (3, 10):
         prototype: Callable[..., Any] | None = None,
         signature: Signature | None = None,
         factory: (
-            Callable[[Callable[..., Any]], Signature | Callable[..., Any]] | None
+            Callable[
+                [Callable[..., Any]],
+                Signature
+                | Callable[..., Any]
+                | tuple[Signature | Callable[..., Any], str | None],
+            ]
+            | None
         ) = None,
+        doc: str | None = None,
+    ) -> Callable[[Callable[_P, _R]], FunctionWrapper[_P, _R]]: ...
+
+    # with_doc()
+
+    def with_doc(
+        *,
+        doc: str | None = None,
+        factory: Callable[[Callable[..., Any]], str | None] | None = None,
     ) -> Callable[[Callable[_P, _R]], FunctionWrapper[_P, _R]]: ...

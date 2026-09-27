@@ -294,6 +294,77 @@ static int wrapt_type_has_attr(PyTypeObject *type, PyObject *name)
   return 0;
 }
 
+/* Look for a __doc__ descriptor defined by a derived class. Walks the MRO
+ * of the type checking each tp_dict directly for __doc__, skipping the
+ * plain docstring entries which every class carries, being a string or
+ * None for a class without a docstring. The proxy base types hold a plain
+ * string docstring, so any descriptor found must come from a derived
+ * class, which is taken to mean it wants to control what __doc__ reports
+ * for its instances in place of the default delegation to the wrapped
+ * object. Only __doc__ is treated this way, __module__ always delegates.
+ * The descriptor is invoked directly rather than falling back to the
+ * generic attribute lookup, since that would stop at the None or docstring
+ * entry of a derived class which inherits the descriptor from its base.
+ * Returns a new reference, or NULL without an exception set if there is
+ * no such descriptor. */
+
+static PyObject *wrapt_lookup_doc_descriptor(PyTypeObject *type,
+                                             PyObject *name)
+{
+  PyObject *mro = type->tp_mro;
+  Py_ssize_t i, n;
+
+  if (mro == NULL)
+    return NULL;
+
+  n = PyTuple_GET_SIZE(mro);
+
+  for (i = 0; i < n; i++)
+  {
+    PyTypeObject *t = (PyTypeObject *)PyTuple_GET_ITEM(mro, i);
+    PyObject *dict = t->tp_dict;
+    PyObject *entry = NULL;
+
+    if (dict == NULL)
+      continue;
+
+#if PY_VERSION_HEX >= 0x030D0000
+    if (PyDict_GetItemRef(dict, name, &entry) < 0)
+    {
+      PyErr_WriteUnraisable((PyObject *)t);
+      PyErr_Clear();
+      continue;
+    }
+#else
+    entry = PyDict_GetItemWithError(dict, name);
+    if (entry == NULL && PyErr_Occurred())
+    {
+      PyErr_WriteUnraisable((PyObject *)t);
+      PyErr_Clear();
+      continue;
+    }
+    Py_XINCREF(entry);
+#endif
+
+    if (entry == NULL)
+      continue;
+
+    if (entry == Py_None || PyUnicode_Check(entry))
+    {
+      Py_DECREF(entry);
+      continue;
+    }
+
+    if (Py_TYPE(entry)->tp_descr_get)
+      return entry;
+
+    Py_DECREF(entry);
+    return NULL;
+  }
+
+  return NULL;
+}
+
 /* Non-error-setting predicate: is this object an instance of any wrapt
  * proxy type? Walks the MRO directly. PyType_GetModule sets an exception
  * for heap types that lack a module association (e.g. pure-Python user
@@ -440,6 +511,32 @@ static int raise_uninitialized_wrapper_error(WraptObjectProxyObject *object)
                  "'%.100s' object has no attribute '__wrapped__'",
                  Py_TYPE(object)->tp_name);
   }
+
+  return -1;
+}
+
+/* ------------------------------------------------------------------------- */
+
+/* Check that a wrapper specific field, as acquired by the caller, is not
+ * NULL, raising an error if it is. The additional fields of a partial or
+ * function wrapper are only ever set by __init__(), and together, so one
+ * being NULL means __init__() was never called, or did not complete. That
+ * is possible where a derived class overrides __init__() without calling
+ * that of the base class, or where an instance is created using __new__()
+ * alone, and __wrapped__ is then assigned directly such that the check for
+ * an uninitialized wrapper passes. An AttributeError naming the attribute
+ * by which the field is exposed is raised, that being what the pure Python
+ * implementation yields, since it holds the same state as instance
+ * attributes, which in this situation do not exist. */
+
+static inline int wrapt_require_field(PyObject *object, PyObject *value,
+                                      const char *name)
+{
+  if (value)
+    return 0;
+
+  PyErr_Format(PyExc_AttributeError, "'%.100s' object has no attribute '%s'",
+               Py_TYPE(object)->tp_name, name);
 
   return -1;
 }
@@ -3033,9 +3130,54 @@ static PyObject *WraptObjectProxy_get_module(WraptObjectProxyObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+/* Refresh the copy of __module__ or __doc__ held in the proxy's own dict
+ * after the attribute has been deleted from the wrapped object. Deleting
+ * __doc__ from a function, for example, leaves the attribute present with
+ * a value of None, whereas on other objects it may be gone entirely. Record
+ * what __init__ would have for a fresh proxy over the wrapped object in its
+ * current state: the value if the attribute still exists, otherwise no
+ * entry at all. */
+
+static int WraptObjectProxy_refresh_cached_attr(WraptObjectProxyObject *self,
+                                                PyObject *wrapped,
+                                                PyObject *name)
+{
+  PyObject *object = PyObject_GetAttr(wrapped, name);
+
+  if (object)
+  {
+    int result = PyDict_SetItem(self->dict, name, object);
+    Py_DECREF(object);
+    return result;
+  }
+
+  if (!PyErr_ExceptionMatches(PyExc_AttributeError))
+    return -1;
+
+  PyErr_Clear();
+
+  if (PyDict_DelItem(self->dict, name) == -1)
+  {
+    if (!PyErr_ExceptionMatches(PyExc_KeyError))
+      return -1;
+    PyErr_Clear();
+  }
+
+  return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+/* The setters for __module__ and __doc__ are called with a NULL value when
+ * the attribute is being deleted. PyObject_SetAttr() forwards a deletion to
+ * the wrapped object, but the copy held in the proxy's own dict must then be
+ * refreshed rather than stored, as the dict API rejects a NULL value. */
+
 static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
                                        PyObject *value)
 {
+  int result;
+
   if (!self->wrapped)
   {
     if (raise_uninitialized_wrapper_error(self) == -1)
@@ -3049,14 +3191,16 @@ static int WraptObjectProxy_set_module(WraptObjectProxyObject *self,
   PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   if (PyObject_SetAttr(wrapped, state->str_module, value) == -1)
-  {
-    Py_DECREF(wrapped);
-    return -1;
-  }
+    result = -1;
+  else if (value)
+    result = PyDict_SetItem(self->dict, state->str_module, value);
+  else
+    result = WraptObjectProxy_refresh_cached_attr(self, wrapped,
+                                                  state->str_module);
 
   Py_DECREF(wrapped);
 
-  return PyDict_SetItemString(self->dict, "__module__", value);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3087,6 +3231,8 @@ static PyObject *WraptObjectProxy_get_doc(WraptObjectProxyObject *self)
 static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
                                     PyObject *value)
 {
+  int result;
+
   if (!self->wrapped)
   {
     if (raise_uninitialized_wrapper_error(self) == -1)
@@ -3100,14 +3246,16 @@ static int WraptObjectProxy_set_doc(WraptObjectProxyObject *self,
   PyObject *wrapped = wrapt_acquire_wrapped(self);
 
   if (PyObject_SetAttr(wrapped, state->str_doc, value) == -1)
-  {
-    Py_DECREF(wrapped);
-    return -1;
-  }
+    result = -1;
+  else if (value)
+    result = PyDict_SetItem(self->dict, state->str_doc, value);
+  else
+    result = WraptObjectProxy_refresh_cached_attr(self, wrapped,
+                                                  state->str_doc);
 
   Py_DECREF(wrapped);
 
-  return PyDict_SetItemString(self->dict, "__doc__", value);
+  return result;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -3368,7 +3516,22 @@ static PyObject *WraptObjectProxy_getattro(WraptObjectProxyObject *self,
   if (wrapt_name_equals(name, state->str_module))
     return WraptObjectProxy_get_module(self);
   if (wrapt_name_equals(name, state->str_doc))
+  {
+    /* A derived class may define its own __doc__ descriptor, in which
+     * case that is consulted in place of the wrapped object. */
+
+    PyObject *descriptor = wrapt_lookup_doc_descriptor(Py_TYPE(self), name);
+
+    if (descriptor)
+    {
+      result = (Py_TYPE(descriptor)->tp_descr_get)(
+          descriptor, (PyObject *)self, (PyObject *)Py_TYPE(self));
+      Py_DECREF(descriptor);
+      return result;
+    }
+
     return WraptObjectProxy_get_doc(self);
+  }
 
   object = PyObject_GenericGetAttr((PyObject *)self, name);
 
@@ -3450,7 +3613,30 @@ static int WraptObjectProxy_setattro(WraptObjectProxyObject *self,
   if (wrapt_name_equals(name, state->str_module))
     return WraptObjectProxy_set_module(self, value);
   if (wrapt_name_equals(name, state->str_doc))
+  {
+    /* A derived class may define its own __doc__ descriptor, in which
+     * case assignment and deletion go to it rather than being forwarded
+     * to the wrapped object. A descriptor without __set__ is stored
+     * against the instance as generic attribute assignment would. */
+
+    PyObject *descriptor = wrapt_lookup_doc_descriptor(Py_TYPE(self), name);
+
+    if (descriptor)
+    {
+      int result;
+
+      if (Py_TYPE(descriptor)->tp_descr_set)
+        result = (Py_TYPE(descriptor)->tp_descr_set)(descriptor,
+                                                     (PyObject *)self, value);
+      else
+        result = PyObject_GenericSetAttr((PyObject *)self, name, value);
+
+      Py_DECREF(descriptor);
+      return result;
+    }
+
     return WraptObjectProxy_set_doc(self, value);
+  }
 
   if (wrapt_type_has_attr(Py_TYPE(self), name))
     return PyObject_GenericSetAttr((PyObject *)self, name, value);
@@ -3911,6 +4097,12 @@ static PyObject *WraptPartialCallableObjectProxy_call(
   PyObject *cargs = wrapt_acquire_field((PyObject *)self, &self->args);
   PyObject *ckwargs = wrapt_acquire_field((PyObject *)self, &self->kwargs);
 
+  /* The captured keyword arguments are legitimately NULL when none were
+   * supplied, so only the captured positional arguments are required. */
+
+  if (wrapt_require_field((PyObject *)self, cargs, "_self_args") == -1)
+    goto finally;
+
   fnargs = PyTuple_New(PyTuple_GET_SIZE(cargs) + PyTuple_GET_SIZE(args));
 
   if (!fnargs)
@@ -3952,7 +4144,7 @@ finally:
   Py_XDECREF(fnkwargs);
 
   Py_DECREF(wrapped);
-  Py_DECREF(cargs);
+  Py_XDECREF(cargs);
   Py_XDECREF(ckwargs);
 
   return result;
@@ -3967,8 +4159,11 @@ static PyObject *WraptPartialCallableObjectProxy_get_self_args(
 
   value = wrapt_acquire_field((PyObject *)self, &self->args);
 
-  if (!value)
-    return PyTuple_New(0);
+  /* See the comment for the equivalent getters of the function wrapper
+   * as to why this fails rather than substituting an empty tuple. */
+
+  if (wrapt_require_field((PyObject *)self, value, "_self_args") == -1)
+    return NULL;
 
   return value;
 }
@@ -3983,7 +4178,22 @@ static PyObject *WraptPartialCallableObjectProxy_get_self_kwargs(
   value = wrapt_acquire_field((PyObject *)self, &self->kwargs);
 
   if (!value)
+  {
+    /* The captured keyword arguments are legitimately NULL when none were
+     * supplied, in which case an empty dictionary stands in for them. That
+     * must be distinguished from __init__() never having been called, for
+     * which the captured positional arguments, which are always set by
+     * __init__(), will be NULL as well. */
+
+    PyObject *args = wrapt_acquire_field((PyObject *)self, &self->args);
+
+    if (wrapt_require_field((PyObject *)self, args, "_self_kwargs") == -1)
+      return NULL;
+
+    Py_DECREF(args);
+
     return PyDict_New();
+  }
 
   return value;
 }
@@ -4329,6 +4539,12 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
   enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
   binding = wrapt_acquire_field((PyObject *)self, &self->binding);
 
+  if (wrapt_require_field((PyObject *)self, instance, "_self_instance") == -1 ||
+      wrapt_require_field((PyObject *)self, wrapper, "_self_wrapper") == -1 ||
+      wrapt_require_field((PyObject *)self, enabled, "_self_enabled") == -1 ||
+      wrapt_require_field((PyObject *)self, binding, "_self_binding") == -1)
+    goto finally;
+
   if (enabled != Py_None)
   {
     if (PyCallable_Check(enabled))
@@ -4464,6 +4680,13 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
   enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
   binding = wrapt_acquire_field((PyObject *)self, &self->binding);
   parent = wrapt_acquire_field((PyObject *)self, &self->parent);
+
+  if (wrapt_require_field((PyObject *)self, instance, "_self_instance") == -1 ||
+      wrapt_require_field((PyObject *)self, wrapper, "_self_wrapper") == -1 ||
+      wrapt_require_field((PyObject *)self, enabled, "_self_enabled") == -1 ||
+      wrapt_require_field((PyObject *)self, binding, "_self_binding") == -1 ||
+      wrapt_require_field((PyObject *)self, parent, "_self_parent") == -1)
+    goto finally;
 
   if (parent == Py_None)
   {
@@ -4647,6 +4870,15 @@ WraptFunctionWrapperBase_set_name(WraptFunctionWrapperObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+/* The getters for the wrapper specific fields fail with AttributeError if
+ * the field was never set, which means __init__() was not called. The
+ * attribute lookup then falls through to __getattr__() and so on to the
+ * wrapped object, which is the same outcome as for the pure Python
+ * implementation, where these are instance attributes which in that case
+ * do not exist. A value of None is not substituted, as that is a valid
+ * value for most of these fields and so would be indistinguishable from
+ * the state of a wrapper which had been initialized. */
+
 static PyObject *
 WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
                                            void *closure)
@@ -4655,10 +4887,8 @@ WraptFunctionWrapperBase_get_self_instance(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->instance);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_instance") == -1)
+    return NULL;
 
   return value;
 }
@@ -4673,10 +4903,8 @@ WraptFunctionWrapperBase_get_self_wrapper(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->wrapper);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_wrapper") == -1)
+    return NULL;
 
   return value;
 }
@@ -4691,10 +4919,8 @@ WraptFunctionWrapperBase_get_self_enabled(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->enabled);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_enabled") == -1)
+    return NULL;
 
   return value;
 }
@@ -4709,10 +4935,8 @@ WraptFunctionWrapperBase_get_self_binding(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->binding);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_binding") == -1)
+    return NULL;
 
   return value;
 }
@@ -4727,10 +4951,8 @@ WraptFunctionWrapperBase_get_self_parent(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->parent);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_parent") == -1)
+    return NULL;
 
   return value;
 }
@@ -4745,10 +4967,8 @@ WraptFunctionWrapperBase_get_self_owner(WraptFunctionWrapperObject *self,
 
   value = wrapt_acquire_field((PyObject *)self, &self->owner);
 
-  if (!value)
-  {
-    Py_RETURN_NONE;
-  }
+  if (wrapt_require_field((PyObject *)self, value, "_self_owner") == -1)
+    return NULL;
 
   return value;
 }
@@ -4842,6 +5062,13 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
   enabled = wrapt_acquire_field((PyObject *)self, &self->enabled);
   binding = wrapt_acquire_field((PyObject *)self, &self->binding);
   owner = wrapt_acquire_field((PyObject *)self, &self->owner);
+
+  if (wrapt_require_field((PyObject *)self, instance, "_self_instance") == -1 ||
+      wrapt_require_field((PyObject *)self, wrapper, "_self_wrapper") == -1 ||
+      wrapt_require_field((PyObject *)self, enabled, "_self_enabled") == -1 ||
+      wrapt_require_field((PyObject *)self, binding, "_self_binding") == -1 ||
+      wrapt_require_field((PyObject *)self, owner, "_self_owner") == -1)
+    goto finally;
 
   if (enabled != Py_None)
   {

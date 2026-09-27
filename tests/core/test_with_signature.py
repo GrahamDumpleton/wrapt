@@ -1,4 +1,5 @@
 import inspect
+import pydoc
 import unittest
 
 import wrapt
@@ -561,6 +562,156 @@ class TestMarkerStacking(unittest.TestCase):
         self.assertTrue(fn.__code__.co_flags & inspect.CO_VARARGS)
         self.assertTrue(fn.__code__.co_flags & inspect.CO_VARKEYWORDS)
         self.assertFalse(inspect.iscoroutinefunction(fn))
+
+
+class TestDocstring(unittest.TestCase):
+    """Verify the ``doc`` argument and the tuple return from a factory,
+    which override the docstring alongside the signature."""
+
+    def test_doc_argument(self):
+        @wrapt.with_signature(prototype=_proto, doc="Overridden.")
+        def fn(*args, **kwargs):
+            """Original."""
+
+        self.assertEqual(fn.__doc__, "Overridden.")
+        self.assertEqual(fn.__wrapped__.__doc__, "Original.")
+        self.assertEqual(
+            str(inspect.signature(fn)), "(a: int, b: str = 'x') -> bool"
+        )
+
+    def test_pydoc_shows_doc_and_signature(self):
+        @wrapt.with_signature(prototype=_proto, doc="Overridden.")
+        def fn(*args, **kwargs):
+            """Original."""
+
+        rendered = pydoc.render_doc(fn)
+
+        self.assertIn("Overridden.", rendered)
+        self.assertNotIn("Original.", rendered)
+        self.assertIn("a: int, b: str = 'x'", rendered)
+
+    def test_doc_not_given_delegates(self):
+        @wrapt.with_signature(prototype=_proto)
+        def fn(*args, **kwargs):
+            """Original."""
+
+        self.assertEqual(fn.__doc__, "Original.")
+
+    def test_doc_not_given_writes_through(self):
+        # Without a docstring override the wrapper behaves as any other
+        # wrapt wrapper, with assignment and deletion reaching the wrapped
+        # function.
+
+        @wrapt.with_signature(prototype=_proto)
+        def fn(*args, **kwargs):
+            """Original."""
+
+        fn.__doc__ = "Replaced."
+
+        self.assertEqual(fn.__doc__, "Replaced.")
+        self.assertEqual(fn.__wrapped__.__doc__, "Replaced.")
+
+        del fn.__doc__
+
+        self.assertIsNone(fn.__doc__)
+        self.assertIsNone(fn.__wrapped__.__doc__)
+
+    def test_doc_given_assignment_replaces_override(self):
+        @wrapt.with_signature(prototype=_proto, doc="Overridden.")
+        def fn(*args, **kwargs):
+            """Original."""
+
+        fn.__doc__ = "Replaced."
+
+        self.assertEqual(fn.__doc__, "Replaced.")
+        self.assertEqual(fn.__wrapped__.__doc__, "Original.")
+
+        del fn.__doc__
+
+        self.assertEqual(fn.__doc__, "Original.")
+
+    def test_factory_returning_tuple_with_signature(self):
+        def factory(wrapped):
+            s = inspect.signature(wrapped)
+            return s, f"{wrapped.__name__}{s} does things."
+
+        @wrapt.with_signature(factory=factory)
+        def fn(a, b):
+            """Original."""
+
+        self.assertEqual(str(inspect.signature(fn)), "(a, b)")
+        self.assertEqual(fn.__doc__, "fn(a, b) does things.")
+        self.assertEqual(fn.__wrapped__.__doc__, "Original.")
+
+    def test_factory_returning_tuple_with_prototype(self):
+        def factory(wrapped):
+            return _proto, "Overridden."
+
+        @wrapt.with_signature(factory=factory)
+        def fn(*args, **kwargs):
+            """Original."""
+
+        self.assertEqual(
+            str(inspect.signature(fn)), "(a: int, b: str = 'x') -> bool"
+        )
+        self.assertEqual(fn.__doc__, "Overridden.")
+
+    def test_factory_returning_tuple_with_none_docstring(self):
+        def factory(wrapped):
+            return _proto, None
+
+        @wrapt.with_signature(factory=factory)
+        def fn(*args, **kwargs):
+            """Original."""
+
+        self.assertIsNone(fn.__doc__)
+        self.assertEqual(fn.__wrapped__.__doc__, "Original.")
+
+    def test_doc_argument_takes_precedence_over_tuple(self):
+        def factory(wrapped):
+            return _proto, "From factory."
+
+        @wrapt.with_signature(factory=factory, doc="From argument.")
+        def fn(*args, **kwargs):
+            """Original."""
+
+        self.assertEqual(fn.__doc__, "From argument.")
+
+    def test_bound_method_reports_doc(self):
+        class C:
+            @wrapt.with_signature(prototype=_method_proto, doc="Overridden.")
+            def scale(self, *args, **kwargs):
+                """Original."""
+                return args[0] * 10
+
+        c = C()
+
+        self.assertEqual(C.scale.__doc__, "Overridden.")
+        self.assertEqual(c.scale.__doc__, "Overridden.")
+        self.assertEqual(
+            str(inspect.signature(c.scale)), "(value: int) -> int"
+        )
+        self.assertEqual(c.scale(3), 30)
+
+        rendered = pydoc.render_doc(c.scale)
+
+        self.assertIn("Overridden.", rendered)
+        self.assertIn("value: int", rendered)
+
+    def test_docstring_propagates_through_outer_decorator(self):
+        @wrapt.decorator
+        def pass_through(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        @pass_through
+        @wrapt.with_signature(prototype=_proto, doc="Overridden.")
+        def fn(*args, **kwargs):
+            """Original."""
+
+        self.assertEqual(fn.__doc__, "Overridden.")
+        self.assertEqual(
+            str(inspect.signature(fn)), "(a: int, b: str = 'x') -> bool"
+        )
 
 
 if __name__ == "__main__":

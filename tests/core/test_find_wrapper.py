@@ -137,7 +137,7 @@ class TestFindWrapper(unittest.TestCase):
         wrapt.wrap_function_wrapper(__name__, "function_equality", wrapper)
 
         current = wrapt.resolve_path(__name__, "function_equality")[2]
-        lookalike = wrapt.ObjectProxy(function_equality)
+        lookalike = wrapt.BaseObjectProxy(function_equality)
 
         self.assertEqual(current, lookalike)
         self.assertIsNone(wrapt.find_wrapper(current, lookalike))
@@ -229,7 +229,7 @@ class TestFindWrapper(unittest.TestCase):
 
         deep = function_outermost
         for _ in range(200):
-            deep = wrapt.ObjectProxy(deep)
+            deep = wrapt.BaseObjectProxy(deep)
 
         handle = wrapt.FunctionWrapper(function_outermost, wrapper)
 

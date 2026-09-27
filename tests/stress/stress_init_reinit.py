@@ -1,7 +1,7 @@
 """Stress concurrent re-invocation of __init__ on a shared proxy.
 
 Multiple threads concurrently call ``__init__`` again on a single shared
-C ``ObjectProxy`` which has already been initialised, each passing a
+C ``BaseObjectProxy`` which has already been initialised, each passing a
 fresh, uniquely held object. Before wrapt 2.4.0 the initialisation path
 updated the wrapped object using an unprotected pointer swap, the same
 hazard as assignment to ``__wrapped__`` (issue #347), so two threads
@@ -23,7 +23,7 @@ SECONDS = float(os.environ.get("WRAPT_STRESS_SECONDS", "5"))
 
 def main():
     try:
-        from wrapt._wrappers import ObjectProxy
+        from wrapt._wrappers import BaseObjectProxy
     except ImportError:
         print("skipped: C extension not available", flush=True)
         return 77
@@ -36,7 +36,7 @@ def main():
         flush=True,
     )
 
-    shared = ObjectProxy(object())
+    shared = BaseObjectProxy(object())
 
     stop = threading.Event()
     barrier = threading.Barrier(THREADS + 1)

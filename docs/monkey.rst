@@ -5,7 +5,7 @@ Monkey patching is the technique of modifying a function, method or other
 attribute on a module or class after it has already been defined, typically to
 add behaviour around an existing implementation without changing the original
 source. The **wrapt** module provides a small set of helpers that build on
-the same ``FunctionWrapper`` and ``ObjectProxy`` machinery used by
+the same ``FunctionWrapper`` and ``BaseObjectProxy`` machinery used by
 ``@wrapt.decorator``, so monkey patches benefit from the same correct handling
 of instance methods, class methods, static methods and nested descriptors,
 and preserve introspection of the underlying target.
@@ -122,11 +122,24 @@ without the additional features of ``@wrapt.decorator`` such as the
 
     Service.ping = notify(Service.ping)
 
-The result of applying ``@wrapt.function_wrapper`` is itself a ``wrapt``
-wrapper, so it can be used either as an in place decorator as shown above,
-or passed directly as the ``wrapper`` argument to ``wrap_function_wrapper``
-and friends. For user facing decorators, prefer ``@wrapt.decorator``. For
-wrappers you intend to apply through the monkey patching helpers,
+The result of applying ``@wrapt.function_wrapper`` is a decorator, a
+callable of one argument which returns a ``FunctionWrapper`` around it, so
+it can be used either as an in place decorator as shown above, or passed as
+the ``factory`` argument to ``wrap_object()`` and friends, which call it once
+with the original and install what it returns.
+
+::
+
+    wrapt.wrap_object("logging", "Logger.info", notify)
+
+It cannot be passed as the ``wrapper`` argument to ``wrap_function_wrapper()``.
+That argument is called with the four wrapper arguments on every call of the
+patched function, and the decorator would treat the first of them as a
+function to wrap and return a new ``FunctionWrapper`` in place of the call's
+result. Pass the plain wrapper function there instead.
+
+For user facing decorators, prefer ``@wrapt.decorator``. For wrappers you
+intend to apply through the monkey patching helpers,
 ``@wrapt.function_wrapper`` is the lower overhead option.
 
 Wrapping Arbitrary Attributes
@@ -146,7 +159,7 @@ returns the replacement for convenience.
 
     import wrapt
 
-    class CountingProxy(wrapt.ObjectProxy):
+    class CountingProxy(wrapt.BaseObjectProxy):
         def __init__(self, wrapped):
             super().__init__(wrapped)
             self._self_count = 0
@@ -193,7 +206,7 @@ value each time.
 
     import wrapt
 
-    class LoggedValue(wrapt.ObjectProxy):
+    class LoggedValue(wrapt.BaseObjectProxy):
         def __repr__(self):
             return f"LoggedValue({self.__wrapped__!r})"
 
@@ -319,6 +332,41 @@ Each entry point target is a callable which accepts the imported module and
 is free to call any of the monkey patching helpers on it. This approach keeps
 the decision of *which* patches to apply in the hands of the application,
 while the patches themselves live in separately installable packages.
+
+Applying patches at interpreter startup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Calling ``wrapt.discover_post_import_hooks()`` still needs a line of code in
+the application. To apply patches to a program which cannot be modified at
+all, the companion package **autowrapt** makes that call at interpreter
+startup instead. Install it into the same Python installation or virtual
+environment as the application, and name the entry point group in the
+``AUTOWRAPT_BOOTSTRAP`` environment variable when running the program::
+
+    $ pip install autowrapt
+    $ AUTOWRAPT_BOOTSTRAP=my_app.patches python app.py
+
+More than one group can be named, separated by commas. Every entry point in
+each group is registered as a post import hook, and each hook fires when, and
+only when, its module is first imported. When the variable is not set nothing
+happens, beyond the interpreter loading one small module at startup.
+
+autowrapt works by installing startup files at the top of site-packages,
+which the ``site`` module processes while the interpreter starts up. On
+Python 3.15 and later that is a ``.start`` file, the package startup
+configuration file introduced by PEP 829, and on earlier versions it is a
+``.pth`` file with an import line. Either way the hooks are registered as the
+last step of site initialisation, once the module search path is complete
+and before the application's own code runs.
+
+Two limitations follow from the mechanism. autowrapt has to be installed in
+the same environment as the application, and nothing happens when Python is
+run with the ``-S`` option, or in an embedded interpreter which does not run
+the ``site`` module.
+
+* https://github.com/GrahamDumpleton/autowrapt
+
+* https://pypi.org/project/autowrapt/
 
 Temporary Patches for Tests
 ---------------------------
@@ -562,3 +610,27 @@ and a second application stacks over the first rather than replacing it.
 Earlier versions of wrapt replaced the class attribute outright, could not
 be used over a ``property``, and broke class-level access to the attribute;
 none of those limitations apply any longer.
+
+Going Further
+-------------
+
+The helpers described here are the building blocks. If what you need is a
+higher level API over them, look at **wrapture**, a sibling project built on
+the monkey patching machinery of wrapt. It provides a clean lifecycle and
+behaviour vocabulary over ``wrap_object()``, so a method can be pointed at
+by name and stubbed, failed, have its arguments or result transformed, or be
+wrapped with a decorator, then removed again, with honest reporting if
+something else displaced the patch in the meantime. On top of that it
+provides unit testing, where the real code runs and how calls flowed
+through it is recorded and asserted on, and ad-hoc tracing of a running
+application, with export to OpenTelemetry.
+
+* https://github.com/GrahamDumpleton/wrapture
+
+* https://wrapture.readthedocs.io/
+
+For hands-on practice with the helpers on this page, the monkey patching
+collection of the wrapt workshops patches a small package shipped with each
+workshop, open in an editor beside the notebook.
+
+* https://github.com/GrahamDumpleton/wrapt-workshops

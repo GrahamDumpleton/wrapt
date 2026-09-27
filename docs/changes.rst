@@ -1,6 +1,223 @@
 Release Notes
 =============
 
+Version 2.5.0
+-------------
+
+**New Features**
+
+* Added ``with_doc``, a decorator for overriding the docstring that
+  ``help()``, ``pydoc`` and other introspection tools see for a wrapped
+  callable without mutating the wrapped function itself. It is the companion
+  of ``with_signature``. The docstring can be supplied directly, or as a
+  factory callable that derives it from the wrapped function at decoration
+  time. When stacked above ``with_signature`` the factory sees the
+  overridden signature and can embed it in the docstring. Assigning to
+  ``__doc__`` on the resulting wrapper replaces the override, and deleting
+  it restores delegation to the wrapped function. Previously the only option
+  was to assign to ``__doc__`` on a wrapper, which writes through to the
+  wrapped function since ``__doc__`` on every proxy delegates to the wrapped
+  object, and so changed what was reported for the wrapped function
+  everywhere. The override is handled for instance methods, class methods
+  and static methods, and propagates through outer wrapt decorators stacked
+  on top. See the "Docstring Override" section of :doc:`bundled` for
+  details.
+
+* ``with_signature`` now accepts a ``doc`` argument for overriding the
+  docstring at the same time as the signature, and the factory callable may
+  return a tuple of ``(signature_or_prototype, docstring)`` so that a single
+  factory can derive both from the wrapped function in one pass. When
+  ``doc`` is supplied, the docstring from the tuple is ignored. When neither
+  is given, ``__doc__`` continues to delegate to the wrapped function as
+  before, including for assignment and deletion.
+
+* A class derived from ``wrapt.BaseObjectProxy`` may now define ``__doc__``
+  as a property, or other descriptor, in its class body, and that is used
+  for instances of the class in place of the default delegation of
+  ``__doc__`` to the wrapped object. This works with both the pure Python
+  implementation and the C extension, and the descriptor is inherited by
+  further derived classes. Previously the pure Python metaclass overwrote
+  such a descriptor with the default delegating property, and the C
+  extension forwarded ``__doc__`` to the wrapped object before consulting
+  the type, so it was never used. Only ``__doc__`` is affected, with
+  ``__module__`` always delegating to the wrapped object. This is the
+  mechanism ``with_doc`` relies on.
+
+**Features Changed**
+
+* The documentation now consistently describes the object proxy in terms of
+  ``wrapt.BaseObjectProxy`` rather than ``wrapt.ObjectProxy``. When
+  ``BaseObjectProxy`` was introduced in version 2.0.0, and ``ObjectProxy``
+  became a thin subclass of it retained only for backward compatibility, the
+  documentation, examples and release notes were not updated to match and
+  continued to present ``ObjectProxy`` as the class to use. That has now
+  been corrected, including in the release notes for versions from 2.0.0
+  onwards where they described behaviour of the base proxy class.
+
+  To reiterate, ``wrapt.ObjectProxy`` should not be used in new code. It is
+  retained purely so that existing code continues to work. The only
+  difference from ``BaseObjectProxy`` is that it forwards ``__iter__()`` to
+  the wrapped object unconditionally, which was a mistake in the original
+  design. It means every ``ObjectProxy`` instance appears to be iterable
+  even when the wrapped object is not, which breaks code that checks for
+  iterability. Removing it would break existing users, so the fix in 2.0.0
+  was to move everything else into ``BaseObjectProxy`` and leave
+  ``ObjectProxy`` as the compatibility layer. Custom proxies should derive
+  from ``wrapt.BaseObjectProxy`` and add ``__iter__()`` explicitly, or use
+  ``wrapt.AutoObjectProxy``, if iteration is required. See the "Special
+  Object Methods" section of :doc:`wrappers` for the full background, and
+  the "hasattr() on BaseObjectProxy and pre-defined dunder methods" section
+  of :doc:`issues` for why the presence of such methods matters.
+
+  Note that the class exported as ``BaseObjectProxy`` is still named
+  ``ObjectProxy`` internally, so ``type(proxy)`` and error messages continue
+  to display ``ObjectProxy`` for a ``BaseObjectProxy`` instance. This is
+  cosmetic and has not been changed, although the internal name may be
+  changed in some future major version. You should therefore ensure that
+  you are not dependent on the name which appears in the ``repr()`` output
+  for the type, or on what ``__name__`` on the type returns.
+
+* A derived class of ``wrapt.BaseObjectProxy`` which overrides ``__new__()``
+  and passes the arguments it was given through to the base class, as in
+  ``super().__new__(cls, wrapped)``, now works with the pure Python
+  implementation as it already did with the C extension. Previously the
+  call fell through to ``object.__new__()``, which rejects extra arguments
+  once ``__new__()`` is overridden, and raised ``TypeError``. The pure
+  Python ``BaseObjectProxy`` now defines ``__new__()`` to accept and ignore
+  any arguments, matching the ``tp_new`` slot of the C extension. Such a
+  ``__new__()`` was previously defined only on the ``ObjectProxy``
+  compatibility class, which hid the problem from anyone still using it.
+
+  Similarly, a derived class of ``wrapt.AutoObjectProxy`` or
+  ``wrapt.LazyObjectProxy`` which adds arguments to ``__init__()``, such as
+  ``def __init__(self, wrapped, label)``, failed with ``TypeError`` in both
+  implementations, because the ``__new__()`` methods of those classes, which
+  do need the wrapped object or the declared interface to build the class
+  for the instance, accepted only their own arguments. They now accept and
+  ignore any further arguments. The type stubs are updated to match, with
+  ``__new__()`` on all three classes declared as returning ``Self`` so that
+  an override which passes its arguments through type checks.
+
+**Bugs Fixed**
+
+* Deleting the ``__module__`` or ``__doc__`` attribute of a proxy object,
+  using ``del proxy.__doc__`` for example, crashed the Python interpreter
+  when the C extension was in use. The attribute setters, which CPython
+  also invokes for a deletion with no value, correctly forwarded the
+  deletion to the wrapped object but then attempted to store the missing
+  value in the proxy's own dictionary. The pure Python implementation did
+  not crash, but instead failed with an ``AttributeError`` as the
+  properties used for these attributes had no deleter, so the deletion was
+  never forwarded to the wrapped object at all.
+
+  Both implementations now forward the deletion to the wrapped object, so
+  the outcome is the same as deleting the attribute on the wrapped object
+  directly. For a function this leaves the attribute with a value of
+  ``None``, while for a class the ``TypeError`` raised by Python is
+  propagated. The C extension also refreshes the copy of the attribute it
+  holds in the proxy's own dictionary, so that the state of the proxy after
+  the deletion is the same as for a proxy newly created over the wrapped
+  object.
+
+* Calling a ``FunctionWrapper``, ``BoundFunctionWrapper`` or
+  ``PartialCallableObjectProxy`` for which ``__init__()`` had never been
+  called, but which had ``__wrapped__`` assigned to it directly, crashed
+  the Python interpreter when the C extension was in use. Accessing such a
+  ``FunctionWrapper`` as a descriptor did not itself crash, but could yield
+  a bound wrapper which then crashed when called. This state can be reached
+  where a derived class overrides ``__init__()`` and sets ``__wrapped__``
+  itself rather than calling ``__init__()`` of the base class, or where an
+  instance is created using ``__new__()`` alone. The existing check for an
+  uninitialized wrapper only considers whether ``__wrapped__`` is set, so it
+  passed, and the additional fields of the wrapper were then used even
+  though they had never been set.
+
+  The C extension now checks those fields before use and raises an
+  ``AttributeError`` naming the missing ``_self_`` attribute, which is the
+  type of exception the pure Python implementation already raised in this
+  situation. The pure Python ``BoundFunctionWrapper`` was the exception to
+  that, as it instead failed with a ``RecursionError``, including when
+  merely assigning ``__wrapped__``, because its ``__getattr__()`` method
+  looked up ``_self_parent`` on itself and so recursed when that attribute
+  did not exist. It now raises ``AttributeError`` as well.
+
+  The same fields are exposed as the ``_self_instance``, ``_self_wrapper``,
+  ``_self_enabled``, ``_self_binding``, ``_self_parent`` and ``_self_owner``
+  attributes of a function wrapper, and the ``_self_args`` and
+  ``_self_kwargs`` attributes of a ``PartialCallableObjectProxy``. When
+  ``__init__()`` had never been called, the C extension returned ``None``
+  for these, or an empty tuple or dictionary for those of the partial,
+  whereas the pure Python implementation raised ``AttributeError``. As
+  ``None`` is a valid value for most of these attributes, the result was
+  indistinguishable from that for a wrapper which had been initialized. The
+  C extension now raises ``AttributeError`` as well. Since the lookup of a
+  missing attribute on a proxy falls through to the wrapped object, where
+  the wrapped object is itself a wrapper it is the attribute of that
+  wrapper which is returned, in both implementations. The ``_self_kwargs``
+  attribute of a ``PartialCallableObjectProxy`` which was initialized, but
+  with no keyword arguments, continues to be an empty dictionary.
+
+* Calling ``__get__()`` on an ``AutoObjectProxy`` or ``LazyObjectProxy``
+  wrapping a descriptor, with only the ``instance`` argument supplied,
+  failed with a ``TypeError`` as the ``owner`` argument was required. The
+  descriptor protocol makes ``owner`` optional, and builtin descriptors
+  such as functions and ``property`` accept the one argument form, so
+  manual binding through the proxy did not behave the same as manual
+  binding of the wrapped descriptor. The ``owner`` argument now defaults
+  to ``None``, consistent with ``__get__()`` on function wrappers, and
+  ``None`` is what the wrapped descriptor is passed when it is omitted.
+  Normal attribute lookup was not affected as Python always supplies both
+  arguments in that case.
+
+* Applying a binary operator such as ``+`` where both operands were an
+  ``BaseObjectProxy`` could give a different result with the pure Python
+  implementation than with the C extension. The C extension unwrapped both
+  operands before applying the operator to the wrapped objects, whereas the
+  pure Python implementation unwrapped only the left hand operand and
+  passed the right hand proxy through to the operator method of the
+  wrapped object. This usually went unnoticed, as the wrapped object's
+  operator method would return ``NotImplemented`` when given a proxy, and
+  Python would then try the reflected method of the right hand proxy,
+  which unwrapped the other side.
+
+  The difference was visible where the wrapped type raised ``TypeError``
+  for an operand it did not recognise instead of returning
+  ``NotImplemented``, since Python never tries the reflected method after
+  an exception, so the operation failed with the pure Python
+  implementation but succeeded with the C extension. It was also visible
+  where the right hand operand's type was a subclass of the left hand
+  operand's type and overrode the reflected method. Python gives that
+  reflected method priority, but only when it sees the real types, so
+  with the pure Python implementation the forward method of the left hand
+  wrapped object was called instead.
+
+  The pure Python implementation now also unwraps a right hand operand
+  which is a proxy, for the binary, reflected and in-place operators, so
+  the result is the same as applying the operator to the two wrapped
+  objects in both implementations. Where a proxy is on the right hand side
+  but the left hand operand is not a proxy, Python still selects the
+  method to call from the types it can see, so the reflected method of a
+  proxied subclass on the right hand side is not given priority in either
+  implementation. The modulo argument of the three argument form of
+  ``pow()`` is still not unwrapped, as described in the known issues.
+
+* Creating a ``WeakFunctionProxy`` around a decorated function, or a
+  decorated method, classmethod or staticmethod accessed via the class
+  rather than an instance, failed with ``TypeError``. In these cases the
+  function wrapper produced by the decorator has no bound instance, and the
+  proxy attempted to take a weak reference to ``None``. Only a decorated
+  method accessed via an instance worked.
+
+  The proxy now takes a weak reference to the instance only where there is
+  one, and also retains a weak reference to the class the wrapper was
+  accessed through. When called, the function is rebound against both, so
+  a decorated classmethod receives the class it was accessed through,
+  including a subclass, and a decorated instance method accessed via the
+  class recognises an instance passed as the first argument. The class is
+  not kept alive by the proxy, and if it is garbage collected a call raises
+  ``ReferenceError``, and the expiry callback runs, in the same way as when
+  the instance a method was bound to is garbage collected.
+
 Version 2.4.1
 -------------
 
@@ -561,7 +778,7 @@ Version 2.3.0
   on the wrapped object directly when the wrapped object did not implement
   ``__bytes__()``. The C extension implementation of ``__bytes__()`` used
   ``PyObject_Bytes()``, which only honours the ``__bytes__()`` protocol, so
-  ``bytes(wrapt.ObjectProxy(3))`` raised ``TypeError`` even though
+  ``bytes(wrapt.BaseObjectProxy(3))`` raised ``TypeError`` even though
   ``bytes(3)`` returns a zero filled buffer. The pure Python implementation
   already used the ``bytes()`` constructor and was unaffected. The C
   extension now uses the ``bytes()`` constructor as well, so both
@@ -589,7 +806,7 @@ Version 2.2.2
   <https://github.com/GrahamDumpleton/wrapt/issues/342>`_.
 
 * When ``@wrapt.lru_cache`` was applied to a method of a class deriving from
-  ``wrapt.ObjectProxy``, the per-instance cache was stored on the wrapped
+  ``wrapt.BaseObjectProxy``, the per-instance cache was stored on the wrapped
   object rather than on the proxy. This is because the proxy ``__setattr__``
   forwards attribute assignment to the wrapped object for any name that is
   not a recognised proxy attribute, and the cache attribute name was not one.
@@ -687,18 +904,18 @@ their help is much appreciated.
   This avoids eagerly importing modules solely for the purpose of monkey
   patching them.
 
-* Added ``__self_dict__`` to ``ObjectProxy`` to allow introspection of the
-  proxy's own instance dictionary. Because ``ObjectProxy`` replaces
+* Added ``__self_dict__`` to ``BaseObjectProxy`` to allow introspection of the
+  proxy's own instance dictionary. Because ``BaseObjectProxy`` replaces
   ``__dict__`` with a property that delegates to the wrapped object,
   ``vars(proxy)`` returns the wrapped object's attributes rather than the
   proxy's, which previously made it impossible to see what ``_self_``
   attributes were stored on the proxy itself. ``__self_dict__`` returns
   the live instance dictionary of the proxy, so mutations to it are
   reflected on the proxy. The metaclass used by the pure Python
-  ``ObjectProxy`` was also updated to preserve a custom ``__dict__``
+  ``BaseObjectProxy`` was also updated to preserve a custom ``__dict__``
   property defined on a subclass rather than overwriting it with the
   default delegating property, allowing subclasses to provide their own
-  combined view if desired. See the "Introspecting the ObjectProxy
+  combined view if desired. See the "Introspecting the BaseObjectProxy
   instance __dict__" section of :doc:`issues` for details.
 
 * Extended ``synchronized`` to support async functions and async locks.
@@ -793,7 +1010,7 @@ their help is much appreciated.
   ``__init__``, it raises ``WrapperNotInitializedError`` (a ``ValueError``)
   which will not be silently ignored.
 
-* Added ``__instancecheck__`` and ``__subclasscheck__`` to ``ObjectProxy``
+* Added ``__instancecheck__`` and ``__subclasscheck__`` to ``BaseObjectProxy``
   so that ``isinstance()`` and ``issubclass()`` work correctly when a proxied
   type appears on the right-hand side of the check. Previously these methods
   were only available on ``FunctionWrapper``. See the "Using issubclass() and
@@ -819,14 +1036,14 @@ their help is much appreciated.
 
 * Fixed a ``Py_DECREF(NULL)`` crash in the C implementation of all inplace
   operators (``+=``, ``-=``, ``*=``, ``%=``, ``**=``, ``<<=``, ``>>=``, ``&=``,
-  ``^=``, ``|=``, ``//=``, ``/=``, ``@=``) on ``ObjectProxy``. When a subclass
-  overrode ``__object_proxy__`` with a descriptor that raised an exception,
-  the error path dereferenced a ``NULL`` pointer (and leaked the intermediate
-  result). The exception raised by ``__object_proxy__`` is now propagated
-  cleanly.
+  ``^=``, ``|=``, ``//=``, ``/=``, ``@=``) on ``BaseObjectProxy``. When a
+  subclass overrode ``__object_proxy__`` with a descriptor that raised an
+  exception, the error path dereferenced a ``NULL`` pointer (and leaked the
+  intermediate result). The exception raised by ``__object_proxy__`` is now
+  propagated cleanly.
 
 * Fixed a number of optional attribute lookups in the C implementation of
-  ``ObjectProxy`` and ``FunctionWrapper`` that were silently swallowing any
+  ``BaseObjectProxy`` and ``FunctionWrapper`` that were silently swallowing any
   exception raised during the lookup, instead of only ignoring
   ``AttributeError``. As a result, exceptions such as ``MemoryError``,
   ``KeyboardInterrupt``, ``SystemExit``, and user exceptions raised from
@@ -844,7 +1061,7 @@ their help is much appreciated.
   not invoked, matching the behaviour of the pure-Python implementation.
 
 * Fixed a reference leak in the C implementation of ``__round__`` on
-  ``ObjectProxy``. Each call to ``round()`` on a proxy was leaking one
+  ``BaseObjectProxy``. Each call to ``round()`` on a proxy was leaking one
   reference to the ``builtins.round`` function due to a spurious
   ``Py_INCREF`` that was not balanced by a matching ``Py_DECREF``.
 
@@ -858,7 +1075,7 @@ their help is much appreciated.
   propagated to the caller.
 
 * Fixed an unchecked ``PyDict_New()`` allocation in the C implementation of
-  ``ObjectProxy.__new__``. If the dict allocation failed, the proxy object
+  ``BaseObjectProxy.__new__``. If the dict allocation failed, the proxy object
   was still returned to the caller with a ``NULL`` instance dict and a
   pending ``MemoryError``, violating the C-API contract and causing a crash
   on the next attribute write. The constructor now releases the partially
@@ -937,9 +1154,9 @@ their help is much appreciated.
   propagate the ``MemoryError`` to the caller.
 
 * Fixed eager evaluation of ``__annotations__`` in the pure-Python
-  implementation of ``ObjectProxy.__init__`` on Python 3.14+. Python 3.14
+  implementation of ``BaseObjectProxy.__init__`` on Python 3.14+. Python 3.14
   defers annotation evaluation (PEP 649/749) via the ``__annotate__``
-  descriptor, but ``ObjectProxy`` was accessing ``wrapped.__annotations__``
+  descriptor, but ``BaseObjectProxy`` was accessing ``wrapped.__annotations__``
   at construction time, which forced immediate evaluation and raised
   ``TypeError`` when names referenced in annotations had been shadowed in
   the local scope. The proxy now copies ``__annotate__`` instead of
@@ -949,7 +1166,7 @@ their help is much appreciated.
   object lazily on each access.
 
 * Fixed type-level access to ``__module__`` and ``__doc__`` on proxy and
-  wrapper classes (e.g. ``ObjectProxy.__module__``) returning a descriptor
+  wrapper classes (e.g. ``BaseObjectProxy.__module__``) returning a descriptor
   object instead of a string. CPython's ``type.__module__`` getter performs
   a raw dict lookup on the type's ``__dict__`` without invoking the
   descriptor protocol, so the proxying descriptors placed there to delegate
@@ -980,15 +1197,15 @@ their help is much appreciated.
 * Fixed missing NULL guards for the ``other`` operand in the C implementation
   of all thirteen inplace numeric operators (``+=``, ``-=``, ``*=``, ``%=``,
   ``**=``, ``<<=``, ``>>=``, ``&=``, ``^=``, ``|=``, ``//=``, ``/=``, ``@=``)
-  on ``ObjectProxy``. When ``other`` was itself a proxy whose wrapped attribute
-  had not been set, the code unwrapped it to ``NULL`` and passed that to the
-  corresponding ``PyNumber_InPlace*`` function, crashing the interpreter
-  (SIGSEGV). The non-inplace binary operators already had the correct guard;
-  the inplace variants now check for ``NULL`` and raise the same uninitialised
-  wrapper error.
+  on ``BaseObjectProxy``. When ``other`` was itself a proxy whose wrapped
+  attribute had not been set, the code unwrapped it to ``NULL`` and passed
+  that to the corresponding ``PyNumber_InPlace*`` function, crashing the
+  interpreter (SIGSEGV). The non-inplace binary operators already had the
+  correct guard; the inplace variants now check for ``NULL`` and raise the
+  same uninitialised wrapper error.
 
 * Replaced all thirteen uses of the deprecated ``PyObject_HasAttrString()``
-  C-API function in the inplace numeric operators of ``ObjectProxy`` with
+  C-API function in the inplace numeric operators of ``BaseObjectProxy`` with
   ``PyObject_GetOptionalAttrString()`` (backfilled for Python < 3.13).
   ``PyObject_HasAttrString()`` catches all exceptions and returns false,
   silently swallowing ``KeyboardInterrupt``, ``SystemExit``, or any
@@ -1013,16 +1230,17 @@ their help is much appreciated.
   against the owner class, and calls the wrapper with ``instance=None`` when
   no arguments are provided rather than raising ``TypeError``.
 
-* Fixed a crash (SIGSEGV) in the C implementation of ``ObjectProxy.__pow__``
-  when a proxy was passed as the modulo argument to the ternary form of the
-  builtin ``pow()``. The ``nb_power`` slot unwrapped the first two arguments
-  but not modulo before calling ``PyNumber_Power``, so CPython's ternary
-  operator fallback recursed back into the same slot indefinitely and
-  overflowed the C stack. The slot now returns ``NotImplemented`` when modulo
-  is a proxy, causing ``TypeError`` to be raised instead, matching the
-  behaviour of the pure-Python and PyPy implementations which do not unwrap
-  modulo either. See the "Ternary ``pow()`` with ObjectProxy" section of
-  :doc:`issues` for the resulting calling convention.
+* Fixed a crash (SIGSEGV) in the C implementation of
+  ``BaseObjectProxy.__pow__`` when a proxy was passed as the modulo argument
+  to the ternary form of the builtin ``pow()``. The ``nb_power`` slot
+  unwrapped the first two arguments but not modulo before calling
+  ``PyNumber_Power``, so CPython's ternary operator fallback recursed back
+  into the same slot indefinitely and overflowed the C stack. The slot now
+  returns ``NotImplemented`` when modulo is a proxy, causing ``TypeError`` to
+  be raised instead, matching the behaviour of the pure-Python and PyPy
+  implementations which do not unwrap modulo either. See the "Ternary
+  ``pow()`` with BaseObjectProxy" section of :doc:`issues` for the resulting
+  calling convention.
 
 * Aligned the C implementation of ``FunctionWrapper.__get__`` with the pure
   Python implementation when a wrapped descriptor is accessed from a class
