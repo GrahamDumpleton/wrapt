@@ -177,7 +177,7 @@ def decorator(wrapper=None, /, *, enabled=None, adapter=None, proxy=FunctionWrap
         # time when we need it down below.
 
         def _build(wrapped, wrapper, enabled=None, adapter=None):
-            if adapter:
+            if isinstance(adapter, AdapterFactory) or adapter:
                 if isinstance(adapter, AdapterFactory):
                     adapter = adapter(wrapped)
 

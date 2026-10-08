@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Unreleased
+----------
+
+**Bugs Fixed**
+
+* ``wrapt.decorator`` ignored an ``AdapterFactory`` whose boolean value was
+  false, leaving the original signature in place instead of invoking the
+  factory. These factories are now invoked regardless of their truth value.
+
 Version 2.5.0
 -------------
 

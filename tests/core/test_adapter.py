@@ -208,6 +208,59 @@ class TestDynamicAdapter(unittest.TestCase):
         self.assertEqual(inspect.getfullargspec(Class2.function), argspec)
         self.assertEqual(inspect.getfullargspec(instance2.function), argspec)
 
+    def test_falsey_adapter_factory(self):
+        class FalseyFactory(wrapt.AdapterFactory):
+            def __bool__(self):
+                return False
+
+            def __call__(self, wrapped):
+                calls.append(wrapped)
+                argspec = inspect.getfullargspec(wrapped)
+                argspec.args.insert(0, "extra")
+                return argspec
+
+        class EmptyFactory(wrapt.AdapterFactory):
+            def __len__(self):
+                return 0
+
+            __call__ = FalseyFactory.__call__
+
+        for factory_type in (FalseyFactory, EmptyFactory):
+            with self.subTest(factory=factory_type.__name__):
+                calls = []
+
+                @wrapt.decorator(adapter=factory_type())
+                def wrapper(wrapped, instance, args, kwargs):
+                    return wrapped(*args, **kwargs)
+
+                def function(value):
+                    return value
+
+                decorated = wrapper(function)
+                self.assertEqual(calls, [function])
+                self.assertEqual(str(inspect.signature(decorated)), "(extra, value)")
+                self.assertEqual(
+                    inspect.getfullargspec(decorated).args, ["extra", "value"]
+                )
+                self.assertEqual(decorated(7), 7)
+
+    def test_falsey_adapter_disabled(self):
+        for adapter in (None, False, ""):
+            with self.subTest(adapter=adapter):
+
+                @wrapt.decorator(adapter=adapter)
+                def wrapper(wrapped, instance, args, kwargs):
+                    return wrapped(*args, **kwargs)
+
+                def function(value):
+                    return value
+
+                decorated = wrapper(function)
+                self.assertEqual(
+                    inspect.signature(decorated), inspect.signature(function)
+                )
+                self.assertEqual(decorated(7), 7)
+
     def test_adapter_factory(self):
         def factory(wrapped):
             argspec = inspect.getfullargspec(wrapped)
