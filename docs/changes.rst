@@ -100,6 +100,13 @@ Version 2.5.0
 
 **Bugs Fixed**
 
+* A callable callback which evaluated as false, such as an initially empty
+  callable collection, was passed a weak reference instead of the
+  ``wrapt.WeakFunctionProxy`` when its wrapped function expired. Such a
+  callback could also be called twice when both a bound method and its
+  instance expired. These callbacks now receive the proxy and are called
+  only once, as with other callable callbacks.
+
 * Deleting the ``__module__`` or ``__doc__`` attribute of a proxy object,
   using ``del proxy.__doc__`` for example, crashed the Python interpreter
   when the C extension was in use. The attribute setters, which CPython
