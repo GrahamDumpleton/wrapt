@@ -177,10 +177,18 @@ def decorator(wrapper=None, /, *, enabled=None, adapter=None, proxy=FunctionWrap
         # time when we need it down below.
 
         def _build(wrapped, wrapper, enabled=None, adapter=None):
-            if adapter:
-                if isinstance(adapter, AdapterFactory):
-                    adapter = adapter(wrapped)
+            # Where the adapter is a factory, call it to obtain the actual
+            # adapter before testing whether an adapter was supplied at
+            # all. The factory check is done first and by type, rather
+            # than relying on the truth value of the adapter, as a factory
+            # instance may evaluate as false if it defines `__bool__()` or
+            # `__len__()`. A factory which returns `None` or some other
+            # false value is treated as there being no adapter.
 
+            if isinstance(adapter, AdapterFactory):
+                adapter = adapter(wrapped)
+
+            if adapter:
                 if not callable(adapter):
                     ns = {}
 

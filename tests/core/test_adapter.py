@@ -226,6 +226,107 @@ class TestDynamicAdapter(unittest.TestCase):
 
         self.assertEqual(argspec.args, ["arg0", "arg1", "arg2"])
 
+    def test_adapter_factory_evaluates_false(self):
+        # An adapter factory must be recognised by its type and not by
+        # its truth value, so a factory which evaluates as false because
+        # it defines __bool__() or __len__() must still be called.
+
+        calls = []
+
+        class FalseFactory(wrapt.AdapterFactory):
+            def __bool__(self):
+                return False
+
+            def __call__(self, wrapped):
+                calls.append(wrapped)
+                argspec = inspect.getfullargspec(wrapped)
+                argspec.args.insert(0, "arg0")
+                return argspec
+
+        class EmptyFactory(wrapt.AdapterFactory):
+            def __len__(self):
+                return 0
+
+            __call__ = FalseFactory.__call__
+
+        for factory_type in (FalseFactory, EmptyFactory):
+            with self.subTest(factory=factory_type.__name__):
+                calls.clear()
+
+                factory = factory_type()
+
+                self.assertFalse(factory)
+
+                @wrapt.decorator(adapter=factory)
+                def _wrapper(wrapped, instance, args, kwargs):
+                    return wrapped(*args, **kwargs)
+
+                def _function(arg1):
+                    return arg1
+
+                _decorated = _wrapper(_function)
+
+                self.assertEqual(calls, [_function])
+
+                self.assertEqual(str(inspect.signature(_decorated)), "(arg0, arg1)")
+                self.assertEqual(
+                    inspect.getfullargspec(_decorated).args, ["arg0", "arg1"]
+                )
+
+                self.assertEqual(_decorated(1), 1)
+
+    def test_adapter_factory_returns_none(self):
+        # A factory which returns None, or any other false value, means
+        # that no adapter is to be used for that function.
+
+        for result in (None, ""):
+            with self.subTest(result=result):
+                calls = []
+
+                def factory(wrapped):
+                    calls.append(wrapped)
+                    return result
+
+                @wrapt.decorator(adapter=wrapt.adapter_factory(factory))
+                def _wrapper(wrapped, instance, args, kwargs):
+                    return wrapped(*args, **kwargs)
+
+                def _function(arg1):
+                    return arg1
+
+                _decorated = _wrapper(_function)
+
+                self.assertEqual(calls, [_function])
+
+                self.assertEqual(
+                    inspect.signature(_decorated), inspect.signature(_function)
+                )
+                self.assertEqual(inspect.getfullargspec(_decorated).args, ["arg1"])
+
+                self.assertEqual(_decorated(1), 1)
+
+    def test_adapter_evaluates_false(self):
+        # Passing a false value directly as the adapter means there is no
+        # adapter, so the original signature is retained.
+
+        for adapter in (None, False, ""):
+            with self.subTest(adapter=adapter):
+
+                @wrapt.decorator(adapter=adapter)
+                def _wrapper(wrapped, instance, args, kwargs):
+                    return wrapped(*args, **kwargs)
+
+                def _function(arg1):
+                    return arg1
+
+                _decorated = _wrapper(_function)
+
+                self.assertEqual(
+                    inspect.signature(_decorated), inspect.signature(_function)
+                )
+
+                self.assertEqual(_decorated(1), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

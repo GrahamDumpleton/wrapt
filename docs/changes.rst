@@ -33,6 +33,20 @@ Version 2.5.1
   any other callback. With thanks to Huanyi Xie for `pull request #359
   <https://github.com/GrahamDumpleton/wrapt/pull/359>`_.
 
+* A ``wrapt.AdapterFactory`` instance passed as the ``adapter`` argument
+  to ``wrapt.decorator`` was ignored, and so never called, if the instance
+  evaluated as false, such as when the factory class defined ``__bool__()``
+  or ``__len__()``. The decorated function then retained its original
+  signature instead of that produced by the factory. Whether an adapter
+  factory was supplied is now determined by type before the truth value
+  of the adapter is considered, so such factories are always called. As a
+  consequence of this change a factory can now also return ``None``, or
+  any other false value, to indicate that no adapter should be used for a
+  particular function, where previously this failed with an obscure error.
+  With thanks to Luochenchen for `pull request #358
+  <https://github.com/GrahamDumpleton/wrapt/pull/358>`_ which identified
+  the issue.
+
 Version 2.5.0
 -------------
 
