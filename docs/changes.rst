@@ -20,6 +20,19 @@ Version 2.5.1
   thanks to Muneeb Sheikh for `pull request #360
   <https://github.com/GrahamDumpleton/wrapt/pull/360>`_.
 
+* A callback passed to ``wrapt.WeakFunctionProxy`` which was callable but
+  evaluated as false, such as an event emitter object which reports its
+  number of subscribers via ``__len__()`` and is empty when first created,
+  was passed the underlying weak reference object instead of the proxy
+  when the wrapped function expired. Where the wrapped function was a
+  bound method, such a callback could also be called twice, once each
+  when the instance and the function expired. Only ``None`` is now treated
+  as meaning no callback was supplied, which mirrors the behaviour of
+  ``weakref.ref()`` and ``weakref.proxy()`` in the standard library, so
+  these callbacks now receive the proxy and are called only once, as for
+  any other callback. With thanks to Huanyi Xie for `pull request #359
+  <https://github.com/GrahamDumpleton/wrapt/pull/359>`_.
+
 Version 2.5.0
 -------------
 
@@ -118,13 +131,6 @@ Version 2.5.0
   an override which passes its arguments through type checks.
 
 **Bugs Fixed**
-
-* A callable callback which evaluated as false, such as an initially empty
-  callable collection, was passed a weak reference instead of the
-  ``wrapt.WeakFunctionProxy`` when its wrapped function expired. Such a
-  callback could also be called twice when both a bound method and its
-  instance expired. These callbacks now receive the proxy and are called
-  only once, as with other callable callbacks.
 
 * Deleting the ``__module__`` or ``__doc__`` attribute of a proxy object,
   using ``del proxy.__doc__`` for example, crashed the Python interpreter

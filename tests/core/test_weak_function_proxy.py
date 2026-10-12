@@ -145,6 +145,9 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(id(proxy), result[0])
 
     def test_falsey_callback_receives_proxy(self):
+        # A list subclass is used so that the callback is a callable which
+        # evaluates as false while it is empty.
+
         class Callback(list):
             def __call__(self, proxy):
                 self.append(id(proxy))
@@ -164,6 +167,9 @@ class TestWeakFunctionProxy(unittest.TestCase):
         "Free-threaded CPython 3.13 immortalizes classes after a thread starts",
     )
     def test_falsey_callback_runs_once_when_method_and_instance_expire(self):
+        # A list subclass is used so that the callback is a callable which
+        # evaluates as false while it is empty.
+
         class Callback(list):
             def __call__(self, proxy):
                 self.append(id(proxy))

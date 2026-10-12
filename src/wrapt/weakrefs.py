@@ -32,6 +32,9 @@ def _weak_function_proxy_callback(ref, proxy, callback):
     # This could raise an exception. We let it propagate back and let
     # the weakref.proxy() deal with it, at which point it generally
     # prints out a short error message direct to stderr and keeps going.
+    # Note that the callback can never actually be None here, as the
+    # partial which invokes this function is only created when a
+    # callback was supplied, but check anyway as a safeguard.
 
     if callback is not None:
         callback(proxy)
