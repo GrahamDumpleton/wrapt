@@ -6,7 +6,19 @@ Version 2.5.1
 
 **Bugs Fixed**
 
-* TBD
+* A ``LazyObjectProxy`` created with an ``interface`` argument that
+  declared a path-like type, such as ``os.PathLike`` or ``pathlib.Path``,
+  did not define the ``__fspath__()`` special method on the class it
+  generated. Because ``os.fspath()`` looks up ``__fspath__()`` on the type
+  of the object, passing such a proxy to ``os.fspath()``, the builtin
+  ``open()`` or other standard library functions accepting paths raised
+  ``TypeError`` before the factory callable had been invoked to create the
+  wrapped object. The ``__fspath__()`` special method is now added when the
+  declared interface provides it, in the same way as is already done for
+  the other special methods looked up on the type, so the first path
+  conversion triggers creation of the wrapped object and succeeds. With
+  thanks to Muneeb Sheikh for `pull request #360
+  <https://github.com/GrahamDumpleton/wrapt/pull/360>`_.
 
 Version 2.5.0
 -------------
