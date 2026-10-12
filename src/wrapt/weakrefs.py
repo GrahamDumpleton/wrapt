@@ -65,9 +65,11 @@ class WeakFunctionProxy(BaseObjectProxy):
         # then call it. Note that we avoid using a nested function for
         # the callback here so as not to cause any odd reference cycles.
 
-        _callback = callback and functools.partial(
-            _weak_function_proxy_callback, proxy=self, callback=callback
-        )
+        _callback = None
+        if callback is not None:
+            _callback = functools.partial(
+                _weak_function_proxy_callback, proxy=self, callback=callback
+            )
 
         self._self_expired = False
         self._self_owner = None
