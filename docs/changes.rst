@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 2.5.1
+-------------
+
+**Bugs Fixed**
+
+* TBD
+
 Version 2.5.0
 -------------
 
