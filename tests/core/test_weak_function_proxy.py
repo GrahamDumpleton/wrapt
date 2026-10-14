@@ -144,6 +144,49 @@ class TestWeakFunctionProxy(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(id(proxy), result[0])
 
+    def test_falsey_callback_receives_proxy(self):
+        # A list subclass is used so that the callback is a callable which
+        # evaluates as false while it is empty.
+
+        class Callback(list):
+            def __call__(self, proxy):
+                self.append(id(proxy))
+
+        def function():
+            return 42
+
+        callback = Callback()
+        proxy = wrapt.WeakFunctionProxy(function, callback)
+        self.assertEqual(proxy(), 42)
+        del function
+        gc.collect()
+        self.assertEqual(callback, [id(proxy)])
+
+    @unittest.skipIf(
+        sys.version_info[:2] == (3, 13) and sysconfig.get_config_var("Py_GIL_DISABLED"),
+        "Free-threaded CPython 3.13 immortalizes classes after a thread starts",
+    )
+    def test_falsey_callback_runs_once_when_method_and_instance_expire(self):
+        # A list subclass is used so that the callback is a callable which
+        # evaluates as false while it is empty.
+
+        class Callback(list):
+            def __call__(self, proxy):
+                self.append(id(proxy))
+
+        class Class:
+            def method(self):
+                return 42
+
+        callback = Callback()
+        instance = Class()
+        proxy = wrapt.WeakFunctionProxy(instance.method, callback)
+        self.assertEqual(proxy(), 42)
+        del instance
+        del Class
+        gc.collect()
+        self.assertEqual(callback, [id(proxy)])
+
     def test_instancemethod_delete_instance(self):
         class Class:
             def function(self, a, b):

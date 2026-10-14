@@ -1,5 +1,7 @@
+import os
 import sys
 import unittest
+from pathlib import Path
 
 import wrapt
 
@@ -148,3 +150,20 @@ class TestLazyObjectProxy(unittest.TestCase):
             self.assertIn(char, "0123456789")
 
         self.assertEqual("".join(digits2), "0123456789")
+
+    def test_pathlike_interface_is_lazy(self):
+        for interface in (os.PathLike, Path):
+            with self.subTest(interface=interface):
+                status = {"created": 0}
+
+                def factory():
+                    status["created"] += 1
+                    return Path("example.txt")
+
+                proxy = wrapt.LazyObjectProxy(factory, interface=interface)
+                self.assertEqual(status["created"], 0)
+                self.assertTrue(hasattr(type(proxy), "__fspath__"))
+                self.assertEqual(os.fspath(proxy), "example.txt")
+                self.assertEqual(status["created"], 1)
+                self.assertEqual(os.fspath(proxy), "example.txt")
+                self.assertEqual(status["created"], 1)

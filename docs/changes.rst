@@ -1,6 +1,52 @@
 Release Notes
 =============
 
+Version 2.5.1
+-------------
+
+**Bugs Fixed**
+
+* A ``LazyObjectProxy`` created with an ``interface`` argument that
+  declared a path-like type, such as ``os.PathLike`` or ``pathlib.Path``,
+  did not define the ``__fspath__()`` special method on the class it
+  generated. Because ``os.fspath()`` looks up ``__fspath__()`` on the type
+  of the object, passing such a proxy to ``os.fspath()``, the builtin
+  ``open()`` or other standard library functions accepting paths raised
+  ``TypeError`` before the factory callable had been invoked to create the
+  wrapped object. The ``__fspath__()`` special method is now added when the
+  declared interface provides it, in the same way as is already done for
+  the other special methods looked up on the type, so the first path
+  conversion triggers creation of the wrapped object and succeeds. With
+  thanks to Muneeb Sheikh for `pull request #360
+  <https://github.com/GrahamDumpleton/wrapt/pull/360>`_.
+
+* A callback passed to ``wrapt.WeakFunctionProxy`` which was callable but
+  evaluated as false, such as an event emitter object which reports its
+  number of subscribers via ``__len__()`` and is empty when first created,
+  was passed the underlying weak reference object instead of the proxy
+  when the wrapped function expired. Where the wrapped function was a
+  bound method, such a callback could also be called twice, once each
+  when the instance and the function expired. Only ``None`` is now treated
+  as meaning no callback was supplied, which mirrors the behaviour of
+  ``weakref.ref()`` and ``weakref.proxy()`` in the standard library, so
+  these callbacks now receive the proxy and are called only once, as for
+  any other callback. With thanks to Huanyi Xie for `pull request #359
+  <https://github.com/GrahamDumpleton/wrapt/pull/359>`_.
+
+* A ``wrapt.AdapterFactory`` instance passed as the ``adapter`` argument
+  to ``wrapt.decorator`` was ignored, and so never called, if the instance
+  evaluated as false, such as when the factory class defined ``__bool__()``
+  or ``__len__()``. The decorated function then retained its original
+  signature instead of that produced by the factory. Whether an adapter
+  factory was supplied is now determined by type before the truth value
+  of the adapter is considered, so such factories are always called. As a
+  consequence of this change a factory can now also return ``None``, or
+  any other false value, to indicate that no adapter should be used for a
+  particular function, where previously this failed with an obscure error.
+  With thanks to Luochenchen for `pull request #358
+  <https://github.com/GrahamDumpleton/wrapt/pull/358>`_ which identified
+  the issue.
+
 Version 2.5.0
 -------------
 

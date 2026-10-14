@@ -276,6 +276,9 @@ class LazyObjectProxy(AutoObjectProxy):
         ):
             namespace["__length_hint__"] = __wrapper_length_hint__
 
+        if "__fspath__" in interface_attrs and "__fspath__" not in class_attrs:
+            namespace["__fspath__"] = __wrapper_fspath__
+
         # Note that not providing compatibility with generator-based coroutines
         # (PEP 342) here as they are removed in Python 3.11+ and were deprecated
         # in 3.8.
