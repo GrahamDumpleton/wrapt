@@ -1,6 +1,27 @@
 Release Notes
 =============
 
+Version 2.5.2
+-------------
+
+**Bugs Fixed**
+
+* When the object wrapped by ``wrapt.AutoObjectProxy``, or created by the
+  factory of a ``wrapt.LazyObjectProxy``, was a class, the special methods
+  the class defines for its instances were added to the generated proxy
+  class, even though Python looks up special methods on the type of an
+  object, which for a class is its metaclass. A proxy for a class defining
+  ``__set_name__()`` therefore raised ``TypeError`` when assigned to an
+  attribute in a class body, a proxy for a class defining ``__get__()``
+  was bound as a descriptor on attribute access, and a proxy for a class
+  defining ``__await__()`` or ``__iter__()`` was reported as awaitable or
+  iterable by ``inspect.isawaitable()`` and ``collections.abc`` checks.
+  Conversely, special methods provided by a custom metaclass, such as
+  ``__iter__()``, were not added when an ``AutoObjectProxy`` was created
+  for the class. For a class, the special methods of its
+  metaclass are now used, so the proxy behaves the same as the class it
+  wraps.
+
 Version 2.5.1
 -------------
 

@@ -255,6 +255,73 @@ class TestAutoObjectProxy(unittest.TestCase):
         del owner.attr
         self.assertRaises(AttributeError, lambda: owner.attr)
 
+    def test_wrapped_class_is_not_descriptor(self):
+        class Descriptor:
+            def __get__(self, instance, owner=None):
+                return 42
+
+            def __set__(self, instance, value):
+                pass
+
+            def __delete__(self, instance):
+                pass
+
+            def __set_name__(self, owner, name):
+                pass
+
+        # Only instances of the class are descriptors, not the class itself,
+        # so a proxy for the class stored in a class body must not apply the
+        # descriptor protocol methods the class defines for its instances.
+
+        class Owner:
+            attr = wrapt.AutoObjectProxy(Descriptor)
+
+        owner = Owner()
+
+        self.assertIs(Owner.attr.__wrapped__, Descriptor)
+        self.assertIs(owner.attr.__wrapped__, Descriptor)
+
+        owner.attr = 100
+        self.assertEqual(owner.attr, 100)
+
+        del owner.attr
+        self.assertIs(owner.attr.__wrapped__, Descriptor)
+
+    def test_wrapped_class_is_not_awaitable_or_iterable(self):
+        import collections.abc
+        import inspect
+
+        class Awaitable:
+            def __await__(self):
+                yield
+                return 42
+
+        class Iterable:
+            def __iter__(self):
+                return iter([1, 2, 3])
+
+        self.assertFalse(inspect.isawaitable(Awaitable))
+        self.assertFalse(inspect.isawaitable(wrapt.AutoObjectProxy(Awaitable)))
+
+        self.assertNotIsInstance(Iterable, collections.abc.Iterable)
+        self.assertNotIsInstance(
+            wrapt.AutoObjectProxy(Iterable), collections.abc.Iterable
+        )
+
+    def test_wrapped_class_metaclass_iter(self):
+        class Meta(type):
+            def __iter__(cls):
+                return iter([1, 2, 3])
+
+        class Iterable(metaclass=Meta):
+            pass
+
+        self.assertEqual(list(Iterable), [1, 2, 3])
+
+        proxy = wrapt.AutoObjectProxy(Iterable)
+
+        self.assertEqual(list(proxy), [1, 2, 3])
+
 
 class TestAutoObjectProxyReassignment(unittest.TestCase):
 
@@ -499,3 +566,31 @@ class TestAutoObjectProxyReassignment(unittest.TestCase):
         self.assertTrue(hasattr(proxy, "__set_name__"))
         proxy.__wrapped__ = object()
         self.assertFalse(hasattr(proxy, "__set_name__"))
+
+    def test_wrapped_class_is_not_descriptor_on_reassignment(self):
+        class Descriptor:
+            def __get__(self, instance, owner=None):
+                return 42
+
+            def __set_name__(self, owner, name):
+                pass
+
+        proxy = wrapt.AutoObjectProxy(object())
+        proxy.__wrapped__ = Descriptor
+
+        class Owner:
+            attr = proxy
+
+        self.assertIs(Owner().attr, proxy)
+
+    def test_wrapped_class_metaclass_iter_on_reassignment(self):
+        class Meta(type):
+            def __iter__(cls):
+                return iter([1, 2, 3])
+
+        class Iterable(metaclass=Meta):
+            pass
+
+        proxy = wrapt.AutoObjectProxy(object())
+        proxy.__wrapped__ = Iterable
+        self.assertEqual(list(proxy), [1, 2, 3])

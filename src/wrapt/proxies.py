@@ -83,6 +83,20 @@ def __wrapper_set_name__(self, owner, name):
     return self.__wrapped__.__set_name__(owner, name)
 
 
+def _special_method_source(wrapped):
+    """Returns the object to check for the special dunder methods which apply
+    to `wrapped`. Python looks these up on the type of an object. For most
+    objects checking the object itself gives the same answer, but a class
+    lists the methods it defines for its instances, which do not apply to the
+    class itself. For a class the methods of its metaclass are used instead.
+    """
+
+    if isinstance(wrapped, type):
+        return type(wrapped)
+
+    return wrapped
+
+
 class AutoObjectProxy(BaseObjectProxy):
     """An object proxy which can automatically adjust to the wrapped object
     and add special dunder methods as needed. Note that this creates a new
@@ -101,7 +115,7 @@ class AutoObjectProxy(BaseObjectProxy):
 
         namespace = {}
 
-        wrapped_attrs = dir(wrapped)
+        wrapped_attrs = dir(_special_method_source(wrapped))
         class_attrs = set(dir(cls))
 
         if callable(wrapped) and "__call__" not in class_attrs:
@@ -162,73 +176,75 @@ class AutoObjectProxy(BaseObjectProxy):
         cls = type(self)
         class_attrs = set(dir(cls))
 
+        wrapped = _special_method_source(self.__wrapped__)
+
         if callable(self.__wrapped__):
             if "__call__" not in class_attrs:
                 cls.__call__ = __wrapper_call__
         elif getattr(cls, "__call__", None) is __wrapper_call__:
             delattr(cls, "__call__")
 
-        if hasattr(self.__wrapped__, "__iter__"):
+        if hasattr(wrapped, "__iter__"):
             if "__iter__" not in class_attrs:
                 cls.__iter__ = __wrapper_iter__
         elif getattr(cls, "__iter__", None) is __wrapper_iter__:
             delattr(cls, "__iter__")
 
-        if hasattr(self.__wrapped__, "__next__"):
+        if hasattr(wrapped, "__next__"):
             if "__next__" not in class_attrs:
                 cls.__next__ = __wrapper_next__
         elif getattr(cls, "__next__", None) is __wrapper_next__:
             delattr(cls, "__next__")
 
-        if hasattr(self.__wrapped__, "__aiter__"):
+        if hasattr(wrapped, "__aiter__"):
             if "__aiter__" not in class_attrs:
                 cls.__aiter__ = __wrapper_aiter__
         elif getattr(cls, "__aiter__", None) is __wrapper_aiter__:
             delattr(cls, "__aiter__")
 
-        if hasattr(self.__wrapped__, "__anext__"):
+        if hasattr(wrapped, "__anext__"):
             if "__anext__" not in class_attrs:
                 cls.__anext__ = __wrapper_anext__
         elif getattr(cls, "__anext__", None) is __wrapper_anext__:
             delattr(cls, "__anext__")
 
-        if hasattr(self.__wrapped__, "__length_hint__"):
+        if hasattr(wrapped, "__length_hint__"):
             if "__length_hint__" not in class_attrs:
                 cls.__length_hint__ = __wrapper_length_hint__
         elif getattr(cls, "__length_hint__", None) is __wrapper_length_hint__:
             delattr(cls, "__length_hint__")
 
-        if hasattr(self.__wrapped__, "__fspath__"):
+        if hasattr(wrapped, "__fspath__"):
             if "__fspath__" not in class_attrs:
                 cls.__fspath__ = __wrapper_fspath__
         elif getattr(cls, "__fspath__", None) is __wrapper_fspath__:
             delattr(cls, "__fspath__")
 
-        if hasattr(self.__wrapped__, "__await__"):
+        if hasattr(wrapped, "__await__"):
             if "__await__" not in class_attrs:
                 cls.__await__ = __wrapper_await__
         elif getattr(cls, "__await__", None) is __wrapper_await__:
             delattr(cls, "__await__")
 
-        if hasattr(self.__wrapped__, "__get__"):
+        if hasattr(wrapped, "__get__"):
             if "__get__" not in class_attrs:
                 cls.__get__ = __wrapper_get__
         elif getattr(cls, "__get__", None) is __wrapper_get__:
             delattr(cls, "__get__")
 
-        if hasattr(self.__wrapped__, "__set__"):
+        if hasattr(wrapped, "__set__"):
             if "__set__" not in class_attrs:
                 cls.__set__ = __wrapper_set__
         elif getattr(cls, "__set__", None) is __wrapper_set__:
             delattr(cls, "__set__")
 
-        if hasattr(self.__wrapped__, "__delete__"):
+        if hasattr(wrapped, "__delete__"):
             if "__delete__" not in class_attrs:
                 cls.__delete__ = __wrapper_delete__
         elif getattr(cls, "__delete__", None) is __wrapper_delete__:
             delattr(cls, "__delete__")
 
-        if hasattr(self.__wrapped__, "__set_name__"):
+        if hasattr(wrapped, "__set_name__"):
             if "__set_name__" not in class_attrs:
                 cls.__set_name__ = __wrapper_set_name__
         elif getattr(cls, "__set_name__", None) is __wrapper_set_name__:

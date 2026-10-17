@@ -151,6 +151,23 @@ class TestLazyObjectProxy(unittest.TestCase):
 
         self.assertEqual("".join(digits2), "0123456789")
 
+    def test_lazy_class_is_not_descriptor(self):
+        class Descriptor:
+            def __get__(self, instance, owner=None):
+                return 42
+
+            def __set_name__(self, owner, name):
+                pass
+
+        proxy = wrapt.LazyObjectProxy(lambda: Descriptor)
+
+        self.assertIs(proxy.__wrapped__, Descriptor)
+
+        class Owner:
+            attr = proxy
+
+        self.assertIs(Owner().attr, proxy)
+
     def test_pathlike_interface_is_lazy(self):
         for interface in (os.PathLike, Path):
             with self.subTest(interface=interface):
