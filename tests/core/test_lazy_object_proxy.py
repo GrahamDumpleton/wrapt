@@ -167,3 +167,46 @@ class TestLazyObjectProxy(unittest.TestCase):
                 self.assertEqual(status["created"], 1)
                 self.assertEqual(os.fspath(proxy), "example.txt")
                 self.assertEqual(status["created"], 1)
+
+    def test_lazy_class_is_not_descriptor(self):
+        # Only instances of the class are descriptors, not the class itself,
+        # so a lazy proxy whose factory returns the class must not act as a
+        # descriptor when stored in a class body.
+
+        class Descriptor:
+            def __get__(self, instance, owner=None):
+                return 42
+
+            def __set_name__(self, owner, name):
+                pass
+
+        proxy = wrapt.LazyObjectProxy(lambda: Descriptor)
+
+        self.assertIs(proxy.__wrapped__, Descriptor)
+
+        class Owner:
+            attr = proxy
+
+        self.assertIs(Owner().attr, proxy)
+
+    def test_lazy_instance_attributes_are_not_special_methods(self):
+        # Special methods are only ever looked up on the type of an object,
+        # never on the instance itself, so instance attributes which shadow
+        # the dunder names must not result in the proxy being reported as
+        # iterable when the factory returns an instance carrying them.
+
+        import collections.abc
+
+        class Wrapped:
+            pass
+
+        def factory():
+            instance = Wrapped()
+            instance.__iter__ = lambda: iter([1, 2, 3])
+            return instance
+
+        proxy = wrapt.LazyObjectProxy(factory)
+
+        self.assertIs(proxy.__wrapped__.__class__, Wrapped)
+
+        self.assertNotIsInstance(proxy, collections.abc.Iterable)

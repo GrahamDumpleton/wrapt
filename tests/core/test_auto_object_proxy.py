@@ -255,6 +255,152 @@ class TestAutoObjectProxy(unittest.TestCase):
         del owner.attr
         self.assertRaises(AttributeError, lambda: owner.attr)
 
+    def test_instance_attributes_are_not_special_methods(self):
+        # Special methods are only ever looked up on the type of an object,
+        # never on the instance itself. Instance attributes which shadow the
+        # dunder names therefore do not make the wrapped object iterable, or
+        # an iterator, and a proxy for the wrapped object must not act as
+        # iterable or an iterator either.
+
+        import collections.abc
+
+        class Wrapped:
+            pass
+
+        instance = Wrapped()
+        instance.__iter__ = lambda: iter([1, 2, 3])
+        instance.__next__ = lambda: 42
+
+        self.assertNotIsInstance(instance, collections.abc.Iterable)
+        self.assertRaises(TypeError, iter, instance)
+        self.assertRaises(TypeError, next, instance)
+
+        proxy = wrapt.AutoObjectProxy(instance)
+
+        # Note that iter() on the proxy does not itself raise TypeError, as
+        # iteration falls back to the __getitem__() sequence protocol, which
+        # wrapt.BaseObjectProxy always defines. Consuming the iterator still
+        # fails though, as the wrapped instance is not subscriptable.
+
+        self.assertNotIsInstance(proxy, collections.abc.Iterable)
+        self.assertRaises(TypeError, list, proxy)
+        self.assertRaises(TypeError, next, proxy)
+
+    def test_instance_attributes_are_not_awaitable(self):
+        # An instance attribute named __await__ does not make the wrapped
+        # object awaitable, so a proxy for the wrapped object must not be
+        # awaitable either.
+
+        import inspect
+
+        class Wrapped:
+            pass
+
+        instance = Wrapped()
+        instance.__await__ = lambda: iter(())
+
+        self.assertFalse(inspect.isawaitable(instance))
+
+        proxy = wrapt.AutoObjectProxy(instance)
+
+        self.assertFalse(inspect.isawaitable(proxy))
+
+    def test_instance_dir_does_not_hide_special_methods(self):
+        # The __dir__() method of an instance is not required to report the
+        # special methods defined on the type of the instance, so the
+        # special methods of the wrapped object can not be determined from
+        # dir() of the wrapped object itself.
+
+        class Wrapped:
+            def __iter__(self):
+                return iter([1, 2, 3])
+
+            def __dir__(self):
+                return []
+
+        instance = Wrapped()
+
+        self.assertEqual(list(instance), [1, 2, 3])
+
+        proxy = wrapt.AutoObjectProxy(instance)
+
+        self.assertEqual(list(proxy), [1, 2, 3])
+
+    def test_wrapped_class_is_not_descriptor(self):
+        class Descriptor:
+            def __get__(self, instance, owner=None):
+                return 42
+
+            def __set__(self, instance, value):
+                pass
+
+            def __delete__(self, instance):
+                pass
+
+            def __set_name__(self, owner, name):
+                pass
+
+        # Only instances of the class are descriptors, not the class itself,
+        # so a proxy for the class stored in a class body must not act as a
+        # descriptor.
+
+        class Owner:
+            attr = wrapt.AutoObjectProxy(Descriptor)
+
+        owner = Owner()
+
+        self.assertIs(Owner.attr.__wrapped__, Descriptor)
+        self.assertIs(owner.attr.__wrapped__, Descriptor)
+
+        owner.attr = 100
+        self.assertEqual(owner.attr, 100)
+
+        del owner.attr
+        self.assertIs(owner.attr.__wrapped__, Descriptor)
+
+    def test_wrapped_class_is_not_awaitable_or_iterable(self):
+        import collections.abc
+        import inspect
+
+        class Awaitable:
+            def __await__(self):
+                yield
+                return 42
+
+        class Iterable:
+            def __iter__(self):
+                return iter([1, 2, 3])
+
+        # The special methods the classes define are for their instances, not
+        # for the classes themselves, so the classes are not awaitable or
+        # iterable, and proxies for the classes must not be either.
+
+        self.assertFalse(inspect.isawaitable(Awaitable))
+        self.assertNotIsInstance(Iterable, collections.abc.Iterable)
+
+        self.assertFalse(inspect.isawaitable(wrapt.AutoObjectProxy(Awaitable)))
+        self.assertNotIsInstance(
+            wrapt.AutoObjectProxy(Iterable), collections.abc.Iterable
+        )
+
+    def test_wrapped_class_metaclass_iter(self):
+        class Meta(type):
+            def __iter__(cls):
+                return iter([1, 2, 3])
+
+        class Iterable(metaclass=Meta):
+            pass
+
+        # A class is iterated using the __iter__() defined by its metaclass,
+        # as that is the type of the class, so a proxy for the class must be
+        # iterable in the same way.
+
+        self.assertEqual(list(Iterable), [1, 2, 3])
+
+        proxy = wrapt.AutoObjectProxy(Iterable)
+
+        self.assertEqual(list(proxy), [1, 2, 3])
+
 
 class TestAutoObjectProxyReassignment(unittest.TestCase):
 
@@ -499,3 +645,81 @@ class TestAutoObjectProxyReassignment(unittest.TestCase):
         self.assertTrue(hasattr(proxy, "__set_name__"))
         proxy.__wrapped__ = object()
         self.assertFalse(hasattr(proxy, "__set_name__"))
+
+    def test_instance_attributes_are_not_special_methods_on_reassignment(self):
+        # Special methods are only ever looked up on the type of an object,
+        # never on the instance itself, so instance attributes which shadow
+        # the dunder names must not result in the proxy acting as iterable or
+        # an iterator when __wrapped__ is reassigned.
+
+        import collections.abc
+
+        class Wrapped:
+            pass
+
+        instance = Wrapped()
+        instance.__iter__ = lambda: iter([1, 2, 3])
+        instance.__next__ = lambda: 42
+
+        proxy = wrapt.AutoObjectProxy(object())
+
+        proxy.__wrapped__ = instance
+
+        self.assertNotIsInstance(proxy, collections.abc.Iterable)
+        self.assertRaises(TypeError, list, proxy)
+        self.assertRaises(TypeError, next, proxy)
+
+    def test_instance_attributes_are_not_awaitable_on_reassignment(self):
+        # An instance attribute named __await__ must not result in the proxy
+        # being reported as awaitable when __wrapped__ is reassigned.
+
+        import inspect
+
+        class Wrapped:
+            pass
+
+        instance = Wrapped()
+        instance.__await__ = lambda: iter(())
+
+        proxy = wrapt.AutoObjectProxy(object())
+
+        proxy.__wrapped__ = instance
+
+        self.assertFalse(inspect.isawaitable(proxy))
+
+    def test_wrapped_class_is_not_descriptor_on_reassignment(self):
+        class Descriptor:
+            def __get__(self, instance, owner=None):
+                return 42
+
+            def __set_name__(self, owner, name):
+                pass
+
+        # Only instances of the class are descriptors, not the class itself,
+        # so the proxy must not act as a descriptor when __wrapped__ is
+        # reassigned to the class.
+
+        proxy = wrapt.AutoObjectProxy(object())
+        proxy.__wrapped__ = Descriptor
+
+        class Owner:
+            attr = proxy
+
+        self.assertIs(Owner().attr, proxy)
+
+    def test_wrapped_class_metaclass_iter_on_reassignment(self):
+        class Meta(type):
+            def __iter__(cls):
+                return iter([1, 2, 3])
+
+        class Iterable(metaclass=Meta):
+            pass
+
+        # A class is iterated using the __iter__() defined by its metaclass,
+        # as that is the type of the class, so iteration of the proxy must
+        # still work when __wrapped__ is reassigned to the class.
+
+        proxy = wrapt.AutoObjectProxy(object())
+        proxy.__wrapped__ = Iterable
+
+        self.assertEqual(list(proxy), [1, 2, 3])
