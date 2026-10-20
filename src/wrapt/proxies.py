@@ -6,6 +6,30 @@ from types import ModuleType
 from .__wrapt__ import BaseObjectProxy
 from .synchronization import synchronized
 
+# Read the real class dictionaries and MRO even when a metaclass overrides
+# attribute access or exposes a different value under either name.
+_TYPE_DICT = type.__dict__["__dict__"]
+_TYPE_MRO = type.__dict__["__mro__"]
+
+
+def _get_type_attribute(cls, name):
+    for base in _TYPE_MRO.__get__(cls):
+        namespace = _TYPE_DICT.__get__(base)
+        if name in namespace:
+            return namespace[name]
+    raise AttributeError(name)
+
+
+def _get_special_method(instance, name):
+    owner = type(instance)
+    attribute = _get_type_attribute(owner, name)
+    try:
+        getter = _get_type_attribute(type(attribute), "__get__")
+    except AttributeError:
+        return attribute
+    return getter(attribute, instance, owner)
+
+
 # Define ObjectProxy which for compatibility adds `__iter__()` support which
 # has been removed from `BaseObjectProxy`.
 
@@ -44,43 +68,46 @@ def __wrapper_iter__(self):
 
 
 def __wrapper_next__(self):
-    return self.__wrapped__.__next__()
+    return _get_special_method(self.__wrapped__, "__next__")()
 
 
 def __wrapper_aiter__(self):
-    return self.__wrapped__.__aiter__()
+    return _get_special_method(self.__wrapped__, "__aiter__")()
 
 
 async def __wrapper_anext__(self):
-    return await self.__wrapped__.__anext__()
+    return await _get_special_method(self.__wrapped__, "__anext__")()
 
 
 def __wrapper_length_hint__(self):
-    return self.__wrapped__.__length_hint__()
+    return _get_special_method(self.__wrapped__, "__length_hint__")()
 
 
 def __wrapper_fspath__(self):
-    return self.__wrapped__.__fspath__()
+    return _get_special_method(self.__wrapped__, "__fspath__")()
 
 
 def __wrapper_await__(self):
-    return (yield from self.__wrapped__.__await__())
+    return (yield from _get_special_method(self.__wrapped__, "__await__")())
 
 
 def __wrapper_get__(self, instance, owner=None):
-    return self.__wrapped__.__get__(instance, owner)
+    # The descriptor hook itself is called with its descriptor explicitly,
+    # without first binding the hook, as for CPython's tp_descr_get slot.
+    wrapped = self.__wrapped__
+    return _get_type_attribute(type(wrapped), "__get__")(wrapped, instance, owner)
 
 
 def __wrapper_set__(self, instance, value):
-    return self.__wrapped__.__set__(instance, value)
+    return _get_special_method(self.__wrapped__, "__set__")(instance, value)
 
 
 def __wrapper_delete__(self, instance):
-    return self.__wrapped__.__delete__(instance)
+    return _get_special_method(self.__wrapped__, "__delete__")(instance)
 
 
 def __wrapper_set_name__(self, owner, name):
-    return self.__wrapped__.__set_name__(owner, name)
+    return _get_special_method(self.__wrapped__, "__set_name__")(owner, name)
 
 
 class AutoObjectProxy(BaseObjectProxy):
