@@ -39,7 +39,13 @@ def formatargspec(
         for i, arg in enumerate(args, ndefaults - len(args))
     ]
     if varargs:
-        parameters.append(Parameter(varargs, Parameter.VAR_POSITIONAL))
+        parameters.append(
+            Parameter(
+                varargs,
+                Parameter.VAR_POSITIONAL,
+                annotation=annotations.get(varargs, Parameter.empty),
+            )
+        )
     parameters.extend(
         Parameter(
             kwonlyarg,
@@ -50,6 +56,12 @@ def formatargspec(
         for kwonlyarg in kwonlyargs
     )
     if varkw:
-        parameters.append(Parameter(varkw, Parameter.VAR_KEYWORD))
+        parameters.append(
+            Parameter(
+                varkw,
+                Parameter.VAR_KEYWORD,
+                annotation=annotations.get(varkw, Parameter.empty),
+            )
+        )
     return_annotation = annotations.get("return", Signature.empty)
     return str(Signature(parameters, return_annotation=return_annotation))
