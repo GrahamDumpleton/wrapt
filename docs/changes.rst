@@ -6,6 +6,11 @@ Version 2.5.2
 
 **Bugs Fixed**
 
+* Fixed ``wrapt.lru_cache`` retaining the class from the first call to a
+  cached class method and using it for calls through subclasses. The cache
+  remains shared, but now includes the bound class in its key, as
+  ``functools.lru_cache`` does.
+
 * The special methods added to the class generated for an
   ``wrapt.AutoObjectProxy``, and adjusted when ``__wrapped__`` was
   reassigned, were determined by inspecting the wrapped object itself,

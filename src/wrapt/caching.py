@@ -40,16 +40,27 @@ class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper):
 
         # For class methods and static methods, use a single shared
         # cache stored on the parent wrapper. The cache is created
-        # from the bound __wrapped__ since the parent's __wrapped__
-        # is the raw classmethod/staticmethod descriptor.
+        # from __wrapped__ since the parent's __wrapped__ is the raw
+        # classmethod/staticmethod descriptor. For class methods, cache
+        # the unbound function so the bound class can be a cache key.
 
         if not self._is_instance_method():
             if parent._self_cache is None:
                 with synchronized(parent):
                     if parent._self_cache is None:
+                        wrapped = self.__wrapped__
+                        if self._self_binding == "classmethod":
+                            wrapped = wrapped.__func__
                         parent._self_cache = _functools_lru_cache(
                             **parent._self_lru_kwargs
-                        )(self.__wrapped__)
+                        )(wrapped)
+
+            # Keep the cache shared, but include the bound class in its key.
+            # Caching the bound method itself would retain the class of the
+            # first call and incorrectly use it for inherited calls too.
+
+            if self._self_binding == "classmethod":
+                return parent._self_cache(self.__wrapped__.__self__, *args, **kwargs)
 
             return parent._self_cache(*args, **kwargs)
 

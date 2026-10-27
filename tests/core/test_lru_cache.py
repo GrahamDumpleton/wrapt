@@ -244,6 +244,37 @@ class TestClassMethod(unittest.TestCase):
         self.assertEqual(info.maxsize, 32)
 
 
+class TestInheritedClassMethod(unittest.TestCase):
+    def test_preserves_bound_class_and_shared_cache(self):
+        for child_first in (False, True):
+            with self.subTest(child_first=child_first):
+                calls = []
+
+                class Base:
+                    @wrapt.lru_cache(maxsize=32)
+                    @classmethod
+                    def method(cls, value):
+                        calls.append((cls, value))
+                        return cls, value
+
+                class Child(Base):
+                    pass
+
+                first, second = (Child, Base) if child_first else (Base, Child)
+                self.assertEqual(first.method(1), (first, 1))
+                self.assertEqual(second.method(1), (second, 1))
+                self.assertEqual(second.method(2), (second, 2))
+                self.assertEqual(first().method(1), (first, 1))
+                self.assertEqual(second().method(1), (second, 1))
+                self.assertEqual(calls, [(first, 1), (second, 1), (second, 2)])
+                info = Base.method.cache_info()
+                self.assertEqual(info, Child.method.cache_info())
+                self.assertEqual((info.hits, info.misses, info.currsize), (2, 3, 3))
+                self.assertEqual(info.maxsize, 32)
+                Child.method.cache_clear()
+                self.assertEqual(Base.method.cache_info().currsize, 0)
+
+
 class TestStaticMethod(unittest.TestCase):
     def setUp(self):
         CachedClass.static_method.cache_clear()
