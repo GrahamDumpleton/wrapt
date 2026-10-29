@@ -52,7 +52,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-24.04
         python-version:
           - {
               "python_image": 3.9.23,
@@ -221,7 +221,7 @@ jobs:
     - test_linux
     - test_macos
     - test_windows
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
@@ -254,10 +254,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-latest]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-latest]
         arch: [auto]
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             arch: riscv64
     steps:
       - uses: actions/checkout@v6
@@ -280,7 +280,7 @@ jobs:
 
   release:
     name: Publish GitHub release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
     - sdist
     - bdist_wheel
@@ -434,7 +434,7 @@ jobs:
 
   publish-wrapt:
     name: Publish wrapt to PyPi
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
     - release
     if: startsWith(github.ref, 'refs/tags/')
