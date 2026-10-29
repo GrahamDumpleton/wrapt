@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-24.04
         python-version:
           - 3.9
           - "3.10"
@@ -106,11 +106,11 @@ jobs:
 
   test_linux_no_gil:
     name: Test - NO GIL (${{ matrix.os }}, ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-24.04
         python-version:
           - 3.13
           - 3.14
