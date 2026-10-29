@@ -1,6 +1,38 @@
 Release Notes
 =============
 
+Version 2.5.2
+-------------
+
+**Bugs Fixed**
+
+* The special methods added to the class generated for an
+  ``wrapt.AutoObjectProxy``, and adjusted when ``__wrapped__`` was
+  reassigned, were determined by inspecting the wrapped object itself,
+  rather than the type of the wrapped object. As special methods are
+  only ever looked up on the type of an object, this gave the wrong
+  result in several cases. When the wrapped object was a class, the
+  special methods it defined for its instances were added to the proxy
+  class, so a proxy for a class defining ``__set_name__()`` raised
+  ``TypeError`` when assigned to an attribute in a class body, a proxy
+  for a class defining ``__get__()`` was bound as a descriptor on
+  attribute access, and a proxy for a class defining ``__await__()`` or
+  ``__iter__()`` was reported as awaitable or iterable by
+  ``inspect.isawaitable()`` and ``collections.abc`` checks, even though
+  the class itself was not. Special methods provided by the metaclass
+  of a wrapped class, such as ``__iter__()``, were not added to the
+  proxy class. When the wrapped object was an instance, instance
+  attributes shadowing the dunder names were treated as special
+  methods of the wrapped object, and special methods which a
+  ``__dir__()`` method of the wrapped object did not report were
+  missed. The special methods are now always determined from the type
+  of the wrapped object, so a proxy behaves the same as the object it
+  wraps. This also covers a ``wrapt.LazyObjectProxy`` whose factory
+  returns an object, as resolving the wrapped object reassigns
+  ``__wrapped__``. With thanks to ybai08 for `pull request #361
+  <https://github.com/GrahamDumpleton/wrapt/pull/361>`_ which
+  identified the issue.
+
 Version 2.5.1
 -------------
 

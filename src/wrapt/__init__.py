@@ -13,7 +13,7 @@ def _format_version(parts):
     )
 
 
-__version_info__ = ("2", "5", "1")
+__version_info__ = ("2", "5", "2")
 __version__ = _format_version(__version_info__)
 
 from .__wrapt__ import (
