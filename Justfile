@@ -67,10 +67,7 @@ test-tox:
     uvx --with tox-uv tox --skip-missing-interpreters
 
 # Run tests with uv (modern alternative).
-# The per-version recipes auto-select an mypy that is compatible with
-# the target Python (mypy 1.20+ requires Python 3.10+).
 test:
-    just test-version 3.9
     just test-version 3.10
     just test-version 3.11
     just test-version 3.12
@@ -83,7 +80,6 @@ test:
 
 # Run mypy type checking for all supported Python versions.
 test-mypy:
-    just test-mypy-version 3.9
     just test-mypy-version 3.10
     just test-mypy-version 3.11
     just test-mypy-version 3.12
@@ -96,10 +92,7 @@ test-version version:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # mypy 1.20+ requires Python 3.10+, so pin an older mypy for 3.9. The
-    # mypy pair tests under tests/mypy/ are skipped on Python < 3.10 by
-    # conftest.py, so the exact 3.9 mypy version only needs to be installable.
-    mypy_ver='{{ if version == "3.9" { "1.19.1" } else { mypy_version } }}'
+    mypy_ver='{{ mypy_version }}'
 
     rm -rf .mypy_cache
     rm -rf .pytest_cache
@@ -196,10 +189,9 @@ test-stress-version version:
     echo "Stress tests completed for Python {{version}}"
 
 # Run mypy type checking for a specific Python version.
-# mypy 1.20+ requires Python 3.10+, so pin an older mypy when checking 3.9.
 test-mypy-version version:
-    echo "=== Running mypy type checking with Python {{version}} (mypy=={{ if version == '3.9' { '1.19.1' } else { mypy_version } }}) ==="
-    uv run --with 'mypy=={{ if version == "3.9" { "1.19.1" } else { mypy_version } }}' mypy --python-version {{version}} src/wrapt
+    echo "=== Running mypy type checking with Python {{version}} (mypy=={{ mypy_version }}) ==="
+    uv run --with 'mypy=={{ mypy_version }}' mypy --python-version {{version}} src/wrapt
 
 # Run stubtest to compare the wrapt-stubs package against the installed
 # wrapt runtime, once against the C extension and once against the pure

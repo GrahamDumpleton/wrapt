@@ -27,7 +27,7 @@ compatible tool versions, and cleaning stale artifacts.
 
 The mypy pair tests under `tests/mypy/` compare mypy output against checked
 in `.out` files and only pass with the mypy version pinned by `mypy_version`
-in the `Justfile` (older pin for Python 3.9). Running them with any other
+in the `Justfile`. Running them with any other
 mypy version produces false failures, so do not diagnose mismatches there as
 pre-existing breakage before checking the mypy version in use.
 

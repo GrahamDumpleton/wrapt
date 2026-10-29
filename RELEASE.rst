@@ -38,7 +38,7 @@ Install from PyPI using pip::
 Supported Python Versions
 --------------------------
 
-* Python 3.9+
+* Python 3.10+
 * CPython and PyPy implementations
 
 Documentation

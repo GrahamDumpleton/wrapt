@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 2.6.0
+-------------
+
+**Features Changed**
+
+* Support for Python 3.9, which reached end of life in October 2025, has
+  been removed. Python version 3.10 or later is now required.
+
 Version 2.5.2
 -------------
 

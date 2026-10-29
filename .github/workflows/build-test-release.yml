@@ -16,15 +16,14 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-24.04
+          - ubuntu-26.04
         python-version:
-          - 3.9
           - "3.10"
           - 3.11
           - 3.12
           - 3.13
           - 3.14
-          - 3.15-dev
+          - 3.15
           - pypy-3.10
           - pypy-3.11
     steps:
@@ -40,8 +39,7 @@ jobs:
       run: python -m pip install tox tox-gh-actions
     - name: Install mypy
       run: |
-        python -m pip install "mypy==1.19.1; python_version == '3.9'"
-        python -m pip install "mypy==1.20.1; python_version >= '3.10'"
+        python -m pip install "mypy==1.20.1"
     - name: Test with tox
       run: python -m tox
 
@@ -52,12 +50,8 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-24.04
+          - ubuntu-26.04
         python-version:
-          - {
-              "python_image": 3.9.23,
-              "tox_e": "py39, py39-without-extensions, py39-install-extensions, py39-disable-extensions",
-            }
           - {
               "python_image": 3.10.18,
               "tox_e": "py310, py310-without-extensions, py310-install-extensions, py310-disable-extensions",
@@ -99,38 +93,36 @@ jobs:
         run: docker exec python_rv64  bash -c "source /src/venv/bin/activate && python -m pip install 'tox<4.0.0' 'tox-gh-actions<3.0.0'"
       - name: Install mypy
         run: |
-          docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install 'mypy==1.19.1; python_version == \"3.9\"'"
-          docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install 'mypy==1.20.1; python_version >= \"3.10\"'"
+          docker exec python_rv64 bash -c "source /src/venv/bin/activate && python -m pip install 'mypy==1.20.1'"
       - name: Test with tox
         run: docker exec python_rv64 bash -c "source /src/venv/bin/activate && cd /src && python -m tox -e '${{ matrix.python-version.tox_e }}'"
 
   test_linux_no_gil:
     name: Test - NO GIL (${{ matrix.os }}, ${{ matrix.python-version }})
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         os:
-          - ubuntu-24.04
+          - ubuntu-26.04
         python-version:
           - 3.13
           - 3.14
-          - 3.15-dev
+          - 3.15
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
     - name: Setup Python ${{ matrix.python-version }}
-      uses: deadsnakes/action@v3.2.0
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
-        nogil: true
+        freethreaded: true
     - name: Update pip
       run: python -m pip install -U pip wheel setuptools
     - name: Install tox
       run: python -m pip install tox tox-gh-actions
     - name: Install mypy
       run: |
-        python -m pip install "mypy==1.19.1; python_version == '3.9'"
-        python -m pip install "mypy==1.20.1; python_version >= '3.10'"
+        python -m pip install "mypy==1.20.1"
     - name: Test with tox
       run: python -m tox
 
@@ -140,15 +132,14 @@ jobs:
     strategy:
       matrix:
         os:
-          - macos-latest
+          - macos-26
         python-version:
-          - 3.9
           - "3.10"
           - 3.11
           - 3.12
           - 3.13
           - 3.14
-          - 3.15-dev
+          - 3.15
           - pypy-3.10
           - pypy-3.11
     steps:
@@ -164,8 +155,7 @@ jobs:
       run: python -m pip install tox tox-gh-actions
     - name: Install mypy
       run: |
-        python -m pip install "mypy==1.19.1; python_version == '3.9'"
-        python -m pip install "mypy==1.20.1; python_version >= '3.10'"
+        python -m pip install "mypy==1.20.1"
     - name: Test with tox
       run: python -m tox
 
@@ -175,22 +165,19 @@ jobs:
     strategy:
       matrix:
         os:
-          - windows-latest
+          - windows-2025
           - windows-11-arm
         python-version:
-          - 3.9
           - "3.10"
           - 3.11
           - 3.12
           - 3.13
           - 3.14
-          - 3.15-dev
+          - 3.15
           - pypy-3.10
           - pypy-3.11
         exclude:
           # setup-python only support 3.11+ for windows arm
-          - os: windows-11-arm
-            python-version: 3.9
           - os: windows-11-arm
             python-version: "3.10"
           - os: windows-11-arm
@@ -210,8 +197,7 @@ jobs:
       run: python -m pip install tox tox-gh-actions
     - name: Install mypy
       run: |
-        python -m pip install "mypy==1.19.1; python_version == '3.9'"
-        python -m pip install "mypy==1.20.1; python_version >= '3.10'"
+        python -m pip install "mypy==1.20.1"
     - name: Test with tox
       run: python -m tox
 
@@ -221,16 +207,16 @@ jobs:
     - test_linux
     - test_macos
     - test_windows
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
       with:
         submodules: true
-    - name: Set up Python 3.9
+    - name: Set up Python 3.10
       uses: actions/setup-python@v6
       with:
-        python-version: 3.9
+        python-version: "3.10"
     - name: Build full source distribution as tar.gz
       run: python setup.py sdist
     - name: Install the wheel package
@@ -244,7 +230,7 @@ jobs:
         path: dist/*
 
   bdist_wheel:
-    name: Build wheels (3.9+) on ${{ matrix.os }} for ${{ matrix.arch }}
+    name: Build wheels (3.10+) on ${{ matrix.os }} for ${{ matrix.arch }}
     needs:
     - test_linux
     - test_linux_no_gil
@@ -254,10 +240,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-latest]
+        os: [ubuntu-26.04, ubuntu-26.04-arm, windows-2025, windows-11-arm, macos-26-intel, macos-26]
         arch: [auto]
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             arch: riscv64
     steps:
       - uses: actions/checkout@v6
@@ -272,7 +258,7 @@ jobs:
           WRAPT_INSTALL_EXTENSIONS: true
           CIBW_BUILD_VERBOSITY: 1
           CIBW_ARCHS: ${{ matrix.arch }}
-          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.9"
+          CIBW_PROJECT_REQUIRES_PYTHON: ">=3.10"
       - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.os }}-${{ matrix.arch }}
@@ -280,7 +266,7 @@ jobs:
 
   release:
     name: Publish GitHub release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
     - sdist
     - bdist_wheel
@@ -434,7 +420,7 @@ jobs:
 
   publish-wrapt:
     name: Publish wrapt to PyPi
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
     - release
     if: startsWith(github.ref, 'refs/tags/')

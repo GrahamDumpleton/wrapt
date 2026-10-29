@@ -123,7 +123,7 @@ To apply post import hook patches to an application without changing it, [autowr
 
 ## Supported Python Versions
 
-- Python 3.9+
+- Python 3.10+
 - CPython
 - PyPy
 
