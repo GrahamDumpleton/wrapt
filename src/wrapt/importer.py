@@ -79,6 +79,15 @@ def register_post_import_hook(hook, name):
 
         module = sys.modules.get(name, None)
 
+        # A watched module is visible in sys.modules before its body finishes.
+        # Keep additional hooks in its pending queue until our loader notifies
+        # them. Once notification starts, the queue has been removed, so hooks
+        # registered by another hook can still run immediately.
+        if name in _post_import_hooks and getattr(
+            getattr(module, "__spec__", None), "_initializing", False
+        ):
+            module = None
+
         if module is None:
             _post_import_hooks.setdefault(name, []).append(hook)
 
