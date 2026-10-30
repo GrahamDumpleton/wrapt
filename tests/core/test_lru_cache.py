@@ -244,6 +244,147 @@ class TestClassMethod(unittest.TestCase):
         self.assertEqual(info.maxsize, 32)
 
 
+class TestInheritedClassMethod(unittest.TestCase):
+    def test_preserves_bound_class_with_separate_caches(self):
+        # A class method inherited by a subclass must receive the class
+        # through which it was called, not the class of the first call.
+        # Each class has its own cache, stored on that class, in the same
+        # way each instance has its own cache for an instance method.
+
+        for child_first in (False, True):
+            with self.subTest(child_first=child_first):
+                calls = []
+
+                class Base:
+                    @wrapt.lru_cache(maxsize=32)
+                    @classmethod
+                    def method(cls, value):
+                        calls.append((cls, value))
+                        return cls, value
+
+                class Child(Base):
+                    pass
+
+                first, second = (Child, Base) if child_first else (Base, Child)
+                self.assertEqual(first.method(1), (first, 1))
+                self.assertEqual(second.method(1), (second, 1))
+                self.assertEqual(second.method(2), (second, 2))
+                self.assertEqual(first().method(1), (first, 1))
+                self.assertEqual(second().method(1), (second, 1))
+                self.assertEqual(calls, [(first, 1), (second, 1), (second, 2)])
+
+                first_info = first.method.cache_info()
+                second_info = second.method.cache_info()
+                self.assertEqual(
+                    (first_info.hits, first_info.misses, first_info.currsize),
+                    (1, 1, 1),
+                )
+                self.assertEqual(
+                    (second_info.hits, second_info.misses, second_info.currsize),
+                    (1, 2, 2),
+                )
+                self.assertEqual(first_info.maxsize, 32)
+                self.assertEqual(second_info.maxsize, 32)
+
+                second.method.cache_clear()
+                self.assertEqual(second.method.cache_info().currsize, 0)
+                self.assertEqual(first.method.cache_info().currsize, 1)
+
+    def test_cache_stored_on_bound_class(self):
+        # The cache lives in the __dict__ of the class the method was
+        # bound to, not the class defining the method, and a subclass
+        # does not inherit the cache of its base class.
+
+        class Base:
+            @wrapt.lru_cache
+            @classmethod
+            def method(cls, value):
+                return cls, value
+
+        class Child(Base):
+            pass
+
+        def cache_attrs(cls):
+            return [key for key in vars(cls) if key.startswith("_lru_cache_method_")]
+
+        self.assertIsNone(Child.method.cache_info())
+        self.assertEqual(cache_attrs(Base), [])
+        self.assertEqual(cache_attrs(Child), [])
+
+        Child.method(1)
+
+        self.assertEqual(len(cache_attrs(Child)), 1)
+        self.assertEqual(cache_attrs(Base), [])
+        self.assertIsNone(Base.method.cache_info())
+
+        Base.method(1)
+
+        self.assertEqual(len(cache_attrs(Base)), 1)
+        self.assertEqual(cache_attrs(Base), cache_attrs(Child))
+
+    def test_subclass_not_retained_by_cache(self):
+        # Because the cache is stored on the subclass itself rather than
+        # in a shared cache keyed by class, a dynamically created
+        # subclass is garbage collected normally after use.
+
+        class Base:
+            @wrapt.lru_cache
+            @classmethod
+            def method(cls, value):
+                return value
+
+        Child = type("Child", (Base,), {})
+        Child.method(1)
+        ref = weakref.ref(Child)
+        del Child
+        gc.collect()
+
+        self.assertIsNone(ref())
+
+    def test_preserves_bound_class_with_stacked_decorator(self):
+        # A decorator applied between lru_cache and classmethod must
+        # still be called on every cache miss, with the correct class,
+        # while the class method itself receives the class through which
+        # it was called. Guards against the cache bypassing __wrapped__
+        # by reaching through to the underlying function.
+
+        audited = []
+        calls = []
+
+        @wrapt.decorator
+        def audit(wrapped, instance, args, kwargs):
+            audited.append((instance, args))
+            return wrapped(*args, **kwargs)
+
+        class Base:
+            @wrapt.lru_cache
+            @audit
+            @classmethod
+            def method(cls, value):
+                calls.append((cls, value))
+                return cls, value
+
+        class Child(Base):
+            pass
+
+        self.assertEqual(Base.method(1), (Base, 1))
+        self.assertEqual(Child.method(1), (Child, 1))
+        self.assertEqual(Child.method(2), (Child, 2))
+        self.assertEqual(Child.method(1), (Child, 1))
+
+        self.assertEqual(calls, [(Base, 1), (Child, 1), (Child, 2)])
+        self.assertEqual(audited, [(Base, (1,)), (Child, (1,)), (Child, (2,))])
+
+        base_info = Base.method.cache_info()
+        child_info = Child.method.cache_info()
+        self.assertEqual(
+            (base_info.hits, base_info.misses, base_info.currsize), (0, 1, 1)
+        )
+        self.assertEqual(
+            (child_info.hits, child_info.misses, child_info.currsize), (1, 2, 2)
+        )
+
+
 class TestStaticMethod(unittest.TestCase):
     def setUp(self):
         CachedClass.static_method.cache_clear()

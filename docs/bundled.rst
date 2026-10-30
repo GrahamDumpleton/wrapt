@@ -30,8 +30,10 @@ methods:
 per-instance cache stored as an attribute on the instance itself. Each
 instance gets its own full ``maxsize`` budget, instances do not need to be
 hashable, and caches are automatically cleaned up when the instance is
-garbage collected. For plain functions, class methods, and static methods,
-a single shared cache is used, the same as ``functools.lru_cache``.
+garbage collected. Class methods are handled the same way, with a separate
+cache stored on each class the method is bound to. For plain functions and
+static methods a single shared cache is used, the same as
+``functools.lru_cache``.
 
 The decorator can be used with or without arguments, just like
 ``functools.lru_cache``. All keyword arguments are passed through to the
@@ -85,9 +87,33 @@ For instance methods, each instance maintains its own independent cache.
 Each instance has its own ``maxsize`` budget, so caching on one instance
 does not affect another.
 
+For class methods, each class maintains its own independent cache, stored
+as an attribute on the class the method was bound to when it was called.
+This is the class named in the lookup, or the type of the instance the
+method was accessed through, which for a class method inherited by a
+subclass is the subclass and not the class defining the method. Each class
+in a hierarchy therefore has its own cache and ``maxsize`` budget, the
+method always receives as ``cls`` the class it was actually called through,
+and the cache is cleaned up along with the class if the class is itself
+garbage collected.
+
+::
+
+    class MySubClass(MyClass):
+        pass
+
+    >>> MyClass.class_compute(5)
+    15
+    >>> MySubClass.class_compute(5)
+    15
+    >>> MyClass.class_compute.cache_info()
+    CacheInfo(hits=0, misses=1, maxsize=32, currsize=1)
+    >>> MySubClass.class_compute.cache_info()
+    CacheInfo(hits=0, misses=1, maxsize=32, currsize=1)
+
 The ``cache_info()``, ``cache_clear()``, and ``cache_parameters()`` methods
-are available directly on the decorated function. For instance methods,
-these operate on the per-instance cache for the bound instance.
+are available directly on the decorated function. For instance methods and
+class methods, these operate on the cache for the bound instance or class.
 
 ::
 
@@ -100,8 +126,8 @@ these operate on the per-instance cache for the bound instance.
     CacheInfo(hits=1, misses=1, maxsize=128, currsize=1)
     >>> obj.compute.cache_clear()
 
-For plain functions, class methods, and static methods these operate on the
-single shared cache.
+For plain functions and static methods these operate on the single shared
+cache.
 
 ::
 

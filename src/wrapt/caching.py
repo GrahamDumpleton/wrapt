@@ -1,9 +1,10 @@
 """Caching decorators. Currently provides ``lru_cache``, a drop-in
 replacement for ``functools.lru_cache`` with correct handling of instance
-methods: a separate cache is maintained per instance, stored as an
-attribute on the instance itself so it is cleaned up with the instance
-by the garbage collector. For plain functions, class methods, and static
-methods a single shared cache is used, matching ``functools.lru_cache``.
+methods and class methods: a separate cache is maintained per instance or
+per class, stored as an attribute on the instance or class itself so it is
+cleaned up with that object by the garbage collector. For plain functions
+and static methods a single shared cache is used, matching
+``functools.lru_cache``.
 """
 
 from functools import lru_cache as _functools_lru_cache
@@ -17,33 +18,99 @@ from .synchronization import synchronized
 # Unlike using functools.lru_cache directly, this works correctly with
 # instance methods and class methods by maintaining a separate cache
 # per instance or class. Each per-instance cache is stored as an
-# attribute on the instance itself, so it is automatically cleaned up
-# when the instance is garbage collected. For plain functions and
-# static methods, a single cache is stored on the wrapper itself.
-# The underlying caches are created lazily on first call, with
-# double-checked locking via synchronized to avoid races in
-# multi-threaded code.
+# attribute on the instance itself, and each per-class cache as an
+# attribute on the class the method was bound to when called, so they
+# are automatically cleaned up when the instance or class is garbage
+# collected. For plain functions and static methods, a single cache is
+# stored on the wrapper itself. The underlying caches are created lazily
+# on first call, with double-checked locking via synchronized to avoid
+# races in multi-threaded code.
 #
 # Custom FunctionWrapper and BoundFunctionWrapper subclasses are used
 # so that cache_info() and cache_clear() are available directly on
 # the decorated function. For bound methods, the BoundFunctionWrapper
-# uses _self_instance to locate the per-instance cache.
+# uses _self_instance, or the class the method is bound to, to locate
+# the per-instance or per-class cache.
 
 
 class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper):
 
-    def _is_instance_method(self):
-        return self._self_binding == "function"
+    def _cache_owner(self):
+        # Return the object the cache for this binding is stored on, or
+        # None where the single shared cache on the parent wrapper is
+        # used instead.
+        #
+        # For an instance method this is the instance. For a class method
+        # it is the class the method was bound to when accessed, which is
+        # the class named in the lookup or the type of the instance it
+        # was accessed through. That is not necessarily the class the
+        # method was defined on, as a class method inherited by a
+        # subclass is bound to the subclass. Each class in a hierarchy
+        # therefore has its own cache and the class method always
+        # receives the correct cls, in the same way that each instance
+        # has its own cache for an instance method. Static methods have
+        # no binding and so share a single cache, as do any other
+        # callables which could not be identified as methods.
+
+        if self._self_binding == "function":
+            return self._self_instance
+
+        if self._self_binding == "classmethod":
+            return self.__wrapped__.__self__
+
+        return None
+
+    def _lookup_cache(self, owner):
+        cache_attr = self._self_parent._self_cache_attr
+
+        # For a class, only its own __dict__ is consulted. Looking the
+        # attribute up normally would find the cache of a base class
+        # through inheritance, and a subclass must not share the cache
+        # of the class it derives from.
+
+        if self._self_binding == "classmethod":
+            return owner.__dict__.get(cache_attr)
+
+        return getattr(owner, cache_attr, None)
+
+    def _store_cache(self, owner, cache):
+        cache_attr = self._self_parent._self_cache_attr
+
+        # If the object the method is bound to is a wrapt object proxy, a
+        # plain setattr() would fall through and store the cache on the
+        # wrapped object rather than the proxy. Use type() rather than
+        # isinstance() so the check sees the real proxy type and is not
+        # fooled by the proxy overriding __class__ to report the wrapped
+        # object's type. Proxies expose __self_setattr__() which stores
+        # the attribute on the proxy itself.
+
+        if issubclass(type(owner), BaseObjectProxy):
+            owner.__self_setattr__(cache_attr, cache)
+        else:
+            setattr(owner, cache_attr, cache)
+
+    def _cache(self):
+        # Return the cache for this binding, or None if it has not yet
+        # been created.
+
+        owner = self._cache_owner()
+
+        if owner is None:
+            return self._self_parent._self_cache
+
+        return self._lookup_cache(owner)
 
     def __call__(self, *args, **kwargs):
         parent = self._self_parent
 
-        # For class methods and static methods, use a single shared
-        # cache stored on the parent wrapper. The cache is created
-        # from the bound __wrapped__ since the parent's __wrapped__
-        # is the raw classmethod/staticmethod descriptor.
+        owner = self._cache_owner()
 
-        if not self._is_instance_method():
+        # Static methods and unidentified callables use a single shared
+        # cache stored on the parent wrapper. The cache is created from
+        # the bound __wrapped__ since the parent's __wrapped__ is the raw
+        # staticmethod descriptor.
+
+        if owner is None:
             if parent._self_cache is None:
                 with synchronized(parent):
                     if parent._self_cache is None:
@@ -53,37 +120,23 @@ class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper):
 
             return parent._self_cache(*args, **kwargs)
 
-        # Instance method — per-instance cache stored as an attribute
-        # on the instance so it is cleaned up with the instance by the
-        # garbage collector.
+        # Instance method or class method. The cache is created from the
+        # bound __wrapped__, so it calls the method as bound to this
+        # instance or class, and is stored as an attribute on that object
+        # so it is cleaned up along with it by the garbage collector.
 
-        instance = self._self_instance
-        cache_attr = parent._self_cache_attr
-
-        cache = getattr(instance, cache_attr, None)
+        cache = self._lookup_cache(owner)
 
         if cache is None:
             with synchronized(parent):
-                cache = getattr(instance, cache_attr, None)
+                cache = self._lookup_cache(owner)
 
                 if cache is None:
                     cache = _functools_lru_cache(**parent._self_lru_kwargs)(
                         self.__wrapped__
                     )
 
-                    # If the instance the method is bound to is a wrapt
-                    # object proxy, a plain setattr() would fall through and
-                    # store the cache on the wrapped object rather than the
-                    # proxy. Use type() rather than isinstance() so the check
-                    # sees the real proxy type and is not fooled by the proxy
-                    # overriding __class__ to report the wrapped object's
-                    # type. Proxies expose __self_setattr__() which stores the
-                    # attribute on the proxy itself.
-
-                    if issubclass(type(instance), BaseObjectProxy):
-                        instance.__self_setattr__(cache_attr, cache)
-                    else:
-                        setattr(instance, cache_attr, cache)
+                    self._store_cache(owner, cache)
 
         return cache(*args, **kwargs)
 
@@ -92,10 +145,7 @@ class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper):
         ``None`` if the cache has not yet been created.
         """
 
-        if not self._is_instance_method():
-            return self._self_parent.cache_info()
-
-        cache = getattr(self._self_instance, self._self_parent._self_cache_attr, None)
+        cache = self._cache()
 
         if cache is not None:
             return cache.cache_info()
@@ -105,22 +155,17 @@ class _BoundLRUCacheFunctionWrapper(BoundFunctionWrapper):
     def cache_clear(self):
         """Clear this binding's cache."""
 
-        if not self._is_instance_method():
-            self._self_parent.cache_clear()
-            return
-
-        cache = getattr(self._self_instance, self._self_parent._self_cache_attr, None)
+        cache = self._cache()
 
         if cache is not None:
             cache.cache_clear()
 
     def cache_parameters(self):
-        """Return the parameters used to create the cache."""
+        """Return the parameters used to create the cache, or ``None``
+        if the cache has not yet been created.
+        """
 
-        if not self._is_instance_method():
-            return self._self_parent.cache_parameters()
-
-        cache = getattr(self._self_instance, self._self_parent._self_cache_attr, None)
+        cache = self._cache()
 
         if cache is not None:
             return cache.cache_parameters()
@@ -162,8 +207,8 @@ class _LRUCacheFunctionWrapper(FunctionWrapper):
         self._self_cache_attr = "_lru_cache_" + name + "_" + str(id(self))
 
     def __call__(self, *args, **kwargs):
-        # Plain function or static method — single cache stored
-        # on the wrapper itself.
+        # Plain function or static method, single cache stored on the
+        # wrapper itself.
 
         if self._self_cache is None:
             with synchronized(self):
@@ -213,14 +258,20 @@ def lru_cache(func=None, /, **kwargs):
     hashable, each instance gets its own full ``maxsize`` budget, and
     no external mapping prevents garbage collection.
 
-    For plain functions, class methods, and static methods, a single
-    shared cache is used.
+    For class methods, a separate cache is likewise maintained per class,
+    stored as an attribute on the class the method was bound to when
+    called. A class method inherited by a subclass is bound to the
+    subclass, so each class in a hierarchy has its own cache and the
+    method always receives the class it was called through as ``cls``.
+
+    For plain functions and static methods, a single shared cache is
+    used.
 
     All keyword arguments are passed through to ``functools.lru_cache``.
 
     Cache management methods ``cache_info()`` and ``cache_clear()`` are
     available directly on the decorated function. For bound methods,
-    these operate on the per-instance cache for the bound instance.
+    these operate on the cache for the bound instance or class.
     """
 
     if func is None:

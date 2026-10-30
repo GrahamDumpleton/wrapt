@@ -11,6 +11,27 @@ Version 2.6.0
 
 **Bugs Fixed**
 
+* When ``wrapt.lru_cache`` was applied to a class method, the single
+  shared cache was created from the method as bound to whichever class
+  first called it. Calls made later through a subclass, or via an
+  instance of a subclass, were served by that same bound method and so
+  the class method received the first class as ``cls`` rather than the
+  class through which it was actually called. This was the case even for
+  arguments not already in the cache. Class methods are now handled in
+  the same way as instance methods, with a separate cache for each class
+  the method is bound to, stored as an attribute on that class. A class
+  method inherited by a subclass is bound to the subclass, so each class
+  in a hierarchy has its own cache and ``maxsize`` budget, the method
+  always receives the correct ``cls``, and no class is kept alive by the
+  cache of another. The ``cache_info()``, ``cache_clear()`` and
+  ``cache_parameters()`` methods accessed via a class operate on the
+  cache for that class. Previously the documentation described a single
+  shared cache for class methods. With thanks to parijat1222q for the
+  report in `issue #364
+  <https://github.com/GrahamDumpleton/wrapt/issues/364>`_ and the
+  regression test from `pull request #365
+  <https://github.com/GrahamDumpleton/wrapt/pull/365>`_.
+
 * The ``formatargspec()`` function in the ``wrapt.arguments`` module, a
   replacement for ``inspect.formatargspec()`` which was removed from the
   Python standard library in version 3.11, dropped any annotations on
