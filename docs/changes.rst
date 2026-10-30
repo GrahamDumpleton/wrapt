@@ -11,6 +11,13 @@ Version 2.6.0
 
 **Bugs Fixed**
 
+* Calling ``wrapt.BoundFunctionWrapper`` with a non-string binding value
+  could crash the interpreter when using the C extension. The call path
+  now checks that the value is a string before comparing the binding
+  names with the Unicode-only C API. With thanks to theosotr for the
+  report in `issue #368
+  <https://github.com/GrahamDumpleton/wrapt/issues/368>`_.
+
 * When ``wrapt.lru_cache`` was applied to a class method, the single
   shared cache was created from the method as bound to whichever class
   first called it. Calls made later through a subclass, or via an
