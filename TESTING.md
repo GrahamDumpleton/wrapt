@@ -87,7 +87,7 @@ Runs `stubtest` to compare the `wrapt-stubs` package against the installed wrapt
 ```bash
 just test-stress
 ```
-Runs the stress scenarios under `tests/stress/` against the free-threaded Python builds (3.13t, 3.14t, 3.15t), the only builds where the races being hunted are physically possible.
+Runs the stress scenarios under `tests/stress/` against the free-threaded Python builds (3.14t, 3.15t), the only builds where the races being hunted are physically possible.
 
 ```bash
 just test-stress-version 3.14t

@@ -72,7 +72,6 @@ test:
     just test-version 3.11
     just test-version 3.12
     just test-version 3.13
-    # just test-version 3.13t
     just test-version 3.14
     just test-version 3.14t
     just test-version 3.15
@@ -149,7 +148,6 @@ test-version version:
 # builds, which are the only builds where the races being hunted are
 # physically possible.
 test-stress:
-    just test-stress-version 3.13t
     just test-stress-version 3.14t
     just test-stress-version 3.15t
 
