@@ -86,6 +86,21 @@ class TestPostImportHooks(unittest.TestCase):
                 sys.modules.pop(registration, None)
                 _post_import_hooks.pop(name, None)
 
+    def test_loaded_module_with_pending_hook_runs_new_hook_immediately(self):
+        name = "_wrapt_loaded_module_with_pending_hook"
+        invoked = []
+        module = types.ModuleType(name)
+        try:
+            wrapt.register_post_import_hook(
+                lambda loaded: invoked.append("pending"), name
+            )
+            sys.modules[name] = module
+            wrapt.register_post_import_hook(lambda loaded: invoked.append(loaded), name)
+            self.assertEqual(invoked, [module])
+        finally:
+            sys.modules.pop(name, None)
+            _post_import_hooks.pop(name, None)
+
     def test_before_and_after_import(self):
         invoked_one = []
         invoked_two = []
