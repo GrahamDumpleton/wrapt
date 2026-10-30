@@ -14,6 +14,15 @@ Version 2.5.2
 
 **Bugs Fixed**
 
+* Special methods forwarded by ``wrapt.AutoObjectProxy`` and
+  ``wrapt.LazyObjectProxy`` were retrieved from the wrapped instance
+  rather than its type. Instance attributes shadowing those methods,
+  or a custom ``__getattribute__()``, could therefore change iteration,
+  awaiting, path conversion, and descriptor operations through the proxy
+  even though Python ignored them on the wrapped object. Forwarding now
+  looks up the methods on the actual type and preserves Python's
+  descriptor binding rules, including static and class methods.
+
 * The special methods added to the class generated for an
   ``wrapt.AutoObjectProxy``, and adjusted when ``__wrapped__`` was
   reassigned, were determined by inspecting the wrapped object itself,
