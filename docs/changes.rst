@@ -9,6 +9,23 @@ Version 2.6.0
 * Support for Python 3.9, which reached end of life in October 2025, has
   been removed. Python version 3.10 or later is now required.
 
+**Bugs Fixed**
+
+* The ``formatargspec()`` function in the ``wrapt.arguments`` module, a
+  replacement for ``inspect.formatargspec()`` which was removed from the
+  Python standard library in version 3.11, dropped any annotations on
+  ``*args`` and ``**kwargs`` parameters, while preserving those on other
+  parameters and the return value. Annotations on the variadic parameters
+  are now included, matching the original standard library function. This
+  function is only retained for use by the ``adapter`` argument of
+  ``wrapt.decorator``, which is planned for deprecation in favour of
+  ``wrapt.with_signature``. That code path strips annotations before the
+  function is called and reapplies them to the generated adapter
+  afterwards, so it was not affected, and the function is not part of the
+  documented public API, but it has been corrected all the same. With
+  thanks to galafis for `pull request #363
+  <https://github.com/GrahamDumpleton/wrapt/pull/363>`_.
+
 Version 2.5.2
 -------------
 
