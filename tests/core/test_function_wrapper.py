@@ -562,6 +562,65 @@ class TestFunctionBinding(unittest.TestCase):
         self.assertTrue(_bound_wrapper_1 is not _bound_wrapper_2)
 
 
+class TestBindingValues(unittest.TestCase):
+
+    def check_fallback_binding(self, wrapped, expected_instance, binding):
+        calls = []
+
+        def wrapper(wrapped, instance, args, kwargs):
+            calls.append((wrapped, instance, args, kwargs))
+            return "ok"
+
+        bound = wrapt.BoundFunctionWrapper(
+            wrapped, object(), wrapper, None, binding
+        )
+
+        self.assertEqual(bound("value", flag=True), "ok")
+        self.assertEqual(len(calls), 1)
+        self.assertIs(calls[0][0], wrapped)
+        self.assertIs(calls[0][1], expected_instance)
+        self.assertEqual(calls[0][2], ("value",))
+        self.assertEqual(calls[0][3], {"flag": True})
+
+    def test_non_string_binding_free_function(self):
+        def function():
+            pass
+
+        for binding in (object(), None, 0, False, b"function", [], {}):
+            with self.subTest(binding_type=type(binding).__name__):
+                self.check_fallback_binding(function, None, binding)
+
+    def test_non_string_binding_class_method(self):
+        class Target:
+            @classmethod
+            def method(cls):
+                pass
+
+        for binding in (object(), None, 0, False, b"function", [], {}):
+            with self.subTest(binding_type=type(binding).__name__):
+                self.check_fallback_binding(Target.method, Target, binding)
+
+    def test_unknown_string_binding_keeps_fallback(self):
+        def function():
+            pass
+
+        self.check_fallback_binding(function, None, "custom")
+
+    def test_disabled_non_string_binding_calls_wrapped(self):
+        def function(value):
+            return value
+
+        def wrapper(wrapped, instance, args, kwargs):
+            self.fail("Disabled wrapper must not be called")
+
+        for enabled in (False, lambda: False):
+            with self.subTest(enabled=enabled):
+                bound = wrapt.BoundFunctionWrapper(
+                    function, None, wrapper, enabled, object()
+                )
+                self.assertEqual(bound("value"), "value")
+
+
 class TestInvalidWrapper(unittest.TestCase):
 
     def test_none_for_wrapped(self):

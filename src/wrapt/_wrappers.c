@@ -5116,9 +5116,9 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
    * wrapping an instance method vs a static method or class method.
    */
 
-  matched =
-      PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
-      PyUnicode_CompareWithASCIIString(binding, "callable") == 0;
+  matched = PyUnicode_Check(binding) &&
+      (PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
+       PyUnicode_CompareWithASCIIString(binding, "callable") == 0);
 
   if (matched)
   {
