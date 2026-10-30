@@ -6,6 +6,27 @@ from wrapt.arguments import formatargspec
 
 class TestFormatargspec(unittest.TestCase):
 
+    def test_annotated_varargs(self):
+        def function(*args: int):
+            pass
+
+        self.assertFormatEqual(function, "(*args: int)")
+
+    def test_annotated_varkw(self):
+        def function(**kwargs: str):
+            pass
+
+        self.assertFormatEqual(function, "(**kwargs: str)")
+
+    def test_all_parameter_annotations(self):
+        def function(a: float, *args: int, key: bool = False, **kwargs: str) -> list:
+            pass
+
+        self.assertFormatEqual(
+            function,
+            "(a: float, *args: int, key: bool = False, **kwargs: str) -> list",
+        )
+
     def assertFormatEqual(self, func, ref):
         formatted = formatargspec(*getfullargspec(func))
         self.assertEqual(formatted, ref)
