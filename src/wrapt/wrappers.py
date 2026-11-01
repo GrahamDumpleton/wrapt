@@ -319,6 +319,10 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     def __name__(self, value):
         self.__wrapped__.__name__ = value
 
+    @__name__.deleter
+    def __name__(self):
+        del self.__wrapped__.__name__
+
     @property
     def __class__(self):
         return self.__wrapped__.__class__
@@ -326,6 +330,10 @@ class ObjectProxy(_ObjectProxyDictBase, metaclass=_ObjectProxyMetaType):
     @__class__.setter
     def __class__(self, value):
         self.__wrapped__.__class__ = value
+
+    @__class__.deleter
+    def __class__(self):
+        del self.__wrapped__.__class__
 
     def __dir__(self):
         return dir(self.__wrapped__)

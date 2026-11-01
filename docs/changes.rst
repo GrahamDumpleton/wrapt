@@ -47,6 +47,15 @@ Version 2.6.0
   thanks to galafis for `pull request #363
   <https://github.com/GrahamDumpleton/wrapt/pull/363>`_.
 
+* Deleting the ``__name__`` or ``__class__`` attribute of a proxy object,
+  using ``del proxy.__name__`` for example, failed with an
+  ``AttributeError`` when the C extension was not being used, as the
+  properties for these attributes in the pure Python implementation had no
+  deleter. The deletion is now forwarded to the wrapped object, as was
+  already the case with the C extension and as was done for ``__module__``
+  and ``__doc__`` in version 2.5.0, so the outcome is the same as deleting
+  the attribute on the wrapped object directly.
+
 Version 2.5.2
 -------------
 
