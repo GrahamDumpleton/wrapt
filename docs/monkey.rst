@@ -272,7 +272,9 @@ For more general deferred behaviour, ``wrapt`` provides a post import hook
 mechanism styled after PEP 369. ``wrapt.register_post_import_hook()``
 registers a callback to be invoked once a module with a given name has been
 imported. If the module is already imported at the time of registration,
-the callback fires immediately.
+the callback fires immediately. For what counts as already imported when
+the module is still in the process of being imported, see
+`Hooks and partially initialized modules`_ below.
 
 ::
 
@@ -308,6 +310,100 @@ already executed a binding like ``from target import function`` will still be
 using the original, unpatched reference. Registering a post import hook from
 the earliest point in the application ensures that the patch is in place
 before other modules have had a chance to cache references.
+
+Hooks and partially initialized modules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A module counts as already imported once it is present in ``sys.modules``.
+Python adds a module to ``sys.modules`` before it executes the body of the
+module, so a module can be present there while it is still only partially
+initialized. Whether a hook registered at that point sees the partially
+initialized module depends on how the registration came about.
+
+If the hook is registered as a result of a circular import, that is, the body
+of the target module directly or indirectly imports the module which
+registers the hook, the hook is called immediately and is passed the
+partially initialized module. Any attributes which the target module defines
+after the point at which the circular import occurred do not exist yet, and
+accessing them from the hook raises ``AttributeError``. This is deliberate
+and is the same as what an ``import`` statement does in the same situation,
+which returns the partially initialized module rather than failing.
+
+::
+
+    # foo.py
+
+    import bar
+
+    def a():
+        return 42
+
+    # bar.py
+
+    import wrapt
+
+    @wrapt.when_imported("foo")
+    def install(foo):
+        # Raises AttributeError if foo is imported first, as foo is
+        # still executing the import of bar and has not yet defined a().
+        foo.a
+
+If the body of the target module is instead being executed in a different
+thread at the time the hook is registered, then what happens depends on
+whether ``wrapt`` was already watching for the import of that module. When a
+post import hook had been registered for the module before its import began,
+the new hook is held back and called from the importing thread once the body
+of the module has completed. Any exception raised by the hook will in that
+case cause the import of the module in the importing thread to fail, the
+same as for any other hook registered before the module was imported. When
+no post import hook had been registered for the module before its import
+began, ``wrapt`` plays no part in that import and has no way to know when it
+completes, so the hook is called immediately and is passed the partially
+initialized module.
+
+Even when ``wrapt`` is watching for the import, the hook is only held back
+once the body of the module has started executing. Python adds the module
+to ``sys.modules`` slightly before that point, and a hook registered from
+another thread in that brief interval is still called immediately, with a
+module whose body has not yet run at all. The interval is very short, but it
+means that registering a post import hook while another thread may be
+importing the target module can never be made completely safe.
+
+For this reason, post import hooks should ideally be registered from the
+main thread, as one of the first actions of the application, before any
+other threads are started and before the target module can be imported.
+With no other threads running, no import of the target module can be in
+progress elsewhere, and only a circular import can result in a hook seeing a
+partially initialized module. This is the intended use for applying monkey
+patches, and it also avoids the problem with cached references described
+above.
+
+Where post import hooks have to be registered later, such as by a library
+which registers them at the time it is itself imported in order to integrate
+with optional dependencies, write the hooks so they are tolerant of a
+partially initialized module:
+
+* Avoid circular imports between the module that registers a hook and the
+  target module. If both are part of the same package, consider whether a
+  post import hook is needed at all, as the target module can instead call
+  into the other module explicitly at the end of its body.
+* Avoid looking up attributes of the target module within the hook itself.
+  Retain a reference to the module and look up the attributes at the point
+  they are actually used, which will normally be after the import of the
+  target module has completed.
+
+::
+
+    _foo = None
+
+    @wrapt.when_imported("foo")
+    def install(foo):
+        global _foo
+        _foo = foo
+
+    def b():
+        # Looked up when b() is called rather than when the hook ran.
+        return _foo.a() if _foo is not None else None
 
 Discovering patches via entry points
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

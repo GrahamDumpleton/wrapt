@@ -290,9 +290,13 @@ Post Import Hooks
 
 ``wrapt.register_post_import_hook``
     Registers a callback to be invoked when a named module is imported,
-    or immediately if the module is already loaded. The first
-    registration installs an import hook into ``sys.meta_path``
-    automatically. See :doc:`monkey`.
+    or immediately if the module is already loaded. A module counts as
+    loaded once it is in ``sys.modules``, which can be before its body
+    has finished executing, so a hook registered during a circular or
+    concurrent import may be passed a partially initialized module.
+    Ideally register hooks from the main thread before any other threads
+    are started. The first registration installs an import hook into
+    ``sys.meta_path`` automatically. See :doc:`monkey`.
 
 ``wrapt.when_imported``
     Decorator form of ``register_post_import_hook``. Apply it to a

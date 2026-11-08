@@ -67,6 +67,38 @@ Version 2.6.0
   thanks to galafis for `pull request #363
   <https://github.com/GrahamDumpleton/wrapt/pull/363>`_.
 
+* Python adds a module to ``sys.modules`` before executing its body, and
+  ``wrapt.register_post_import_hook()`` treats a module present in
+  ``sys.modules`` as already imported. When a post import hook was
+  registered from one thread while the target module was still being
+  imported in another thread, the hook was therefore called immediately
+  and passed the partially initialized module, so any attribute the module
+  had not yet defined would be missing. This was the case even when a hook
+  registered before the import began meant ``wrapt`` was watching that
+  import, and so would itself be notified once the module body had
+  completed. In that situation, a hook registered while the module body is
+  executing is now held back and called from the importing thread once the
+  module body has completed, and if the import fails the hook remains
+  registered for a later import of the module. Python adds the module to
+  ``sys.modules`` slightly before the body starts executing, and a hook
+  registered from another thread in that brief interval is still called
+  immediately. When ``wrapt`` was not already watching the import, there is
+  no reliable way to know when it completes, and the hook is still called
+  immediately. A hook registered as a result of a circular import, from
+  the thread executing the module body, also continues to be called
+  immediately with the partially initialized module, which is the same as
+  what an ``import`` statement returns in that situation. As this change
+  narrows rather than eliminates the problem for concurrent imports, the
+  documentation now makes clear that post import hooks should ideally be
+  registered from the main thread before any other threads are started,
+  and describes how to write hooks which tolerate a partially initialized
+  module where that is not possible. With
+  thanks to x42005e1f for raising the problem in `issue #366
+  <https://github.com/GrahamDumpleton/wrapt/issues/366>`_, and to
+  Rutvik552k for `pull request #367
+  <https://github.com/GrahamDumpleton/wrapt/pull/367>`_, which explored a
+  fix and provided the basis for the threaded regression test.
+
 Version 2.5.2
 -------------
 

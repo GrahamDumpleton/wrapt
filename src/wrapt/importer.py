@@ -7,19 +7,70 @@ import importlib.metadata
 import sys
 import threading
 from collections.abc import Callable
+from contextlib import contextmanager
 from importlib.util import find_spec
 
 from .__wrapt__ import BaseObjectProxy
 
 # The dictionary registering any post import hooks to be triggered once
-# the target module has been imported. Once a module has been imported
-# and the hooks fired, the list of hooks recorded against the target
-# module will be truncated but the list left in the dictionary. This
-# acts as a flag to indicate that the module had already been imported.
+# the target module has been imported. When the module is imported, the
+# entry for it is removed from the dictionary before the hooks are called.
+# A hook registered after that point, including from within one of the
+# hooks, finds the module in sys.modules and is called immediately.
 
 _post_import_hooks: dict[str, list[Callable]] = {}
 _post_import_hooks_init = False
 _post_import_hooks_lock = threading.RLock()
+
+# The names of modules whose body is currently being executed by our own
+# loader, mapped to the identifier of the thread doing so. A module is added
+# to sys.modules before its body is executed, so its presence there does not
+# mean it has finished initializing. If a hook is registered from a different
+# thread while the module body is still executing, the hook is queued rather
+# than called against the partially initialized module, and is then called by
+# the importing thread once the body has completed. The importing thread
+# itself, which can only register a hook for the module as a result of a
+# circular import, still has the hook called immediately. This matches what an
+# import statement does, which waits for an import in progress in another
+# thread to complete, but returns the partially initialized module when the
+# import is circular.
+#
+# This does not fully close the window. Python adds the module to sys.modules
+# before calling exec_module() on our loader, so there is a brief interval in
+# which the module is present but not yet marked here. A hook registered from
+# another thread in that interval is still called immediately with the empty
+# module. Setting the marker earlier, from create_module(), would close that
+# interval for a normal import, but loaders such as importlib.util.LazyLoader
+# call create_module() and then defer, or never perform, the call to
+# exec_module(), which would leave the marker set. The documented advice is to
+# register post import hooks before any other threads are started.
+
+_post_import_hooks_executing: dict[str, int] = {}
+
+
+@contextmanager
+def _executing_module(name):
+    # Records that the body of the named module is being executed by the
+    # current thread. The marker is removed before the post import hooks
+    # are called, so a hook registered by any thread from that point on is
+    # called immediately rather than being queued after the queue for the
+    # module has already been consumed. The prior value is restored rather
+    # than removed in case the same module is executed in a nested manner.
+
+    with _post_import_hooks_lock:
+        previous = _post_import_hooks_executing.get(name)
+        _post_import_hooks_executing[name] = threading.get_ident()
+
+    try:
+        yield
+
+    finally:
+        with _post_import_hooks_lock:
+            if previous is None:
+                _post_import_hooks_executing.pop(name, None)
+            else:
+                _post_import_hooks_executing[name] = previous
+
 
 # Register a new post import hook for the target module name. This
 # differs from the PEP-369 implementation in that it also allows the
@@ -56,6 +107,18 @@ def register_post_import_hook(hook, name):
     the form 'module:function'. This will result in a proxy hook function being
     registered which will defer loading of the specified module containing the
     callback function until required.
+
+    A module counts as already imported once it is present in `sys.modules`,
+    which Python does before executing the body of the module. If a hook is
+    registered as a result of a circular import, while the body of the target
+    module is still being executed, the `hook` is called immediately and is
+    passed the partially initialized module. If the body of the target module
+    is being executed in a different thread, the `hook` is instead called once
+    the body has completed, but only where a post import hook was already
+    registered for the module when that import began, and the body had
+    started executing. Otherwise it will also be passed the partially
+    initialized module. To avoid this, register post import hooks from the
+    main thread before any other threads are started.
     """
 
     # Create a deferred import hook if hook is a string name rather than
@@ -78,6 +141,15 @@ def register_post_import_hook(hook, name):
         # to be called after import.
 
         module = sys.modules.get(name, None)
+
+        # If the module body is still being executed by our own loader in a
+        # different thread, queue the hook so that thread calls it once the
+        # module body has completed. See _post_import_hooks_executing.
+
+        owner = _post_import_hooks_executing.get(name)
+
+        if owner is not None and owner != threading.get_ident():
+            module = None
 
         if module is None:
             _post_import_hooks.setdefault(name, []).append(hook)
@@ -188,7 +260,9 @@ class _ImportHookChainedLoader(BaseObjectProxy):
             module.__spec__.loader = self.__wrapped__
 
     def _self_load_module(self, fullname):
-        module = self.__wrapped__.load_module(fullname)
+        with _executing_module(fullname):
+            module = self.__wrapped__.load_module(fullname)
+
         self._self_set_loader(module)
         notify_module_loaded(module)
 
@@ -202,7 +276,10 @@ class _ImportHookChainedLoader(BaseObjectProxy):
 
     def _self_exec_module(self, module):
         self._self_set_loader(module)
-        self.__wrapped__.exec_module(module)
+
+        with _executing_module(getattr(module, "__name__", None)):
+            self.__wrapped__.exec_module(module)
+
         notify_module_loaded(module)
 
 
@@ -304,7 +381,8 @@ def when_imported(name):
     hook for the module specified by `name`. The function will be called once
     the module with the specified name is imported, and will be passed the
     module as argument. If the module is already imported, the function will
-    be called immediately.
+    be called immediately. See `register_post_import_hook()` for when a
+    module whose body is still being executed counts as already imported.
     """
 
     def register(hook):
