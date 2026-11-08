@@ -326,6 +326,34 @@ class TestNamingObjectProxy(unittest.TestCase):
 
         self.assertEqual(wrapper.__doc__, target.__doc__)
 
+    def test_delete_function_name(self):
+        # Deleting __name__ is forwarded to the wrapped object, so it fails
+        # in the same way as deleting it on the function directly.
+
+        def target():
+            pass
+
+        wrapper = wrapt.BaseObjectProxy(target)
+
+        with self.assertRaises(TypeError) as direct:
+            del target.__name__
+
+        with self.assertRaises(TypeError) as proxied:
+            del wrapper.__name__
+
+        self.assertEqual(str(proxied.exception), str(direct.exception))
+
+    def test_delete_instance_name(self):
+        # Deleting __name__ removes it from a wrapped object which allows it.
+
+        target = types.SimpleNamespace(__name__="target")
+        wrapper = wrapt.BaseObjectProxy(target)
+
+        del wrapper.__name__
+
+        self.assertFalse(hasattr(target, "__name__"))
+        self.assertFalse(hasattr(wrapper, "__name__"))
+
 
 class TestTypeObjectProxy(unittest.TestCase):
 
@@ -359,6 +387,21 @@ class TestTypeObjectProxy(unittest.TestCase):
         self.assertEqual(wrapper.__class__, target.__class__)
 
         self.assertTrue(isinstance(wrapper, type(target)))
+
+    def test_delete_class(self):
+        # Deleting __class__ is forwarded to the wrapped object, which does
+        # not allow it, so the same error is raised as for a direct deletion.
+
+        target = objects.Target()
+        wrapper = wrapt.BaseObjectProxy(target)
+
+        with self.assertRaises(TypeError) as direct:
+            del target.__class__
+
+        with self.assertRaises(TypeError) as proxied:
+            del wrapper.__class__
+
+        self.assertEqual(str(proxied.exception), str(direct.exception))
 
 
 class TestDirObjectProxy(unittest.TestCase):
