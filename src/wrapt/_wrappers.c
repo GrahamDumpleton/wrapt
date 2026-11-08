@@ -205,20 +205,20 @@ static inline PyObject *wrapt_acquire_field(PyObject *owner, PyObject **field)
   return value;
 }
 
-/* Test whether an attribute name matches one of the interned strings held
- * in module state. Attribute names arriving from Python code are interned
- * by the compiler, so a pointer comparison against the interned string is
- * nearly always sufficient and is the fast path. A name constructed at
- * runtime, for example by string concatenation or decoding, is not
- * interned and would never match by pointer, so fall back to a value
- * comparison. That comparison is guarded by a length check so that the
- * cost for the overwhelming majority of non matching names is a single
- * integer comparison. This mirrors the pattern used by CPython itself in
- * super_getattro() for __class__.
+/* Test whether an object is a str equal to one of the interned strings held
+ * in module state. The object is usually that same interned string, so a
+ * pointer comparison is tried first as the fast path. A str with the same
+ * value which is not the interned string, for example one constructed at
+ * runtime by concatenation or decoding, would never match by pointer, so
+ * fall back to a value comparison. That comparison is guarded by a length
+ * check so that the cost for the overwhelming majority of non matching
+ * strings is a single integer comparison. This mirrors the pattern used by
+ * CPython itself in super_getattro() for __class__.
  *
- * The name must be a str. This holds for the attribute get and set slots
- * where this is used, since PyObject_GetAttr() and PyObject_SetAttr()
- * reject any other type before the slot is reached. */
+ * The object can be of any type. One which is not a str never matches, and
+ * is never passed to a str only C API function, as those do not check the
+ * type of the object and would crash on anything else. A str subclass is
+ * compared by value, ignoring any __eq__() it defines. */
 
 static inline int wrapt_name_equals(PyObject *name, PyObject *interned)
 {
@@ -4594,11 +4594,10 @@ static PyObject *WraptFunctionWrapperBase_call(WraptFunctionWrapperObject *self,
 
   if (instance == Py_None)
   {
-    int matched =
-        PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
-        PyUnicode_CompareWithASCIIString(binding, "instancemethod") == 0 ||
-        PyUnicode_CompareWithASCIIString(binding, "callable") == 0 ||
-        PyUnicode_CompareWithASCIIString(binding, "classmethod") == 0;
+    int matched = wrapt_name_equals(binding, state->str_function) ||
+                  wrapt_name_equals(binding, state->str_instancemethod) ||
+                  wrapt_name_equals(binding, state->str_callable) ||
+                  wrapt_name_equals(binding, state->str_classmethod);
 
     if (matched)
     {
@@ -4690,14 +4689,14 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
 
   if (parent == Py_None)
   {
-    if (PyUnicode_CompareWithASCIIString(binding, "builtin") == 0)
+    if (wrapt_name_equals(binding, state->str_builtin))
     {
       Py_INCREF(self);
       result = (PyObject *)self;
       goto finally;
     }
 
-    if (PyUnicode_CompareWithASCIIString(binding, "class") == 0)
+    if (wrapt_name_equals(binding, state->str_class))
     {
       Py_INCREF(self);
       result = (PyObject *)self;
@@ -4740,10 +4739,9 @@ WraptFunctionWrapperBase_descr_get(WraptFunctionWrapperObject *self,
 
   if (instance == Py_None)
   {
-    int matched =
-        PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
-        PyUnicode_CompareWithASCIIString(binding, "instancemethod") == 0 ||
-        PyUnicode_CompareWithASCIIString(binding, "callable") == 0;
+    int matched = wrapt_name_equals(binding, state->str_function) ||
+                  wrapt_name_equals(binding, state->str_instancemethod) ||
+                  wrapt_name_equals(binding, state->str_callable);
 
     if (matched)
     {
@@ -5116,9 +5114,8 @@ WraptBoundFunctionWrapper_call(WraptFunctionWrapperObject *self, PyObject *args,
    * wrapping an instance method vs a static method or class method.
    */
 
-  matched =
-      PyUnicode_CompareWithASCIIString(binding, "function") == 0 ||
-      PyUnicode_CompareWithASCIIString(binding, "callable") == 0;
+  matched = wrapt_name_equals(binding, state->str_function) ||
+            wrapt_name_equals(binding, state->str_callable);
 
   if (matched)
   {

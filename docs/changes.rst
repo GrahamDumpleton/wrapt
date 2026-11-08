@@ -11,6 +11,26 @@ Version 2.6.0
 
 **Bugs Fixed**
 
+* When using the C extension, a ``wrapt.BoundFunctionWrapper`` or
+  ``wrapt.FunctionWrapper`` whose binding was not a string could crash
+  the interpreter. The binding is normally a string chosen by wrapt to
+  describe the type of the wrapped object, but a wrapper can be
+  constructed directly with any object as the binding, and a
+  ``wrapt.FunctionWrapper`` which wraps an existing wrapper, as happens
+  when a decorator is applied to it, inherits the binding of that
+  wrapper. The crash occurred when such a wrapper was called, or was
+  bound via the descriptor protocol, as the binding was passed to
+  functions in the Python C API which only accept a string and which do
+  not check the type of the object they are given. A binding which is
+  not a string is now never treated as matching any of the known
+  bindings, so the wrapper takes the same fallback path as in the pure
+  Python implementation. With thanks to theosotr for the report in
+  `issue #368 <https://github.com/GrahamDumpleton/wrapt/issues/368>`_,
+  and to edsonsims for `pull request #369
+  <https://github.com/GrahamDumpleton/wrapt/pull/369>`_, which fixed the
+  case of calling a ``wrapt.BoundFunctionWrapper`` and which this change
+  extends to the other places the binding is checked.
+
 * When ``wrapt.lru_cache`` was applied to a class method, the single
   shared cache was created from the method as bound to whichever class
   first called it. Calls made later through a subclass, or via an
