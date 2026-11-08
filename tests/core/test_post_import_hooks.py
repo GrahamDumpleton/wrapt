@@ -1,7 +1,10 @@
-import unittest
+import importlib
+import pathlib
 import sys
+import tempfile
 import threading
 import types
+import unittest
 
 import wrapt
 from wrapt.importer import _post_import_hooks
@@ -47,6 +50,57 @@ class TestPostImportHooks(unittest.TestCase):
 
         self.assertEqual(len(invoked), 1)
 
+    def test_hook_registered_during_import_waits_for_module_body(self):
+        name = "_wrapt_partial_import"
+        registration = name + "_registration"
+        invoked = []
+
+        def first_hook(module):
+            invoked.append(module.value)
+            wrapt.register_post_import_hook(
+                lambda loaded: invoked.append(loaded.value), name
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            pathlib.Path(directory, name + ".py").write_text(
+                "import " + registration + "\nvalue = 42\n", encoding="utf-8"
+            )
+            pathlib.Path(directory, registration + ".py").write_text(
+                "import wrapt\n"
+                "@wrapt.when_imported('" + name + "')\n"
+                "def hook(module):\n"
+                "    module.hook_value = module.value\n",
+                encoding="utf-8",
+            )
+            sys.path.insert(0, directory)
+            try:
+                wrapt.register_post_import_hook(first_hook, name)
+                module = importlib.import_module(name)
+                self.assertEqual(module.hook_value, 42)
+                self.assertEqual(invoked, [42, 42])
+                self.assertNotIn(name, _post_import_hooks)
+            finally:
+                sys.path.remove(directory)
+                sys.path_importer_cache.pop(directory, None)
+                sys.modules.pop(name, None)
+                sys.modules.pop(registration, None)
+                _post_import_hooks.pop(name, None)
+
+    def test_loaded_module_with_pending_hook_runs_new_hook_immediately(self):
+        name = "_wrapt_loaded_module_with_pending_hook"
+        invoked = []
+        module = types.ModuleType(name)
+        try:
+            wrapt.register_post_import_hook(
+                lambda loaded: invoked.append("pending"), name
+            )
+            sys.modules[name] = module
+            wrapt.register_post_import_hook(lambda loaded: invoked.append(loaded), name)
+            self.assertEqual(invoked, [module])
+        finally:
+            sys.modules.pop(name, None)
+            _post_import_hooks.pop(name, None)
+
     def test_before_and_after_import(self):
         invoked_one = []
         invoked_two = []
@@ -71,6 +125,54 @@ class TestPostImportHooks(unittest.TestCase):
 
         self.assertEqual(len(invoked_one), 1)
         self.assertEqual(len(invoked_two), 1)
+
+    def test_hook_registered_from_another_thread_waits_for_module_body(self):
+        name = "_wrapt_threaded_import"
+        control_name = name + "_control"
+        control = types.ModuleType(control_name)
+        control.entered = threading.Event()
+        control.release = threading.Event()
+        invoked = []
+        errors = []
+
+        def import_module():
+            try:
+                importlib.import_module(name)
+            except BaseException as exc:
+                errors.append(exc)
+
+        with tempfile.TemporaryDirectory() as directory:
+            pathlib.Path(directory, name + ".py").write_text(
+                "import " + control_name + " as control\n"
+                "control.entered.set()\n"
+                "assert control.release.wait(5)\n"
+                "value = 42\n",
+                encoding="utf-8",
+            )
+            sys.path.insert(0, directory)
+            sys.modules[control_name] = control
+            thread = threading.Thread(target=import_module)
+            try:
+                wrapt.register_post_import_hook(
+                    lambda module: invoked.append(module.value), name
+                )
+                thread.start()
+                self.assertTrue(control.entered.wait(5))
+                wrapt.register_post_import_hook(
+                    lambda module: invoked.append(module.value), name
+                )
+                self.assertEqual(invoked, [])
+            finally:
+                control.release.set()
+                thread.join(timeout=5)
+                sys.path.remove(directory)
+                sys.path_importer_cache.pop(directory, None)
+                sys.modules.pop(name, None)
+                sys.modules.pop(control_name, None)
+                _post_import_hooks.pop(name, None)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(errors, [])
+            self.assertEqual(invoked, [42, 42])
 
     def test_remove_from_sys_modules(self):
         invoked = []

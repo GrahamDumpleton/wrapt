@@ -12,10 +12,9 @@ from importlib.util import find_spec
 from .__wrapt__ import BaseObjectProxy
 
 # The dictionary registering any post import hooks to be triggered once
-# the target module has been imported. Once a module has been imported
-# and the hooks fired, the list of hooks recorded against the target
-# module will be truncated but the list left in the dictionary. This
-# acts as a flag to indicate that the module had already been imported.
+# the target module has been imported. Notification removes the module's
+# entry before invoking its hooks, so hooks registered during notification
+# can run immediately.
 
 _post_import_hooks: dict[str, list[Callable]] = {}
 _post_import_hooks_init = False
@@ -78,6 +77,15 @@ def register_post_import_hook(hook, name):
         # to be called after import.
 
         module = sys.modules.get(name, None)
+
+        # A watched module is visible in sys.modules before its body finishes.
+        # Keep additional hooks in its pending queue until our loader notifies
+        # them. Once notification starts, the queue has been removed, so hooks
+        # registered by another hook can still run immediately.
+        if name in _post_import_hooks and getattr(
+            getattr(module, "__spec__", None), "_initializing", False
+        ):
+            module = None
 
         if module is None:
             _post_import_hooks.setdefault(name, []).append(hook)
